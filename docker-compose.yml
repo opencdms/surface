@@ -1,0 +1,106 @@
+version: "3.5"
+
+services:
+
+  cache:
+    image: memcached
+    restart: unless-stopped
+
+  redis:
+    image: redis
+    restart: unless-stopped
+
+  postgres:
+    image: timescale/timescaledb-postgis:2.3.0-pg13
+    restart: unless-stopped
+    env_file:
+      - api/production.env
+    volumes:
+      - ./:/app
+      - database-volume:/var/lib/postgresql/data
+      - ./data/shared:/data/shared
+    ports:
+      - "5432:5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
+
+  api:
+    build:
+      dockerfile: Dockerfile
+      context: api
+    command: wait-for-it postgres:5432 -- python manage.py runserver 0.0.0.0:8000 --settings=tempestas_api.settings
+    env_file:
+      - api/production.env
+    restart: unless-stopped
+    volumes:
+      - ./api:/surface
+      - ./data/media:/data/media
+      - ./data/shared:/data/shared
+    ports:
+      - "8080:8000"
+    depends_on:
+      - postgres
+      - cache
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
+
+  celery_worker:
+    build:
+      dockerfile: Dockerfile
+      context: api
+    command: celery -A tempestas_api worker -l info
+    env_file:
+      - api/production.env
+    restart: unless-stopped
+    volumes:
+      - ./api:/surface
+      - ./data/media/documents/ingest:/data/documents/ingest
+      - ./data/media/exported_data:/data/exported_data
+      - ./data/shared:/data/shared
+    depends_on:
+      - api
+      - redis
+    networks:
+      - default
+      - surface_integration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
+
+  celery_beat:
+    build:
+      dockerfile: Dockerfile
+      context: api
+    restart: unless-stopped
+    command: celery -A tempestas_api beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - api/production.env
+    volumes:
+      - ./api:/surface
+      - ./data/postgresql:/data
+    depends_on:
+      - api
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
+
+volumes:
+  database-volume:
+    driver: local
+
+networks:
+  surface_integration:
+    name: surface_integration
+    driver: bridge
