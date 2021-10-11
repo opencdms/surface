@@ -1,0 +1,630 @@
+{% extends "base.html" %} {% block content %}
+<div class="srf-container">
+  <div id="app">
+    <v-app>
+      <v-content fluid fill-height style="background: white">
+        <v-layout column>
+          <div
+            class="
+              srf-flex
+              flex-row
+              align-items-center
+              justify-content-between
+              srf-padding
+            "
+          >
+            <span class="srf-display-1 text-uppercase">Data Validation</span
+            ><br /><br />
+          </div>
+          <v-layout column fluid>
+            <v-layout column fluid>
+              <h6>Station Filters</h6>
+              <v-layout dense justify="start" class="mb-3">
+                <v-flex lg2 class="text-center">
+                  <v-autocomplete
+                    item-text="name"
+                    item-value="name"
+                    v-model="filter.stationDistrict"
+                    :items="stationDistrictList"
+                    label="District"
+                    autocomplete="off"
+                    clearable
+                  ></v-autocomplete>
+                </v-flex>
+                <v-flex lg2 ml-3>
+                  <v-autocomplete
+                    item-text="name"
+                    item-value="name"
+                    v-model="filter.stationWatershed"
+                    :items="stationWatershedList"
+                    label="Watershed"
+                    autocomplete="off"
+                    clearable
+                  ></v-autocomplete>
+                </v-flex>
+                <v-flex lg2 ml-3>
+                  <v-autocomplete
+                    item-text="name"
+                    item-value="id"
+                    v-model="filter.stationProfile"
+                    :items="stationProfileList"
+                    label="Profile"
+                    autocomplete="off"
+                    clearable
+                  ></v-autocomplete>
+                </v-flex>
+                <v-flex lg1 ml-3>
+                  <v-switch
+                    v-model="filter.isActive"
+                    @change="invertValue(filter.isActive)"
+                    label="Active"
+                  ></v-switch>
+                </v-flex>
+                <v-flex lg1>
+                  <v-switch
+                    v-model="filter.isAutomatic"
+                    @change="invertValue(filter.isAutomatic)"
+                    label="Automatic"
+                  ></v-switch>
+                </v-flex>
+              </v-layout>
+
+              <v-alert v-model="request_error" dismissible type="error">
+                [[ request_error_message ]]
+              </v-alert>
+              <v-overlay :value="loading">
+                <v-progress-circular
+                  indeterminate
+                  size="64"
+                ></v-progress-circular>
+              </v-overlay>
+            </v-layout>
+
+            <v-layout mt-3>
+              <v-flex lg5>
+                <v-autocomplete
+                  :items="stationList"
+                  item-text="label"
+                  item-value="id"
+                  v-model="currentSelection.stationId"
+                  label="Station"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  @change="getStationVariables(currentSelection.stationId)"
+                  :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex pl-5 lg5>
+                <v-autocomplete
+                  :items="variables"
+                  item-text="variable_name"
+                  item-value="variable"
+                  v-model="currentSelection.variableId"
+                  label="Select variable"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :disabled="!currentSelection.stationId"
+                  :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </v-flex>
+            </v-layout>
+            <v-layout mt-3>
+              <v-flex lg5 class="d-flex justify-between">
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="menu1"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      v-model="currentSelection.startDate"
+                      label="Start date"
+                      prepend-icon="event"
+                      v-on="on"
+                      required
+                      hint="*Required"
+                      persistent-hint
+                      :rules="simpleTextFieldsRules"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    name="startDate"
+                    v-model="currentSelection.startDate"
+                    @input="menu1 = false"
+                  ></v-date-picker>
+                </v-menu>
+
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="menu3"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      v-model="currentSelection.startTime"
+                      label="Start time"
+                      prepend-icon="access_time"
+                      v-on="on"
+                    ></v-text-field>
+                  </template>
+                  <v-time-picker
+                    v-if="menu3"
+                    v-model="currentSelection.startTime"
+                    class="max-50"
+                    @click:minute="$refs.menu.save(currentSelection.startTime)"
+                  ></v-time-picker>
+                </v-menu>
+              </v-flex>
+              <v-flex pl-5 lg5 class="d-flex justify-between">
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="menu2"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      v-model="currentSelection.endDate"
+                      label="End date"
+                      prepend-icon="event"
+                      v-on="on"
+                      required
+                      hint="*Required"
+                      persistent-hint
+                      :rules="simpleTextFieldsRules"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    name="endDate"
+                    v-model="currentSelection.endDate"
+                    @input="menu2 = false"
+                  ></v-date-picker>
+                </v-menu>
+
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="menu4"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      v-model="currentSelection.endTime"
+                      label="End time"
+                      prepend-icon="access_time"
+                      v-on="on"
+                    ></v-text-field>
+                  </template>
+                  <v-time-picker
+                    v-if="menu4"
+                    v-model="currentSelection.endTime"
+                    class="max-50"
+                    @click:minute="$refs.menu.save(currentSelection.endTime)"
+                  ></v-time-picker>
+                </v-menu>
+              </v-flex>
+              <v-flex pl-5 mt-5 lg2 class="d-flex justify-between">
+                <v-btn
+                  outlined
+                  justify-end
+                  color="primary"
+                  small
+                  @click="doSearch"
+                  :disabled="$v.currentSelection.$invalid"
+                  >SEARCH</v-btn
+                >
+              </v-flex>
+            </v-layout>
+            <v-overlay :value="loading">
+              <v-progress-circular
+                indeterminate
+                size="64"
+              ></v-progress-circular>
+            </v-overlay>
+            <v-layout column fluid mt-5>
+              <v-alert v-model="request_error" dismissible type="error">
+                [[ request_error_message ]]
+              </v-alert>
+            </v-layout>
+            <v-layout column fluid fill-height>
+              <v-flex sm12 md12 lg12 mt-5>
+                <v-data-table
+                  mt-5
+                  :headers="headers"
+                  :items="rawDataList"
+                  :items-per-page="rowsPerPage"
+                >
+                  <template v-slot:item.automatic_flag="{ item }">
+                    <v-chip :color="paintFlag(item.automatic_flag)">
+                      [[ qualityFlagsDict[item.automatic_flag]?.name ]]
+                    </v-chip>
+                  </template>
+                  <template v-slot:item.ml_flag="{ item }">
+                    <v-chip :color="paintFlag(item.ml_flag)">
+                      [[ qualityFlagsDict[item.ml_flag]?.name ]]
+                    </v-chip>
+                  </template>
+                  <template v-slot:item.manual_flag="{ item }">
+                    <v-chip :color="paintFlag(item.manual_flag)">
+                      <v-autocomplete
+                        class="qc-manual-flag"
+                        item-text="name"
+                        item-value="id"
+                        :items="qualityFlags"
+                        v-model="item.manual_flag"
+                        autocomplete="off"
+                      ></v-autocomplete>
+                    </v-chip>
+                  </template>
+                  <template v-slot:item.consisted="{ item }">
+                    <v-text-field
+                      class="qc-consisted"
+                      single-line
+                      v-model="item.consisted"
+                    ></v-text-field>
+                  </template>
+                  <template v-slot:item.remarks="{ item }">
+                    <v-text-field
+                      class="qc-remarks"
+                      single-line
+                      maxlength="120"
+                      v-model="item.remarks"
+                    ></v-text-field>
+                  </template>
+                  <template v-slot:item.action="{ item }">
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on }">
+                        <v-icon
+                          v-on="on"
+                          small
+                          @click="handleUpdate(item)"
+                          :hidden="!isUpdated(item)"
+                          >save</v-icon
+                        >
+                      </template>
+                      <span>Update record</span>
+                    </v-tooltip>
+                  </template>
+                </v-data-table>
+              </v-flex>
+            </v-layout>
+          </v-layout>
+        </v-layout>
+      </v-content>
+    </v-app>
+  </div>
+
+  {% endblock %} {% block localjavascript %}
+
+  <script>
+    Vue.use(window.vuelidate.default);
+
+    const { required, minLength } = window.validators;
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      validations: {
+        currentSelection: {
+          stationId: { required },
+          variableId: { required },
+          startDate: { required },
+          startTime: { required },
+          endDate: { required },
+          endTime: { required },
+        },
+      },
+      data: {
+        timezone: "{{ TIMEZONE_NAME|escapejs }}",
+        variables: [],
+        qualityFlags: [],
+        qualityFlagsDict: {},
+        menu1: false,
+        menu2: false,
+        menu3: false,
+        menu4: false,
+        request_error: false,
+        request_error_message: "",
+        simpleTextFieldsRules: [
+          (v) => (v !== undefined && v !== "") || "This field is required",
+        ],
+        currentSelection: {
+          stationId: null,
+          variableId: null,
+          startDate: new Date(new Date().setDate(new Date().getDate() - 1))
+            .toISOString()
+            .substr(0, 10),
+          startTime: "00:00",
+          endDate: new Date().toISOString().substr(0, 10),
+          endTime: "00:00",
+        },
+        rowsPerPage: 10,
+        loading: false,
+        rawDataList: [],
+        headers: [
+          {
+            text: "Date/Hour",
+            align: "left",
+            sortable: true,
+            value: "formated_datetime",
+          },
+          {
+            text: "Measured",
+            align: "left",
+            sortable: true,
+            value: "measured",
+          },
+          {
+            text: "CQA Flag",
+            align: "left",
+            sortable: true,
+            value: "automatic_flag",
+          },
+          {
+            text: "ML Flag",
+            align: "left",
+            sortable: true,
+            value: "ml_flag",
+          },
+          {
+            text: "Manual Flag",
+            align: "left",
+            sortable: false,
+            value: "manual_flag",
+          },
+          {
+            text: "Consisted",
+            align: "left",
+            sortable: false,
+            value: "consisted",
+          },
+          {
+            text: "Remarks",
+            align: "left",
+            sortable: false,
+            value: "remarks",
+          },
+          {
+            text: "Action",
+            align: "left",
+            sortable: false,
+            value: "action",
+          },
+        ],
+        filter: {
+          isActive: true,
+          isAutomatic: true
+        },
+        stations: [
+          {% for station in station_list %}
+          { id: {{ station.id }},
+            label: "{{ station.name | safe }} - {{ station.code  | safe }}",
+            region: "{{ station.region | safe }}",
+            watershed: "{{ station.watershed | safe }}",
+            profile: "{{ station.profile.id | safe }}",
+            is_automatic: {{ station.is_automatic | lower }},
+            is_active: {{ station.is_active | lower }},
+          },
+          {% endfor %}
+        ],
+        stationProfileList: [
+          {% for station_profile in station_profile_list %}
+          {id: {{ station_profile.id }}, name: "{{ station_profile.name }}" },
+          {% endfor %}
+        ],
+        stationWatershedList: [
+          {% for station_watershed in station_watershed_list %}
+          {id: {{ station_watershed.id }}, name: "{{ station_watershed.watershed }}" },
+          {% endfor %}
+        ],
+        stationDistrictList: [
+          {% for station_district in station_district_list %}
+          {id: {{ station_district.id }}, name: "{{ station_district.name }}" },
+          {% endfor %}
+        ],
+      },
+      computed: {
+        baseURL() {
+          return "/";
+        },
+        stationList () {
+          let filteredStations = this.stations;
+
+          if(this.filter.stationDistrict)
+            filteredStations = filteredStations.filter(station => station.region == this.filter.stationDistrict);
+
+          if(this.filter.stationWatershed)
+            filteredStations = filteredStations.filter(station => station.watershed == this.filter.stationWatershed);
+
+          if(this.filter.stationProfile)
+            filteredStations = filteredStations.filter(station => station.profile == this.filter.stationProfile);
+
+          filteredStations = filteredStations.filter(station => this.filter.isAutomatic == station.is_automatic);
+
+          filteredStations = filteredStations.filter(station => this.filter.isActive == station.is_active);
+
+          this.currentSelection.stationId = null;
+
+          return filteredStations;
+        }
+      },
+      methods: {
+        getQualityFlags() {
+          this.getAll(`api/quality_flags`).then((data) => {
+            this.qualityFlags = data;
+            data.forEach((qualityFlag) => {
+              this.qualityFlagsDict[qualityFlag.id] = {
+                name: qualityFlag.name,
+                color: qualityFlag.color,
+              };
+            });
+          });
+        },
+        getStationVariables(stationId) {
+          this.getAll(`api/stations_variables/?station_id=${stationId}`).then(
+            (data) => (this.variables = data)
+          );
+        },
+        parsePatchParameters(item) {
+          let params = "?station_id=" + item.station_id;
+          params += "&variable_id=" + item.variable_id;
+          params += "&datetime=" + item.datetime;
+
+          return params;
+        },
+        paintFlag(result) {
+          if (result == null) return;
+          return this.qualityFlagsDict[result]?.color;
+        },
+        isUpdated(item) {
+          return (
+            item.consisted != item.old.consisted ||
+            item.manual_flag != item.old.manual_flag ||
+            item.remarks != item.old.remarks
+          );
+        },
+        parseParameters() {
+          let params = "?station_id=" + this.currentSelection.stationId;
+          params += "&variable_id=" + this.currentSelection.variableId;
+
+          params +=
+            "&start_date=" +
+            this.formatDatetimeForRequest(
+              moment(
+                `${this.currentSelection.startDate} ${this.currentSelection.startTime}`
+              ).tz(this.timezone, true)
+            );
+          params +=
+            "&end_date=" +
+            this.formatDatetimeForRequest(
+              `${this.currentSelection.endDate} ${this.currentSelection.endTime}`
+            );
+
+          return params;
+        },
+        getAll(path, url, oldData = []) {
+          return fetch(`${this.baseURL}${path}`)
+            .then((res) => {
+              if (!res.body) {
+                return { next: null, results: [] };
+              }
+
+              return res.json();
+            })
+            .then(async (data) => {
+              const values = [...oldData, ...data.results];
+              if (!!data.next) {
+                return await getAll(
+                  context,
+                  path,
+                  `${this.baseURL}/${path}/${data.next.substr(
+                    data.next.indexOf(`/${path}`)
+                  )}`,
+                  values
+                );
+              }
+              return values;
+            });
+        },
+        doSearch() {
+          this.rawDataList = [];
+          this.loading = true;
+          this.getAll(`api/quality_control/${this.parseParameters()}`)
+            .then((data) => {
+              this.rawDataList = data.map((record) => {
+                record["old"] = {
+                  consisted: record.consisted,
+                  manual_flag: record.manual_flag,
+                  remarks: record.remarks,
+                };
+                record["formated_datetime"] = this.formatDatetimeForDataTable(
+                  record.datetime
+                );
+                return record;
+              });
+              this.loading = false;
+            })
+            .catch((error) => {
+              alert("Error! Sorry, try again later");
+              this.loading = false;
+            });
+        },
+        formatDatetimeForRequest(datetime) {
+          return moment(datetime)
+            .tz(this.timezone, true)
+            .utc()
+            .format("YYYY-MM-DDTHH:mm:ss[Z]");
+        },
+        formatDatetimeForDataTable(datetime) {
+          return moment
+            .utc(datetime)
+            .tz(this.timezone)
+            .format("YYYY-MM-DD HH:mm");
+        },
+        handleUpdate(item) {
+          this.loading = true;
+          axios
+            .patch(`/api/quality_control/${this.parsePatchParameters(item)}`, {
+              manual_flag: item.manual_flag,
+              consisted: item.consisted,
+              remarks: item.remarks,
+            })
+            .then(() => {
+              item["old"] = {
+                consisted: item.consisted,
+                manual_flag: item.manual_flag,
+                remarks: item.remarks,
+              };
+              this.loading = false;
+              this.request_error = false;
+            })
+            .catch((error) => {
+              this.loading = false;
+              console.log("error", error.response);
+              this.request_error_message = error.response.data.message;
+              this.request_error = true;
+            });
+        },
+        invertValue(bool){
+          bool = !bool;
+        },
+      },
+      mounted() {
+        this.getQualityFlags();
+        axios.defaults.xsrfHeaderName = "X-CSRFToken";
+        axios.defaults.xsrfCookieName = "csrftoken";
+      },
+    });
+  </script>
+</div>
+
+<style>
+  .qc-manual-flag {
+    padding-top: 20px;
+    padding-left: 5px;
+    width: 125px;
+  }
+
+  .qc-consisted {
+    width: 75px;
+  }
+
+  .qc-remarks {
+    width: 200px;
+  }
+</style>
+{% endblock %}

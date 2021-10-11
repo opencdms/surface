@@ -1,0 +1,1214 @@
+{% extends "base.html" %} {% block content %}
+<div class="srf-container">
+  <div id="app" v-cloak>
+    <v-app>
+      <v-content fluid fill-height style="background: white">
+          <v-layout column>
+            <v-flex>
+              <h1 class="display-1 text-uppercase">Station compare</h1>
+            </v-flex>
+            <v-layout fluid>
+              <h6>Station Filters</h6>
+            </v-layout>
+            <v-layout fluid>
+              <v-flex lg2>
+                <v-autocomplete
+                  item-text="name"
+                  item-value="name"
+                  v-model="filter.stationDistrict"
+                  :items="stationDistrictList"
+                  label="District"
+                  autocomplete="off"
+                  clearable
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex lg2 pl-5>
+                <v-autocomplete
+                  item-text="name"
+                  item-value="name"
+                  v-model="filter.stationWatershed"
+                  :items="stationWatershedList"
+                  label="Watershed"
+                  autocomplete="off"
+                  clearable
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex lg2 pl-5>
+                <v-autocomplete
+                  item-text="name"
+                  item-value="id"
+                  v-model="filter.stationProfile"
+                  :items="stationProfileList"
+                  label="Profile"
+                  autocomplete="off"
+                  clearable
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex lg1 pl-5>
+                <v-switch
+                  v-model="filter.isActive"
+                  @change="invertValue(filter.isActive)"
+                  label="Active"
+                ></v-switch>
+              </v-flex>
+              <v-flex lg1>
+                <v-switch
+                  v-model="filter.isAutomatic"
+                  @change="invertValue(filter.isAutomatic)"
+                  label="Automatic"
+                ></v-switch>
+              </v-flex>
+              <v-flex lg2>
+                <v-btn
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="primary"
+                  @click="selectAllStations"
+                  >Select All</v-btn
+                >
+              </v-flex>
+            </v-layout>
+              <v-layout column fluid>
+                <v-layout mt-3>
+                  <v-flex lg9>
+                    <v-autocomplete
+                      :items="stationList"
+                      v-model="stationRequest.selectedStations"
+                      :search-input.sync="searchStations"
+                      label="Stations"
+                      required
+                      hint="*Required"
+                      :rules="simpleTextFieldsRules"
+                      autocomplete="off"
+                      chips
+                      deletable-chips
+                      small-chips
+                      multiple
+                      clearable
+                      return-object
+                    ></v-autocomplete>
+                  </v-flex>
+                </v-layout>
+                <v-layout>
+                  <v-flex lg9>
+                    <v-autocomplete
+                      :items="variable_list"
+                      :search-input.sync="searchVariables"
+                      item-text="variable_name"
+                      item-value="variable"
+                      v-model="stationRequest.selectedVariables"
+                      label="Variables"
+                      required
+                      hint="*Required"
+                      return-object
+                      :rules="simpleTextFieldsRules"
+                      autocomplete="off"
+                      chips
+                      deletable-chips
+                      small-chips
+                      multiple
+                      clearable
+                    ></v-autocomplete>
+                  </v-flex>
+                </v-layout>
+                <v-layout>
+                  <v-flex lg3>
+                    <v-autocomplete
+                      :items="distributionTypeItems"
+                      item-text="label"
+                      item-value="value"
+                      v-model="stationRequest.selectedDistributionType"
+                      label="Distribution Type"
+                      :rules="simpleTextFieldsRules"
+                      autocomplete="off"
+                    ></v-autocomplete>
+                  </v-flex>
+                  <v-flex pl-5 lg3>
+                    <v-autocomplete
+                      :items="timescales"
+                      item-text="label"
+                      item-value="value"
+                      v-model="stationRequest.timescale"
+                      v-on:change="changeTimescale"
+                      label="Time resolution"
+                      autocomplete="off"
+                    ></v-autocomplete>
+                  </v-flex>
+                  <v-flex 
+                    pl-5
+                    lg3
+                    style="flex-direction: row; display: flex; align-items: center;"
+                  >
+                    <input
+                      type="color"
+                      v-model="stationRequest.color"
+                      id="color_btn"
+                    />
+                    <v-text-field
+                      class="ml-2"
+                      name="color"
+                      label="Color"
+                      type="text"
+                      v-model="stationRequest.color"
+                      @click="clickColor()"
+                      :rules="simpleTextFieldsRules"
+                    ></v-text-field>
+                  </v-flex>
+                </v-layout>
+                <v-layout mt-3 mb-5>
+                  <v-flex lg3 class="d-flex justify-between">
+                    <v-menu
+                      :close-on-content-click="false"
+                      v-model="menu1"
+                      :nudge-right="40"
+                      transition="scale-transition"
+                      offset-y
+                      class="max-50"
+                    >
+                      <template v-slot:activator="{ on }">
+                        <v-text-field
+                          v-model="stationRequest.begin_date"
+                          label="Start date"
+                          prepend-icon="event"
+                          v-on="on"
+                          required
+                          hint="*Required"
+                          :rules="simpleTextFieldsRules"
+                        ></v-text-field>
+                      </template>
+                      <v-date-picker
+                        name="begin_date"
+                        v-model="stationRequest.begin_date"
+                        @input="menu1 = false"
+                        :type='getDatepickFormat()'
+                        :allowed-dates="allowedDates"
+                      ></v-date-picker>
+                    </v-menu>
+                    <v-select
+                      v-if="stationRequest.timescale === 'hourlysummaries' || stationRequest.timescale === 'rawdata'"
+                      v-model="stationRequest.begin_time"
+                      label="Initial time"
+                      :items="hours"
+                      prepend-icon="access_time"
+                      required
+                    ></v-select>
+                    <template v-slot:activator="{ on }">
+                      <v-text-field
+                        v-model="stationRequest.begin_time"
+                        label="Initial time"
+                        prepend-icon="access_time"
+                        v-on="on"
+                        :disabled="!(stationRequest.timescale === 'hourlysummaries' || stationRequest.timescale === 'rawdata')"
+                      ></v-text-field>
+                    </template>
+                    </v-menu>
+                  </v-flex>
+                  <v-flex lg3 pl-5 class="d-flex justify-between">
+                    <v-menu
+                      :close-on-content-click="false"
+                      v-model="menu2"
+                      :nudge-right="40"
+                      transition="scale-transition"
+                      offset-y
+                      class="max-50"
+                    >
+                      <template v-slot:activator="{ on }">
+                        <v-text-field
+                          v-model="stationRequest.end_date"
+                          label="Final date"
+                          prepend-icon="event"
+                          v-on="on"
+                          required
+                          hint="*Required"
+                          :rules="simpleTextFieldsRules"
+                        ></v-text-field>
+                      </template>
+                      <v-date-picker
+                        name="end_date"
+                        v-model="stationRequest.end_date"
+                        @input="menu2 = false"
+                        :type='getDatepickFormat()'
+                        :allowed-dates="allowedDates"
+                      ></v-date-picker>
+                    </v-menu>
+                    <v-select
+                      v-if="stationRequest.timescale === 'hourlysummaries' || stationRequest.timescale === 'rawdata'"
+                      v-model="stationRequest.end_time"
+                      label="Final time"
+                      :items="hours"
+                      prepend-icon="access_time"
+                      required
+                    ></v-select>
+                    <template v-slot:activator="{ on }">
+                      <v-text-field
+                        v-model="stationRequest.end_time"
+                        label="Final time"
+                        prepend-icon="access_time"
+                        v-on="on"
+                        :disabled="!(stationRequest.timescale === 'hourlysummaries' || stationRequest.timescale === 'rawdata')"
+                      ></v-text-field>
+                    </template>
+                    </v-menu>
+                  </v-flex>
+                  <v-flex mt-5 lg1 pl-5 class="d-flex justify-between">
+                    <v-btn
+                      justify-end
+                      outlined
+                      color="primary"
+                      small
+                      @click="onAdd"
+                      :disabled="$v.stationRequest.$invalid"
+                      >ADD SERIES</v-btn
+                    >
+                  </v-flex>
+                </v-layout>
+                <v-alert
+                  v-model="request_error"
+                  dismissible
+                  type="error"
+                >
+                  [[ request_error_message ]]
+                </v-alert>
+                <v-overlay :value="loading">
+                  <v-progress-circular indeterminate size="64"></v-progress-circular>
+                </v-overlay>
+                <v-layout mt-3>
+                  <v-tabs>
+                    <v-tab key="1">Data Series</v-tab>
+                    <v-tab key="2">Options</v-tab>
+                    <v-tab key="3">Chart</v-tab>
+                    <v-tab key="4">Data Table</v-tab>
+
+                    <v-tab-item key="1">
+                      <v-layout mt-3>
+                        <v-flex shrink>
+                          <v-menu transition="slide-y-transition" bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-btn v-on="on" outlined medium color="export"
+                                >Export</v-btn
+                              >
+                            </template>
+                            <v-list>
+                              <v-list-item
+                                v-for="(item, i) in exportItems"
+                                :key="i"
+                                @click="exportAs(item.value)"
+                              >
+                                <v-list-item-content>
+                                  <v-list-item-title>
+                                    [[ item.title ]]
+                                  </v-list-item-title>
+                                </v-list-item-content>
+                              </v-list-item>
+                            </v-list>
+                          </v-menu>
+                        </v-flex>
+                      </v-layout>
+                      <v-layout column fluid>
+                        <v-layout mt-5>
+                          <v-flex lg6>
+                            <v-text-field
+                              type="text"
+                              v-model="search"
+                              label="Search"
+                              clearable
+                            ></v-text-field>
+                          </v-flex>
+                          <v-flex pl-3 pt-8 lg3>
+                            <span>[[selectedItems.length]] of [[tableItems.length]] items selected</span>
+                          </v-flex>
+                          <v-spacer></v-spacer>
+                            <v-btn @click="deleteSelected" justify-end outlined medium color="error">Delete Selected</v-btn>
+                          </v-flex>
+                        </v-layout>
+                        <v-data-table v-model="selectedItems" flat :headers="headers" :items="tableItems" :search="search" item-key="index" show-select>
+                          <template v-slot:item.color="{ item }">
+                            <input
+                              type="color"
+                              v-model="item.color"
+                              id="color_btn_item"
+                              v-on:change="createTraces()"
+                            />     
+                          </template>
+                          <template v-slot:item.type="{ item }">
+                            <v-autocomplete
+                              :items="distributionTypeItems"
+                              item-text="label"
+                              item-value="value"
+                              v-model="item.type"
+                              autocomplete="off"
+                              v-on:change="updateDistributionType(item)"
+                            ></v-autocomplete>
+                          </template>
+                          <template v-slot:item.action="{ item }">
+                            <v-icon small @click="onRemove(item)">
+                              delete
+                            </v-icon>
+                          </template>
+                        </v-data-table>
+                      </v-layout>
+                    </v-tab-item>
+                    <v-tab-item key="2">
+                      <v-layout ml-3 column style="width: 75%">
+                        <v-flex my-2 mt-3>
+                          <v-text-field
+                            type="text"
+                            v-model="title"
+                            name="title"
+                            label="Title"
+                          ></v-text-field>
+                        </v-flex>
+                        <v-flex my-2>
+                          <v-text-field
+                            type="text"
+                            v-model="subtitle"
+                            name="title"
+                            label="Subtitle"
+                          ></v-text-field>
+                        </v-flex>
+                      </v-layout>
+                    </v-tab-item>
+                    <v-tab-item key="3">
+                      <v-layout ml-3 mt-3 column>
+                        <highcharts :options="chartOptions"></highcharts>
+                      </v-layout>
+                    </v-tab-item>
+                    <v-tab-item key="4">
+                      <v-layout column style="width: 100%; height: 100vh;">
+                        <v-flex md7 style="overflow: auto">
+                          <div class="limit-table ml-3 " mt-3>
+                            <table
+                              class="mdl-data-table mdl-js-data-table mdl-shadow--2dp mt-3"
+                              calculate-widths
+                              dense
+                            >
+                              <thead>
+                                <tr>
+                                  <th class="mdl-data-table__cell--non-numeric">
+                                    Date
+                                  </th>
+                                  <th v-for="(element) in tableItems" :key="element.id">
+                                    [[ element.station ]] <br>
+                                    [[ element.variableName ]] ([[ element.symbol ]]) -
+                                    ([[timescalesSet[element.timescale] ]])
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr v-for="(data) in tableData" :key="data.date">
+                                  <td class="mdl-data-table__cell--non-numeric">
+                                    [[ data.formatedDate ]]
+                                  </td>
+                                  <td
+                                    v-for="(value, index) in data.values"
+                                    :key="index"
+                                  >
+                                    [[ value ]]
+                                  </td>
+                                </tr>
+                                <tr
+                                  v-for="(value) in elementsStats"
+                                  :key="value.label"
+                                >
+                                  <td style="text-align: left">
+                                    [[ value.label ]]
+                                  </td>
+                                  <td
+                                    v-for="(td, index) in selectedElements"
+                                    :key="index"
+                                  >
+                                    [[ value.values[td] ]]
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </v-flex>
+                      </v-layout>
+                    </v-tab-item>
+                  </v-tabs>
+                </v-layout>
+              </v-layout>
+          </v-layout>
+      </v-content>
+    </v-app>
+  </div>
+
+  {% endblock %} {% block localjavascript %}
+
+  <script>
+    Vue.use(HighchartsVue.default);
+    Vue.use(window.vuelidate.default);
+    Vue.use(window.pdfMake);
+
+    const { required, minLength } = window.validators;
+
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      validations: {
+        stationRequest: {
+          selectedStations: { required },
+          selectedVariables: { required },
+          selectedDistributionType: { required },
+          color: { required },
+          timescale: { required },
+          begin_date: { required },
+          end_date: { required }
+        }
+      },
+      data: {
+        filter: {
+          isActive: true,
+          isAutomatic: true
+        },
+        selectedItems: [],
+        hours: (function() {
+        const hours = [];
+          hours.length = 24;
+          hours.fill('');
+          return hours.map((el, index) => `${index < 10 ? '0' : ''}${index}:00`);
+        })(),
+        searchStations: null,
+        searchVariables: null,
+        search: "",
+        timezone: "{{ TIMEZONE_NAME|escapejs }}",
+        request_error:false,
+        request_error_message: '',
+        dataByVariable: {},
+        variableItems: [],
+        distributionTypeItems: [],
+        timescalesSet: {},
+        loading: false,
+        variable_list: [
+          {% for variable in variable_list %}
+            {
+              variable: {{ variable.id }},
+              variable_name: "{{ variable.name }}",
+              unit_symbol: "{{ variable.unit.symbol }}"
+            },
+          {% endfor %}
+        ],
+        timescales: [
+          {
+            label: "Raw Data",
+            value: "rawdata"
+          },
+          {
+            label: "Hourly",
+            value: "hourlysummaries"
+          },
+          {
+            label: "Daily",
+            value: "dailysummaries"
+          },
+          {
+            label: "Monthly",
+            value: "monthlysummaries"
+          },
+          {
+            label: "Yearly",
+            value: "yearlysummaries"
+          }
+        ],
+        distributionTypeItems: [
+          {
+            label: "Line",
+            value: "line"
+          },
+          {
+            label: "Bars",
+            value: "column"
+          },
+          {
+            label: "Points",
+            value: "point"
+          },
+          {
+            label: "Spline",
+            value: "spline"
+          }
+        ],
+        menu1: false,
+        menu2: false,
+        menu3: false,
+        menu4: false,
+        tableItems: [],
+        headers: [
+          {
+            text: "Timescale",
+            align: "left",
+            sortable: true,
+            value: "timescale_desc"
+          },
+          {
+            text: "Start date",
+            align: "left",
+            sortable: true,
+            value: "start_datetime_formated"
+          },
+          {
+            text: "End date",
+            align: "left",
+            sortable: true,
+            value: "end_datetime_formated"
+          },
+          {
+            text: "Station",
+            align: "center",
+            sortable: true,
+            value: "station"
+          },
+          {
+            text: "Element",
+            align: "center",
+            sortable: true,
+            value: "variableName"
+          },
+          {
+            text: "Type",
+            align: "center",
+            sortable: true,
+            value: "type"
+          },
+          {
+            text: "Color",
+            align: "center",
+            sortable: false,
+            value: "color"
+          },
+          {
+            text: "Action",
+            align: "center",
+            sortable: false,
+            value: "action"
+          }
+        ],
+        exportItems: [
+          // { title: "PDF", icon: "fas fa-file-pdf", value: "pdf" },
+          { title: "CSV", icon: "fas fa-file-csv", value: "csv" },
+          // { title: 'EXCEL', icon: 'fas fa-file-excel', value: 'excel' },
+          // { title: 'PRINT', icon: 'fas fa-print', value: 'print' }
+        ],
+        title: "",
+        subtitle: "",
+        layout: {},
+        stationRequest: {
+          selectedStations: null,
+          selectedVariables: null,
+          selectedDistributionType: 'line',
+          color: "#000000",
+          timescale: "dailysummaries",
+          begin_date: moment().format('YYYY-MM-DD'),
+          end_date: moment().add(1, 'days').format('YYYY-MM-DD'),
+          begin_time: "00:00",
+          end_time: "00:00"
+        },
+        index: 0,
+        counter:0,
+        tableData: {},
+        elementsStats: [],
+        stations: [
+          {% for station in station_list %}
+          { id: {{ station.id }},
+            text: "{{ station.name | safe }} - {{ station.code }}",
+            name: "{{ station.name | safe }}",
+            code: "{{ station.code }}",
+            region: "{{ station.region | safe }}",
+            watershed: "{{ station.watershed | safe }}",
+            profile: "{{ station.profile.id | safe }}",
+            is_automatic: {{ station.is_automatic | lower }},
+            is_active: {{ station.is_active | lower }},
+          },
+          {% endfor %}
+        ],
+        simpleTextFieldsRules: [
+          v => (v !== undefined && v !== "") || "This field is required"
+        ],
+        stationProfileList: [
+          {% for station_profile in station_profile_list %}
+          {id: {{ station_profile.id }}, name: "{{ station_profile.name }}" },
+          {% endfor %}
+        ],
+        stationWatershedList: [
+          {% for station_watershed in station_watershed_list %}
+          {id: {{ station_watershed.id }}, name: "{{ station_watershed.watershed }}" },
+          {% endfor %}
+        ],
+        stationDistrictList: [
+          {% for station_district in station_district_list %}
+          {id: {{ station_district.id }}, name: "{{ station_district.name }}" },
+          {% endfor %}
+        ],
+      },
+      watch: {
+        station (newSelectedArray, oldSelectedArray) {
+          this.searchStations = '';
+        },
+        variables (newSelectedArray, oldSelectedArray) {
+          this.searchVariables = '';
+        }
+      },
+      computed: {
+        chartOptions() {
+          return Object.assign(
+            {},
+            {
+              chart: {
+                zoomType: "xy"
+              },
+              title: {
+                text: this.title
+              },
+              subtitle: {
+                text: this.subtitle
+              },
+              xAxis: {
+                type: "datetime"
+              },
+              tooltip: {
+                shared: true
+              },
+              legend: {
+                layout: "horizontal",
+                align: "center",
+                verticalAlign: "bottom"
+              },
+              time: {
+                timezone: this.timezone
+              },
+              series: []
+            },
+            this.layout
+          );
+        },
+        stationList () {
+          let filteredStations = this.stations;
+
+          if(this.filter.stationDistrict)
+            filteredStations = filteredStations.filter(station => station.region == this.filter.stationDistrict);
+
+          if(this.filter.stationWatershed)
+            filteredStations = filteredStations.filter(station => station.watershed == this.filter.stationWatershed);
+
+          if(this.filter.stationProfile)
+            filteredStations = filteredStations.filter(station => station.profile == this.filter.stationProfile);
+
+          filteredStations = filteredStations.filter(station => this.filter.isAutomatic == station.is_automatic);
+
+          filteredStations = filteredStations.filter(station => this.filter.isActive == station.is_active);
+
+          return filteredStations;
+        }
+      },
+      methods: {
+        getAll(path, url, oldData = []) {
+          return fetch(`/${path}`)
+            .then(res => {
+              if(!res.ok)   
+                return res.json().then(err => Promise.reject(err));
+
+              if (!res.body) {
+                return { next: null, results: [] };
+              }
+
+              return res.json();
+            })
+            .then(async data => {
+              if(data.results != null) {
+                const values = [...oldData, ...data.results];
+                if (!!data.next) {
+                  return await getAll(
+                    context,
+                    path,
+                    `/${path}/${data.next.substr(
+                      data.next.indexOf(`/${path}`)
+                    )}`,
+                    values
+                  );
+                }
+                return values;
+              }
+            });
+        },
+        changeTimescale(){
+          if(this.stationRequest.timescale === 'monthlysummaries') {
+            this.stationRequest.begin_date = moment().format('YYYY-MM')
+            this.stationRequest.end_date = moment().add(1, 'month').format('YYYY-MM')
+          } else if(this.stationRequest.timescale === 'yearlysummaries') {
+            this.stationRequest.begin_date = moment().format('YYYY-01')
+            this.stationRequest.end_date = moment().add(1, 'year').format('YYYY-01')
+          }
+        },
+        clickColor() {
+          document.getElementById("color_btn").click();
+        },
+        deleteSelected(){
+          this.selectedItems.forEach(item => this.onRemove(item));
+          this.selectedItems = [];
+        },
+        createTableData() {
+          const dates = this.tableItems
+            .filter(e => e.records != null)
+            .map(e => e.records.map(e => e.date))
+            .reduce((p, c) => [...p, ...c], []);
+
+          const dateSet = new Set(dates);
+          const datesToObject = Array.from(dateSet).sort().map(date => ({
+            date,
+            formatedDate: this.formatDatetimeForDataTable(moment.utc(date).tz(this.timezone)),
+            values: []
+          }));
+
+          this.tableData = datesToObject.map(date => {
+            this.tableItems.forEach(item => {
+              if(item.records == null){
+                date.values.push('-');
+              } else {
+                const record = item.records.find(e => e.date === date.date) || {values: '-'};
+                date.values.push(record.values);
+              }
+            });
+            return date;
+          });
+        },
+        updateDistributionType(item){
+          item.chartTrace.type = "" + item.type;
+          item.chartTrace.additionalConfig = {};
+
+          if (item.type === "point") {
+            (item.chartTrace.type = "spline"),
+              (item.chartTrace.additionalConfig = {
+                lineWidth: 0,
+                marker: {
+                  enabled: true,
+                  radius: 2
+                },
+                states: {
+                  hover: {
+                    lineWidthPlus: 0
+                  }
+                }
+              });
+          } else if (
+            item.type === "line"
+          ) {
+            item.chartTrace.additionalConfig = {
+              lineWidth: 2,
+              marker: {
+                enabled: false
+              }
+            };
+          } else if (
+            item.type === "spline"
+          ) {
+            item.chartTrace.additionalConfig = {
+              lineWidth: 2,
+              marker: {
+                enabled: false
+              }
+            };
+          }
+          this.createTraces();
+        },
+        createTraces() {
+          this.traces = [];
+          const layout = {};
+          const axes = Array.from(new Set(this.tableItems.map(e => `${e.symbol}`)));
+          this.layout = {
+            yAxis: axes
+              .map(e => this.tableItems.filter(e => e.records != null).find(item => item.symbol === e))
+              .map((value, index) => ({
+                title: {
+                  text: value.symbol
+                },
+                labels: {
+                  format: `{value} ${value.symbol}`
+                },
+                opposite: index % 2 === 1
+              })),
+            series: this.tableItems.filter(e => e.records != null).map((value, index) =>
+              Object.assign(
+                {},
+                {
+                  name: value.chartTrace.name,
+                  type: value.chartTrace.type,
+                  data: value.chartTrace.y,
+                  yAxis: axes.indexOf(`${value.symbol}`),
+                  tooltip: {
+                    valueSuffix: ` ${value.symbol}`,
+                    valueDecimals: 2
+                  },
+                  color: value.color
+                },
+                value.chartTrace.additionalConfig
+              )
+            )
+          };
+        },
+        getDatepickFormat(){
+          return this.stationRequest.timescale === 'yearlysummaries' || this.stationRequest.timescale === 'monthlysummaries' ? 'month': 'date';
+        },
+        allowedDates(val){
+          if(this.stationRequest.timescale === 'yearlysummaries')
+            return val.split('-')[1] == '01' // just january
+          return true;
+        },
+        onAdd() {
+          let start_datetime = moment(`${this.stationRequest.begin_date} ${this.stationRequest.begin_time}`)
+          let end_datetime = moment(`${this.stationRequest.end_date} ${this.stationRequest.end_time}`)
+          this.stationRequest.selectedStations.forEach(station => {
+            this.stationRequest.selectedVariables.forEach(variable => {
+              this.getSummaries(this.stationRequest, start_datetime, end_datetime, variable, station);
+            });
+          });
+        },
+        generateItemId(index){
+          return ""+index;
+        },
+        formatDatetimeForRequest(datetime){
+          if (this.stationRequest.timescale === "hourlysummaries" || this.stationRequest.timescale === "rawdata")
+            return datetime.clone().tz(this.timezone, true).utc().format('YYYY-MM-DDTHH:mm:ss[Z]');
+          else
+            return datetime.clone().tz(this.timezone, true).format('YYYY-MM-DD');
+        },
+        formatDatetimeForDataTable(datetime){
+          return datetime.clone().format('YYYY-MM-DD HH:mm:ss');
+        },
+        formatReceivedData(datetime){
+          if (this.stationRequest.timescale === "dailysummaries" || this.stationRequest.timescale === "monthlysummaries" || this.stationRequest.timescale === "yearlysummaries")
+            return moment.utc(datetime).tz(this.timezone, true).valueOf();
+          else
+            return moment.utc(datetime).valueOf();
+        },
+        getSummaries(requestParameters, start_datetime, end_datetime, element, station) {
+          this.loading = true;
+          const params = `&search_date_start=${this.formatDatetimeForRequest(start_datetime)}&search_date_end=${this.formatDatetimeForRequest(end_datetime)}`;
+
+          this.request_error = false;
+          this.request_error_message = '';
+
+          this.getAll(`api/${requestParameters.timescale}/?search_type=stationvariable&search_value=${station.id}&search_value2=${element.variable}${params}`
+          ).then(response => {
+            this.counter++;
+            let currentTableItem = {
+              id: Symbol(this.index),
+              generatedId: this.generateItemId(this.counter),
+              variableId: element.variable,
+              index: this.index,
+              timescale: this.stationRequest.timescale,
+              timescale_desc: this.timescalesSet[this.stationRequest.timescale],
+              start_datetime,
+              end_datetime,
+              start_datetime_formated: this.formatDatetimeForDataTable(start_datetime),
+              end_datetime_formated: this.formatDatetimeForDataTable(end_datetime),
+              station: station.name,
+              variableName: element.variable_name || "",
+              symbol: element.unit_symbol || "",
+              type: "" + this.stationRequest.selectedDistributionType,
+              color: this.stationRequest.color,
+              chartTrace: {}
+            }
+            this.index++;
+            this.tableItems.push(currentTableItem);
+
+            const records = [];
+            const selectedVariableId = element.variable;
+
+            if(response != null) {
+              response.forEach(summaryData => {
+                records.push({
+                  date: this.formatReceivedData(summaryData.date),
+                  values: summaryData.value
+                })
+
+                this.dataByVariable[currentTableItem.generatedId] = this.dataByVariable[currentTableItem.generatedId] || [];
+                this.dataByVariable[currentTableItem.generatedId].push(summaryData.value);
+              });
+
+              currentTableItem.records = records;
+
+              const x = records.map(record => record.date);
+              const y = records.map((record, index) => [
+                +x[index],
+                record.values
+              ]);
+
+              currentTableItem.chartTrace = {
+                x,
+                y,
+                name: `${currentTableItem.station} - ${currentTableItem.variableName} (${currentTableItem.symbol}) (${currentTableItem.timescale_desc})`,
+                type: "" + this.stationRequest.selectedDistributionType,
+                additionalConfig: {}
+              };
+
+              if (this.stationRequest.selectedDistributionType === "point") {
+                (currentTableItem.chartTrace.type = "spline"),
+                  (currentTableItem.chartTrace.additionalConfig = {
+                    lineWidth: 0,
+                    marker: {
+                      enabled: true,
+                      radius: 2
+                    },
+                    states: {
+                      hover: {
+                        lineWidthPlus: 0
+                      }
+                    }
+                  });
+              } else if (
+                this.stationRequest.selectedDistributionType === "line"
+              ) {
+                currentTableItem.chartTrace.additionalConfig = {
+                  marker: {
+                    enabled: false
+                  }
+                };
+              }
+            } else {
+              this.dataByVariable[currentTableItem.generatedId] = [];
+            }
+
+            this.selectedElements = this.tableItems.map(e => e.generatedId);
+            this.elementsStats = this.aggregateData(
+              this.dataByVariable,
+              this.selectedElements
+            );
+
+            this.createTraces();
+            this.createTableData();
+            this.loading = false;
+          })
+          .catch(res => {
+              this.loading = false;
+              this.request_error = true;
+              this.request_error_message = res.message;
+            });
+        },
+        onRemove(removed_item) {
+          this.tableItems = this.tableItems.filter(item => item !== removed_item);
+          this.dataByVariable[
+            removed_item.generatedId
+          ] = [];
+          this.index--;
+          this.createTraces();
+          this.selectedElements = this.tableItems.map(e => {
+            return e.generatedId
+          });
+          this.elementsStats = this.aggregateData(
+            this.dataByVariable,
+            this.selectedElements
+          );
+          this.createTableData();
+        },
+        selectAllStations(){
+          this.stationRequest.selectedStations = Array.from(this.stationList);
+        },
+        invertValue(bool){
+          bool = !bool;
+        },
+        aggregateData(dataByVariable, selectedElements) {
+          const calc = (cb, fixed) => Object.keys(dataByVariable)
+              .filter(e => selectedElements.indexOf(e) > -1)
+              .filter(e => dataByVariable[e].length)
+              .map(e => {
+                return {
+                  key: e,
+                  value: cb(dataByVariable[e]).toFixed(fixed)
+                };
+              })
+              .reduce((p, c) => Object.assign({}, p, { [c.key]: c.value }), {});
+
+          const elementStats = [
+            {
+              label: "MIN",
+              values: calc(arr => arr.reduce((p, c) => (p < c ? p : c), Infinity), 2)
+            },
+            {
+              label: "MAX",
+              values: calc(
+                arr => arr.reduce((p, c) => (p > c ? p : c), -99999999),
+                2
+              )
+            },
+            {
+              label: "AVG",
+              values: calc(
+                arr => arr.reduce((p, c) => p + c, 0) / arr.length,
+                2
+              )
+            },
+            {
+              label: "SUM",
+              values: calc(arr => arr.reduce((p, c) => p + c, 0), 2)
+            },
+            {
+              label: "COUNT",
+              values: calc(arr => arr.length, 0)
+            },
+            {
+              label: "STANDARD DEVIATION",
+              values: calc(arr => {
+                const sum = arr.reduce((p, c) => p + c, 0);
+                const avg = sum / arr.length;
+                return Math.sqrt(
+                  arr
+                    .map(i => Math.pow(i - avg, 2))
+                    .reduce((p, c) => p + c, 0) / arr.length
+                );
+              }, 2)
+            }
+          ];
+
+          return elementStats;
+        },
+        exportAs(value) {
+          const values = this.tableData;
+          headers = ['Date']
+          headers.push(this.tableItems.map(item => item.station + ' - ' + item.variableName + ' (' + item.symbol + ') - (' + item.timescale_desc + ')'));
+          
+          let compareDate = "";
+          if(values.length){
+            let smallestDate = values[0]['formatedDate'];
+            let biggerDate = values[values.length-1]['formatedDate'];
+            compareDate = `${smallestDate} - ${biggerDate}`;
+          }
+
+          const exportEngine = {
+            pdf: () =>
+              this.exportAsPDF(
+                this.headers
+                  .slice(0, this.headers.length - 1)
+                  .map(e => ({ text: e.text, style: "tableHeader" })),
+                {
+                  title: `Surface Station Compare Report`,
+                  values
+                }
+              ),
+            csv: () =>
+              this.exportAsCSV(
+                headers.join(','),
+                values.map(value => {
+                  vvalues = [value.formatedDate];
+                  for(var i=0; i<value.values.length; i++){
+                    vvalues.push(value.values[i]);
+                  }
+                  return vvalues;
+                }),
+                `Surface Station Compare ${compareDate}`
+              )
+          };
+
+          exportEngine[value]();
+        },
+        exportAsPDF(headers, { title, values }, moreInfo = null) {
+          const docDefinition = this.pdfTemplate(
+            headers,
+            { title, values },
+            moreInfo
+          );
+          createPdf(docDefinition).open("");
+        },
+
+        pdfTemplate: (
+          headers,
+          { title, values },
+          additionalContent = null
+        ) => ({
+          pageOrientation: "landscape",
+          content: [
+            {
+              text: `${title}\n\n`,
+              style: "header"
+            },
+            ...(additionalContent || []),
+            {
+              text: [
+                { text: "Document created at: ", bold: true },
+                new Date().toLocaleString()
+              ]
+            },
+            {
+              text: [
+                { text: "Number of rows: ", bold: true },
+                values.length,
+                "\n"
+              ]
+            },
+            {
+              text: "\n\n\n"
+            },
+            {
+              table: {
+                headerRows: 1,
+                body: [headers, ...values]
+              }
+            }
+          ],
+          styles: {
+            header: {
+              fontSize: 18,
+              bold: true,
+              alignment: "center"
+            },
+            tableHeader: {
+              fontSize: 14,
+              bold: true
+            }
+          }
+        }),
+        exportAsCSV(headers, values, filename = null) {
+          const data = this.normalize(values.join("\n"));
+          const csvContent = `${headers} \n${data}`;
+          const blob = new Blob(
+            [new Uint8Array([0xef, 0xbb, 0xbf]), csvContent],
+            {
+              type: "text/csv;charset=utf-8"
+            }
+          );
+
+          const link = document.createElement("a");
+          document.body.appendChild(link);
+          link.setAttribute("href", URL.createObjectURL(blob));
+          link.setAttribute("download", `${filename || "surface-report"}.csv`);
+          link.click();
+          link.remove();
+        },
+        normalize(value) {
+          const replaces = [
+            [/[áàâãªä]/giu, "a"],
+            [/[ÁÀÂÃÄ]/giu, "A"],
+            [/[ÍÌÎÏ]/giu, "I"],
+            [/[íìîï]/giu, "i"],
+            [/[éèêë]/giu, "e"],
+            [/[ÉÈÊË]/giu, "E"],
+            [/[óòôõºö]/giu, "o"],
+            [/[ÓÒÔÕÖ]/giu, "O"],
+            [/[úùûü]/giu, "u"],
+            [/[ÚÙÛÜ]/giu, "U"],
+            [/ç/gi, "c"],
+            [/Ç/gi, "C"],
+            [/ñ/gi, "n"],
+            [/Ñ/gi, "N"]
+          ];
+          return replaces.reduce((p, c) => p.replace(c[0], c[1]), value);
+        },
+        updateTimescale(){
+          if (this.stationRequest.timescale !== "hourlysummaries" && this.stationRequest.timescale !== "rawdata") {
+            this.stationRequest.begin_time = "00:00";
+            this.stationRequest.end_time = "00:00";
+          }
+        },
+      },
+
+      mounted() {
+        this.timescales.forEach(time => {
+          this.timescalesSet[time.value] = time.label;
+        });
+      }
+    });
+  </script>
+</div>
+{% endblock %}

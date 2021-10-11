@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <style>
+            h1 {
+                font-size: 1.2em;
+            }
+            h2 {
+                font-size: 1em;
+            }
+            table, th, td {
+                width: 300;
+                font-size: 0.9em;
+            }        
+
+            th, td {
+                border-bottom: 1px solid #000000;
+            }            
+        </style>
+    </head>
+    <body>
+        <div style="overflow-x:auto;">
+            <h1>Station: {{ station.name }}</h1>
+            <h2>{{ now }}</h2>
+            <table>
+                <caption><strong>Current day</strong></caption>
+            {% for daily_summary in daily_summary_list %}
+
+                <tr><td>{{ daily_summary.variable.name }}</td><td align='right'>{{ daily_summary.value|floatformat:2 }} ({{ daily_summary.variable.unit.symbol }})</td></tr>
+            {% endfor %}
+            </table>
+        </div>
+    </body>
+</html>

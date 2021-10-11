@@ -1,0 +1,39 @@
+{% extends "base.html" %} {% block content %}
+<div class="jumbotron w-100">
+  <span class="srf-display-1 text-uppercase">Sensor: {{ sensor.name }}</span>
+  <div class="d-flex flex-row align-items-center mt-2 separate-items">
+    <a href="{% url 'instrument-details' sensor.id object.id %}" class="btn-outline-default btn-small">Details</a>
+    {% if user.is_superuser %}
+    <a href="{% url 'instrument-update' sensor.id object.id %}" class="btn-outline-default btn-small">Update</a>
+    <a href="{% url 'instrument-delete' sensor.id object.id %}" class="btn-outline-default btn-small">Delete</a>
+    {% endif %}
+    <a href="{% url 'instrument-list' sensor.id %}" class="btn-outline-default btn-small">Return to list</a>
+  </div>
+</div>
+<div class="srf-container">
+    {% block instrument_content %}
+    {% endblock %}
+</div>
+
+<style>
+.custom-space-top {
+  padding-top: 119px;
+}
+</style>
+
+  {% endblock %} {% block localjavascript %}
+  <script>
+    $(document).ready(function() {
+      $('#id_station_list').DataTable({
+        scrollX: true,
+        columnDefs: [
+          {
+            targets: [0, 1, 2],
+            className: 'mdl-data-table__cell--non-numeric'
+          }
+        ]
+      });
+    });
+  </script>
+</div>
+{% endblock %}

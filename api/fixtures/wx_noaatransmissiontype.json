@@ -1,0 +1,26 @@
+[
+  {
+    "model": "wx.noaatransmissiontype",
+    "pk": 1,
+    "fields": {
+      "acronym": "S",
+      "description": "Self-timed"
+    }
+  },
+  {
+    "model": "wx.noaatransmissiontype",
+    "pk": 2,
+    "fields": {
+      "acronym": "R",
+      "description": "Random"
+    }
+  },
+  {
+    "model": "wx.noaatransmissiontype",
+    "pk": 3,
+    "fields": {
+      "acronym": "U",
+      "description": "Unused"
+    }
+  }
+]

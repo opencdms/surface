@@ -1,0 +1,28 @@
+{% extends "wx/instrument_base.html" %}
+{% block instrument_content %}
+
+<div class="srf-container">
+  <div
+    class="srf-flex d-flex flex-row align-items-center justify-content-between srf-padding"
+  >
+    <span class="srf-display-1 text-uppercase">Delete instrument</span>
+  </div>
+  <div class="srf-layout flex-column srf-padding" style="width:100%;">
+    <p>Are you sure you want to <strong class="bold">delete</strong> the instrument with serial number <strong class="bold"> {{ instrument.serial_number }} </strong>?</p>
+    <form action="" method="POST">
+      {% csrf_token %}
+      <button class="btn-outline-default btn-small" type="submit">
+        Yes, delete
+      </button>
+      <a href="{% url 'instrument-details' sensor.id object.id %}">
+        <button
+          class="btn-outline-default btn-small"
+          type="button"
+        >
+          Cancel
+        </button>
+      </a>
+    </form>
+  </div>
+</div>
+{% endblock %}

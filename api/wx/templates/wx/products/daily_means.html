@@ -1,0 +1,465 @@
+{% extends "base.html" %} {% block content %}
+<div class="srf-container">
+  <div id="app" v-cloak>
+    <v-app>
+      <v-content fluid fill-height style="background: white">
+        <v-layout column>
+          <v-flex>
+            <h1 class="display-1 text-uppercase">Daily Means</h1>
+          </v-flex>
+          <v-layout column fluid>
+            <v-layout mt-3>
+              <v-flex lg4>
+                <v-autocomplete
+                  :items="stations"
+                  item-text="label"
+                  item-value="id"
+                  v-model="requestObject.stationId"
+                  label="Station"
+                  @change="onChangeStation(requestObject.stationId)"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex pl-5 lg2>
+                <v-autocomplete
+                  :items="months"
+                  item-text="label"
+                  v-model="requestObject.month"
+                  label="Month"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                  return-object
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex pl-5 lg1>
+                <v-checkbox
+                  v-model="requestObject.filter_interval"
+                  label="All years"
+                ></v-checkbox>
+              </v-flex>
+              <v-flex pl-5 lg2 :hidden="requestObject.filter_interval">
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="begin_date_menu"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      v-model="requestObject.begin_date"
+                      label="Start date"
+                      prepend-icon="event"
+                      v-on="on"
+                      required
+                      hint="*Required"
+                      persistent-hint
+                      :rules="simpleTextFieldsRules"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    name="begin_date"
+                    v-model="requestObject.begin_date"
+                    @input="begin_date_menu = false"
+                    type='month'
+                    :allowed-dates="allowedDates"
+                  ></v-date-picker>
+                </v-menu>
+              </v-flex>
+              <v-flex pl-5 lg2 :hidden="requestObject.filter_interval">
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="end_date_menu"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      v-model="requestObject.end_date"
+                      label="End date"
+                      prepend-icon="event"
+                      v-on="on"
+                      required
+                      hint="*Required"
+                      persistent-hint
+                      :rules="simpleTextFieldsRules"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    name="end_date"
+                    v-model="requestObject.end_date"
+                    @input="end_date_menu = false"
+                    type='month'
+                    :allowed-dates="allowedDates"
+                  ></v-date-picker>
+                </v-menu>
+              </v-flex>
+            </v-layout>
+            <v-layout mt-3 mb-5>
+              <v-flex lg7>
+                <v-autocomplete
+                  :items="variables"
+                  item-text="variable_name"
+                  item-value="variable"
+                  v-model="requestObject.variableIds"
+                  label="Variables"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  multiple
+                  clearable
+                  :disabled="!requestObject.stationId"
+                  :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex mt-5 ml-5 class="d-flex justify-between">
+                <v-btn
+                  justify-end
+                  outlined
+                  color="primary"
+                  small
+                  @click="getDailyMeansData"
+                  :disabled="$v.requestObject.$invalid"
+                  >SUBMIT</v-btn
+                >
+              </v-flex>
+            </v-layout>
+            <v-alert v-model="request_error" dismissible type="error">
+              [[ request_error_message ]]
+            </v-alert>
+            <v-overlay :value="loading">
+              <v-progress-circular
+                indeterminate
+                size="64"
+              ></v-progress-circular>
+            </v-overlay>
+            <v-layout mt-3 v-if="daily_means" column fluid>
+              <v-layout mt-3 mb-3>
+                <span class="srf-display-1"
+                  >Daily Means and Extreme Tabulation</span
+                >
+              </v-layout mt-3 mb-3>
+              <v-layout ml-3 column fluid>
+                <v-layout mt-3>
+                  <v-flex lg4>
+                    <span class="srf-display-2"
+                      >Station name: [[ daily_means.station.name ]]</span
+                    >
+                  </v-flex>
+                  <v-flex lg4>
+                    <span class="srf-display-2"
+                      >Month: [[ daily_means.params.month_desc ]]</span
+                    >
+                  </v-flex>
+                  <v-flex lg4>
+                    <span class="srf-display-2"
+                      >Period: [[ daily_means.params.period ]]</span
+                    >
+                  </v-flex>
+                </v-layout>
+                <v-layout mt-1>
+                  <v-flex lg4>
+                    <span class="srf-display-2"
+                      >Distrit: [[ daily_means.station.district ]]</span
+                    >
+                  </v-flex>
+                </v-layout>
+                <v-layout mt-1>
+                  <v-flex lg4>
+                    <span class="srf-display-2"
+                      >Latitude: [[ daily_means.station.latitude ]]</span
+                    >
+                  </v-flex>
+                  <v-flex lg4>
+                    <span class="srf-display-2"
+                      >Longitude: [[ daily_means.station.longitude ]]</span
+                    >
+                  </v-flex>
+                </v-layout>
+                <v-layout mt-1 mb-3>
+                  <v-flex lg4>
+                    <span class="srf-display-2"
+                      >Elevation: [[ daily_means.station.elevation ]]
+                      meters</span
+                    >
+                  </v-flex>
+                </v-layout>
+                <v-layout mt-1 mb-3 column fluid>
+                  <v-flex>
+                    <span class="srf-display-1-1">Variables:</span>
+                  </v-flex>
+                  <v-flex ml-5 v-for="(variableName, symbol) in daily_means.station.variables" :key="symbol">
+                    <span class="srf-display-2-1">[[ symbol ]]: [[ variableName ]]</span>
+                  </v-flex>
+                </v-layout>
+              </v-layout>
+              <v-layout mt-3 column fluid>
+                <table class="w-100">
+                  <tr>
+                    <th>Day</th>
+                    <th
+                      v-for="(variable, index) in daily_means.variables"
+                      :key="index"
+                      :colspan="variable.metadata.colspan"
+                      class="firstColumn"
+                    >
+                      [[variable.metadata.name]]
+                    </th>
+                  </tr>
+                  <tr>
+                    <th></th>
+                    <template v-for="variable in daily_means.variables">
+                      <th
+                        v-for="(headers, index) in variable.metadata.headers"
+                        colspan="1"
+                        v-bind:class="{ firstColumn: index == 0 }"
+                      >
+                        [[headers]]
+                      </th>
+                    </template>
+                  </tr>
+                  <tr v-for="(day, indexDay) in days">
+                    <td>[[ day ]]</td>
+                    <template v-for="variable in daily_means.variables">
+                      <td v-for="(column, index) in variable.metadata.columns" v-bind:class="{ firstColumn: index == 0 }">
+                        [[ variable.data[day] != null ?
+                        variable.data[day][column] : '-' ]]
+                      </td>
+                    </template>
+                  </tr>
+                  <tr>
+                    <td>Monthly</td>
+                    <template v-for="variable in daily_means.variables">
+                      <td v-for="(column, index) in variable.metadata.columns" v-bind:class="{ firstColumn: index == 0 }">
+                        [[ variable.summary != null ? variable.summary[column] :
+                        '-' ]]
+                      </td>
+                    </template>
+                  </tr>
+                </table>
+              </v-layout>
+            </v-layout>
+          </v-layout>
+        </v-layout>
+      </v-content>
+    </v-app>
+  </div>
+
+  {% endblock %} {% block localjavascript %}
+
+  <script>
+    Vue.use(window.vuelidate.default);
+    const { required, minLength } = window.validators;
+
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      validations: {
+        requestObject: {
+          stationId: { required },
+          variableIds: { required },
+          month: { required },
+        },
+      },
+      data: {
+        timezone: "{{ TIMEZONE_NAME|escapejs }}",
+        request_error: false,
+        request_error_message: "",
+        variables: [],
+        requestObject: {
+          stationId: null,
+          variableIds: null,
+          month: null,
+          begin_date: moment().add(-30, 'years').format('YYYY-01'),
+          end_date: moment().format('YYYY-01'),
+          filter_interval: true
+        },
+        begin_date_menu: false,
+        end_date_menu: false,
+        loading: false,
+        daily_means: null,
+        days: [  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
+                11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+        stations: [
+          {% for station in station_list %}
+          { id: {{ station.id }}, label: "{{ station.name | safe }} - {{ station.code }}"},
+          {% endfor %}
+        ],
+        months: [
+          {
+            label: "January",
+            value: 1,
+          },
+          {
+            label: "February",
+            value: 2,
+          },
+          {
+            label: "March",
+            value: 3,
+          },
+          {
+            label: "April",
+            value: 4,
+          },
+          {
+            label: "May",
+            value: 5,
+          },
+          {
+            label: "June",
+            value: 6,
+          },
+          {
+            label: "July",
+            value: 7,
+          },
+          {
+            label: "August",
+            value: 8,
+          },
+          {
+            label: "September",
+            value: 9,
+          },
+          {
+            label: "October",
+            value: 10,
+          },
+          {
+            label: "November",
+            value: 11,
+          },
+          {
+            label: "December",
+            value: 12,
+          },
+        ],
+        menu1: false,
+        menu2: false,
+        simpleTextFieldsRules: [
+          (v) => (v !== undefined && v !== "") || "This field is required",
+        ],
+      },
+      computed: {},
+      methods: {
+        getStationVariables(stationId) {
+          this.getAll(`api/stations_variables/?station_id=${stationId}`).then(
+            (data) => (this.variables = data)
+          );
+        },
+        getDailyMeansData() {
+          this.loading = true;
+          let interval_query = ""
+          if(!this.requestObject.filter_interval)
+            interval_query = `&begin_year=${moment(this.requestObject.begin_date).format('YYYY')}&end_year=${moment(this.requestObject.end_date).format('YYYY')}`
+          axios.get(`/api/daily_means/?station_id=${this.requestObject.stationId}&month=${this.requestObject.month.value}&variable_id_list=[${this.requestObject.variableIds}]${interval_query}`).then(
+            res => {
+              this.daily_means = res.data;
+              let month_desc = this.months.find(month => month.value == this.daily_means.params.month).label
+              this.daily_means.params["month_desc"] = month_desc
+              this.loading = false;
+            }
+          );
+        },
+        allowedDates(val){
+          return val.split('-')[1] == '01' // just january
+        },
+        getValueFromVariable(variable, day){
+          if(variable.data[day] != null && variable.data[day].value != null)
+            return variable.data[day].value
+          return '-'
+        },
+        getAggValueFromVariable(variable, day){
+          if(variable.data[day] != null && variable.data[day].agg_value != null)
+            return variable.data[day].agg_value
+          return '-'
+        },
+        getYearFromVariable(variable, day){
+          if(variable.data[day] != null && variable.data[day].year != null)
+            return variable.data[day].year
+          return '-'
+        },
+        getYearsFromVariable(variable, day){
+          if(variable.data[day] != null && variable.data[day].years != null)
+            return variable.data[day].years
+          return '-'
+        },
+        onChangeStation(stationId) {
+          this.getStationVariables(stationId);
+        },
+        getAll(path, url, oldData = []) {
+          return fetch(`/${path}`)
+            .then((res) => {
+              if (!res.ok) return res.json().then((err) => Promise.reject(err));
+
+              if (!res.body) {
+                return { next: null, results: [] };
+              }
+
+              return res.json();
+            })
+            .then(async (data) => {
+              if (data.results != null) {
+                const values = [...oldData, ...data.results];
+                if (!!data.next) {
+                  return await getAll(
+                    context,
+                    path,
+                    `/${path}/${data.next.substr(
+                      data.next.indexOf(`/${path}`)
+                    )}`,
+                    values
+                  );
+                }
+                return values;
+              }
+            });
+        },
+        allowedDates(val) {
+          return val.split("-")[1] == "01"; // just january
+        },
+      },
+      mounted() {
+      },
+    });
+  </script>
+
+  <style>
+    .firstColumn { 
+      border-left: 1px solid gray;
+    }
+
+    th, td {
+      padding: 3px;
+      padding-left: 10px;
+    }
+
+    .v-input--selection-controls__ripple {
+      border-radius: 50%;
+      cursor: pointer;
+      height: 34px;
+      position: absolute;
+      transition: inherit;
+      width: 34px;
+      left: -12px;
+      top: calc(50% - 24px);
+      margin: 7px;
+      z-index: 10 !important;
+    }
+  </style>
+</div>
+{% endblock %}

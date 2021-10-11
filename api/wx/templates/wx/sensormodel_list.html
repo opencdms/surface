@@ -1,0 +1,45 @@
+{% extends "base.html" %} {% block content %}
+<div class="srf-container">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 16px">
+    <span class="srf-display-1 text-uppercase">Sensors</span>
+  </div>
+  <div class="srf-layout flex-row" style="width:100%;">
+    <table id="id_station_list" class="mdl-data-table" style="width:100%">
+      <thead>
+        <tr>
+          <th>Amount</th>
+          <th>Sensor type</th>
+          <th>Model</th>
+          <th>Manufacturer</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for object in object_list %}
+        <tr>
+          <td>{{ object.amount }}</td>
+          <td>{{ object.sensor_type }}</td>
+          <td><a href="{% url 'instrument-list' object.id %}">{{ object.name }}</a></td>
+          <td>{{ object.manufacturer }}</td>
+          <td>{{ object.description|truncatechars:64 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %} {% block localjavascript %}
+<script>
+  $(document).ready(function() {
+    $('#id_station_list').DataTable({
+      scrollX: true,
+      columnDefs: [
+        {
+          targets: [1, 2, 3, 4],
+          className: 'mdl-data-table__cell--non-numeric'
+        }
+      ]
+    });
+  });
+</script>
+{% endblock %}

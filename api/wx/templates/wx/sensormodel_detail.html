@@ -1,0 +1,44 @@
+{% extends "wx/instrument_base.html" %}
+{% block instrument_content %}
+
+<div style="display: flex; justify-content: space-between; margin-bottom: 16px">
+  <span class="srf-display-1 text-uppercase">Metadata</span>
+  <!-- <a href="{% url 'instrument-list' sensor.id %}" class="btn-outline-default btn-small">Return to instrument</a> -->
+</div>
+
+<div class="srf-layout" style="width:100%;">
+  
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Name</span>
+        <span class="srf-field-content">{{ sensor.name|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Sensor type reference</span>
+        <span class="srf-field-content">{{ sensor.sensor_type|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Manufacturer</span>
+        <span class="srf-field-content">{{ sensor.manufacturer|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Description</span>
+        <span class="srf-field-content">{{ sensor.description|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+  
+{% endblock %}
+

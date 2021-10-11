@@ -1,0 +1,28 @@
+{% extends "wx/station_base.html" %}
+{% block station_content %}
+
+<div class="srf-container">
+  <div
+    class="srf-flex d-flex flex-row align-items-center justify-content-between srf-padding"
+  >
+    <span class="srf-display-1 text-uppercase">Remove variable</span>
+  </div>
+  <div class="srf-layout flex-column srf-padding" style="width:100%;">
+    <p>Are you sure you want to <strong class="bold">delete</strong> variable <strong class="bold">{{ object.variable }}</strong> from the station <strong class="bold">{{ object.station }}</strong>?</p>
+    <form method="POST">
+      {% csrf_token %}
+      <button class="btn-outline-default btn-small" type="submit">
+        Yes, delete
+      </button>
+      <a href="{% url 'stationvariable-list' station.id %}">
+        <button
+          class="btn-outline-default btn-small"
+          type="button"
+        >
+          Cancel
+        </button>
+      </a>
+    </form>
+  </div>
+</div>
+{% endblock %}

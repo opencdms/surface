@@ -1,0 +1,28 @@
+{% extends "wx/instrumentlog_base.html" %}
+{% block instrumentlog_content %}
+
+<div class="srf-container">
+  <div
+    class="srf-flex d-flex flex-row align-items-center justify-content-between srf-padding"
+  >
+    <span class="srf-display-1 text-uppercase">Delete association</span>
+  </div>
+  <div class="srf-layout flex-column srf-padding" style="width:100%;">
+    <p>Are you sure you want to <strong class="bold">delete</strong> the association between <strong class="bold">{{ instrumentlogs.station }}</strong> and <strong class="bold">{{ instrumentlogs.instrument.model }} {{ instrumentlogs.instrument }} </strong>?</p>
+    <form action="" method="POST">
+      {% csrf_token %}
+      <button class="btn-outline-default btn-small" type="submit">
+        Yes, delete
+      </button>
+      <a href="{% url 'instrumentlogs-details' instrumentlog.id %}">
+        <button
+          class="btn-outline-default btn-small"
+          type="button"
+        >
+          Cancel
+        </button>
+      </a>
+    </form>
+  </div>
+</div>
+{% endblock %}

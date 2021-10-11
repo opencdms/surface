@@ -1,0 +1,99 @@
+{% extends "base.html" %} {% block content %} {% load static %} {% load material_form %}
+<!-- <div >
+  <div
+    class="srf-flex d-flex flex-row align-items-center justify-content-between srf-padding"
+  >
+    <span class="srf-display-1 text-uppercase">Data Ingest</span>
+  </div>
+  <div class="srf-flex justify-content-between srf-padding">
+    <form enctype="multipart/form-data" method="POST">
+      {% csrf_token %}
+      <div style="max-width: 622.50px;">
+        {% form %} {% endform %}
+      </div>
+      
+    </form>
+  </div>  
+</div> -->
+
+
+<div class="srf-container" id="app" v-cloak>
+  <v-app>
+    <v-container>
+      <div
+        v-if="loading"
+      >
+        <span class="headline font-weight-thin">Loading...</span><br>
+        <v-progress-linear
+        indeterminate
+        ></v-progress-linear>
+      </div>
+      <form enctype="multipart/form-data" method="POST">
+        {% csrf_token %}
+        <v-row>
+          <v-col class="d-flex" cols="12">
+            <h1 class="srf-display-1 text-uppercase">Data Ingest</h1>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12">
+            <input type="hidden" readonly name="decoder" :value="decoder">
+            <v-select              
+              v-model="decoder"           
+              :items="decoders"
+              :value="decoder"
+            ></v-select>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12">
+            <v-file-input
+              name="file"
+              multiple
+              chips
+              clearable
+              counter
+              show-size
+              label="Files"
+            ></v-file-input>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col class="d-flex" cols="12">
+            <button type="submit" class="btn-outline-default btn-small mr-2">
+              Submit
+            </button>
+            <a href="{% url 'stations-map'%}">
+              <button type="button" class="btn-outline-default btn-small">
+                Cancel and back
+              </button>
+            </a>
+          </v-col>
+        </v-row>
+      </form>      
+    </v-container>
+  </v-app>
+</div>
+
+{% endblock %} {% block localjavascript %}
+
+<script>
+  new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      data() {
+        return {
+          loading: false,
+          decoder: 1,
+          decoders:  [
+            { value: 1, text: 'TOA5' },
+            { value: 3, text: 'HOBO' }, 
+            { value: 5, text: 'HYDROLOGY'}
+          ],
+        }
+      }
+    });
+</script>
+
+{% endblock %}

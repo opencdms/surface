@@ -1,0 +1,65 @@
+{% extends "wx/station_base.html" %}
+{% block station_content %}
+{% load material_form %}
+
+<form method="POST">
+    {% csrf_token %}
+    <div style="max-width: 311.50px;">
+        {% form %} {% endform %}
+    </div>
+    <button type="submit" class="btn-outline-default btn-small">Submit</button>
+    <a href="{% url 'stationvariable-list' station.id %}">
+        <button type="button" class="btn-outline-default btn-small">Cancel and back</button>
+    </a>
+</form>
+
+<!-- <form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="srf-flex d-flex flex-row align-items-center justify-content-between srf-padding">
+      <span class="srf-display-1 text-uppercase">Add variable to station: {{ station.name }}</span>
+  </div>
+  
+  <div class="srf-layout flex-column srf-padding" style="width:100%;">
+      
+      <div class="row mb-0 w-100">
+          <div class="col-4">
+              {{ form.as_p }}
+          </div>
+      </div>
+  </div>
+
+  <div class="srf-layout srf-padding" style="width:100%;">
+      <div class="srf-flex align-self-end">
+          <button class="mdl-button mdl-js-button btn-outline-default" type="submit">
+          Submit
+          </button>
+          <a href="{% url 'stationvariable-list' station.id %}">
+          <button class="mdl-button mdl-js-button btn-outline-default" type="button">
+              Cancel and back
+          </button>
+          </a>
+      </div>
+  </div>
+</form> -->
+
+
+<!-- <div class="srf-container">
+
+    <h1>Add variable to station</h1>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Save">
+    </form>
+
+</div> -->
+{% endblock %}
+
+{% block localjavascript %}
+<script>
+  $(document).ready(function() {
+
+    $('select').formSelect();
+
+  });
+</script>
+{% endblock %}

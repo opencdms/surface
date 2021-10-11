@@ -1,0 +1,80 @@
+[
+  {
+    "model": "wx.stationprofile",
+    "pk": 1,
+    "fields": {
+      "created_at": "2015-01-21T17:01:29Z",
+      "updated_at": "2020-05-22T22:38:34.222Z",
+      "name": "Climat",
+      "description": "Weather stations measuring Rainfall and or Temperature",
+      "color": "#005B96",
+      "is_automatic": true,
+      "is_manual": true
+    }
+  },
+  {
+    "model": "wx.stationprofile",
+    "pk": 2,
+    "fields": {
+      "created_at": "2015-01-21T17:01:29Z",
+      "updated_at": "2020-05-22T23:00:58.040Z",
+      "name": "Agro-Met",
+      "description": "Weather stations measuring elements supporting agriculture",
+      "color": "#008860",
+      "is_automatic": true,
+      "is_manual": true
+    }
+  },
+  {
+    "model": "wx.stationprofile",
+    "pk": 3,
+    "fields": {
+      "created_at": "2015-01-21T17:01:29Z",
+      "updated_at": "2020-05-22T22:39:02.568Z",
+      "name": "Rainfall",
+      "description": "HOBO rainfall stations from ONSET",
+      "color": "#3BD6C6",
+      "is_automatic": true,
+      "is_manual": true
+    }
+  },
+  {
+    "model": "wx.stationprofile",
+    "pk": 4,
+    "fields": {
+      "created_at": "2016-04-01T01:58:36Z",
+      "updated_at": "2020-05-22T22:39:27.835Z",
+      "name": "Aviation",
+      "description": "Weather station measuring parameters supporting aviation",
+      "color": "#f9f008",
+      "is_automatic": true,
+      "is_manual": true
+    }
+  },
+  {
+    "model": "wx.stationprofile",
+    "pk": 5,
+    "fields": {
+      "created_at": "2016-04-01T02:05:09Z",
+      "updated_at": "2020-05-22T22:40:10.979Z",
+      "name": "Met",
+      "description": "Weather stations measuring all basic meteorological elements; Rainfall, Temperature, Relative Humidity, Wind Speed and Direction(10m), Atmospheric Pressure and Solar Radiation",
+      "color": "#FFC621",
+      "is_automatic": true,
+      "is_manual": true
+    }
+  },
+  {
+    "model": "wx.stationprofile",
+    "pk": 6,
+    "fields": {
+      "created_at": "2019-04-17T00:08:43.943Z",
+      "updated_at": "2020-05-22T22:44:03.598Z",
+      "name": "Hydro-Met",
+      "description": "Weather stations measuring elements supporting hydrological service, such as water levels of rivers/sea and water quality",
+      "color": "black",
+      "is_automatic": true,
+      "is_manual": true
+    }
+  }
+]

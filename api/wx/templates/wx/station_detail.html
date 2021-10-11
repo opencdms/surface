@@ -1,0 +1,477 @@
+{% extends "wx/station_base.html" %}
+{% block station_content %}
+
+<div style="display: flex; justify-content: space-between; margin-bottom: 16px">
+  <span class="srf-display-1 text-uppercase">Station Metadata</span>
+</div>
+
+<div class="srf-layout" style="width:100%;">
+  
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Station name</span>
+        <span class="srf-field-content">{{ station.name }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Is active?</span>
+        <span class="srf-field-content">{% if station.is_active %}Yes{% else %}No{% endif %}</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Alias name</span>
+        <span class="srf-field-content">{{ station.alias_name }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Is automatic?</span>
+        <span class="srf-field-content">{% if station.is_automatic %}Yes{% else %}No{% endif %}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Station code</span>
+        <span class="srf-field-content">{{ station.code }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Profile</span>
+        <span class="srf-field-content">{{ station.profile }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">WMO</span>
+        <span class="srf-field-content">{{ station.wmo|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Responsible organization</span>
+        <span class="srf-field-content">{{ station.organization|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">WIGOS</span>
+        <span class="srf-field-content">{{ station.wigos|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Observer</span>
+        <span class="srf-field-content">{{ station.observer|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Begin date</span>
+        <span class="srf-field-content">{{ station.begin_date }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Data source</span>
+        <span class="srf-field-content">{{ station.data_source|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">End date</span>
+        <span class="srf-field-content">{{ station.end_date|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="col s4 mt-3">
+  <span class="srf-display-2">Other information</span>
+</div>
+
+<hr />
+
+<div class="srf-layout srf-padding" style="width:100%;">
+
+  <div class="w-100">
+    <div class="" style="max-height: 350px; width: 100%;">
+      <div id="mapid" style="width: 100%"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="srf-layout srf-padding" style="width:100%;">
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Latitude</span>
+        <span class="srf-field-content">{{ station.latitude|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Longitude</span>
+        <span class="srf-field-content">{{ station.longitude|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Elevation</span>
+        <span class="srf-field-content">{{ station.elevation|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Watershed</span>
+        <span class="srf-field-content">{{ station.watershed|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Country</span>
+        <span class="srf-field-content">{{ station.country|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Administrative region</span>
+        <span class="srf-field-content">{{ station.region|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">UTC Offset (min)</span>
+        <span class="srf-field-content">{{ station.utc_offset_minutes|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Local land use</span>
+        <span class="srf-field-content">{{ station.local_land_user|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Soil type</span>
+        <span class="srf-field-content">{{ station.soil_type|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Station details</span>
+        <span class="srf-field-content">{{ station.station_details|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Site description</span>
+        <span class="srf-field-content">{{ station.site_description|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Alternative names</span>
+        <span class="srf-field-content">{{ station.alternative_names|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="col s4 mt-3">
+  <span class="srf-display-2">Hydrology information</span>
+</div>
+
+<hr />
+
+<div class="srf-layout srf-padding" style="width:100%;">
+     
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Hydrology station type</span>
+        <span class="srf-field-content">{{ station.hydrology_station_type|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Groundwater province</span>
+        <span class="srf-field-content">{{ station.groundwater_province|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Existing gauges</span>
+        <span class="srf-field-content">{{ station.existing_gauges|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Flow direction at station</span>
+        <span class="srf-field-content">{{ station.flow_direction_at_station|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Flow direction above station</span>
+        <span class="srf-field-content">{{ station.flow_direction_above_station|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Flow direction below station</span>
+        <span class="srf-field-content">{{ station.flow_direction_below_station|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Bank full stage</span>
+        <span class="srf-field-content">{{ station.bank_full_stage|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Bridge level</span>
+        <span class="srf-field-content">{{ station.bridge_level|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Temporary benckmark (TBM)</span>
+        <span class="srf-field-content">{{ station.temporary_benchmark|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Mean sea level (MSL)</span>
+        <span class="srf-field-content">{{ station.mean_sea_level|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">River code</span>
+        <span class="srf-field-content">{{ station.river_code|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">River course</span>
+        <span class="srf-field-content">{{ station.river_course|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Catchment area at station code</span>
+        <span class="srf-field-content">{{ station.catchment_area_station|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">River origin</span>
+        <span class="srf-field-content">{{ station.river_origin|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Easting</span>
+        <span class="srf-field-content">{{ station.easting|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Northing</span>
+        <span class="srf-field-content">{{ station.northing|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">River outlet</span>
+        <span class="srf-field-content">{{ station.river_outlet|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Length of river</span>
+        <span class="srf-field-content">{{ station.river_length|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Z</span>
+        <span class="srf-field-content">{{ station.z|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Land surface elevation (LSE)</span>
+        <span class="srf-field-content">{{ station.land_surface_elevation|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Top of casing to land surface (c)</span>
+        <span class="srf-field-content">{{ station.top_casing_land_surface|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Casing diameter</span>
+        <span class="srf-field-content">{{ station.casing_diameter|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Screen length (SL)</span>
+        <span class="srf-field-content">{{ station.screen_length|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Depth to midpoint of well screen (hp)</span>
+        <span class="srf-field-content">{{ station.depth_midpoint|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Casing type</span>
+        <span class="srf-field-content">{{ station.casing_type|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Datum</span>
+        <span class="srf-field-content">{{ station.datum|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Zone</span>
+        <span class="srf-field-content">{{ station.zone|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+  
+{% endblock %}
+
+{% block localjavascript %}
+  <script>
+    $(document).ready(function() {
+
+      var mymap = L.map('mapid', {
+        zoomControl: true
+      }).setView([51.505, -0.09], 13);
+      
+      var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      var osmAttrib =
+      'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+      var osm = new L.TileLayer(osmUrl, {
+        minZoom: 8,
+        maxZoom: 12,
+        attribution: osmAttrib
+      });
+
+      // scroll zoom only works if the user click on the map
+      mymap.scrollWheelZoom.disable();
+      mymap.on('focus', () => { mymap.scrollWheelZoom.enable(); });
+      mymap.on('blur', () => { mymap.scrollWheelZoom.disable(); });
+      
+      // add zoom control with bottomleft options
+      mymap.zoomControl.setPosition('bottomleft');
+
+      // Get station information
+      var latitude = "{{station.latitude}}";
+      var longitude = "{{station.longitude}}";
+
+      // Add marker to map
+      var marker = L.marker([latitude, longitude], { title: "My marker" }).addTo(mymap);
+
+      // start the map at the marker
+      mymap.setView(new L.LatLng(latitude, longitude), 8);
+      mymap.addLayer(osm);
+
+    });
+  </script>
+</div>
+{% endblock %}
+

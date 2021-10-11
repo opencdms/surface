@@ -1,0 +1,92 @@
+[
+  {
+    "model": "wx.samplingoperation",
+    "pk": 1,
+    "fields": {
+      "created_at": "2019-04-08T00:35:21.293Z",
+      "updated_at": "2019-04-08T00:35:21.293Z",
+      "symbol": "INST",
+      "name": "Instantaneous"
+    }
+  },
+  {
+    "model": "wx.samplingoperation",
+    "pk": 2,
+    "fields": {
+      "created_at": "2019-04-08T00:35:34.806Z",
+      "updated_at": "2019-04-08T00:35:34.806Z",
+      "symbol": "AVG",
+      "name": "Average"
+    }
+  },
+  {
+    "model": "wx.samplingoperation",
+    "pk": 3,
+    "fields": {
+      "created_at": "2019-04-08T00:35:45.781Z",
+      "updated_at": "2019-04-08T00:35:45.781Z",
+      "symbol": "MIN",
+      "name": "Minimum"
+    }
+  },
+  {
+    "model": "wx.samplingoperation",
+    "pk": 4,
+    "fields": {
+      "created_at": "2019-04-08T00:36:03.448Z",
+      "updated_at": "2019-04-08T00:36:03.448Z",
+      "symbol": "MAX",
+      "name": "Maximum"
+    }
+  },
+  {
+    "model": "wx.samplingoperation",
+    "pk": 5,
+    "fields": {
+      "created_at": "2019-04-08T00:36:18.939Z",
+      "updated_at": "2019-04-08T00:36:18.939Z",
+      "symbol": "STDV",
+      "name": "Standard Deviation"
+    }
+  },
+  {
+    "model": "wx.samplingoperation",
+    "pk": 6,
+    "fields": {
+      "created_at": "2019-04-08T00:36:33.623Z",
+      "updated_at": "2019-04-08T00:36:33.623Z",
+      "symbol": "ACCUM",
+      "name": "Accumulation"
+    }
+  },
+  {
+    "model": "wx.samplingoperation",
+    "pk": 7,
+    "fields": {
+      "created_at": "2019-04-08T00:36:48.622Z",
+      "updated_at": "2019-04-08T00:36:48.623Z",
+      "symbol": "COUNT",
+      "name": "Counter"
+    }
+  },
+  {
+    "model": "wx.samplingoperation",
+    "pk": 8,
+    "fields": {
+      "created_at": "2019-04-08T00:37:00.718Z",
+      "updated_at": "2019-04-08T00:37:00.718Z",
+      "symbol": "RMS",
+      "name": "Root Mean Square"
+    }
+  },
+  {
+    "model": "wx.samplingoperation",
+    "pk": 9,
+    "fields": {
+      "created_at": "2019-04-08T00:37:14.406Z",
+      "updated_at": "2019-04-08T00:37:14.406Z",
+      "symbol": "DELTA",
+      "name": "Variation between measurements"
+    }
+  }
+]

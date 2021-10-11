@@ -1,0 +1,93 @@
+{% extends "wx/instrument_base.html" %}
+{% block instrument_content %}
+
+<div class="srf-layout" style="width:100%;">
+  
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Serial number</span>
+        <span class="srf-field-content">{{ instrument.serial_number|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Other reference</span>
+        <span class="srf-field-content">{{ instrument.other_reference|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">First received</span>
+        <span class="srf-field-content">{{ instrument.first_received|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Donated by</span>
+        <span class="srf-field-content">{{ instrument.donated_by|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">First deployed</span>
+        <span class="srf-field-content">{{ instrument.first_deployed|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Last deployed</span>
+        <span class="srf-field-content">{{ instrument.last_deployed|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Last calibration</span>
+        <span class="srf-field-content">{{ instrument.last_calibration|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Next calibration</span>
+        <span class="srf-field-content">{{ instrument.next_calibration|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+      <div class="col s4">
+        <div class="srf-field">
+          <span class="srf-field-header">Model</span>
+          <span class="srf-field-content">{{ instrument.model|default:'-' }}</span>
+        </div>
+      </div>
+      <div class="col s4">
+        <div class="srf-field">
+          <span class="srf-field-header">Subsection</span>
+          <span class="srf-field-content">{{ instrument.subsection|default:'-' }}</span>
+        </div>
+      </div>
+    </div>
+  
+    <div class="row w-100">
+        <div class="col s4">
+          <div class="srf-field">
+            <span class="srf-field-header">Description</span>
+            <span class="srf-field-content">{{ instrument.description|default:'-' }}</span>
+          </div>
+        </div>
+      </div>
+    
+    </div>
+  
+{% endblock %}
+

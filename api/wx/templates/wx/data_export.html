@@ -1,0 +1,544 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<div class="srf-container" style="max-height: 280px">
+  <div
+    class="srf-flex flex-row align-items-center justify-content-between srf-padding"
+  >
+    <span class="srf-display-1 text-uppercase">Data Export</span><br /><br />
+  </div>
+  <div class="srf-flex justify-content-between srf-padding" id="app" v-cloak>
+    <v-app>
+      <div>
+        <form class="col l12">
+          <h6>Station Filters</h6>
+          <v-row dense justify="start" class="mb-3">
+            <v-col class="text-center" cols="3">
+              <v-autocomplete
+                item-text="name"
+                item-value="name"
+                v-model="filter.stationDistrict"
+                :items="stationDistrictList"
+                label="District"
+                autocomplete="off"
+                clearable
+              ></v-autocomplete>
+            </v-col>
+            <v-col class="text-center" cols="3">
+              <v-autocomplete
+                item-text="name"
+                item-value="name"
+                v-model="filter.stationWatershed"
+                :items="stationWatershedList"
+                label="Watershed"
+                autocomplete="off"
+                clearable
+              ></v-autocomplete>
+            </v-col>
+            <v-col class="text-center" cols="2">
+              <v-autocomplete
+                item-text="name"
+                item-value="id"
+                v-model="filter.stationProfile"
+                :items="stationProfileList"
+                label="Profile"
+                autocomplete="off"
+                clearable
+              ></v-autocomplete>
+            </v-col>
+            <v-col class="text-center" cols="1">
+              <v-switch
+                v-model="filter.isActive"
+                @change="invertValue(filter.isActive)"
+                label="Active"
+              ></v-switch>
+            </v-col>
+            <v-col class="text-center" cols="1">
+              <v-switch
+                v-model="filter.isAutomatic"
+                @change="invertValue(filter.isAutomatic)"
+                label="Automatic"
+              ></v-switch>
+            </v-col>
+            <v-col class="text-center" cols="2">
+              <v-btn
+                class="ml-2"
+                outlined
+                justify-end
+                color="primary"
+                @click="selectAllStations"
+                >Select All</v-btn
+              >
+            </v-col>
+          </v-row>
+          <v-row dense justify="start" class="pt-3">
+            <v-col class="text-center" cols="6">
+              <v-autocomplete
+                v-model="station"
+                :items="stationList"
+                :search-input.sync="searchStations"
+                label="Station"
+                multiple
+                chips
+                deletable-chips
+                small-chips
+                return-object
+                autocomplete="off"
+                clearable
+              ></v-autocomplete>
+            </v-col>
+            <v-col class="text-center" cols="3">
+              <v-select
+                v-model="source"
+                :items="sources"
+                label="Data Source"
+                return-object
+                v-on:change="onChangeTimescale"
+              ></v-select>
+            </v-col>
+                        
+            <v-col class="text-center" cols="3" v-if="source.source === 'raw_data'">
+              <v-select
+              v-model="dataInterval"
+              :items="dataIntervals"
+              label="Data Interval"
+              ></v-select>
+            </v-col>
+          </v-row>
+          <v-row dense justify="start">
+            <v-col class="text-center" cols="12">
+              <v-autocomplete
+                v-model="variables"
+                :items="variable_list"
+                :search-input.sync="searchVariables"
+                label="Variables"
+                multiple
+                chips
+                deletable-chips
+                small-chips
+                return-object
+                autocomplete="off"
+                clearable
+              ></v-autocomplete>
+            </v-col>
+          </v-row>
+          <v-row dense justify="start">
+            <v-col class="text-center" cols="3">
+              <v-menu
+                :close-on-content-click="false"
+                v-model="initial_date_menu"
+                transition="scale-transition"
+                offset-y
+                class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                    v-model="initial_date"
+                    label="Initial date"
+                    prepend-icon="event"
+                    v-on="on"
+                    required
+                    persistent-hint
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                  v-model="initial_date"
+                  @input="initial_date_menu = false"
+                  :type="getDatepickFormat()"
+                  :allowed-dates="allowedDates"
+                ></v-date-picker>
+              </v-menu>
+            </v-col>
+            <v-col class="text-center" cols="3">
+              <v-menu
+                v-if="source.source === 'hourly_summary' || source.source === 'raw_data'"
+                :close-on-content-click="false"
+                v-model="initial_time_menu"
+                transition="scale-transition"
+                offset-y
+                class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                    v-model="initial_time"
+                    label="Initial time"
+                    v-on="on"
+                    prepend-icon="access_time"
+                    required
+                    persistent-hint
+                  ></v-text-field>
+                </template>
+                <v-time-picker v-model="initial_time"></v-time-picker>
+              </v-menu>
+            </v-col>
+
+            <v-col class="text-center" cols="3">
+              <v-menu
+                :close-on-content-click="false"
+                v-model="final_date_menu"
+                transition="scale-transition"
+                offset-y
+                class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                    v-model="final_date"
+                    label="Final date"
+                    v-on="on"
+                    required
+                    prepend-icon="event"
+                    persistent-hint
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                  v-model="final_date"
+                  @input="final_date_menu = false"
+                  :type="getDatepickFormat()"
+                  :allowed-dates="allowedDates"
+                ></v-date-picker>
+              </v-menu>
+            </v-col>
+
+            <v-col class="text-center" cols="3">
+              <v-menu
+                v-if="source.source === 'hourly_summary' || source.source === 'raw_data'"
+                :close-on-content-click="false"
+                v-model="final_time_menu"
+                transition="scale-transition"
+                offset-y
+                class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                    v-model="final_time"
+                    label="Final time"
+                    prepend-icon="access_time"
+                    v-on="on"
+                    required
+                    persistent-hint
+                  ></v-text-field>
+                </template>
+                <v-time-picker v-model="final_time"></v-time-picker>
+              </v-menu>
+            </v-col>
+          </v-row>
+          <v-row dense justify="start">
+            <v-col class="text-center" cols="auto">
+              <v-btn
+                small
+                @click="exportCSV()"
+                :disabled="variables.length == 0"
+              >
+                Export CSV
+                <i class="material-icons right">send</i>
+              </v-btn>
+            </v-col>
+          </v-row>
+        </form>
+        <v-alert v-model="request_error" dismissible type="error">
+          [[ request_error_message ]]
+        </v-alert>
+        <v-divider class="pa-3"></v-divider>
+        <v-flex v-if="documents.length > 0">
+          <span class="srf-display-2 text-uppercase">Files</span><br /><br />
+        </v-flex>
+        <v-row dense v-if="documents.length > 0" justify="center">
+          <v-overlay :value="loading">
+            <v-progress-circular indeterminate size="64"></v-progress-circular>
+          </v-overlay>
+          <v-data-table
+            ref="documents_table"
+            :headers="documents_headers"
+            :items="documents"
+            :items-per-page="5"
+            class="elevation-1"
+            sort-by="id"
+            sort-desc
+            dense
+            calculate-widths
+            show-expand
+          >
+            <template v-slot:item.action="{ item }">
+              <v-tooltip bottom v-if="item.status.value == 1">
+                <template v-slot:activator="{ on }">
+                  <v-icon small class="mr-2" @click="download(item)" v-on="on">
+                    get_app
+                  </v-icon>
+                </template>
+                <span>Download file</span>
+              </v-tooltip>
+              <v-tooltip bottom v-if="showDeleteAction">
+                <template v-slot:activator="{ on }">
+                  <v-icon small @click="deleteItem(item)" v-on="on">
+                    delete
+                  </v-icon>
+                </template>
+                <span>Delete file</span>
+              </v-tooltip>
+            </template>
+            <template v-slot:expanded-item="{ item, headers }">
+              <td colspan="5">
+                <span class="subtitle-1 font-weight-bold">Variables:</span
+                ><br />
+                <span class="text-end" v-for="v in item.variables"
+                  >&nbsp;&nbsp;&nbsp;[[ v ]]<br
+                /></span>
+              </td>
+              <td colspan="2">
+                <span class="subtitle-1 font-weight-bold">Source:</span><br />
+                <span class="text-end"
+                  >&nbsp;&nbsp;&nbsp;[[ item.source.text ]]<br
+                /></span>
+                <span class="subtitle-1 font-weight-bold">Initial date:</span
+                ><br />
+                <span class="text-end"
+                  >&nbsp;&nbsp;&nbsp;[[ item.initial_date ]]<br
+                /></span>
+                <span class="subtitle-1 font-weight-bold">Final date:</span
+                ><br />
+                <span class="text-end"
+                  >&nbsp;&nbsp;&nbsp;[[ item.final_date ]]<br
+                /></span>
+              </td>
+            </template>
+          </v-data-table>
+        </v-row>
+      </div>
+    </v-app>
+  </div>
+</div>
+
+{% endblock %} {% block localjavascript %}
+
+<script>
+  (function() {
+    const date = new Date();
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      data: {
+        hours: (function() {
+          const hours = [];
+          hours.length = 24;
+          hours.fill('');
+          return hours.map((el, index) => `${index < 10 ? '0' : ''}${index}:00`);
+        })(),
+        loading: false,
+        station: [],
+        searchStations: null,
+        showDeleteAction: false,
+        stations: [
+          {% for station in station_list %}
+          { value: {{ station.id }},
+            text: "{{ station.name | safe }} - {{ station.code }}",
+            name: "{{ station.name | safe }}",
+            code: "{{ station.code }}",
+            region: "{{ station.region | safe }}",
+            watershed: "{{ station.watershed | safe }}",
+            profile: "{{ station.profile.id | safe }}",
+            is_automatic: {{ station.is_automatic | lower }},
+            is_active: {{ station.is_active | lower }},
+          },
+          {% endfor %}
+        ],
+        timezone: "{{ TIMEZONE_NAME|escapejs }}",
+        documents: [],
+        documents_headers: [
+          { text: "Id", value: "id", align: "left"},
+          { text: "Station", value: "station", align: "left"},
+          { text: "Prepared by", value: "prepared_by", align: "left"},
+          { text: "Requested at", value: "request_date", align: "left"},
+          { text: "Ready at", value: "ready_date", align: "left"},
+          { text: "Status", value: "status", align: "left"},
+          { text: "Lines", value: "lines", align: "left"},
+          { text: 'Actions', value: 'action', align: "center", sortable: false },
+        ],
+        variables: [],
+        searchVariables: null,
+        variables_headers: [
+          { text: "Variable", value: "variable", align: "left"},
+          { text: "Aggregation type", value: "agg", align: "right"},
+          { text: 'Actions', value: 'action', align: "center", sortable: false },
+        ],
+        variable_list: [
+          {% for variable in variable_list %}
+          {
+            value: {{ variable.id }},
+            text: "{{ variable.name }}",
+          },
+          {% endfor %}
+        ],
+        source: {value: 0, text: "Raw data", source: "raw_data"},
+        sources: [
+          {value: 0, text: "Raw data", source: "raw_data"},
+          {value: 1, text: "Hourly summary", source: "hourly_summary"},
+          {value: 2, text: "Daily summary", source: "daily_summary"},
+          {value: 3, text: "Monthly summary", source: "monthly_summary"},
+          {value: 4, text: "Yearly summary", source: "yearly_summary"},
+        ],
+        initial_date: moment().format('YYYY-MM-DD'),
+        initial_time: '00:00',
+        final_date: moment().add(1, 'days').format('YYYY-MM-DD'),
+        final_time: '00:00',
+        initial_date_menu: false,
+        initial_time_menu: false,
+        final_date_menu: false,
+        final_time_menu: false,
+        request_error: false,
+        request_error_message: '',
+        filter: {
+          isActive: true,
+          isAutomatic: true
+        },
+        dataInterval:300,
+        dataIntervals: [
+          {% for interval in interval_list %}
+          {value: {{ interval.seconds }}, text: "{{ interval.description }}" },
+          {% endfor %}
+        ],
+        stationProfileList: [
+          {% for station_profile in station_profile_list %}
+          {id: {{ station_profile.id }}, name: "{{ station_profile.name }}" },
+          {% endfor %}
+        ],
+        stationWatershedList: [
+          {% for station_watershed in station_watershed_list %}
+          {id: {{ station_watershed.id }}, name: "{{ station_watershed.watershed }}" },
+          {% endfor %}
+        ],
+        stationDistrictList: [
+          {% for station_district in station_district_list %}
+          {id: {{ station_district.id }}, name: "{{ station_district.name }}" },
+          {% endfor %}
+        ],
+      },
+      watch: {
+        station (newSelectedArray, oldSelectedArray) {
+          this.searchStations = '';
+        },
+        variables (newSelectedArray, oldSelectedArray) {
+          this.searchVariables = '';
+        }
+      },
+      computed: {
+        stationList () {
+          let filteredStations = this.stations;
+
+          if(this.filter.stationDistrict)
+            filteredStations = filteredStations.filter(station => station.region == this.filter.stationDistrict);
+
+          if(this.filter.stationWatershed)
+            filteredStations = filteredStations.filter(station => station.watershed == this.filter.stationWatershed);
+
+          if(this.filter.stationProfile)
+            filteredStations = filteredStations.filter(station => station.profile == this.filter.stationProfile);
+
+          filteredStations = filteredStations.filter(station => this.filter.isAutomatic == station.is_automatic);
+
+          filteredStations = filteredStations.filter(station => this.filter.isActive == station.is_active);
+
+          return filteredStations;
+        }
+      },
+      methods: {
+        getDatepickFormat(){
+            return this.source.source === "monthly_summary" || this.source.source === "yearly_summary" ? 'month': 'date';
+        },
+        allowedDates(val){
+          if(this.source.source === "yearly_summary")
+            return val.split('-')[1] == '01' // just january
+          return true;
+        },
+        getStationCode(name) {
+          return this.stations.find(s => s.name == name).code;
+        },
+        formatDatetimeForRequest(datetime){
+            return datetime.clone().tz(this.timezone, true).utc().format('YYYY-MM-DD HH:mm:ss');
+        },
+        handleServerDatetime(datetime){
+          return datetime ? moment.utc(datetime).tz(this.timezone).format('YYYY-MM-DD HH:mm:ss'): null;
+        },
+        selectAllStations(){
+          this.station = this.stationList;
+        },
+        onChangeTimescale(){
+          if(this.source.source === 'monthly_summary') {
+            this.initial_date = moment().format('YYYY-MM')
+            this.final_date = moment().add(1, 'month').format('YYYY-MM')
+            this.initial_time = '00:00'
+            this.final_time = '00:00'
+          } else if(this.source.source === 'yearly_summary') {
+            this.initial_date = moment().format('YYYY-01')
+            this.final_date = moment().add(1, 'year').format('YYYY-01')
+            this.initial_time = '00:00'
+            this.final_time = '00:00'
+          } else if(this.source.source === 'daily_summary') {
+            this.initial_time = '00:00'
+            this.final_time = '00:00'
+          }
+        },
+        invertValue(bool){
+          bool = !bool;
+        },
+        exportCSV() {
+          this.loading = true;
+
+          let start_datetime = moment(`${this.initial_date} ${this.initial_time}`)
+          let end_datetime = moment(`${this.final_date} ${this.final_time}`)
+
+          axios.post("schedule/", {
+            multiple: true,
+            stations: this.station.map(s => s.value),
+            source: this.source.source,
+            start_datetime: this.formatDatetimeForRequest(start_datetime),
+            end_datetime: this.formatDatetimeForRequest(end_datetime),
+            variables: this.variables.map(v => v.value),
+            data_interval: this.dataInterval
+          }).then(data => {
+            this.updateTable()
+            this.loading = false;
+          }).catch(err => {
+            this.loading = false;
+            this.request_error = true;
+            this.request_error_message = err.response.data.message;
+          })
+        },
+        updateTable() {
+          axios.get('files/').then(res => {
+              res.data.forEach(record => {
+                record.request_date =  this.handleServerDatetime(record.request_date);
+                record.ready_date =  this.handleServerDatetime(record.ready_date);
+                record.initial_date =  this.handleServerDatetime(record.initial_date);
+                record.final_date =  this.handleServerDatetime(record.final_date);
+              });
+              this.documents = res.data
+            });
+          this.$forceUpdate();
+        },
+        download(item) {
+          window.open('download/?id='+item.id)
+        },
+        deleteItem(item) {
+          this.loading = true;
+          axios.get('delete/?id='+item.id).then(data => {
+            this.updateTable();
+            this.loading = false;
+          });
+        },
+      },
+      mounted() {
+
+        const userPermissions = {{USER_PERMISSIONS|safe}};
+
+        const dataInventoryPermissions = userPermissions['data-export'];
+        if(dataInventoryPermissions && dataInventoryPermissions.includes("delete"))
+          this.showDeleteAction = true;
+
+        this.updateTable();
+        setInterval(this.updateTable, 10000)
+      }
+    })
+  })();
+</script>
+
+{% endblock %}

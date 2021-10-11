@@ -1,0 +1,2672 @@
+[
+  {
+    "model": "wx.country",
+    "pk": 1,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AF",
+      "name": "Afghanistan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 2,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AL",
+      "name": "Albania"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 3,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "DZ",
+      "name": "Algeria"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 4,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AD",
+      "name": "Andorra"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 5,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AO",
+      "name": "Angola"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 6,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AG",
+      "name": "Antigua and Barbuda"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 7,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AR",
+      "name": "Argentina"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 8,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AM",
+      "name": "Armenia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 9,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AU",
+      "name": "Australia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 10,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AT",
+      "name": "Austria"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 11,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AZ",
+      "name": "Azerbaijan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 12,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BS",
+      "name": "Bahamas, The"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 13,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BH",
+      "name": "Bahrain"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 14,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BD",
+      "name": "Bangladesh"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 15,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BB",
+      "name": "Barbados"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 16,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BY",
+      "name": "Belarus"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 17,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BE",
+      "name": "Belgium"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 18,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BZ",
+      "name": "Belize"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 19,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BJ",
+      "name": "Benin"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 20,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BT",
+      "name": "Bhutan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 21,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BO",
+      "name": "Bolivia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 22,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BA",
+      "name": "Bosnia and Herzegovina"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 23,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BW",
+      "name": "Botswana"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 24,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BR",
+      "name": "Brazil"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 25,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BN",
+      "name": "Brunei"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 26,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BG",
+      "name": "Bulgaria"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 27,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BF",
+      "name": "Burkina Faso"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 28,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BI",
+      "name": "Burundi"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 29,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KH",
+      "name": "Cambodia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 30,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CM",
+      "name": "Cameroon"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 31,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CA",
+      "name": "Canada"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 32,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CV",
+      "name": "Cape Verde"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 33,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CF",
+      "name": "Central African Republic"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 34,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TD",
+      "name": "Chad"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 35,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CL",
+      "name": "Chile"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 36,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CN",
+      "name": "China, People's Republic of"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 37,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CO",
+      "name": "Colombia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 38,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KM",
+      "name": "Comoros"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 39,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CD",
+      "name": "Congo, (Congo \u00c2\u2013 Kinshasa)"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 40,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CG",
+      "name": "Congo, (Congo \u00c2\u2013 Brazzaville)"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 41,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CR",
+      "name": "Costa Rica"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 42,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CI",
+      "name": "Cote d'Ivoire (Ivory Coast)"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 43,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "HR",
+      "name": "Croatia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 44,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CU",
+      "name": "Cuba"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 45,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CY",
+      "name": "Cyprus"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 46,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CZ",
+      "name": "Czech Republic"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 47,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "DK",
+      "name": "Denmark"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 48,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "DJ",
+      "name": "Djibouti"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 49,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "DM",
+      "name": "Dominica"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 50,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "DO",
+      "name": "Dominican Republic"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 51,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "EC",
+      "name": "Ecuador"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 52,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "EG",
+      "name": "Egypt"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 53,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SV",
+      "name": "El Salvador"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 54,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GQ",
+      "name": "Equatorial Guinea"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 55,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ER",
+      "name": "Eritrea"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 56,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "EE",
+      "name": "Estonia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 57,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ET",
+      "name": "Ethiopia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 58,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "FJ",
+      "name": "Fiji"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 59,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "FI",
+      "name": "Finland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 60,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "FR",
+      "name": "France"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 61,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GA",
+      "name": "Gabon"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 62,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GM",
+      "name": "Gambia, The"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 63,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GE",
+      "name": "Georgia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 64,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "DE",
+      "name": "Germany"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 65,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GH",
+      "name": "Ghana"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 66,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GR",
+      "name": "Greece"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 67,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GD",
+      "name": "Grenada"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 68,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GT",
+      "name": "Guatemala"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 69,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GN",
+      "name": "Guinea"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 70,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GW",
+      "name": "Guinea-Bissau"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 71,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GY",
+      "name": "Guyana"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 72,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "HT",
+      "name": "Haiti"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 73,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "HN",
+      "name": "Honduras"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 74,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "HU",
+      "name": "Hungary"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 75,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IS",
+      "name": "Iceland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 76,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IN",
+      "name": "India"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 77,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ID",
+      "name": "Indonesia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 78,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IR",
+      "name": "Iran"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 79,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IQ",
+      "name": "Iraq"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 80,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IE",
+      "name": "Ireland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 81,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IL",
+      "name": "Israel"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 82,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IT",
+      "name": "Italy"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 83,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "JM",
+      "name": "Jamaica"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 84,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "JP",
+      "name": "Japan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 85,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "JO",
+      "name": "Jordan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 86,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KZ",
+      "name": "Kazakhstan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 87,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KE",
+      "name": "Kenya"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 88,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KI",
+      "name": "Kiribati"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 89,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KP",
+      "name": "Korea, North"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 90,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KR",
+      "name": "Korea, South"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 91,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KW",
+      "name": "Kuwait"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 92,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KG",
+      "name": "Kyrgyzstan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 93,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LA",
+      "name": "Laos"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 94,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LV",
+      "name": "Latvia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 95,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LB",
+      "name": "Lebanon"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 96,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LS",
+      "name": "Lesotho"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 97,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LR",
+      "name": "Liberia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 98,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LY",
+      "name": "Libya"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 99,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LI",
+      "name": "Liechtenstein"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 100,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LT",
+      "name": "Lithuania"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 101,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LU",
+      "name": "Luxembourg"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 102,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MK",
+      "name": "Macedonia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 103,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MG",
+      "name": "Madagascar"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 104,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MW",
+      "name": "Malawi"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 105,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MY",
+      "name": "Malaysia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 106,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MV",
+      "name": "Maldives"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 107,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ML",
+      "name": "Mali"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 108,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MT",
+      "name": "Malta"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 109,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MH",
+      "name": "Marshall Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 110,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MR",
+      "name": "Mauritania"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 111,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MU",
+      "name": "Mauritius"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 112,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MX",
+      "name": "Mexico"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 113,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "FM",
+      "name": "Micronesia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 114,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MD",
+      "name": "Moldova"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 115,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MC",
+      "name": "Monaco"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 116,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MN",
+      "name": "Mongolia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 117,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ME",
+      "name": "Montenegro"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 118,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MA",
+      "name": "Morocco"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 119,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MZ",
+      "name": "Mozambique"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 120,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MM",
+      "name": "Myanmar (Burma)"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 121,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NA",
+      "name": "Namibia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 122,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NR",
+      "name": "Nauru"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 123,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NP",
+      "name": "Nepal"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 124,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NL",
+      "name": "Netherlands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 125,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NZ",
+      "name": "New Zealand"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 126,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NI",
+      "name": "Nicaragua"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 127,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NE",
+      "name": "Niger"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 128,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NG",
+      "name": "Nigeria"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 129,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NO",
+      "name": "Norway"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 130,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "OM",
+      "name": "Oman"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 131,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PK",
+      "name": "Pakistan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 132,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PW",
+      "name": "Palau"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 133,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PA",
+      "name": "Panama"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 134,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PG",
+      "name": "Papua New Guinea"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 135,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PY",
+      "name": "Paraguay"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 136,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PE",
+      "name": "Peru"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 137,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PH",
+      "name": "Philippines"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 138,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PL",
+      "name": "Poland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 139,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PT",
+      "name": "Portugal"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 140,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "QA",
+      "name": "Qatar"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 141,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "RO",
+      "name": "Romania"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 142,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "RU",
+      "name": "Russia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 143,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "RW",
+      "name": "Rwanda"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 144,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KN",
+      "name": "Saint Kitts and Nevis"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 145,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LC",
+      "name": "Saint Lucia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 146,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "VC",
+      "name": "Saint Vincent and the Grenadines"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 147,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "WS",
+      "name": "Samoa"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 148,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SM",
+      "name": "San Marino"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 149,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ST",
+      "name": "Sao Tome and Principe"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 150,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SA",
+      "name": "Saudi Arabia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 151,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SN",
+      "name": "Senegal"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 152,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "RS",
+      "name": "Serbia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 153,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SC",
+      "name": "Seychelles"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 154,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SL",
+      "name": "Sierra Leone"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 155,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SG",
+      "name": "Singapore"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 156,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SK",
+      "name": "Slovakia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 157,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SI",
+      "name": "Slovenia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 158,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SB",
+      "name": "Solomon Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 159,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SO",
+      "name": "Somalia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 160,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ZA",
+      "name": "South Africa"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 161,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ES",
+      "name": "Spain"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 162,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "LK",
+      "name": "Sri Lanka"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 163,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SD",
+      "name": "Sudan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 164,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SR",
+      "name": "Suriname"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 165,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SZ",
+      "name": "Swaziland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 166,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SE",
+      "name": "Sweden"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 167,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CH",
+      "name": "Switzerland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 168,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SY",
+      "name": "Syria"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 169,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TJ",
+      "name": "Tajikistan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 170,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TZ",
+      "name": "Tanzania"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 171,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TH",
+      "name": "Thailand"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 172,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TL",
+      "name": "Timor-Leste (East Timor)"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 173,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TG",
+      "name": "Togo"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 174,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TO",
+      "name": "Tonga"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 175,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TT",
+      "name": "Trinidad and Tobago"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 176,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TN",
+      "name": "Tunisia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 177,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TR",
+      "name": "Turkey"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 178,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TM",
+      "name": "Turkmenistan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 179,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TV",
+      "name": "Tuvalu"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 180,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UG",
+      "name": "Uganda"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 181,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UA",
+      "name": "Ukraine"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 182,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AE",
+      "name": "United Arab Emirates"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 183,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GB",
+      "name": "United Kingdom"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 184,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "US",
+      "name": "United States"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 185,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UY",
+      "name": "Uruguay"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 186,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UZ",
+      "name": "Uzbekistan"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 187,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "VU",
+      "name": "Vanuatu"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 188,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "VA",
+      "name": "Vatican City"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 189,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "VE",
+      "name": "Venezuela"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 190,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "VN",
+      "name": "Vietnam"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 191,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "YE",
+      "name": "Yemen"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 192,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ZM",
+      "name": "Zambia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 193,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "ZW",
+      "name": "Zimbabwe"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 194,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GE",
+      "name": "Abkhazia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 195,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TW",
+      "name": "China, Republic of (Taiwan)"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 196,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AZ",
+      "name": "Nagorno-Karabakh"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 197,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CY",
+      "name": "Northern Cyprus"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 198,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MD",
+      "name": "Pridnestrovie (Transnistria)"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 199,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SO",
+      "name": "Somaliland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 200,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GE",
+      "name": "South Ossetia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 201,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AU",
+      "name": "Ashmore and Cartier Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 202,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CX",
+      "name": "Christmas Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 203,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CC",
+      "name": "Cocos (Keeling) Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 204,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AU",
+      "name": "Coral Sea Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 205,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "HM",
+      "name": "Heard Island and McDonald Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 206,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NF",
+      "name": "Norfolk Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 207,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NC",
+      "name": "New Caledonia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 208,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PF",
+      "name": "French Polynesia"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 209,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "YT",
+      "name": "Mayotte"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 210,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GP",
+      "name": "Saint Barthelemy"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 211,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GP",
+      "name": "Saint Martin"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 212,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PM",
+      "name": "Saint Pierre and Miquelon"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 213,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "WF",
+      "name": "Wallis and Futuna"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 214,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TF",
+      "name": "French Southern and Antarctic Lands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 215,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PF",
+      "name": "Clipperton Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 216,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BV",
+      "name": "Bouvet Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 217,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "CK",
+      "name": "Cook Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 218,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "NU",
+      "name": "Niue"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 219,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TK",
+      "name": "Tokelau"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 220,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GG",
+      "name": "Guernsey"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 221,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IM",
+      "name": "Isle of Man"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 222,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "JE",
+      "name": "Jersey"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 223,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AI",
+      "name": "Anguilla"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 224,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "BM",
+      "name": "Bermuda"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 225,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "IO",
+      "name": "British Indian Ocean Territory"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 227,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "VG",
+      "name": "British Virgin Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 228,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "KY",
+      "name": "Cayman Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 229,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "FK",
+      "name": "Falkland Islands (Islas Malvinas)"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 230,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GI",
+      "name": "Gibraltar"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 231,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MS",
+      "name": "Montserrat"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 232,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PN",
+      "name": "Pitcairn Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 233,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SH",
+      "name": "Saint Helena"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 234,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GS",
+      "name": "South Georgia & South Sandwich Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 235,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TC",
+      "name": "Turks and Caicos Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 236,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MP",
+      "name": "Northern Mariana Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 237,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "PR",
+      "name": "Puerto Rico"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 238,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AS",
+      "name": "American Samoa"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 239,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Baker Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 240,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GU",
+      "name": "Guam"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 241,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Howland Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 242,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Jarvis Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 243,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Johnston Atoll"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 244,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Kingman Reef"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 245,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Midway Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 246,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Navassa Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 247,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Palmyra Atoll"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 248,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "VI",
+      "name": "U.S. Virgin Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 249,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "UM",
+      "name": "Wake Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 250,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "HK",
+      "name": "Hong Kong"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 251,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MO",
+      "name": "Macau"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 252,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "FO",
+      "name": "Faroe Islands"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 253,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GL",
+      "name": "Greenland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 254,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GF",
+      "name": "French Guiana"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 255,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "GP",
+      "name": "Guadeloupe"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 256,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "MQ",
+      "name": "Martinique"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 257,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "RE",
+      "name": "Reunion"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 258,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AX",
+      "name": "Aland"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 259,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AW",
+      "name": "Aruba"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 260,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AN",
+      "name": "Netherlands Antilles"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 261,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "SJ",
+      "name": "Svalbard"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 262,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AC",
+      "name": "Ascension"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 263,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "TA",
+      "name": "Tristan da Cunha"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 268,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AQ",
+      "name": "Australian Antarctic Territory"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 269,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AQ",
+      "name": "Ross Dependency"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 270,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AQ",
+      "name": "Peter I Island"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 271,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AQ",
+      "name": "Queen Maud Land"
+    }
+  },
+  {
+    "model": "wx.country",
+    "pk": 272,
+    "fields": {
+      "created_at": "2015-01-21T17:01:28Z",
+      "updated_at": "2015-01-21T17:01:28Z",
+      "code": "AQ",
+      "name": "British Antarctic Territory"
+    }
+  }
+]

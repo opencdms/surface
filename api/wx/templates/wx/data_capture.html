@@ -1,0 +1,62 @@
+{% extends "base.html" %} {% block content %} {% load static %} {% load material_form %}
+
+<div class="srf-container" style="max-height: 280px;">
+  <div
+    class="srf-flex flex-row align-items-center justify-content-between srf-padding"
+  >
+    <span class="srf-display-1 text-uppercase">Data Capture</span><br><br>
+  </div>
+  <div class="srf-flex justify-content-between srf-padding" id="app">
+    <span class="srf-display-2 text-uppercase">Hourly Data Capture</span><br><br>
+    <v-app>
+      <div style="max-width: 622.50px;" class="pb-10">
+        <v-select
+          v-model="select1"
+          :items="forms"
+          menu-props="auto"
+          label="Select"
+          hide-details
+          single-line
+          return-object
+        ></v-select>
+        <a :href="''+select1.url+''">
+          <button type="button" class="btn-outline-default btn-small mt-4">
+            Open
+          </button>
+        </a>
+      </div>
+      <span class="srf-display-2 text-uppercase">Monthly Data Capture</span><br><br>
+      <div style="max-width: 622.50px;" class="pb-10">
+        <a href="{% url 'monthly-form' %}">
+          <button type="button" class="btn-outline-default btn-small mt-4">
+            Open
+          </button>
+        </a>
+      </div>
+    </v-app>
+  </div>
+</div>
+
+{% endblock %} {% block localjavascript %}
+
+<script>
+  new Vue({
+    el: "#app",
+    vuetify: new Vuetify(),
+    delimiters: ["[[", "]]"],
+    data: {
+      select1: {
+          text: "Philiip Goldson Int'l Airport",
+          url: "{% url 'pgia-report' %}",
+        },
+      forms: [
+        {
+          text: "Philiip Goldson Int'l Airport",
+          url: "{% url 'pgia-report' %}",
+        }
+      ]
+    }
+  })
+</script>
+
+{% endblock %}

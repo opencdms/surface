@@ -1,0 +1,48 @@
+{% extends "wx/instrumentlog_base.html" %}
+{% block instrumentlog_content %}
+
+<div class="srf-layout" style="width:100%;">
+  
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Station name</span>
+        <span class="srf-field-content">{{ instrumentlogs.station|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Instrument</span>
+        <span class="srf-field-content">{{ instrumentlogs.instrument.model|default:'-' }} - {{ instrumentlogs.instrument.serial_number|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Amount</span>
+        <span class="srf-field-content">{{ instrumentlogs.amount|default:'-' }}</span>
+      </div>
+    </div>
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Is current location?</span>
+        <span class="srf-field-content">{% if instrumentlogs.is_current_location %}Yes{% else %}No{% endif %}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row w-100">
+    <div class="col s4">
+      <div class="srf-field">
+        <span class="srf-field-header">Description</span>
+        <span class="srf-field-content">{{ instrumentlogs.description|default:'-' }}</span>
+      </div>
+    </div>
+  </div>
+    
+</div>
+  
+{% endblock %}
+

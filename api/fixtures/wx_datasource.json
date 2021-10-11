@@ -1,0 +1,218 @@
+[
+  {
+    "model": "wx.datasource",
+    "pk": 1,
+    "fields": {
+      "created_at": "2019-01-09T13:58:55.345Z",
+      "updated_at": "2019-04-26T20:31:52.335Z",
+      "symbol": "NMS",
+      "name": "NMS",
+      "base_url": "http://www.hydromet.gov.bz",
+      "location": null
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 2,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "LE",
+      "name": "Cincinnati East",
+      "base_url": null,
+      "location": "USACE LRD Cincinnati"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 3,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "d1",
+      "name": "NIFC West Boise ID - Unit 1",
+      "base_url": null,
+      "location": "NIFC Boise"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 4,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "d2",
+      "name": "NIFC West Boise ID - Unit 2",
+      "base_url": null,
+      "location": "NIFC Boise"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 5,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "OW",
+      "name": "Omaha West",
+      "base_url": null,
+      "location": "USACE NWO"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 6,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "RE",
+      "name": "Rock Island East",
+      "base_url": null,
+      "location": "USACE MVR"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 7,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "RW",
+      "name": "Rock Island West",
+      "base_url": null,
+      "location": "USACE MVR"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 8,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "SF",
+      "name": "West Palm Beach East",
+      "base_url": null,
+      "location": "SFWMD"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 9,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "UB",
+      "name": "Ucom Backup @ WCDA",
+      "base_url": null,
+      "location": "NOAA Wallops CDA"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 10,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "UP",
+      "name": "Ucom Primary @ WCDA",
+      "base_url": null,
+      "location": "NOAA Wallops CDA"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 11,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "XE",
+      "name": "Sioux Falls, East",
+      "base_url": null,
+      "location": "USGS EROS"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 12,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "XW",
+      "name": "Sioux Falls, West",
+      "base_url": null,
+      "location": "USGS EROS"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 13,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "XL",
+      "name": "Sioux Falls, LRIT",
+      "base_url": null,
+      "location": "USGS EROS"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 14,
+    "fields": {
+      "created_at": "2020-05-10T23:31:21Z",
+      "updated_at": "2020-05-10T23:31:21Z",
+      "symbol": "RL",
+      "name": "Reston, LRIT",
+      "base_url": null,
+      "location": "Reston, Virginia"
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 15,
+    "fields": {
+      "created_at": "2020-05-31T17:09:05.307Z",
+      "updated_at": "2020-05-31T17:09:05.307Z",
+      "symbol": "--",
+      "name": "--",
+      "base_url": null,
+      "location": null
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 16,
+    "fields": {
+      "created_at": "2020-05-31T18:39:03.651Z",
+      "updated_at": "2020-05-31T18:39:03.651Z",
+      "symbol": "N2",
+      "name": "N2",
+      "base_url": null,
+      "location": null
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 17,
+    "fields": {
+      "created_at": "2020-05-31T18:42:00.879Z",
+      "updated_at": "2020-05-31T18:42:00.879Z",
+      "symbol": "N1",
+      "name": "N1",
+      "base_url": null,
+      "location": null
+    }
+  },
+  {
+    "model": "wx.datasource",
+    "pk": 18,
+    "fields": {
+      "created_at": "2020-05-31T18:42:01.034Z",
+      "updated_at": "2020-05-31T18:42:01.034Z",
+      "symbol": "DR",
+      "name": "DR",
+      "base_url": null,
+      "location": null
+    }
+  }
+]

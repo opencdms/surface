@@ -1,0 +1,839 @@
+<!-- templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>{% block title %}Surface{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <link
+      rel="stylesheet"
+      href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.1.0/material.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.10.19/css/dataTables.material.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
+      crossorigin=""
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@3.x/css/materialdesignicons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/vuetify@2.5.4/dist/vuetify.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/handsontable@7.1.1/dist/handsontable.full.min.css"
+      rel="stylesheet"
+      media="screen"
+    >
+    <link
+      href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css"
+      rel="stylesheet"
+    >
+    <link
+      href="https://cdn.datatables.net/v/bs4/dt-1.10.20/b-1.6.1/b-html5-1.6.1/fh-3.1.6/datatables.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+
+    {% include 'material/includes/material_css.html' %}
+
+    <style>
+      html {
+        overflow: auto;
+      }
+      .hide-menu {
+        display: none!important;
+      }
+      .show-menu {
+        display: block!important;
+      }
+      .toggle-collapse {
+        width: 100%;
+      }
+      .open-mode {
+        width: 300px!important;
+        transition: 0.3s;
+      }
+      .collapsed-mode {
+        width: 55px!important;
+        transition: 0.3s;
+      }
+      .collapsible-item {
+        overflow: hidden;
+      }
+      .user-menu > div > div.mdl-menu__container.is-upgraded {
+        top: auto!important;
+      }
+      .user-menu .collapsible-header{
+        cursor: default!important;
+      }
+      .to-uppercase {
+        text-transform: uppercase!important;
+      }
+      .sidenav {
+        font-size: 13px;
+      }
+      table.dataTable thead .sorting, 
+      table.dataTable thead .sorting_asc, 
+      table.dataTable thead .sorting_desc {
+        background : none;
+      }
+      .v-date-picker-table--date.theme--light > table > tbody > tr {
+        border: none;
+      }
+      .v-date-picker-table--date.theme--light > table > thead > tr {
+        border: none;
+      }
+      .v-menu__content {
+        min-width: 290px!important;
+      }
+      .srf-field-max-300 {
+        max-width: 300px;
+      }
+      .jumbotron {
+        margin-bottom: 0px;
+        padding: 2rem 1rem;
+      }
+      .separate-items > *:not(:first-child) {
+        margin-left: 8px;
+      }
+      .img-logo {
+        height: 45px;
+      }
+      .img-logo-surface {
+        height: 25px;
+      }
+      textarea {
+        background: #e2e2e2;
+      }
+      textarea:disabled {
+        color: rgb(104, 104, 104) !important;
+      }
+
+      input:disabled {
+        color: rgb(104, 104, 104) !important;
+      }
+      .mdl-textfield.is-disabled.is-disabled .mdl-textfield__label,
+      .mdl-textfield__label,
+      fieldset[disabled] .mdl-textfield .mdl-textfield__label {
+        color: rgba(0, 0, 0, 0.5);
+      }
+      label {
+        margin: 0 !important;
+      }
+      .srf-padding {
+        padding: 16px;
+      }
+      #id_station_list_length {
+        display: flex !important;
+        justify-content: flex-start !important;
+      }
+      #id_station_list_filter {
+        display: flex !important;
+        justify-content: flex-end !important;
+      }
+      a {
+        color: darkblue;
+      }
+      a:hover {
+        color: black;
+        text-decoration: none;
+      }
+      .mdl-button--icon {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+      }
+      .custon-icon-16 {
+        font-size: 16px !important;
+      }
+      .srf-submenu {
+        width: 240px;
+      }
+      #id_station_list_wrapper {
+        width: 100% !important;
+      }
+      .srf-field-header {
+        color: rgba(0, 0, 0, 0.7);
+        font-size: 12px;
+      }
+      .srf-textfield .srf-field-content {
+        overflow-y: auto;
+        height: 100%;
+        max-height: 90px;
+      }
+      .srf-textfield {
+        position: relative;
+        font-size: 16px;
+        display: flex;
+        box-sizing: border-box;
+        max-width: 300px;
+        overflow-y: hidden;
+        width: 100%;
+      }
+      .srf-field {
+        position: relative;
+        font-size: 16px;
+        display: flex;
+        box-sizing: border-box;
+        max-width: 300px;
+        width: 100%;
+        flex-direction: column;
+      }
+      .btn-outline-danger {
+        color: #ff4444;
+        border: 1px solid #ff4444;
+      }
+      .btn-outline-danger:hover {
+        color: #d12121;
+        border: 1px solid #d12121;
+        background-color: #ffeeee;
+      }
+      .btn-outline-default {
+        box-shadow: none;
+        background-color: transparent;
+        color: #343434;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        border: 1px solid black;
+      }
+      .btn-outline-default:hover {
+        background-color: #e2e2e2;
+        box-shadow: 0 3px 3px 0 rgba(0,0,0,0.14), 0 1px 7px 0 rgba(0,0,0,0.12), 0 3px 1px -1px rgba(0,0,0,0.2);
+        transition: 0.3s;
+      }
+      .btn-small {
+        background-color: transparent!important;
+      }
+      .icon-danger {
+        color: #ff4444;
+      }
+      .srf-container {
+        flex: 1 1 100%;
+        margin: auto;
+        padding: 24px;
+        width: 100%;
+      }
+      .srf-layout {
+        position: relative;
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .p-300 {
+        padding-left: 300px;
+        transition: 0.3s;
+      }
+
+      .p-55 {
+        padding-left: 55px;
+        transition: 0.3s;
+      }
+
+      .srf-display-1 {
+        font-size: 2em;
+      }
+      .srf-display-2 {
+        font-size: 1.3em;
+        color: #4d4d4d;
+      }
+
+      .srf-display-1-1 {
+        font-size: 1.3em;
+      }
+      .srf-display-2-2 {
+        font-size: .5em;
+        color: #4d4d4d;
+      }
+
+      .mdl-grid {
+        width: 100%;
+      }
+      #mapid {
+        height: 180px;
+      }
+    .secondary-content {
+      float: right;
+      color: #4d4d4d;
+    }
+    a.collection-item {
+      color: black;
+    }
+    .left-space {
+      padding-left: 60px!important;
+    }
+    .sidenav-trigger {
+      display: none;
+    }
+    .custom-row i{
+      margin: 0px 0px 0px 0px;
+      color: black;
+    }
+    .sidenav li>a>i, .sidenav li>a>[class^="mdi-"], .sidenav li>a li>a>[class*="mdi-"], .sidenav li>a>i.material-icons {
+      margin: 0 14px 0 0;
+      color: #212529;
+      width: 2rem;
+    }
+    .user-row {
+      padding: 10px 20px 10px 30px;
+      border-top: 1px solid #b6b6b6;
+      border-bottom: 1px solid #b6b6b6;
+      display: flex;
+      justify-content: space-between;
+    }
+    .v-expansion-panel:before {
+      box-shadow: none!important;
+    }
+    .bold {
+      font-weight: bold;
+    }
+
+    .stationInfo {
+      display: flex;
+      justify-content: space-between;
+      max-width: 300px;
+      color: rgb(107, 107, 107);
+    }
+
+    .manual-flag-td-cs {
+      width: 140px;
+      padding: 0 !important;
+    }
+
+    .manual-flag-cs {
+      font-size: 10pt;
+    }
+
+    .manual-flag-cs.v-text-field > .v-input__control > .v-input__slot:before {
+      border-style: none;
+    }
+
+    .manual-flag-cs.v-text-field > .v-input__control > .v-input__slot:after {
+      border-style: none;
+    }
+
+    .srf-message {
+      width: 100%;
+      height: 36px;
+      background-color: #D4EDDA;
+      color: #155724;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 2px;
+    }
+
+    /* TO HIDE CONTENT AFTER 5 SECONDS */
+    #hideMe {
+      -moz-animation: cssAnimation 0s ease-in 5s forwards;
+      /* Firefox */
+      -webkit-animation: cssAnimation 0s ease-in 5s forwards;
+      /* Safari and Chrome */
+      -o-animation: cssAnimation 0s ease-in 5s forwards;
+      /* Opera */
+      animation: cssAnimation 0s ease-in 5s forwards;
+      -webkit-animation-fill-mode: forwards;
+      animation-fill-mode: forwards;
+    }
+    @keyframes cssAnimation {
+      to {
+          width:0;
+          height:0;
+          overflow:hidden;
+      }
+    }
+    @-webkit-keyframes cssAnimation {
+      to {
+          width:0;
+          height:0;
+          visibility:hidden;
+      }
+    }
+    /* TO HIDE CONTENT AFTER 5 SECONDS */
+
+    td, th {
+      padding: 0px;
+      display: table-cell;
+
+      vertical-align: middle;
+      border-radius: 0px;
+    }
+
+    /* RESET VUE + VUETIFY QUIRKS */
+    .v-select:not(.v-text-field--single-line):not(.v-text-field--outlined) .v-select__slot>input,
+    .v-autocomplete:not(.v-input--is-disabled).v-select.v-text-field input,
+    .theme--light.v-input:not(.v-input--is-disabled) input, .theme--light.v-input:not(.v-input--is-disabled) textarea,
+    input:not([type]):disabled, input:not([type])[readonly="readonly"], input[type=text]:not(.browser-default):disabled, input[type=text]:not(.browser-default)[readonly="readonly"], input[type=password]:not(.browser-default):disabled, input[type=password]:not(.browser-default)[readonly="readonly"], input[type=email]:not(.browser-default):disabled, input[type=email]:not(.browser-default)[readonly="readonly"], input[type=url]:not(.browser-default):disabled, input[type=url]:not(.browser-default)[readonly="readonly"], input[type=time]:not(.browser-default):disabled, input[type=time]:not(.browser-default)[readonly="readonly"], input[type=date]:not(.browser-default):disabled, input[type=date]:not(.browser-default)[readonly="readonly"], input[type=datetime]:not(.browser-default):disabled, input[type=datetime]:not(.browser-default)[readonly="readonly"], input[type=datetime-local]:not(.browser-default):disabled, input[type=datetime-local]:not(.browser-default)[readonly="readonly"], input[type=tel]:not(.browser-default):disabled, input[type=tel]:not(.browser-default)[readonly="readonly"], input[type=number]:not(.browser-default):disabled, input[type=number]:not(.browser-default)[readonly="readonly"], input[type=search]:not(.browser-default):disabled, input[type=search]:not(.browser-default)[readonly="readonly"], textarea.materialize-textarea:disabled, textarea.materialize-textarea[readonly="readonly"] {
+        margin: 0;
+        border: none;
+    }
+
+    [v-cloak] { display:none; }
+    /* END RESET VUE + VUETIFY QUIRKS */
+
+
+    .highcharts-data-table table {
+        border-collapse: collapse;
+        border-spacing: 0;
+        background: white;
+        min-width: 100%;
+        margin-top: 10px;
+        font-family: sans-serif;
+        font-size: 0.9em;
+    }
+    .highcharts-data-table td, .highcharts-data-table th, .highcharts-data-table caption {
+        border: 1px solid silver;
+        padding: 0.5em;
+    }
+    .highcharts-data-table tr:nth-child(even), .highcharts-data-table thead tr {
+        background: #f8f8f8;
+    }
+    .highcharts-data-table tr:hover {
+        background: #eff;
+    }
+    .highcharts-data-table caption {
+        border-bottom: none;
+        font-size: 1.1em;
+        font-weight: bold;
+    }
+
+    .mobile-menu {
+      display: none;
+    }
+
+    #menu-closer { display: none; }
+
+    @media screen and (max-width: 992px){
+        header, main, footer {
+          padding-left: 0;
+        }
+
+        .srf-layout.p-300 { padding-left: 0; }
+
+        #toggle-sidebar {
+          display: none;
+        }
+
+        .sidenav.sidenav-fixed {
+            width: 100vw;
+            z-index: 99999;
+            position: fixed;
+        }
+
+        .sidenav.sidenav-fixed.open {
+          transform: translateX(0);
+        }
+
+        #menu-closer {
+          width: 4rem;
+          height: 4rem;
+          position: fixed;
+          left: 87vw;
+          top: 2vh;
+          z-index: 99999;
+        }
+
+        #menu-closer .material-icons {
+          font-size: 3em;
+        }
+
+        #menu-closer.open { 
+          display: block;          
+        }
+
+        .mobile-menu { display: block; }
+
+        .mobile-menu nav {          
+          padding: 0 1rem;
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .mobile-menu nav h1{
+          font-size: 2em;
+        }
+
+        a.collection-item.left-space.active.text-white {
+          color: white !important;
+        }
+    }
+    </style>
+    {% block extrastyle %} {% endblock %}
+  </head>
+  <body>
+    <ul id="slide-out" class="sidenav sidenav-fixed open-mode">
+      <div style="display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;">
+
+        <div id="wrap-sidenav">
+          <li class="py-4">
+            <div class="d-flex">
+              <div style="max-width: 55px;" class="w-100">
+                <img style="padding: 0px 8px" class="img-logo" src="{% static 'images/circle_logo_small.png' %}" />
+              </div>
+              <div class="w-100" style="position: relative;">
+                <img class="img-logo-surface" src="{% static 'images/surface_logo_smaller.png' %}" />
+              </div>
+            </div>
+          </li>
+
+          <li class="collapsible-item user-menu">
+            <div class="collapsible-header" style="padding: 0px 16px;"><i class="material-icons">person</i>
+              <div class="w-100" style="position: relative;">
+              <span class="to-uppercase">{{ request.user.username }}</span>
+              <button id="user-menu-button" style="
+                position: absolute;
+                right: 0px;
+                top: 12px;" class="mdl-button mdl-js-button mdl-button--icon">
+                <i class="material-icons">more_vert</i>
+              </button>
+              </div>
+              <ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="user-menu-button">
+                <a href="{% url 'change_password' %}">
+                  <li class="mdl-menu__item">
+                    Change password
+                  </li>
+                </a>
+              </ul>
+            </div>
+          </li>
+
+          <hr>
+
+          <ul class="collapsible to-uppercase">
+            <li id="stations-group" class="hide-menu">
+              <div class="collapsible-header"><i class="material-icons">my_location</i>STATIONS</div>
+              <div class="collapsible-body">
+                <div class="collapsible-subitem mb-2">
+                  <ul class="collection">
+                    <a id="stations-map" href="{% url 'stations-map' %}" class="hide-menu collection-item left-space ">MAP<i class="material-icons secondary-content">map</i></a>
+                    <a id="stations-list" href="{% url 'stations-list' %}" class="hide-menu collection-item left-space ">LIST<i class="material-icons secondary-content">donut_small</i></a>
+                    <a id="station-metadata" href="{% url 'station-metadata' %}" class="hide-menu collection-item left-space ">METADATA<i class="material-icons secondary-content">donut_small</i></a>
+                  </ul>
+                </div>
+              </div>
+            </li>
+            </li>
+            <li id="maintenance-group" class="hide-menu collapsible-item">
+              <a href="{% url 'coming-soon' %}" style="padding: 0px 16px;"><i class="material-icons">build</i>MAINTENANCE</a>
+            </li>
+
+            <li id="data-group" class="hide-menu">
+              <div class="collapsible-header"><i class="material-icons">data_usage</i>DATA</div>
+              <div class="collapsible-body">
+                <div class="collapsible-subitem mb-2">
+                  <ul class="collection">
+                    <a id="monthly-form" href="{% url 'monthly-form' %}" class="hide-menu collection-item left-space">Monthly Capture<i class="material-icons secondary-content">keyboard</i></a>
+                    <a id="pgia-report" href="{% url 'pgia-report' %}" class="hide-menu collection-item left-space">PGIA Hourly Capture<i class="material-icons secondary-content">keyboard</i></a>
+                    <a id="data-export" href="{% url 'data-export' %}" class="hide-menu collection-item left-space">Export<i class="material-icons secondary-content">cloud_download</i></a>
+                    <a id="data-inventory" href="{% url 'data-inventory' %}" class="hide-menu collection-item left-space">Data Inventory<i class="material-icons secondary-content">web</i></a>
+                  </ul>
+                </div>
+              </div>
+            </li>
+
+            <li id="quality-control-group" class="hide-menu">
+              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality Control</div>
+              <div class="collapsible-body">
+                <div class="collapsible-subitem mb-2">
+                  <ul class="collection">
+                    <a id="quality-control" href="{% url 'quality-control' %}" class="hide-menu collection-item left-space">Data Validation<i class="material-icons secondary-content">done_all</i></a>
+                    <a id="range-threshold" href="{% url 'range-threshold' %}" class="hide-menu collection-item left-space">Range Threshold<i class="material-icons secondary-content">clear_all</i></a>
+                    <a id="step-threshold" href="{% url 'step-threshold' %}" class="hide-menu collection-item left-space">Step Threshold<i class="material-icons secondary-content">low_priority</i></a>
+                    <a id="persist-threshold" href="{% url 'persist-threshold' %}" class="hide-menu collection-item left-space">Persist Threshold<i class="material-icons secondary-content">format_align_left</i></a>
+                  </ul>
+                </div>
+              </div>
+            </li>
+
+            <li id="products-group" class="hide-menu">
+              <div class="collapsible-header"><i class="material-icons">list_alt</i>PRODUCTS</div>
+              <div class="collapsible-body">
+                <div class="collapsible-subitem mb-2">
+                  <ul class="collection">
+                    <a id="station-report" href="{% url 'station-report' %}" class="hide-menu collection-item left-space">Station Report<i class="material-icons secondary-content">people</i></a>
+                    <a id="variable-report" href="{% url 'variable-report' %}" class="hide-menu collection-item left-space">Variable Report<i class="material-icons secondary-content">view_list</i></a>
+                    <a id="product-compare" href="{% url 'product-compare' %}" class="hide-menu collection-item left-space">Station Compare<i class="material-icons secondary-content">compare_arrows</i></a>
+                    <!-- <a id="yearly-average" href="{% url 'yearly-average' %}" class="collection-item left-space">Yearly Average<i class="material-icons secondary-content">timeline</i></a> -->
+                    <a id="spatial-analysis" href="{% url 'spatial-analysis' %}" class="hide-menu collection-item left-space">Spatial analysis<i class="material-icons secondary-content">dashboard</i></a>
+                    <a id="daily-means" href="{% url 'daily-means' %}" class="hide-menu collection-item left-space">Daily Means<i class="material-icons secondary-content">equalizer</i></a>
+                  </ul>
+                </div>
+            </div>
+            </li>
+            
+            {% if request.user.is_staff or request.user.is_superuser %}
+            <li class="collapsible-item">
+              <a href="{% url 'admin:index' %}" style="padding: 0px 16px;"><i class="material-icons">people</i>ADMINISTRATIVE AREA</a>
+            </li>
+            {% endif %}
+
+            <li class="collapsible-item">
+              <a href="{% url 'logout' %}" style="padding: 0px 16px;"><i class="material-icons">directions</i>LOGOUT</a>
+            </li>
+          </div>
+
+          <div id="toggle-sidebar">
+            <li class="collapsible-item toggle-collapse" onclick="toggleSidebar()">
+              <a href="javascript:void(0)" style="padding: 0px 16px;"><i id="collapse-icon" class="material-icons">chevron_left</i>COLLAPSE</a>
+            </li>
+          </div>
+
+        </div>
+      </ul>
+    </ul>
+    <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+    <a id="menu-closer" href="javascript:void(0)">
+      <i class="material-icons">close</i>
+    </a>
+    <header class="mobile-menu">
+      <nav>
+        <a id="menu-toggler" href="javascript:void(0)">
+          <i class="material-icons">menu</i>
+        </a>
+        <h1>SURFACE</h1>
+      </nav>
+    </header>
+    <main style="height: 100vh; width: 100%">
+      <div class="page-content">
+        <!-- BODY -->
+        <div id="block-content" class="srf-layout flex-column p-300">
+          {% if messages %}
+          <div id="hideMe" class="box-message">
+            <div class="srf-message">
+              {% for message in messages %}
+              <span {% if message.tags %} class="{{ message.tags }}" {% endif %}>
+                {{ message }}
+              </span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          {% block content %}
+          {% endblock %}
+        </div>
+      </div>
+    </main>
+
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+    <script src="https://momentjs.com/downloads/moment.min.js" defer></script>
+    <script defer src="https://momentjs.com/downloads/moment-timezone-with-data-10-year-range.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" defer></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.material.min.js" defer></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script
+      src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/vue2-leaflet@1.2.3/dist/vue2-leaflet.min.js"></script>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script src="https://code.highcharts.com/9.1.0/highcharts.js"></script>
+    <script src="https://code.highcharts.com/9.1.0/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/9.1.0/modules/heatmap.js"></script>
+    <script src="https://code.highcharts.com/9.1.0/modules/drilldown.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.1.0/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highcharts-vue@1.3.5/dist/highcharts-vue.min.js"></script>
+
+    <script src="https://unpkg.com/vuelidate@0.7.4/dist/vuelidate.min.js"></script>
+    <script src="https://unpkg.com/vuelidate@0.7.4/dist/validators.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.58/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.58/vfs_fonts.js"></script>
+
+    {% include 'material/includes/material_js.html' %}
+
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@7.1.1/dist/handsontable.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@handsontable/vue@4.0.0/dist/vue-handsontable.min.js"></script>
+
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.20/b-1.6.1/b-html5-1.6.1/fh-3.1.6/datatables.min.js"></script>
+    {% block js %}
+    <script>
+      $(document).ready(function(){
+        $('.collapsible').collapsible();
+        const menu = document.getElementById('slide-out');
+        const closer = document.getElementById('menu-closer');
+        const collapseIcon = document.getElementById('collapse-icon');
+        const blockContent = document.getElementById('block-content');
+        const wrapSidenav = document.getElementById('wrap-sidenav');
+        const instance = M.Collapsible.getInstance(document.querySelector('.collapsible'));
+
+        const localGroups = [
+          'stations-group',
+          'data-group',
+          'products-group',
+          'quality-control-group'
+        ];
+
+        const localMenus = [
+          'stations-map',
+          'stations-list',
+          'station-metadata',
+          'monthly-form',
+          'pgia-report',
+          'data-export',
+          'instrumentlogs-list',
+          'station-report',
+          'product-compare',
+          'yearly-average',
+          'maintenance-group',
+          'spatial-analysis',
+          'daily-means',
+          'quality-control',
+          'variable-report',
+          'data-inventory',
+          'range-threshold',
+          'step-threshold',
+          'persist-threshold'
+        ]
+
+        const menuList = {{USER_PERMISSIONS|safe}};
+        const userIsAdmin = {{USER_IS_ADMIN|safe}};
+
+        localMenus.forEach(menu => {
+          if ($(`#${menu}`).length > 0) {
+            if ((menuList[menu] != null && menuList[menu].includes('read')) || userIsAdmin) {
+              document.getElementById(menu).classList.remove('hide-menu');
+            }
+          }
+        });
+
+        localGroups.forEach(group => {
+          // Test if the group have some child with class 'hide-menu'
+          // If it have none, hide the group too.
+          // If not, just leave it.
+          if ($(`#${group}`).length > 0) {
+            if($(`#${group} > div > div > ul > a.hide-menu`).length !== $(`#${group} > div > div > ul > a`).length){
+              document.getElementById(group).classList.remove('hide-menu');
+            } else {
+              // Have some menu inside. So, do nothing.
+            }
+          } else {
+            // Group do not exist
+          }
+        })
+
+        var menuInitialState = true;
+
+        //MOBILE
+        document.getElementById('menu-toggler')
+          .addEventListener('click', function(evt) {
+            menu.classList.add('open');
+            closer.classList.add('open');
+          });
+
+        document.getElementById('menu-closer')
+          .addEventListener('click', function(evt) {
+            menu.classList.remove('open');
+            closer.classList.remove('open');
+          });
+        
+        // WEB
+        toggleSidebar = function() {
+          if (menuInitialState === true) {
+            closeSidebar();
+          } else {
+            openSidebar();
+          }
+        };
+        
+        wrapSidenav.addEventListener('click', function(evt) {
+          if (menuInitialState === false) {
+            openSidebar();
+          }
+        });
+       
+        function openSidebar() {
+          menu.classList.add('open-mode');
+          menu.classList.remove('collapsed-mode');
+          blockContent.classList.add('p-300');
+          blockContent.classList.remove('p-55');
+          collapseIcon.innerText = 'chevron_left';
+          removeWrapOnSidebar();
+          menuInitialState = true;
+        }
+
+        function closeSidebar() {
+          menu.classList.remove('open-mode');
+          menu.classList.add('collapsed-mode');
+          blockContent.classList.remove('p-300');
+          blockContent.classList.add('p-55');
+          collapseIcon.innerText = 'chevron_right';
+          instance.close($('li.active').index());
+
+          setTimeout(() => {
+            window.mapReference.invalidateSize();
+          }, 200); // Wait until close animation finish to execute function
+
+          addWrapOnSidebar();
+          menuInitialState = false;
+        }
+
+        function addWrapOnSidebar() {
+          wrapSidenav.classList.add('wrap-menu');
+        }
+        
+        function removeWrapOnSidebar() {
+          wrapSidenav.classList.remove('wrap-menu');
+        }
+
+        [].slice.call(document.querySelectorAll('.active.collection-item'))
+          .forEach(el => {
+            el.classList.remove('active', 'text-white');
+          });
+        [].slice.call(document.querySelectorAll(`.collection-item[href="${window.location.pathname}"]`))
+          .forEach(el => { 
+            el.classList.add('active', 'text-white');
+          });
+        
+          let query = document.querySelector(`.collection-item[href="${window.location.pathname}"]`)
+          if (query) {
+            const li = query.parentElement.parentElement.parentElement.parentElement;
+            instance.open([].slice.call(document.querySelector('.collapsible').children).indexOf(li));
+          }
+      });
+    </script>
+    {% endblock %}
+    {% block localjavascript %}{% endblock %}
+  </body>
+</html>

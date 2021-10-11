@@ -1,0 +1,72 @@
+[
+  {
+    "model": "wx.decoder",
+    "pk": 1,
+    "fields": {
+      "created_at": "2019-04-06T21:08:12.968Z",
+      "updated_at": "2019-04-06T21:08:12.968Z",
+      "name": "TOA5",
+      "description": "Campbell TOA5 ASCII file decoder"
+    }
+  },
+  {
+    "model": "wx.decoder",
+    "pk": 3,
+    "fields": {
+      "created_at": "2019-04-06T21:08:49.047Z",
+      "updated_at": "2019-04-06T21:08:49.047Z",
+      "name": "HOBO",
+      "description": "HOBO CSV decoder"
+    }
+  },
+  {
+    "model": "wx.decoder",
+    "pk": 5,
+    "fields": {
+      "created_at": "2019-06-25T13:47:29.590Z",
+      "updated_at": "2019-06-25T14:48:17.071Z",
+      "name": "HYDROLOGY",
+      "description": "HYDROLOGY"
+    }
+  },
+  {
+    "model": "wx.decoder",
+    "pk": 6,
+    "fields": {
+      "created_at": "2019-08-08T18:27:41.261Z",
+      "updated_at": "2019-08-08T18:27:41.261Z",
+      "name": "NESA",
+      "description": "NESA ASCII message decoder"
+    }
+  },
+  {
+    "model": "wx.decoder",
+    "pk": 7,
+    "fields": {
+      "created_at": "2020-05-25T01:32:35.427Z",
+      "updated_at": "2020-05-25T01:32:35.427Z",
+      "name": "SURFACE",
+      "description": "Surface files decoder"
+    }
+  },
+  {
+    "model": "wx.decoder",
+    "pk": 8,
+    "fields": {
+      "created_at": "2020-05-25T01:39:13.908Z",
+      "updated_at": "2020-05-25T12:21:00.779Z",
+      "name": "BELIZE MANUAL DAILY DATA",
+      "description": "Belize manual daily data decoder (xls)"
+    }
+  },
+  {
+    "model": "wx.decoder",
+    "pk": 9,
+    "fields": {
+      "created_at": "2020-05-29T21:00:23.471Z",
+      "updated_at": "2020-05-29T21:00:23.471Z",
+      "name": "BELIZE MANUAL HOURLY DATA",
+      "description": "Belize manual hourly data decoder (xls)"
+    }
+  }
+]

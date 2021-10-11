@@ -1,0 +1,54 @@
+{% extends "base.html" %} {% block content %}
+<div class="srf-container">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 16px">
+    <span class="srf-display-1 text-uppercase">Instrument location</span>
+    <div class="srf-flex">
+      <a href="{% url 'instrumentlog-create' %}">
+        <button class="btn-outline-default btn-small" type="button">
+          Associate instrument
+        </button>
+      </a>
+    </div>
+  </div>
+  <div class="srf-layout flex-row" style="width:100%;">
+    <table id="id_station_list" class="mdl-data-table" style="width:100%">
+      <thead>
+        <tr>
+          <th>Amount</th>
+          <th>Detail</th>
+          <th>Station</th>
+          <th>Instrument</th>
+          <th>Description</th>
+          <th>Is current location?</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for instrument in object_list %}
+        <tr>
+          <td>{{ instrument.amount }}</td>
+          <td><a href="{% url 'instrumentlogs-details' instrument.id %}">Detail</a></td>
+          <td><a href="{% url 'station-detail' instrument.station.id %}">{{ instrument.station }}</a></td>
+          <td><a href="{% url 'instrument-list' instrument.instrument.id %}">{{ instrument.instrument.model }}</a></td>
+          <td>{{ instrument.description }}</td>
+          <td>{% if instrument.is_current_location %}Yes{% else %}No{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %} {% block localjavascript %}
+<script>
+  $(document).ready(function() {
+    $('#id_station_list').DataTable({
+      scrollX: true,
+      columnDefs: [
+        {
+          targets: [0, 1, 2],
+          className: 'mdl-data-table__cell--non-numeric'
+        }
+      ]
+    });
+  });
+</script>
+{% endblock %}

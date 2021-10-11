@@ -1,0 +1,15 @@
+{% extends "wx/station_base.html" %}
+{% load material_form %}
+{% block station_content %}
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div style="max-width: 311.50px;">
+        {{ form.as_p }}
+    </div>
+    <button type="submit" class="btn-outline-default btn-small">Submit</button>
+    <a href="{% url 'stationfiles-list' station.id %}">
+        <button type="button" class="btn-outline-default btn-small">Cancel and back</button>
+    </a>
+</form>
+{% endblock %}

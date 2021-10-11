@@ -1,0 +1,151 @@
+{% extends "wx/station_base.html" %}
+{% block station_content %}
+{% load material_form %}
+
+<form method="POST">
+    {% csrf_token %}
+    <div style="max-width: 622.50px;">
+        {% form %}
+        {% endform %}
+    </div>
+    <button type="submit" class="btn-outline-default btn-small">Submit</button>
+    <a href="{% url 'stationfiles-list' station.id %}">
+        <button type="button" class="btn-outline-default btn-small">Cancel and back</button>
+    </a>
+</form>
+<!-- <form method="post">
+  {% csrf_token %}
+  <div class="srf-flex d-flex flex-row align-items-center justify-content-between srf-padding">
+    <span class="srf-display-1 text-uppercase">Timeline of station: {{ station.name }}</span>
+  </div>
+  {{ form.non_field_errors }}
+  
+  <div class="srf-layout flex-column srf-padding" style="width:100%;">
+      
+    <div class="row mb-0 w-100">
+      <div class="col-4">
+        <div class="srf-field">
+          <div class="input-field w-100">
+            {{ form.date }}
+            <label for="{{ form.date.id_for_label }}">Date</label>
+            {{ form.date.errors }}
+          </div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="srf-field">
+          <div class="input-field w-100">
+            {{ form.action }}
+            <label for="{{ form.action.id_for_label }}">Action</label>
+            {{ form.action.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-0 w-100">
+      <div class="col-4">
+        <div class="srf-field">
+          <div class="input-field w-100">
+            {{ form.action_type }}
+            <label for="{{ form.action_type.id_for_label }}">Action type</label>
+            {{ form.action_type.errors }}
+          </div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="srf-field">
+          <div class="input-field w-100">
+            {{ form.link }}
+            <label for="{{ form.link.id_for_label }}">Link</label>
+            {{ form.link.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-0 w-100">
+      <div class="col-4">
+        <div class="srf-field">
+          <div class="input-field w-100">
+            {{ form.description }}
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="srf-layout srf-padding" style="width:100%;">
+
+    <div class="srf-flex align-self-end">
+      <button class="mdl-button mdl-js-button btn-outline-default" type="submit">
+        Submit
+      </button>
+      <a href="{% url 'stationtimeline-list' station.id %}">
+        <button class="mdl-button mdl-js-button btn-outline-default" type="button">
+          Cancel and back
+        </button>
+      </a>
+    </div>
+
+  </div>
+
+</form> -->
+
+<!-- <div class="srf-container">
+
+    Station: {{ station.name }}
+
+
+
+    <form method="post">{% csrf_token %}
+        {{ form.non_field_errors }}
+        
+        {{ form.date.errors }}
+        <div class="input-field col s12">
+          {{ form.date }}
+          <label for="{{ form.date.id_for_label }}">Date</label>
+        </div>
+
+        {{ form.action.errors }}
+        <div class="input-field col s12">
+          {{ form.action }}
+          <label for="{{ form.action.id_for_label }}">Action</label>
+        </div>
+
+        {{ form.description.errors }}
+        <div class="input-field col s12">
+          {{ form.description }}
+          <label for="{{ form.description.id_for_label }}">Description</label>
+        </div>
+
+        {{ form.link.errors }}
+        <div class="input-field col s12">
+          {{ form.link }}
+          <label for="{{ form.link.id_for_label }}">Link</label>
+        </div>
+
+        {{ form.action_type.errors }}
+        <div class="input-field col s12">
+          {{ form.action_type }}
+          <label for="{{ form.action_type.id_for_label }}">Action type</label>
+        </div>
+
+        <input type="submit" value="Save">
+    </form> -->
+
+{% endblock %}
+
+{% block localjavascript %}
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var elems = document.querySelectorAll('select');
+        var instances = M.FormSelect.init(elems, options);
+    });
+
+</script>
+{% endblock %}

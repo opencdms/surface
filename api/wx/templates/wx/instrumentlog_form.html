@@ -1,0 +1,32 @@
+{% extends "base.html" %} 
+{% block content %}
+
+{% load material_form %}
+
+<div class="srf-container">
+  <form method="POST">
+    {% csrf_token %}
+    <div style="max-width: 622.50px;">
+        {% form %}
+        {% attr form.is_current_location 'widget' class %}srf-field-checkbox{% endattr %}
+        {% endform %}
+      </div>
+      <button type="submit" class="btn-outline-default btn-small">Submit</button>
+      <a href="{% url 'instrumentlogs-list' %}">
+        <button type="button" class="btn-outline-default btn-small">Cancel and back</button>
+      </a>
+  </form>
+</div>
+
+<style>
+  .srf-field-checkbox label {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    max-height: 76px;
+    padding-left: 11.25px;
+    padding-right: 11.25px;
+  }
+</style>
+
+{% endblock %}

@@ -1,0 +1,1728 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<div id="app">
+  <v-app v-cloak>
+    <v-navigation-drawer
+      v-model="stationsDetail"
+      color="white"
+      class="livedata"
+      :right="!right"
+    >
+      <v-card v-if="Sandbox != null" class="stations-detail">
+        <div>
+          <div class="truncate-text">
+            <a v-bind:href="[[Sandbox.station_url]]">
+              <span class="pl-2 pt-3 station-link"
+                >[[ Sandbox.station_name ]]</span
+              >
+            </a>
+            <a v-bind:href="[[Sandbox.stationReport]]">
+              <span class="pl-2 pt-3 station-link">More information</span>
+            </a>
+          </div>
+          <div class="truncate-text">
+            <span class="pl-2 pt-2">[[ lastUpdateMessage ]]</span>
+          </div>
+          <v-btn
+            class="btn-close-dialog"
+            v-if="stationsDetail"
+            @click="stationsDetail = false"
+            icon
+            color="error"
+          >
+            <v-icon class="material-icons">clear</v-icon>
+          </v-btn>
+        </div>
+        <v-card-text>
+          <v-tabs @change="handleTabUpdate" v-model="selectedTab">
+            <v-tab key="latest">Last</v-tab>
+            <v-tab-item key="latest">
+              <v-list dense disabled>
+                <v-list-item-group color="primary">
+                  <v-list-item
+                    v-for="(item, index) in Sandbox.latest"
+                    :key="index"
+                  >
+                    <v-list-item-content>
+                      <v-list-item-title
+                        v-html="item.variable.name"
+                      ></v-list-item-title>
+                    </v-list-item-content>
+
+                    <span class="avg"
+                      >[[ item.value | truncate(5) || 0.00 ]]
+                      [[item.variable.unit_symbol ]]</span
+                    >
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-tab-item>
+
+            <v-tab key="last24">Last 24h</v-tab>
+            <v-tab-item key="last24">
+              <v-list dense disabled>
+                <v-list-item-group color="primary">
+                  <v-list-item
+                    v-for="(item, index) in Sandbox.past24h"
+                    :key="index"
+                  >
+                    <v-list-item-content>
+                      <v-list-item-title
+                        v-html="item.variable.name"
+                      ></v-list-item-title>
+                    </v-list-item-content>
+
+                    <span class="avg"
+                      >[[ item.value | truncate(5) || 0.00 ]]
+                      [[item.variable.unit_symbol ]]</span
+                    >
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-tab-item>
+
+            <v-tab key="currentday">Current day</v-tab>
+            <v-tab-item key="currentday">
+              <v-list dense disabled>
+                <v-list-item-group color="primary">
+                  <v-list-item
+                    v-for="(item, index) in Sandbox.currentday"
+                    :key="index"
+                  >
+                    <v-list-item-content>
+                      <v-list-item-title
+                        v-html="item.variable.name"
+                      ></v-list-item-title>
+                    </v-list-item-content>
+
+                    <span class="avg"
+                      >[[ item.value | truncate(5) || 0.00 ]]
+                      [[item.variable.unit_symbol ]]</span
+                    >
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-tab-item>
+          </v-tabs>
+        </v-card-text>
+      </v-card>
+    </v-navigation-drawer>
+
+    <v-navigation-drawer
+      v-model="drawer"
+      class="optionsDrawer pt-4"
+      color="white"
+      :right="right"
+      transition="scroll-y-transition"
+    >
+      <div class="w-100 my-2">
+        <span class="pl-5"><strong>Filter by</strong></span>
+      </div>
+
+      <v-expansion-panels
+        v-model="expansionFilters"
+        :accordion="true"
+        class="no-elevation"
+      >
+        <v-expansion-panel value="0">
+          <v-expansion-panel-header>Status</v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <div>
+              <v-switch v-model="defaultFilter.is_active" label="Active">
+              </v-switch>
+              <v-switch v-model="defaultFilter.is_inactive" label="Inactive">
+              </v-switch>
+            </div>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
+        <v-expansion-panel value="1">
+          <v-expansion-panel-header>Type</v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <div>
+              <v-switch v-model="defaultFilter.is_automatic" label="Automatic">
+              </v-switch>
+              <v-switch v-model="defaultFilter.is_manual" label="Manual">
+              </v-switch>
+            </div>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
+        <v-expansion-panel value="2">
+          <v-expansion-panel-header>Profile</v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <div>
+              <v-switch
+                v-for="profile in profiles"
+                :key="profile.id"
+                v-model="defaultFilter.profile"
+                :label="profile.name"
+                :value="profile.name"
+              >
+              </v-switch>
+            </div>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
+        <v-expansion-panel value="3">
+          <v-expansion-panel-header>Region</v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <div>
+              <v-switch
+                v-for="region in regions"
+                :key="region.id"
+                v-model="defaultFilter.region"
+                :label="region.name"
+                :value="region.name"
+              >
+              </v-switch>
+            </div>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
+        <v-expansion-panel value="4">
+          <v-expansion-panel-header>Watershed</v-expansion-panel-header>
+          <v-expansion-panel-content class="watershed-list">
+            <div>
+              <v-switch
+                v-for="watershed in watersheds"
+                :key="watershed.id"
+                v-model="defaultFilter.watershed"
+                :label="watershed.name"
+                :value="watershed.name"
+              >
+              </v-switch>
+            </div>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+
+        <v-expansion-panel value="5">
+          <v-expansion-panel-header>Communication</v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <div>
+              <v-switch
+                v-for="station_communication in station_communications"
+                :key="station_communication.id"
+                v-model="defaultFilter.station_communications"
+                :label="station_communication.description"
+                :value="station_communication.name"
+              >
+              </v-switch>
+            </div>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+      </v-expansion-panels>
+    </v-navigation-drawer>
+    <div style="height: 100vh; width: 100%">
+      <l-map
+        ref="myMap"
+        :zoom="zoom"
+        :center="center"
+        :options="options"
+        style="height: 100vh; width: 100%"
+      >
+        <l-tile-layer :url="Url" :attribution="Attribution"></l-tile-layer>
+        <div v-if="!showWindBarbs">
+          <l-marker
+            v-for="marker in filteredMarkers"
+            :key="marker.id"
+            :lat-lng.sync="marker.position"
+            :visible="marker.visible"
+            :draggable="marker.draggable"
+            :tooltip="marker.tooltip"
+            @click="openStationsDetailDialog(marker, $event)"
+          >
+            <l-icon :icon-size="iconSizeTest" :icon-anchor="iconAnchor">
+              <div
+                v-if="marker.popupContent && showMarkerValues"
+                class="custom-headline"
+              >
+                [[ marker.popupContent ]]&nbsp;[[ marker.popupVariable ]]
+                <div class="custom-headline-arrow"></div>
+              </div>
+              <img src="{% static 'images/placeholder.png' %}" />
+            </l-icon>
+            <l-tooltip>[[ marker.tooltip ]]</l-tooltip>
+          </l-marker>
+        </div>
+        <div v-show="showWindBarbs">
+          <l-marker
+            v-for="marker in filteredMarkers"
+            :key="marker.id"
+            :lat-lng.sync="marker.position"
+            :visible="marker.visible"
+            :draggable="marker.draggable"
+            :icon="marker.icon"
+            :tooltip="marker.tooltip"
+            @click="openStationsDetailDialog(marker, $event)"
+            @add="openPopup"
+          >
+            <l-tooltip :options="tooltipOptions"
+              >[[ marker.tooltip ]]</l-tooltip
+            >
+            <l-popup v-show="showMarkerValues" :options="popupOptions">
+              <div class="left">
+                <div class="value temp-max">[[ marker.tempMax ]]</div>
+                <div class="value temp-min">[[ marker.tempMin ]]</div>
+              </div>
+              <div class="right">
+                <div class="value atm-pressure">[[ marker.atmPressure ]]</div>
+                <div class="value precipitation">
+                  [[ marker.precipitation ]]
+                </div>
+              </div>
+            </l-popup>
+          </l-marker>
+        </div>
+
+        <l-geo-json
+          v-if="Groundwater"
+          :options="geoOptionsGroundwater"
+          :geojson="Groundwater_geojson"
+          :options-style="styleFunctionGroundwater"
+        ></l-geo-json>
+        <l-geo-json
+          v-if="showWatershed"
+          :geojson="Watersheds_geojson"
+          :options="geoOptionsWatershed"
+          :options-style="styleFunctionWatershed"
+        ></l-geo-json>
+        <l-geo-json
+          v-if="Basemap"
+          :geojson="Basemap_geojson"
+          :options="geoOptionsBasemap"
+          :options-style="styleFunctionBasemap"
+        ></l-geo-json>
+        <l-geo-json
+          v-if="River"
+          :geojson="River_geojson"
+          :options="geoOptionsRivers"
+          :options-style="styleFunctionRiver"
+        ></l-geo-json>
+        <l-geo-json
+          v-if="NationalWaters"
+          :geojson="NationalWaters_geojson"
+          :options="geoOptionsNationalWaters"
+          :options-style="styleFunctionNationalWaters"
+        ></l-geo-json>
+        <l-control-zoom :position="zoomPosition"></l-control-zoom>
+      </l-map>
+    </div>
+
+    <div class="variables-box">
+      <v-menu
+        v-model="menu"
+        :close-on-content-click="false"
+        :nudge-width="200"
+        offset-y
+        transition="slide-y-transition"
+        content-class="variables-menu"
+        bottom
+      >
+        <template v-slot:activator="{ on }">
+          <v-btn class="variables-btn w-100" color="white" light v-on="on">
+            <div class="d-flex flex-column">
+              <v-icon class="arrow-icon right material-icons" right
+                >keyboard_arrow_down</v-icon
+              >
+              <strong class="pb-1 truncate-text-230">
+                <span v-if="SelectedVariable">
+                  [[ SelectedVariable.name ]]
+                </span>
+                <span v-if="!SelectedVariable"> No variable selected </span>
+              </strong>
+              <small class="d-flex justify-center">
+                <span v-if="timeToggle === 0">Last 24h</span>
+                <span v-if="timeToggle === 1">Current day</span>
+                <div lass="d-flex justify-center" v-if="timeToggle === 2">
+                  <span class="pr-3">Pick a day</span> |
+                  <span class="pl-3" v-if="requestObject.currentDate"
+                    >[[ requestObject.currentDate ]]</span
+                  >
+                  <span v-if="!requestObject.currentDate"
+                    >No date selected</span
+                  >
+                </div>
+              </small>
+            </div>
+          </v-btn>
+        </template>
+
+        <v-card>
+          <v-list>
+            <v-list-item
+              class="current-date-list d-flex flex-column align-start"
+            >
+              <div class="d-flex justify-center align-center">
+                <v-btn-toggle
+                  mandatory
+                  v-model="timeToggle"
+                  @change="changeTimeToggle()"
+                >
+                  <v-btn small>
+                    <span>Last 24h</span>
+                  </v-btn>
+
+                  <v-btn small>
+                    <span>Current day</span>
+                  </v-btn>
+
+                  <v-btn small>
+                    <span>Pick a day</span>
+                  </v-btn>
+                </v-btn-toggle>
+              </div>
+
+              <div class="pt-4">
+                <v-menu
+                  v-if="timeToggle === 2"
+                  v-model="menuDatePicker"
+                  :close-on-content-click="false"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  min-width="290px"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      v-model="requestObject.currentDate"
+                      label="Select current date"
+                      prepend-icon="event"
+                      readonly
+                      v-on="on"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    v-model="requestObject.currentDate"
+                    @change="getSummaries()"
+                    @input="menuDatePicker = false"
+                  ></v-date-picker>
+                </v-menu>
+              </div>
+            </v-list-item>
+          </v-list>
+
+          <v-list>
+            <v-list-item>
+              <v-checkbox
+                v-model="showMarkerValues"
+                label="Show values"
+              ></v-checkbox>
+            </v-list-item>
+          </v-list>
+
+          <v-list>
+            <v-list-item>
+              <v-radio-group
+                color="black"
+                class="w-100"
+                v-model="requestObject.summaryId"
+                @change="getSummaries()"
+              >
+                <v-radio
+                  v-for="variable in variables"
+                  :key="variable.id"
+                  :label="variable.name"
+                  :value="variable.id"
+                ></v-radio>
+              </v-radio-group>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-menu>
+    </div>
+
+    <div class="search-content">
+      <v-text-field
+        v-model="defaultFilter.inputSearch"
+        label="Search station by name"
+        single-line
+        solo
+        append-icon="search"
+      ></v-text-field>
+    </div>
+
+    <div class="status-box">
+      <div class="d-flex flex-row justify-center pt-2">
+        <span
+          v-if="[[filteredMarkers.length]] > 1 || [[filteredMarkers.length]] < 1"
+          >Showing [[filteredMarkers.length]] stations</span
+        >
+        <span v-if="[[filteredMarkers.length]] == 1"
+          >Showing [[filteredMarkers.length]] station</span
+        >
+      </div>
+      <div>Last update: [[ lastUpdate || '-']]</div>
+    </div>
+
+    <div
+      class="overlays-filter"
+      v-bind:class="{ 'options-menu-opened': drawer === true }"
+    >
+      <v-menu
+        content-class="layers-menu"
+        left
+        offset-x
+        :close-on-content-click="closeOnContentClick"
+      >
+        <template v-slot:activator="{ on }">
+          <v-btn color="white" dark v-on="on">
+            <v-icon class="material-icons" color="black">layers</v-icon>
+          </v-btn>
+        </template>
+
+        <v-list class="overlays-list">
+          <v-list-item-title class="pl-4">Overlays</v-list-item-title>
+
+          <v-list-item>
+            <v-switch
+              @change="toggleWatershedOverlay()"
+              label="Watershed"
+            ></v-switch>
+          </v-list-item>
+          <v-list-item>
+            <v-switch
+              @change="toggleGroundwaterOverlay()"
+              label="Groundwater"
+            ></v-switch>
+          </v-list-item>
+          <v-list-item>
+            <v-switch
+              @change="toggleDistrictsOverlay()"
+              label="Districts"
+            ></v-switch>
+          </v-list-item>
+          <!-- <v-list-item>
+            <v-switch @change="toggleRiverOverlay()" label="Rivers"></v-switch>
+          </v-list-item> -->
+          <v-list-item>
+            <v-switch
+              @change="toggleNationalWatersOverlay()"
+              label="National waters"
+            ></v-switch>
+          </v-list-item>
+
+          <v-divider></v-divider>
+          <v-list-item-title class="pl-4">Basemaps</v-list-item-title>
+
+          <v-radio-group
+            color="black"
+            class="w-100"
+            v-model="selectedBasemap"
+            @change="setBasemap()"
+          >
+            <v-list class="overlays-list">
+              <v-list-item
+                v-for="(basemap, index) in basemaps"
+                :key="basemap.index"
+              >
+                <v-radio
+                  :label="basemap.displayName"
+                  :value="basemap"
+                ></v-radio>
+              </v-list-item>
+            </v-list>
+          </v-radio-group>
+        </v-list>
+      </v-menu>
+    </div>
+
+    <div
+      class="options-menu"
+      v-bind:class="{ 'options-menu-opened': drawer === true }"
+    >
+      <v-btn color="white" dark @click="toggleSidenav()">
+        <v-icon class="material-icons" color="black">search</v-icon>
+      </v-btn>
+    </div>
+  </v-app>
+</div>
+
+{% endblock %} {% block localjavascript %}
+<script src="{% static 'js/leaflet-windbarb.js' %}"></script>
+<script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  })
+    var {
+      LMap,
+      LTileLayer,
+      LControlZoom,
+      LMarker,
+      LTooltip,
+      LControlLayers,
+      LPopup,
+      LGeoJson,
+      LIcon
+    } = Vue2Leaflet;
+
+    var vm = new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      components: {
+        LMap,
+        LTileLayer,
+        LControlZoom,
+        LMarker,
+        LTooltip,
+        LControlLayers,
+        LPopup,
+        LGeoJson,
+        LIcon
+      },
+      filters: {
+        truncate(text, value) {
+          return (text || "").toString().substring(0, value);
+        }
+      },
+      data: {
+        defaultIcon: L.icon({
+          iconUrl: "{% static 'images/placeholder.png' %}",
+          iconSize:      [32, 32],
+          iconAnchor:    [16, 32],
+          popupAnchor:   [0, 0],
+          tooltipAnchor: [0, -34]
+        }),
+        showWindBarbs: true,
+        popupOptions: { closeButton: false, className: 'windbarbPopup', autoClose: false, closeOnClick: false },
+        tooltipOptions: { permanent: false, direction: 'top', className: '' },
+        menu: false,
+        lastUpdate: null,
+        expansionFilters: 0,
+        closeOnContentClick: false,
+        selectedBasemap: null,
+        timeToggle: 1, //Current day
+        basemaps: [
+          {
+            displayName: 'Open Street Map',
+            name: 'Mapnik',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+          },
+          {
+            displayName: 'World Imagery',
+            name: 'WorldImagery',
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          },
+          {
+            displayName: 'World Street Map',
+            name: 'WorldStreetMap',
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+          }
+        ],
+        timezone: "{{ TIMEZONE_NAME|escapejs }}",
+        zoom: {{ MAP_ZOOM|safe }},
+        center: L.latLng({{ MAP_LATITUDE|safe }}, {{ MAP_LONGITUDE|safe }}),
+        url: "http://{s}.tile.osm.org/{z}/{x}/{y}.png",
+        attribution:
+          '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+        options: { zoomControl: false },
+        zoomPosition: "topleft",
+        menuDatePicker: false,
+
+        // LAYERS
+
+        Watersheds_geojson: null,
+        Groundwater_geojson: null,
+        Basemap_geojson: null,
+        River_geojson: null,
+        NationalWaters_geojson: null,
+
+        showWatershed: false,
+        showGroundwater: false,
+        showBasemap: false,
+        showRiver: false,
+        showNationalWaters: false,
+
+        selectedLayers: null,
+
+        getGeoJson: {
+          watershed: () => {return axios.get("{% static 'Belize_Watersheds_4326.geojson' %}")},
+          districts: () => {return axios.get("{% static 'Belize_Basemap.geojson' %}")},
+          nationalWaters: () => {return axios.get("{% static 'Belize_NationalWaters.geojson' %}")},
+          river: () => {return axios.get("{% static 'Belize_Rivers.geojson' %}")},
+          groundwater: () => {return axios.get("{% static 'GWP_Campur.geojson' %}")},
+        },
+
+        // SUMMARIES
+        showMarkerValues: true,
+        requestObject: {
+          currentDate: moment(new Date()).format('YYYY-MM-DD'),
+          summaryId: -1
+        },
+
+        drawer: false,
+        right: true,
+        stations: [],
+        markers: [],
+        customIcon: L.icon({
+          iconUrl: "{% static 'images/placeholder.png' %}",
+          iconSize: [32, 32],
+          iconAnchor: [16, 32],
+          popupAnchor: [0, -32]
+        }),
+        iconSize: 16,
+        iconSizeTest: [32, 32],
+        iconAnchor: [16, 32],
+        enableTooltip: true,
+
+        // FILTER
+        defaultFilter: {
+          is_active: true,
+          is_inactive: false,
+          is_automatic: true,
+          is_manual: false,
+          profile: [],
+          region: [],
+          watershed: [],
+          station_communications: [],
+          inputSearch: "",
+        },
+
+        profiles: [],
+        regions: [],
+        elements: [],
+        variables: [],
+        layers: [],
+        watersheds: [],
+        station_communications: [],
+
+        // SANDBOX
+        sandbox: null,
+        stationsDetail: false,
+        popupContent: "",
+        popupVariable: "",
+        lastUpdateMessage: "",
+        tabsLastUpdate: [
+          "latest_last_update",
+          "past24h_last_update",
+          "currentday_last_update"
+        ],
+        selectedTab: 0,
+
+        // VARIABLE IDS
+        STATION_MAP_WIND_SPEED_ID: {{ STATION_MAP_WIND_SPEED_ID|safe }},
+        STATION_MAP_WIND_GUST_ID:  {{ STATION_MAP_WIND_GUST_ID|safe }},
+        STATION_MAP_WIND_DIRECTION_ID:  {{ STATION_MAP_WIND_DIRECTION_ID|safe }},
+        STATION_MAP_TEMP_MAX_ID:  {{ STATION_MAP_TEMP_MAX_ID|safe }},
+        STATION_MAP_TEMP_MIN_ID:  {{ STATION_MAP_TEMP_MIN_ID|safe }},
+        STATION_MAP_TEMP_AVG_ID:  {{ STATION_MAP_TEMP_AVG_ID|safe }},
+        STATION_MAP_ATM_PRESSURE_ID:  {{ STATION_MAP_ATM_PRESSURE_ID|safe }},
+        STATION_MAP_PRECIPITATION_ID:  {{ STATION_MAP_PRECIPITATION_ID|safe }},
+        STATION_MAP_RELATIVE_HUMIDITY_ID:  {{ STATION_MAP_RELATIVE_HUMIDITY_ID|safe }},
+        STATION_MAP_SOLAR_RADIATION_ID:  {{ STATION_MAP_SOLAR_RADIATION_ID|safe }},
+        STATION_MAP_FILTER_WATERSHED:  {{ STATION_MAP_FILTER_WATERSHED|safe }},
+        STATION_MAP_FILTER_REGION:  {{ STATION_MAP_FILTER_REGION|safe }},
+        STATION_MAP_FILTER_PROFILE:  {{ STATION_MAP_FILTER_PROFILE|safe }},
+        STATION_MAP_FILTER_COMMUNICATION:  {{ STATION_MAP_FILTER_COMMUNICATION|safe }},
+      },
+      computed: {
+        filteredMarkers() {
+          return this.markers.filter(marker =>
+            (
+              this.defaultFilter.is_active === true || this.defaultFilter.is_inactive === true
+            ) &&
+            (
+              (marker.is_active === this.defaultFilter.is_active) === true ||
+              (marker.is_active === !this.defaultFilter.is_inactive) === true
+            ) &&
+            (
+              this.defaultFilter.is_automatic === true || this.defaultFilter.is_manual === true
+            ) &&
+            (
+              (marker.is_automatic === this.defaultFilter.is_automatic) === true ||
+              (marker.is_automatic === !this.defaultFilter.is_manual) === true
+            ) &&
+            (this.defaultFilter.profile.includes(marker.profile) || this.STATION_MAP_FILTER_PROFILE == 0) &&
+            (this.defaultFilter.region.includes(marker.region) || this.STATION_MAP_FILTER_REGION == 0) &&
+            (this.defaultFilter.watershed.includes(marker.watershed) || this.STATION_MAP_FILTER_WATERSHED == 0) &&
+            (this.defaultFilter.station_communications.includes(marker.communication_type) || this.STATION_MAP_FILTER_COMMUNICATION == 0) &&
+            (this.defaultFilter.inputSearch === "" || marker.name.toUpperCase().includes(this.defaultFilter.inputSearch.toUpperCase()))
+          )
+        },
+        SelectedVariable() {
+          if (this.requestObject.summaryId === null && this.variables.length > 0) {
+            this.requestObject.summaryId = this.variables[0].id;
+          }
+          return this.variables.find(item => item.id === this.requestObject.summaryId) || this.variables[0]
+        },
+        Attribution() {
+          return this.attribution
+        },
+        Url() {
+          return this.url
+        },
+        Sandbox() {
+          return this.sandbox;
+        },
+        // Watershed() {
+        //   if (this.showWatershed === true) {
+        //     return true;
+        //   }
+        //   return false;
+        // },
+        Groundwater() {
+          if (this.showGroundwater === true) {
+            return true;
+          }
+          return false;
+        },
+        Basemap() {
+          if (this.showBasemap === true) {
+            return true;
+          }
+          return false;
+        },
+        River() {
+          if (this.showRiver === true) {
+            return true;
+          }
+          return false;
+        },
+        NationalWaters() {
+          if (this.showNationalWaters === true) {
+            return true;
+          }
+          return false;
+        },
+        styleFunctionWatershed() {
+          return {
+            fillColor: "transparent",
+            weight: 2,
+            opacity: 1,
+            color: "#7a34eb",
+            fillOpacity: 0.3
+          };
+        },
+        styleFunctionGroundwater() {
+          return {
+            fillColor: "transparent",
+            weight: 2,
+            opacity: 1,
+            color: "#32908F",
+            fillOpacity: 0.3
+          };
+        },
+        styleFunctionBasemap() {
+          return {
+            fillColor: "transparent",
+            weight: 2,
+            opacity: 1,
+            color: "#787878",
+            fillOpacity: 0.3
+          };
+        },
+        styleFunctionRiver() {
+          return {
+            fillColor: "transparent",
+            weight: 2,
+            opacity: 1,
+            color: "#5bb9d6",
+            fillOpacity: 0.3
+          };
+        },
+        styleFunctionNationalWaters() {
+          return {
+            fillColor: "transparent",
+            weight: 2,
+            opacity: 1,
+            color: "#2965a7",
+            fillOpacity: 0.3
+          };
+        },
+        geoOptionsWatershed() {
+          return {
+            onEachFeature: this.onEachFeatureFunctionWatershed
+          };
+        },
+        geoOptionsGroundwater() {
+          return {
+            onEachFeature: this.onEachFeatureFunctionGroundwater
+          };
+        },
+        geoOptionsBasemap() {
+          return {
+            onEachFeature: this.onEachFeatureFunctionBasemap
+          };
+        },
+        geoOptionsRivers() {
+          return {
+            onEachFeature: this.onEachFeatureFunctionRivers
+          };
+        },
+        geoOptionsNationalWaters() {
+          return {
+            onEachFeature: this.onEachFeatureNationalWaters
+          };
+        },
+        onEachFeatureFunctionWatershed() {
+          if (!this.enableTooltip) {
+            return;
+          }
+          return (feature, layer) => {
+            layer.bindPopup(
+              "<div>Name: " +
+                feature.properties.WATERSHED +
+                "</div><div>Area: " +
+                feature.properties.HECTARES +
+                " ha" +
+                "</div>",
+              { permanent: false, sticky: true }
+            );
+          };
+        },
+        onEachFeatureFunctionGroundwater() {
+          if (!this.enableTooltip) {
+            return;
+          }
+          return (feature, layer) => {
+            layer.bindPopup("</div><div>Name: " + feature.properties.name, {
+              permanent: false,
+              sticky: true
+            });
+          };
+        },
+        onEachFeatureFunctionBasemap() {
+          if (!this.enableTooltip) {
+            return;
+          }
+          return (feature, layer) => {
+            layer.bindPopup("<div>Name: " +
+                feature.properties.DISTRICT +
+                "</div><div>Area: " +
+                feature.properties.HECTARES +
+                " ha" +
+                "</div>",
+              { permanent: false, sticky: true }
+            );
+          };
+        },
+        onEachFeatureFunctionRivers() {
+          if (!this.enableTooltip) {
+            return;
+          }
+          return (feature, layer) => {
+            layer.bindPopup("<div>Name: " +
+                feature.properties.Name +
+                "</div><div>Notes: " +
+                feature.properties.Notes +
+                "</div>",
+              { permanent: false, sticky: true }
+            );
+          };
+        },
+        onEachFeatureNationalWaters() {
+          if (!this.enableTooltip) {
+            return;
+          }
+          return (feature, layer) => {
+            layer.bindPopup("<div>Status: " +
+                feature.properties.STATUS +
+                "</div><div>Area: " +
+                feature.properties.HECTARES +
+                " ha" +
+                "</div>",
+              { permanent: false, sticky: true }
+            );
+          };
+        }
+      },
+      methods: {
+        openPopup: function (event) {
+  				this.$nextTick(() => {
+  					event.target.openPopup();
+  				})
+  			},
+        getVariableValue(marker, variable) {
+          if (marker !== null)
+            return marker[variable]
+          else
+            return ''
+        },
+        async getWindBards(timeToggle, date) {
+          let wsUrl = null;
+          let wdUrl = null;
+          let tempMaxUrl = null;
+          let tempMinUrl = null;
+          let atmPressureUrl = null;
+          let precipitationUrl = null;
+
+          if (timeToggle === 0) {
+            // 24hSummary
+            wsUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_WIND_SPEED_ID;
+            wdUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_WIND_DIRECTION_ID;
+            tempMaxUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_TEMP_MAX_ID;
+            tempMinUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_TEMP_MIN_ID;
+            atmPressureUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_ATM_PRESSURE_ID;
+            precipitationUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_PRECIPITATION_ID;
+          } else {
+            // dailySummary
+            const today = date;
+            const tomorrow = moment(date).add(1, 'days').format('YYYY-MM-DD');
+            wsUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_WIND_SPEED_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+            wdUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_WIND_DIRECTION_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+            tempMaxUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_TEMP_MAX_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+            tempMinUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_TEMP_MIN_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+            atmPressureUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_ATM_PRESSURE_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+            precipitationUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_PRECIPITATION_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+          }
+
+          let [ws, wd, tempMax, tempMin, atmPressure, precipitation] = await Promise.all([this.getAll(wsUrl), this.getAll(wdUrl), this.getAll(tempMaxUrl), this.getAll(tempMinUrl), this.getAll(atmPressureUrl), this.getAll(precipitationUrl)]);
+          return ([ws, wd, tempMax, tempMin, atmPressure, precipitation]);
+        },
+        toggleWatershedOverlay() {
+          if (!this.Watersheds_geojson) {
+            this.getGeoJson.watershed().then(data => {
+              this.Watersheds_geojson = data.data;
+            });
+          }
+          this.showWatershed = !this.showWatershed;
+        },
+        toggleDistrictsOverlay() {
+          if (!this.Basemap_geojson) {
+            this.getGeoJson.districts().then(data => {
+              this.Basemap_geojson = data.data;
+            });
+          }
+          this.showBasemap = !this.showBasemap;
+        },
+        toggleGroundwaterOverlay() {
+          if (!this.Groundwater_geojson) {
+            this.getGeoJson.groundwater().then(data => {
+              this.Groundwater_geojson = data.data;
+            });
+          }
+          this.showGroundwater = !this.showGroundwater;
+        },
+        toggleRiverOverlay() {
+          if (!this.River_geojson) {
+            this.getGeoJson.river().then(data => {
+              this.River_geojson = data.data;
+            });
+          }
+          this.showRiver = !this.showRiver;
+        },
+        toggleNationalWatersOverlay() {
+          if (!this.NationalWaters_geojson) {
+            this.getGeoJson.nationalWaters().then(data => {
+              this.NationalWaters_geojson = data.data;
+            });
+          }
+          this.showNationalWaters = !this.showNationalWaters;
+        },
+        changeTimeToggle() {
+          if (this.timeToggle === 1) {
+              this.requestObject.currentDate = moment(new Date()).tz(this.timezone).format('YYYY-MM-DD');
+          }
+          this.getSummaries();
+        },
+        setBasemap() {
+          this.url = this.selectedBasemap.url;
+        },
+        changeCurrentDate(date) {
+          localStorage.setItem("currentDate", date);
+        },
+        toggleSidenav() {
+          this.drawer = !this.drawer;
+        },
+        getProfiles() {
+          this.getAll("api/station_profiles/").then(data => {
+            this.profiles = data;
+            data.forEach(profile => {
+              this.defaultFilter.profile.push(profile.name);
+            });
+          });
+        },
+        getRegions() {
+          this.getAll("api/administrative_regions/").then(data => {
+            this.regions = data;
+            data.forEach(region => {
+              this.defaultFilter.region.push(region.name);
+            });
+          });
+        },
+        getWatershed() {
+          this.getAll("api/watersheds/").then(data => {
+            this.watersheds = data;
+            data.forEach(watershed => {
+              this.defaultFilter.watershed.push(watershed.name);
+            });
+          });
+        },
+        getStationCommunications() {
+          this.getAll("api/station_communications/").then(data => {
+            this.station_communications = data;
+            data.forEach(station_communication => {
+              if(station_communication.name != 'None')
+                this.defaultFilter.station_communications.push(station_communication.name);
+            });
+          });
+        },
+        getVariables() {
+          // this.getAll("api/variables/").then(data => {
+          //   this.variables = data;
+          // });
+          this.variables = [
+            {name: 'Synoptic', id: -1},
+            {name: 'Precipitation', id: this.STATION_MAP_PRECIPITATION_ID},
+            // {name: 'Temperature (instant)', id: 10}, // ultima leitura, vai ser inserido qnd selecionar 'current day'
+            {name: 'Temperature (avg)', id: this.STATION_MAP_TEMP_AVG_ID},
+            {name: 'Temperature (max)', id: this.STATION_MAP_TEMP_MAX_ID},
+            {name: 'Temperature (min)', id: this.STATION_MAP_TEMP_MIN_ID},
+            {name: 'Relative Humidity', id: this.STATION_MAP_RELATIVE_HUMIDITY_ID},
+            {name: 'Solar Radiation', id: this.STATION_MAP_SOLAR_RADIATION_ID},
+            {name: 'ATM Pressure', id: this.STATION_MAP_ATM_PRESSURE_ID},
+            {name: 'Wind Speed', id: this.STATION_MAP_WIND_SPEED_ID},
+            {name: 'Wind Direction', id: this.STATION_MAP_WIND_DIRECTION_ID},
+            {name: 'Wind Gust', id: this.STATION_MAP_WIND_GUST_ID}
+          ];
+        },
+        getElements() {
+          this.getAll("api/elements/").then(data => {
+            this.elements = data;
+          });
+        },
+        getSummaries() {
+          if (this.timeToggle === 0) { //0 === Last 24h
+            this.getLast24Summaries(this.requestObject.summaryId)
+          } else {
+            if (this.requestObject.summaryId !== null && this.requestObject.currentDate) {
+              this.getDailySummaries(
+                this.requestObject.summaryId,
+                this.requestObject.currentDate
+              );
+              localStorage.setItem("summaryId", this.requestObject.summaryId);
+            } else {
+              return;
+            }
+          }
+        },
+        getDailySummaries(id, date) {
+          if (id === -1) {
+            this.showWindBarbSummaries(this.timeToggle, date);
+          } else {
+            this.showWindBarbs = false;
+
+            const today = date;
+            const tomorrow = moment(date).add(1, 'days').format('YYYY-MM-DD');
+            const params = `api/dailysummaries/?search_type=variable&search_value=${id}&search_date_start=${today}&search_date_end=${tomorrow}`;
+
+            return this.getAll(params).then(res => {
+              this.lastUpdate = moment(new Date()).format('L LT');
+
+              this.markers = this.markers.map(e => {
+                const summary = res.find(data => data.station === e.id);
+
+                e.icon = this.defaultIcon;
+
+                if (!summary) {
+                  e.popupContent = null;
+                  e.popupVariable = null;
+                  e.windDirection = null;
+                  e.windSpeed = null;
+                  e.tempMax = null;
+                  e.tempMin = null;
+                  e.atmPressure = null;
+                  e.precipitation = null;
+                  return e;
+                }
+
+                e.popupContent = `${summary.value.toFixed(1)}`;
+                e.popupVariable = summary.variable.unit_symbol || "";
+                e.windDirection = null;
+                e.windSpeed = null;
+                e.tempMax = null;
+                e.tempMin = null;
+                e.atmPressure = null;
+                e.precipitation = null;
+                return e;
+              });
+            });
+          }
+        },
+        getLast24Summaries(id) {
+          if (id === -1) {
+            this.showWindBarbSummaries(this.timeToggle, null);
+          } else {
+            this.showWindBarbs = false;
+            const params = `api/last24hrsummaries/?search_type=variable&search_value=${id}`;
+
+            return this.getAll(params).then(res => {
+              this.lastUpdate = moment(new Date()).format('L LT') ;
+
+              this.markers = this.markers.map(e => {
+                const summary = res.find(data => data.station === e.id);
+
+                e.icon = this.defaultIcon;
+
+                if (!summary) {
+                  e.popupContent = null;
+                  e.popupVariable = null;
+                  e.windDirection = null;
+                  e.windSpeed = null;
+                  e.tempMax = null;
+                  e.tempMin = null;
+                  e.atmPressure = null;
+                  e.precipitation = null;
+                  return e;
+                }
+
+                e.popupContent = `${summary.value.toFixed(1)}`;
+                e.popupVariable = summary.variable.unit_symbol || "";
+                e.windDirection = null;
+                e.windSpeed = null;
+                e.tempMax = null;
+                e.tempMin = null;
+                e.atmPressure = null;
+                e.precipitation = null;
+                return e;
+              });
+            });
+          }
+        },
+        showWindBarbSummaries(timeToggle, date) {
+          this.showWindBarbs = true;
+          this.getWindBards(timeToggle, date).then((wind) => {
+            this.lastUpdate = moment(new Date()).format('L LT') ;
+
+            this.markers.forEach(marker => {
+              //marker.icon = L.WindBarb.icon();
+              marker.windSpeed = null;
+              marker.windDirection = null;
+              marker.tempMax = null;
+              marker.tempMin = null;
+              marker.atmPressure = null;
+              marker.precipitation = null;
+
+              // proceed only IF Marker have windSpeed and windDirection
+              // if (wind[0].find(el => el.station === marker.id && wind[1].find(el => el.station === marker.id))) {
+
+                windSpeed = wind[0].find(el => el.station === marker.id);
+                windDirection = wind[1].find(el => el.station === marker.id);
+                tempMax = wind[2].find(el => el.station === marker.id);
+                tempMin = wind[3].find(el => el.station === marker.id);
+                atmPressure = wind[4].find(el => el.station === marker.id);
+                precipitation = wind[5].find(el => el.station === marker.id);
+
+                marker.windSpeed = windSpeed ? windSpeed : null;
+                marker.windDirection = windDirection ? windDirection : null;
+                marker.tempMax = tempMax ? tempMax.value.toFixed(1) : null;
+                marker.tempMin = tempMin ? tempMin.value.toFixed(1) : null;
+                marker.atmPressure = atmPressure ? atmPressure.value.toFixed(1) : null;
+                marker.precipitation = precipitation ? precipitation.value.toFixed(1) : null;
+
+                if (windSpeed && windDirection) {
+                  marker.icon = L.WindBarb.icon({fillColor: 'black', pointRadius: 1, deg: marker.windDirection.value, speed: marker.windSpeed.value, iconAnchor: [16, 32],forceDir: true, autoClose: false, closeOnClick: false, closePopupOnClick: false});
+                } else {
+                  marker.icon = L.icon({
+                    iconUrl: "{% static 'images/close.png' %}",
+                    iconSize: [8, 8],
+                  });
+                }
+            });
+          });
+        },
+        getStations() {
+          return this.getAll("api/stations_simple/").then(data => {
+            const stationMarkers = data.map(station => ({
+              id: station.id,
+              tooltip: station.name,
+              position: {
+                lat: station.position.latitude,
+                lng: station.position.longitude
+              },
+              visible: true,
+              draggable: false,
+              name: station.name,
+              profile: station.profile,
+              is_automatic: station.is_automatic,
+              is_active: station.is_active,
+              region: station.region,
+              watershed: station.watershed,
+              communication_type: station.communication_type,
+              popupContent: null,
+              popupVariable: null,
+              windDirection: null,
+              windSpeed: null,
+              tempMax: '',
+              tempMin: '',
+              atmPressure: '',
+              precipitation: ''
+            }));
+
+            const markersWIcons = stationMarkers.map(e =>
+              Object.assign({}, e, {
+                icon: this.defaultIcon
+              })
+            );
+            this.markers = markersWIcons;
+          });
+        },
+        formatDatetime(datetime){
+          return datetime ? moment.utc(datetime).tz(this.timezone).format('YYYY-MM-DD HH:mm:ss'): 'Not available'
+        },
+        openStationsDetailDialog(marker, event) {
+          this.getById("api/livedata", marker.id).then(data => {
+
+            data.past24h_last_update = this.formatDatetime(data.past24h_last_update)
+            data.latest_last_update = this.formatDatetime(data.latest_last_update)
+            data.currentday_last_update = this.formatDatetime(data.currentday_last_update)
+
+            this.sandbox = data;
+            this.sandbox.station_url = `{% url 'stations-list' %}${this.sandbox.station_id}`
+            this.sandbox.stationReport = `{% url 'station-report' %}?station_id=${this.sandbox.station_id}`
+            this.selectedTab = 0;
+            this.handleTabUpdate(this.selectedTab);
+          });
+          // });
+          this.stationsDetail = true;
+          event.target.closePopup();
+        },
+        closeDialog() {
+          this.stationsDetail = false;
+        },
+        getById(path, id, oldData = []) {
+          return fetch(`/${path}/${id}/`).then(res => {
+            if (!res.body) {
+              return { next: null, results: [] };
+            }
+
+            return res.json();
+          });
+        },
+        getAll(path, url, oldData = []) {
+          return fetch(`/${path}`)
+            .then(res => {
+              if (!res.body) {
+                return { next: null, results: [] };
+              }
+              if (res.status === 500) {
+                console.error('Internal Server Error');
+                return { next: null, results: [] };
+              }
+              if (res.status === 404) {
+                console.error('Not Found');
+                return { next: null, results: [] };
+              }
+              return res.json();
+            })
+            .then(async data => {
+              const values = [...oldData, ...data.results];
+              if (!!data.next) {
+                return await getAll(
+                  context,
+                  path,
+                  `/${path}/${data.next.substr(
+                    data.next.indexOf(`/${path}`)
+                  )}`,
+                  values
+                );
+              }
+              return values;
+            }).catch((err) => {
+              console.log('err', err);
+            });
+        },
+        handleTabUpdate(selectedTab) {
+          const lastUpdateDate = this.sandbox[this.tabsLastUpdate[selectedTab]];
+          this.lastUpdateMessage = `Last updated: ${lastUpdateDate}`;
+        }
+      },
+      beforeMount() {
+        this.getVariables();
+      },
+      mounted() {
+        window.mapReference = this.$refs.myMap.mapObject;
+        this.getProfiles();
+        this.getRegions();
+        this.getWatershed();
+        this.getStationCommunications();
+        // this.getElements();
+        // this.getGeoJson();
+        this.getStations().then(res => {
+          this.requestObject.currentDate = moment(new Date()).tz(this.timezone).format('YYYY-MM-DD');
+          if (this.requestObject.summaryId && this.requestObject.currentDate) {
+            this.getDailySummaries(
+              this.requestObject.summaryId,
+              this.requestObject.currentDate
+            );
+            return;
+          }
+          this.getSummaries();
+
+        });
+        /*
+        this.markers = this.markers.map(e => {
+          const summary = state.stationSummaries.find(
+            data => data.station === e.id
+          );
+
+          if (!summary) {
+            e.popupContent = null;
+            e.popupVariable = null;
+            return e;
+          }
+
+          const popupContent = `${summary.value.toFixed(1)}`;
+          e.popupContent = popupContent;
+          e.popupVariable = summary.variable.unit_symbol || "";
+          return e;
+        });*/
+        setInterval(() => {
+          this.getSummaries();
+        }, 60000); // 1 minute
+      }
+    });
+</script>
+
+<style>
+  [v-cloak] {
+    visibility: hidden !important;
+    display: block !important;
+  }
+  .leaflet-interactive svg {
+    margin-top: -14px !important;
+  }
+  .leaflet-popup-pane {
+    z-index: 200;
+  }
+  .windbarbPopup {
+    left: -50px !important;
+    bottom: -15px !important;
+  }
+  .leaflet-popup {
+    margin-bottom: 0px !important;
+  }
+  .windbarbPopup .leaflet-popup-content {
+    width: 65px;
+    height: 1px;
+  }
+  .windbarbPopup .leaflet-popup-tip-container {
+    display: none;
+  }
+  .windbarbPopup > div > div > div {
+    display: flex;
+    justify-content: space-between;
+    width: 90px;
+    position: absolute;
+    top: 0px;
+    left: 15px;
+    color: rgb(95, 95, 95);
+    font-size: 0.65rem;
+  }
+  .windbarbPopup > div > div > div .left {
+    display: flex;
+    flex-direction: column;
+    width: 27px;
+    align-items: start;
+  }
+  .windbarbPopup > div > div > div .right {
+    display: flex;
+    flex-direction: column;
+    width: 42px;
+    align-items: start;
+  }
+  .windbarbPopup .value {
+    font-weight: bold;
+  }
+  .windbarbPopup .leaflet-popup-content-wrapper {
+    background: transparent !important;
+    color: #333;
+    box-shadow: none !important;
+  }
+  .watershed-list {
+    overflow: auto;
+    height: calc(100vh - 309px);
+  }
+  .livedata {
+    margin-left: 14px;
+    width: 100% !important;
+    max-width: 342px !important;
+    border: 1px solid gray !important;
+    max-height: calc(100vh - 162px) !important;
+    width: 100%;
+    margin-top: 86px;
+    overflow: auto;
+    box-shadow: 0px 3px 10px -2px rgba(0, 0, 0, 0.2),
+      0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  }
+  .variables-btn {
+    padding: 8px 16px !important;
+    height: auto !important;
+  }
+  .variables-btn .arrow-icon {
+    position: absolute;
+    right: 0px;
+    top: 30%;
+  }
+  .search-station-field .v-input__slot {
+    box-shadow: none !important;
+    background: rgb(240, 240, 240) !important;
+  }
+  .search-station-field .v-input__slot:hover {
+    box-shadow: none !important;
+    background: rgb(233, 233, 233) !important;
+  }
+  .optionsDrawer {
+    height: 100% !important;
+    transition: visibility 0s linear 0.7s, opacity 0.7s ease-in-out;
+  }
+  .v-text-field.v-text-field--enclosed .v-text-field__details {
+    margin-bottom: 8px;
+    display: none;
+  }
+  .v-overlay {
+    display: none;
+  }
+  .v-input--selection-controls {
+    margin-top: 0px;
+    padding-top: 0px;
+  }
+  .v-label {
+    font-size: 14px;
+  }
+  .v-input--radio-group--column .v-radio:not(:last-child):not(:only-child) {
+    margin-bottom: 4px;
+  }
+  .v-input--selection-controls__ripple {
+    z-index: 5 !important;
+  }
+  .v-input__slot {
+    margin-bottom: 0px;
+  }
+  button:focus {
+    background-color: transparent !important;
+  }
+  .custom-headline-tooltip {
+    width: 92px;
+    /* background-color: rgba(255, 255, 255, 0.884); */
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 15px !important;
+    display: flex;
+    justify-content: center;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+  }
+  .custom-headline {
+    background-color: rgba(255, 255, 255, 0.884);
+    padding: 2px;
+    border-radius: 10px;
+    position: absolute;
+    top: -36px;
+    left: -33px;
+    width: 98px;
+    font-size: 15px !important;
+    display: flex;
+    justify-content: center;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+  }
+  .custom-headline-arrow {
+    width: 40px;
+    height: 10px;
+    position: absolute;
+    left: 50%;
+    margin-left: -20px;
+    overflow: hidden;
+    top: 23px;
+    pointer-events: none;
+    display: inline-block;
+    border-style: solid;
+    border-width: 10px 20px 0px 20px;
+    border-color: white transparent transparent transparent;
+    z-index: 1;
+  }
+  .truncate-text-230 {
+    max-width: 230px;
+  }
+  .truncate-text-230 span {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .truncate-text {
+    max-width: 275px;
+    line-height: 16px;
+  }
+  .truncate-text span,
+  .truncate-text a span {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .btn-close-dialog {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+  }
+  .station-link:hover {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .v-card__text {
+    padding: 0px !important;
+  }
+  .index-top {
+    z-index: 999;
+  }
+  .v-slide-group__prev {
+    display: none !important;
+  }
+  .v-slide-group__next {
+    display: none !important;
+  }
+  .v-navigation-drawer--close {
+    display: none !important;
+  }
+  .stations-detail {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 100%;
+    width: 100%;
+    background-color: #fafafa;
+    border-radius: 5px;
+  }
+  @media screen and (max-width: 992px) {
+    .stations-detail {
+      top: 168px;
+      left: 16px;
+      height: 100%;
+      max-height: 60vh !important;
+      max-width: 300px !important;
+    }
+  }
+  .options-menu-opened {
+    right: 272px !important;
+    transition: 0.15s;
+  }
+  .options-menu {
+    z-index: 995;
+    position: absolute;
+    top: 68px;
+    right: 16px;
+    transition: 0.15s;
+  }
+  .current-date-list {
+    min-height: auto;
+  }
+  .variables-menu .input {
+    min-height: 0px;
+  }
+  .variables-menu {
+    min-width: auto !important;
+    z-index: 99999 !important;
+  }
+  .layers-menu .v-messages {
+    display: none !important;
+  }
+  .overlays-filter {
+    z-index: 995;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    transition: 0.15s;
+  }
+  .overlays-list .v-messages {
+    display: none !important;
+  }
+  aside {
+    z-index: 9999 !important;
+    position: absolute;
+  }
+  .search-content {
+    position: absolute;
+    bottom: 16px;
+    left: 14px;
+    display: flex;
+    width: 100%;
+    max-width: 300px;
+    z-index: 995;
+  }
+  .status-box {
+    position: absolute;
+    bottom: 16px;
+    left: 330px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    background-color: white;
+    padding: 12px;
+    width: 100%;
+    height: 48px;
+    max-width: 250px;
+    font-size: 14px;
+    z-index: 995;
+    border-radius: 2px;
+    box-shadow: 0px 3px 10px -2px rgba(0, 0, 0, 0.2),
+      0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  }
+  .variables-box {
+    position: absolute;
+    top: 16px;
+    left: 56px;
+    display: flex;
+    width: 100%;
+    max-width: 300px;
+    z-index: 995;
+  }
+  .variables-box .v-input__control .v-input__slot {
+    border: 1px solid gray;
+    border-radius: 5px;
+  }
+
+  input::placeholder {
+    /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: black;
+    opacity: 0.7; /* Firefox */
+  }
+
+  /* MATERIALIZE */
+  input:not([type]),
+  input[type="text"]:not(.browser-default),
+  input[type="password"]:not(.browser-default),
+  input[type="email"]:not(.browser-default),
+  input[type="url"]:not(.browser-default),
+  input[type="time"]:not(.browser-default),
+  input[type="date"]:not(.browser-default),
+  input[type="datetime"]:not(.browser-default),
+  input[type="datetime-local"]:not(.browser-default),
+  input[type="tel"]:not(.browser-default),
+  input[type="number"]:not(.browser-default),
+  input[type="search"]:not(.browser-default),
+  textarea.materialize-textarea {
+    background-color: transparent;
+    border: none !important;
+    border-bottom: 1px solid black !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    /* height: 0em!important; */
+    width: 100%;
+    font-size: 16px;
+    margin: 0px;
+    padding: 0;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    -webkit-box-sizing: content-box;
+    box-sizing: content-box;
+    -webkit-transition: border 0.3s, -webkit-box-shadow 0.3s;
+    transition: border 0.3s, -webkit-box-shadow 0.3s;
+    transition: box-shadow 0.3s, border 0.3s;
+    transition: box-shadow 0.3s, border 0.3s, -webkit-box-shadow 0.3s;
+  }
+
+  @media screen and (max-width: 968px) {
+    aside.v-navigation-drawer.v-navigation-drawer--absolute.v-navigation-drawer--is-mobile.v-navigation-drawer--open.v-navigation-drawer--right.theme--light.white {
+      height: 92vh !important;
+    }
+  }
+</style>
+
+{% endblock %}

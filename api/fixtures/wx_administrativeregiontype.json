@@ -1,0 +1,11 @@
+[
+  {
+    "model": "wx.administrativeregiontype",
+    "pk": 1,
+    "fields": {
+      "created_at": "2019-01-23T22:45:31.532Z",
+      "updated_at": "2019-01-23T22:45:31.532Z",
+      "name": "District"
+    }
+  }
+]

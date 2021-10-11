@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Django Highcharts Example</title>
+  <style>
+.highcharts-data-table table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    background: white;
+    min-width: 100%;
+    margin-top: 10px;
+    font-family: sans-serif;
+    font-size: 0.9em;
+}
+.highcharts-data-table td, .highcharts-data-table th, .highcharts-data-table caption {
+    border: 1px solid silver;
+    padding: 0.5em;
+}
+.highcharts-data-table tr:nth-child(even), .highcharts-data-table thead tr {
+    background: #f8f8f8;
+}
+.highcharts-data-table tr:hover {
+    background: #eff;
+}
+.highcharts-data-table caption {
+    border-bottom: none;
+    font-size: 1.1em;
+    font-weight: bold;
+}  
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+<!--Let browser know website is optimized for mobile-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>  
+</head>
+<body>
+    <input type="hidden" id="data-url" value="{% url 'station_report_data' %}">
+
+    <div id="row" class="row">
+        <div class="col s12">
+            <ul id="tabs" class="tabs tabs-fixed-width">
+            </ul>
+        </div>
+    </div>
+
+
+    <script src="https://code.highcharts.com/highcharts.src.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/stock/indicators/indicators.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    
+    <script>
+        function createChart(el, data, name) {
+            el.append("<div id='"+name+"-chart' style='width:100%; height:400px;'></div>")
+            myChart = Highcharts.chart(name+'-chart', data);
+        };
+        $.ajax({
+            url: document.getElementById('data-url').value + '?station=122&initial_datetime=2019-07-01T00:00:00Z&final_datetime=2019-07-02T00:00:00Z',
+            dataType: 'json',
+            success: function (data) {
+                
+                $tabs = $('#tabs');
+                $row = $('#row');
+                
+                for (key in data) {
+                    $tabs.append("<li class='tab col s3'><a href='#"+key+"'>"+key+"</a></li>");
+                    $row.append("<div id='"+key+"' class='col s12'></div>");
+                    
+                    createChart($('#'+key), data[key], key)
+                }        
+                $(document).ready(function(){
+                    $('.tabs').tabs();
+                });
+            }
+        });
+
+  </script>
+</body>
+</html>

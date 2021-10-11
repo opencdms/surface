@@ -1,0 +1,859 @@
+{% extends "wx/station_base.html" %}
+{% block station_content %}
+{% load static %}
+
+<div id="app">
+
+  <div style="display: flex; justify-content: space-between; margin-bottom: 16px">
+    <span class="srf-display-1 text-uppercase">Station Metadata</span>
+  </div>
+
+  <v-app>
+    <v-layout mt-3 ml-2 mb-3>
+      <v-flex sm1 md3 lg3>
+        <v-autocomplete
+          :items="stationList"
+          :item-text="(item) => `${item.name} ${item.code}`"
+          item-value="id"
+          v-model="stationId"
+          label="Station"
+          @change="onChangeStation()"
+          required
+          hint="*Required"
+          persistent-hint
+          :rules="simpleTextFieldsRules"
+          autocomplete="off"
+        ></v-autocomplete>
+      </v-flex>
+    </v-layout>
+
+    <v-layout column mt-3 v-if="selectedStation">
+      <v-layout>
+        <v-col cols="6">
+          <div style="height: 300px; width: 100%;">
+            <l-map
+              ref="myMap"
+              :zoom="zoom"
+              :center="center"
+              :options="options"
+              style="z-index: 0;"
+            >
+              <l-marker :lat-lng="markerPosition" draggable @dragend="onMarkerDragEnd($event)">
+                <l-icon :icon-size="iconSizeTest" :icon-anchor="iconAnchor">
+                  <img src="{% static 'images/placeholder.png' %}" />
+                </l-icon>
+              </l-marker>
+      
+              <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
+              <l-control-zoom :position="zoomPosition"></l-control-zoom>
+            </l-map>
+          </div>
+        </v-col>
+
+        <v-col cols="6">
+          <template v-if="stationImagesList.length">
+            <v-carousel
+              :key="carouselId"
+              cycle
+              height="auto"
+              show-arrows-on-hover
+            >
+              <v-carousel-item
+                eager
+                v-for="(image, i) in stationImagesList"
+                :key="i"
+              >
+                <v-img :src="image.path" min-height="300" max-height="300" contains></v-img>
+              </v-carousel-item>
+            </v-carousel>
+          </template>
+          <div style="margin: 0 auto;" v-if="!stationImagesList.length">No image available!</div>
+        </v-col>
+      </v-layout>
+
+      <template>
+        <v-tabs class="mt-3" @change="cancelEditing">
+          <v-tab :key="1">
+            Station Information
+          </v-tab>
+          <v-tab :key="2">
+            Images
+          </v-tab>
+          <v-tab :key="3">
+            Documents
+          </v-tab>
+          <!-- <v-tab :key="3" >
+            Station Identifiers
+          </v-tab>
+          <v-tab :key="4" >
+            Local Environment
+          </v-tab>
+          <v-tab :key="5" >
+            Instrumentation and Maintenance
+          </v-tab>
+          <v-tab :key="6" >
+            Observing Practices
+          </v-tab>
+          <v-tab :key="7" >
+            Data
+          </v-tab>
+          <v-tab :key="8" >
+            Historical Events
+          </v-tab>
+          <v-tab :key="9" >
+            Other Metadata
+          </v-tab> -->
+
+          <v-tab-item :key="1">
+          <form id="stationInformation" @submit="checkStationInformation">
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.name"
+                  label="Station Name"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.alias_name"
+                  label="Alias Name"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+            </div>
+            
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.id"
+                  label="Local Station ID"
+                  disabled
+                ></v-text-field>
+              </div>
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.wigos"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  label="WIGOS Station ID"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-autocomplete
+                :items="wmoProgramList"
+                item-text="name"
+                item-value="id"
+                v-model="selectedStation.wmo"
+                label="WMO Program"
+                required
+                hint="*Required"
+                persistent-hint
+                :rules="simpleTextFieldsRules"
+                :disabled="!isEditing"
+                autocomplete="off"
+              ></v-autocomplete>
+              </div>
+              <div class="col s4">
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="begin_date_menu"
+                  transition="scale-transition"
+                  offset-y
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      v-model="selectedStation.begin_date"
+                      label="Established Date (WMO)"
+                      v-on="on"
+                      required
+                      prepend-icon="event"
+                      hint="*Required"
+                      :rules="simpleTextFieldsRules"
+                      persistent-hint
+                      :disabled="!isEditing"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    v-model="selectedStation.begin_date"
+                    @input="begin_date_menu = false"
+                    hint="*Required"
+                    required
+                    persistent-hint
+                  ></v-date-picker>
+                </v-menu>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <div class="srf-field">
+                  <span class="srf-field-header">Is active?</span>
+                  <v-switch
+                    v-model="selectedStation.is_active"
+                    :disabled="!isEditing"
+                  >
+                </div>
+              </div>
+              <div class="col s4">
+                <div class="srf-field">
+                  <span class="srf-field-header">Is automatic?</span>
+                  <v-switch
+                    v-model="selectedStation.is_automatic"
+                    :disabled="!isEditing"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <span class="srf-field-header">Operational Status is active?</span>
+                <v-switch
+                  v-model="selectedStation.operation_status"
+                  :disabled="!isEditing"
+                >
+              </div>
+              <div class="col s4">
+                <v-autocomplete
+                  :items="wmoStationTypeList"
+                  item-text="name"
+                  item-value="id"
+                  v-model="selectedStation.wmo_station_type"
+                  label="WMO Station Type"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  :disabled="!isEditing"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-autocomplete
+                  :items="stationProfileList"
+                  item-text="name"
+                  item-value="id"
+                  v-model="selectedStation.profile"
+                  label="Profile"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  :disabled="!isEditing"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </div>
+              <div class="col s4">
+                <v-autocomplete
+                  :items="stationCommunicationList"
+                  item-text="name"
+                  item-value="id"
+                  v-model="selectedStation.communication_type"
+                  label="Communication"
+                  required
+                  :disabled="!isEditing"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.latitude"
+                  label="Latitude"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleFloatFieldsRules"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.longitude"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleFloatFieldsRules"
+                  label="Longitude"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.elevation"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleFloatFieldsRules"
+                  label="Elevation"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.country"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  label="Country"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.region"
+                  label="District"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.watershed"
+                  label="Watershed"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-autocomplete
+                  :items="wmoRegionList"
+                  item-text="name"
+                  item-value="id"
+                  v-model="selectedStation.wmo_region"
+                  label="WMO Region"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  :disabled="!isEditing"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </div>
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.utc_offset_minutes"
+                  label="Country Time Zone (UTC offset in mins)"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="timezoneRules"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <div class="row w-100 mt-3">
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.wmo_station_plataform"
+                  label="Station/Platform model (WMO)"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+              <div class="col s4">
+                <v-text-field
+                  type="text"
+                  v-model="selectedStation.data_type"
+                  label="Data Communication Method"
+                  :disabled="!isEditing"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <v-btn
+              v-if="!isEditing"
+              class="ml-2"
+              outlined
+              justify-end
+              color="primary"
+              @click="setEditing"
+            >EDIT</v-btn>  
+            <v-btn
+              v-if="isEditing"
+              class="ml-2"
+              outlined
+              justify-end
+              color="primary"
+              @click="cancelEditing"
+            >CANCEL EDITION</v-btn>  
+          </form>  
+        </v-tab-item >
+        <v-tab-item :key="2" grow>
+
+          <v-overlay
+            absolute
+            :value="loading"
+          >
+            <span>LOADING</span>
+            <v-progress-circular
+              indeterminate
+              color="primary"
+            ></v-progress-circular>
+          </v-overlay>
+          
+          <v-row class="mt-3 ml-1 pa-2">
+            <h5>Add new images</h5>
+          </v-row>
+
+          <v-row class="mt-3 pa-2">
+            <v-col cols="12">
+              <v-file-input label="Images" multiple v-model="imageToUpload.path"></v-file-input>
+            </v-col>
+          </v-row>
+
+          <v-row class="mt-3 pa-2" justify="end" align-end style="align-self: end;">
+            <v-btn
+              class="mr-2"
+              outlined
+              justify-end
+              color="primary"
+              @click="uploadImage"
+              :disabled="!imageToUpload.path"
+            >ADD</v-btn>  
+          </v-row>
+
+          <v-row class="mt-3 ml-1 pa-2">
+            <h5>Station images</h5>
+          </v-row>
+
+          <v-row class="w-100">
+            <v-col class="mt-4" cols="4" v-for="stationImage in stationImagesList" :key="stationImage.id">
+              <v-img @mouseover="showStationImage(stationImage)" @mouseleave="hideStationImage(stationImage)"  :src="stationImage.path" contain>
+                <div v-if="stationImage.show" class="image-overlay">
+                  <v-row class="ml-3 w-100">
+                    <v-col cols="10">
+                      <h6 class="pt-2">[[stationImage.name]]</h6>
+                    </v-col>
+                    <v-col cols="2" justify="end" align-end style="display:flex; justify-content: end; padding-right: 5%;" class="pt-3">
+                      <v-tooltip bottom>
+                        <template v-slot:activator="{ on }">
+                          <v-icon class="mr-2" color="error" v-on="on" @click="removeImage(stationImage)">
+                            close
+                          </v-icon>
+                        </template>
+                        <span>Remove image</span>
+                      </v-tooltip>
+                    </v-col>
+                  </v-row>
+                  <v-row class="ml-3">
+                    <v-col cols="12">
+                      [[stationImage.description]]
+                    </v-col>
+                  </v-row>
+                </div>
+              </v-img>
+            </v-col>
+          </v-row>
+        </v-tab-item >
+        <v-tab-item :key="3" >
+          <v-overlay
+            absolute
+            :value="loading"
+          >
+            <span>LOADING</span>
+            <v-progress-circular
+              indeterminate
+              color="primary"
+            ></v-progress-circular>
+          </v-overlay>
+          
+          <v-row class="mt-3 pa-2">
+            <h5>Add new documents</h5>
+          </v-row>
+
+          <v-row class="pa-2">
+            <v-col cols="12">
+              <v-file-input label="Documents" multiple v-model="documentToUpload.path"></v-file-input>
+            </v-col>
+          </v-row>
+
+          <v-row class="mt-3 pa-2" justify="end" align-end style="align-self: end;">
+            <v-btn
+              class="mr-2"
+              outlined
+              justify-end
+              color="primary"
+              @click="uploadDocument"
+              :disabled="!documentToUpload.path"
+            >ADD</v-btn>  
+          </v-row>
+
+          <v-row class="mt-3 pa-2">
+            <h5>Station documents</h5>
+          </v-row>
+
+          <v-data-table
+            ref="documents_table"
+            :headers="documents_headers"
+            :items="stationDocumentsList"
+            :items-per-page="10"
+            class="elevation-1"
+            dense
+            calculate-widths
+          >
+            <template v-slot:item.action="{ item }">
+              <v-tooltip bottom>
+                <template v-slot:activator="{ on }">
+                  <v-icon
+                    small
+                    class="mr-2"
+                    @click="downloadDocument(item)"
+                    v-on="on"
+                  >
+                    get_app
+                  </v-icon>
+                </template>
+                <span>Download file</span>
+              </v-tooltip>
+              <v-tooltip bottom>
+                <template v-slot:activator="{ on }">
+                    <v-icon
+                    small
+                    @click="deleteItem(item)"
+                    v-on="on"
+                  >
+                    delete
+                  </v-icon>
+                    </template>
+                <span>Delete file</span>
+              </v-tooltip>
+            </template>
+          </v-data-table>
+        </v-tab-item>
+        <v-tab-item :key="4" ></v-tab-item>
+        <v-tab-item :key="5" ></v-tab-item>
+        <v-tab-item :key="6" ></v-tab-item>
+        <v-tab-item :key="7" ></v-tab-item>
+        <v-tab-item :key="8" ></v-tab-item>
+        <v-tab-item :key="9" ></v-tab-item>
+      </v-tabs>
+    </template>
+    </v-layout>
+  </v-app>
+</div>
+{% endblock %}
+
+{% block localjavascript %}
+  <script>
+
+    var {
+      LMap,
+      LTileLayer,
+      LControlZoom,
+      LMarker,
+      LTooltip,
+      LControlLayers,
+      LGeoJson,
+      LImageOverlay,
+      LIcon
+    } = Vue2Leaflet;
+
+    Vue.use(window.vuelidate.default);
+    const { required, minLength } = window.validators;
+
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      components: {
+        LMap,
+        LTileLayer,
+        LControlZoom,
+        LMarker,
+        LTooltip,
+        LControlLayers,
+        LGeoJson,
+        LImageOverlay,
+        LIcon
+      },
+      data: {
+        iconSizeTest: [32, 32],
+        zoom: {{ MAP_ZOOM|safe }},
+        center: L.latLng({{ MAP_LATITUDE|safe }}, {{ MAP_LONGITUDE|safe }}),
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attribution:
+          '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+        options: { zoomControl: false },
+        zoomPosition: "bottomleft",
+        timezone: "{{ TIMEZONE_NAME|escapejs }}",
+        stationId: {{ station_id | safe }},
+        iconAnchor: [16, 32],
+        selectedStation: null,
+        backupStationObject: null,
+        stationList: [],
+        stationImagesList: [],
+        carouselId: 0,
+        begin_date_menu: false,
+        imageToUpload: {},
+        documentToUpload: {},
+        stationDocumentsList: [],
+        errors: [],
+        loading: false,
+        integerRegularExpression: /^[-+]?[0-9]+$/,
+        simpleTextFieldsRules: [
+          v => (v !== undefined && v !== "") || "This field is required"
+        ],
+        simpleFloatFieldsRules: [
+          v => (v !== undefined && v !== "") || "This field is required",
+          v => (/^[-+]?[0-9]+([.][0-9]+)?$/.test(v)) || "Invalid input"
+        ],
+        timezoneRules: [
+          v => (v !== undefined && v !== "") || "This field is required",
+          v => (/^[-+]?[0-9]+$/.test(v)) || "Invalid input",
+          v => (v >= -720 && v <= 720) || "Value must be between -720 and 720"
+        ],
+        documents_headers: [
+          { text: "Name", value: "name", align: "left"},
+          { text: 'Actions', value: 'action', align: "center", sortable: false },
+        ],
+        isEditing: true,
+        wmoStationTypeList: [
+          {% for wmo_station_type in wmo_station_type_list %}
+          {id: {{ wmo_station_type.id }}, name: "{{ wmo_station_type.name }}" },
+          {% endfor %}
+        ],
+        wmoRegionList: [
+          {% for wmo_region in wmo_region_list %}
+          {id: {{ wmo_region.id }}, name: "{{ wmo_region.name }}" },
+          {% endfor %}
+        ],
+        wmoProgramList: [
+          {% for wmo_program in wmo_program_list %}
+          {id: {{ wmo_program.id }}, name: "{{ wmo_program.name }}" },
+          {% endfor %}
+        ],
+        stationProfileList: [
+          {% for station_profile in station_profile_list %}
+          {id: {{ station_profile.id }}, name: "{{ station_profile.name }}" },
+          {% endfor %}
+        ],
+        stationCommunicationList: [
+          {% for station_communication in station_communication_list %}
+          {id: {{ station_communication.id }}, name: "{{ station_communication.name }}" },
+          {% endfor %}
+        ],
+      },
+      computed: {
+        baseURL() {
+          return "/";
+        },
+        markerPosition(){
+          if(this.selectedStation){
+            this.center = L.latLng(this.selectedStation.latitude, this.selectedStation.longitude)
+            return {lat: this.selectedStation.latitude, lng: this.selectedStation.longitude}
+          }
+          return {}
+        }
+      },
+      methods: {
+        getStations(){
+          this.getAll("api/stations").then(data => {
+            this.stationList = data;
+            this.onChangeStation();
+          });
+        },
+        getStationImages(station_id){
+          this.getAll(`api/station_images?station_id=${station_id}`).then(data => {
+            this.stationImagesList = data.map(stationImage => {
+              stationImage.show = false;
+              return stationImage;
+            });
+            this.carouselId++;
+          });
+        },
+        getStationDocuments(station_id){
+          this.getAll(`api/station_files?station_id=${station_id}`).then(data => {
+            this.stationDocumentsList = data;
+          });
+        },
+        getAll(path, url, oldData = []) {
+          return fetch(`${this.baseURL}${path}`)
+            .then(res => {
+              if (!res.body) {
+                return { next: null, results: [] };
+              }
+
+              return res.json();
+            })
+            .then(async data => {
+              const values = [...oldData, ...data.results];
+              if (!!data.next) {
+                return await getAll(
+                  context,
+                  path,
+                  `${this.baseURL}/${path}/${data.next.substr(
+                    data.next.indexOf(`/${path}`)
+                  )}`,
+                  values
+                );
+              }
+              return values;
+            });
+        },
+        removeImage(stationImage){
+          this.loading = true;
+          axios.delete(`/api/station_images/${stationImage.id}/`).then(data => {
+            this.stationImagesList = this.stationImagesList.filter(obj => obj.id != stationImage.id);
+            this.loading = false;
+          });
+        },
+        uploadImage(){
+          this.loading = true;
+          let requests = this.imageToUpload.path.map(file => {
+            let formData = new FormData();
+            formData.append("path", file, file.name);
+            formData.append("name", file.name);
+            formData.append("station", this.selectedStation.id);
+            return axios.post("/api/station_images/", formData);
+          })
+
+          axios.all(requests).then(responseArray => {
+            responseArray.forEach(res => {
+              res.data.show = false;
+              this.stationImagesList.unshift(res.data);
+            });
+            this.imageToUpload = {};
+            this.loading = false;
+          });
+        },
+        uploadDocument(){
+          this.loading = true;
+          let requests = this.documentToUpload.path.map(file => {
+            let formData = new FormData();
+            formData.append("file", file, file.name);
+            formData.append("name", file.name);
+            formData.append("station", this.selectedStation.id);
+            return axios.post("/api/station_files/", formData);
+          });
+
+          axios.all(requests).then(responseArray => {
+            responseArray.forEach(res => this.stationDocumentsList.unshift(res.data));
+            this.documentToUpload = {};
+            this.loading = false;
+          });
+        },
+        showStationImage(stationImage){
+          stationImage.show = true;
+        },
+        hideStationImage(stationImage){
+          stationImage.show = false;
+        },
+        onMarkerDragEnd(event){
+          let marker = event.target;
+          let position = marker.getLatLng();
+          this.selectedStation.latitude = position.lat;
+          this.selectedStation.longitude = position.lng;
+        },
+        checkStationInformation(e){
+          this.errors = [];
+
+          if(!this.selectedStation.name) this.errors.push('Name required.')
+          if(!this.selectedStation.wigos) this.errors.push('WIGOS Station ID required.')
+          if(!this.selectedStation.wmo_program) this.errors.push('WMO Program required.')
+          if(!this.selectedStation.begin_date) this.errors.push('Established Date required.')
+          if(!this.selectedStation.profile) this.errors.push('Profile required.')
+          if(!this.selectedStation.wmo_station_type) this.errors.push('WMO Station Type required.')
+          if(!this.selectedStation.latitude) this.errors.push('Latitude required.')
+          if(!this.selectedStation.longitude) this.errors.push('Longitude required.')
+          if(!this.selectedStation.country) this.errors.push('Country required.')
+          if(!this.selectedStation.wmo_region) this.errors.push('WMO Region required.')
+          if(!this.selectedStation.utc_offset_minutes) this.errors.push('Country time Zone required.')
+
+          e.preventDefault();
+
+          return !!this.errors;
+        },
+        downloadDocument(item) {
+          window.open(item.file)
+        },
+        deleteItem(stationFile){
+          this.loading = true;
+          axios.delete(`/api/station_files/${stationFile.id}/`).then(data => {
+            this.stationDocumentsList = this.stationDocumentsList.filter(obj => obj.id != stationFile.id);
+            this.loading = false;
+          });
+        },
+        cancelEditing(){
+          // this.isEditing = false;
+          this.selectedStation = {... this.backupStationObject};
+        },
+        setEditing(){
+          this.isEditing = true;
+        },
+        finishEditing(){
+          this.isEditing = false;
+          this.backupStationObject = {... this.selectedStation};
+        },
+        onChangeStation() {
+          if(this.stationId != null){
+              this.selectedStation = this.stationList.find(station => station.id === this.stationId);
+              this.selectedStation.begin_date = moment.utc(this.selectedStation.begin_date).format('YYYY-MM-DD');
+              this.backupStationObject = {... this.selectedStation};
+              this.getStationImages(this.stationId);
+              this.getStationDocuments(this.stationId);
+            }
+        },
+        formatDate(datetime){
+          if(datetime != null)
+            return moment.utc(datetime).clone().format('YYYY-MM-DD');
+          return datetime;
+        }
+      },
+      mounted(){
+        axios.defaults.xsrfHeaderName = "X-CSRFToken"
+        axios.defaults.xsrfCookieName = 'csrftoken'
+        this.getStations();
+      }
+    })
+    
+  </script>
+
+  <style>
+    .image-overlay {
+      background-color: white;
+      opacity: .85;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+{% endblock %}
+

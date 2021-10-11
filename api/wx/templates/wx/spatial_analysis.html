@@ -1,0 +1,1591 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<div id="app" v-cloak>
+  <v-app v-if="stations">
+    <div class="text-center" style="z-index: 999;">
+      <v-overlay :value="loading_overlay">
+        <v-progress-circular indeterminate size="64"></v-progress-circular>
+      </v-overlay>
+    </div>
+
+    <v-dialog v-model="parameters_dialog" max-width="400px" style="z-index: 998;">
+      <v-card>
+        <v-card-title class="headline">Interpolation Parameters</v-card-title>
+        <v-card-text>
+          <v-form
+            v-model="valid"
+            lazy-validation
+          >
+            <v-text-field
+              v-model="interpolation_parameters.hres"
+              label="Horizontal resolution"
+              hint="The horizontal resolution of the generated grid."
+              style="width: 160px"
+            >
+            </v-text-field>
+            <v-text-field
+              v-model="interpolation_parameters.minimum_neighbors"
+              label="Minimum neighbors"
+              hint="Minimum number of neighbors needed to perform interpolation for a point."
+              style="width: 160px"
+            >
+            </v-text-field>
+            <v-text-field
+              v-model="interpolation_parameters.search_radius"
+              label="Search radius"
+              hint="A search radius to use for the interpolation."
+              style="width: 160px"
+            >
+            </v-text-field>
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="parameters_dialog = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-navigation-drawer
+      v-model="drawer"
+      color="white"
+      :right="right"
+      width="25vw"
+      style="z-index: 800;"
+      app
+    >
+      <v-card flat class="pa-4">
+        <v-card-title class="headline">Spatial Analysis</v-card-title>
+        <v-card-text>
+          <v-form
+            ref="form"
+            v-model="valid"
+            lazy-validation
+          >
+            <v-combobox
+            v-model="variable"
+            :items="variables"
+            item-text="name"
+            item-value="id"
+            label="Variable"
+            required
+            :rules="[v => !!v || 'Variable is required']"
+            @change="selectVariable"
+            ></v-combobox>
+            <v-combobox
+              v-model="source"
+              :items="sources"
+              label="Data source"
+              required
+              v-on:change="changeSource"
+              :rules="[v => !!v || 'Data source is required']"
+            ></v-combobox>
+            <v-autocomplete
+              v-if="source.value === 'raw_data'"
+              v-model="selected_quality_flag"
+              @change="pushOrRemoveFlags()"
+              :items="quality_flags"
+              :search-input.sync="searchFlags"
+              label="Quality Flags"
+              multiple
+              chips
+              deletable-chips
+              small-chips
+              autocomplete="off"
+            ></v-autocomplete>
+            <v-combobox
+              v-model="aggregation"
+              :items="aggregations"
+              label="Aggregation"
+              required
+              :rules="[v => !!v || 'Aggregation is required']"
+            ></v-combobox>
+            <v-combobox
+              v-model="interpolation_parameters.cmap"
+              :items="cmaps"
+              label="Color map"
+              required
+            ></v-combobox>
+            <div class="d-flex flex-row">
+              <v-text-field
+                v-model="vmin"
+                label="Min scale value"
+                type="number"
+                style="width: 160px"
+                class="pr-2"
+              ></v-text-field>
+              <v-text-field
+                v-model="vmax"
+                label="Max scale value"
+                type="number"
+                style="width: 160px"
+                class="pl-2"
+                ></v-text-field>
+            </div>
+            <div class="d-flex flex-row">
+              <v-menu
+                ref="date_menu"
+                v-model="date_menu"
+                :close-on-content-click="false"
+                :return-value.sync="start_date"
+                transition="scale-transition"
+                offset-y
+                min-width="290px"
+                required
+                :rules="[v => !!v || 'Date is required']"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                    v-model="start_date"
+                    :label="aggregation.value == 'instant' ? 'Date' : 'Start date'"
+                    prepend-icon="event"
+                    readonly
+                    v-on="on"
+                    class="pr-2"
+                    ></v-text-field>
+                </template>
+                <v-date-picker
+                  v-model="start_date"
+                  no-title scrollable
+                  @click:date="$refs.date_menu.save(start_date)"
+                  :type='getDatepickFormat()'
+                  :allowed-dates="allowedDates"
+                >
+                  <!-- <v-spacer></v-spacer>
+                  <v-btn text color="primary" @click="date_menu = false">Cancel</v-btn>
+                  <v-btn text color="primary" @click="$refs.date_menu.save(start_date)">OK</v-btn> -->
+                </v-date-picker>
+              </v-menu>
+              <v-menu
+                ref="time_menu"
+                v-model="time_menu"
+                v-if="source.value === 'raw_data'"
+                :close-on-content-click="false"
+                :nudge-right="40"
+                :return-value.sync="start_time"
+                transition="scale-transition"
+                offset-y
+                min-width="290px"
+                required
+                :rules="[v => !!v || 'Time is required']"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                    v-model="start_time"
+                    :label="aggregation.value == 'instant' ? 'Time' : 'Start time'"
+                    prepend-icon="access_time"                    
+                    v-on="on"
+                    class="pl-2"
+                ></v-text-field>
+                </template>
+                <v-time-picker
+                  v-if="time_menu"
+                  v-model="start_time"
+                  full-width
+                  no-title
+                  scrollable
+                  @click:minute="$refs.time_menu.save(start_time)"
+                ></v-time-picker>
+              </v-menu>
+              <v-select
+                v-model="start_time"
+                v-if="source.value === 'hourly'"
+                :label="aggregation.value == 'instant' ? 'Time' : 'Start time'"
+                :items="hours"
+                prepend-icon="access_time"
+                required
+                persistent-hint
+                class="pl-2"
+                max-width="200px"
+              ></v-select>
+            </div>            
+            <div class="d-flex flex-row">
+              <v-menu
+                v-if="aggregation.value != 'instant'"
+                ref="end_date_menu"
+                v-model="end_date_menu"
+                :close-on-content-click="false"
+                :return-value.sync="end_date"
+                transition="scale-transition"
+                offset-y
+                min-width="290px"
+                required
+                :rules="[v => !!v || 'Date is required']"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                    v-model="end_date"
+                    label="End date"
+                    prepend-icon="event"
+                    readonly
+                    v-on="on"
+                    class="pr-2"
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                  v-model="end_date"
+                  no-title scrollable
+                  :type='getDatepickFormat()'
+                  :allowed-dates="allowedDates"
+                  @click:date="$refs.end_date_menu.save(end_date)"
+                >
+                  <!-- <v-spacer></v-spacer>
+                  <v-btn text color="primary" @click="end_date_menu = false">Cancel</v-btn>
+                  <v-btn text color="primary" @click="$refs.end_date_menu.save(end_date)">OK</v-btn> -->
+                </v-date-picker>
+              </v-menu>
+              <v-select
+                v-model="end_time"
+                v-if="aggregation.value != 'instant' && source.value === 'hourly'"
+                :label="aggregation.value == 'instant' ? 'Time' : 'Start time'"
+                :items="hours"
+                prepend-icon="access_time"
+                required
+                persistent-hint
+                class="pl-2"
+                max-width="200px"
+              ></v-select>
+              <v-menu
+                v-if="aggregation.value != 'instant' && source.value === 'raw_data'"
+                ref="end_time_menu"
+                v-model="end_time_menu"
+                :close-on-content-click="false"
+                :nudge-right="40"
+                :return-value.sync="end_time"
+                transition="scale-transition"
+                offset-y
+                max-width="290px"
+                min-width="290px"
+                required
+                :rules="[v => !!v || 'Time is required']"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                    v-model="end_time"
+                    label="End time"
+                    prepend-icon="access_time"                    
+                    v-on="on"
+                    class="pl-2"
+                  ></v-text-field>
+                </template>
+                <v-time-picker
+                  v-if="end_time_menu"
+                  v-model="end_time"
+                  full-width
+                  no-title
+                  scrollable
+                  @click:minute="$refs.end_time_menu.save(end_time)"
+                ></v-time-picker>
+              </v-menu>
+            </div>
+            <div class="d-flex flex-row">
+              <v-btn small @click="interpolateData">Interpolate</v-btn>
+              <v-spacer></v-spacer>
+              <v-btn small @click="parameters_dialog=true">Parameters</v-btn>
+            </div>
+          </v-form>
+          <v-alert
+            v-model='no_data'
+            dismissible
+            type="info"
+          >
+            No data
+          </v-alert>
+          <div v-show="markers.length > 0">
+          <v-divider></v-divider>
+          <v-data-table
+            ref="data_table"
+            :headers="table_headers"
+            :items="markers"
+            :items-per-page="5"
+            item-key="name"
+            class="elevation-1"
+            @item-selected="editTable_save"
+            @toggle-select-all="editTable_save"
+            show-select
+            dense
+            calculate-widths
+          >
+          <template v-slot:item.show="{ item }">
+            <v-checkbox
+              class="table-checkbox"
+              v-model="item.show"
+            ></v-checkbox>
+          </template>
+          <template v-slot:item.latitude="{ item }">
+            <span>[[item.latitude.toFixed(2)]]</span>
+          </template>
+          <template v-slot:item.longitude="{ item }">
+            <span>[[item.longitude.toFixed(2)]]</span>
+          </template>
+          <template v-slot:item.measured="props">
+            <v-edit-dialog
+              :return-value="props.item.measured"
+              @save="editTable_save"
+            >
+              [[ props.item.measured.toFixed(2) ]]
+              <template v-slot:input>
+                <v-text-field
+                  v-model.number="props.item.measured"
+                  label="Edit"
+                  single-line
+                ></v-text-field>
+              </template>
+            </v-edit-dialog>
+          </template>
+          </v-data-table>
+        </v-card-text>
+        <v-divider></v-divider>
+        <v-card-actions>
+          <v-dialog
+            v-model="add_value_dialog"
+            width="600"
+            style="z-index: 998;"
+            :persistent="false"
+          >
+            <template v-slot:activator="{ on }">
+              <v-btn
+                v-on="on"
+                :disabled="markers.length == 0"
+                small
+              >Add value</v-btn>
+            </template>
+            <v-card class="flex-grow-1">
+              <v-card-title>
+                <span class="headline">Add value</span>
+              </v-card-title>
+
+              <v-card-text>
+                <v-container class="ma-0">
+                  <v-row>
+                    <v-col cols="12" class="d-flex flex-grow-1 flex-shrink-1 align-center">
+                      <v-text-field v-model="editedItem.name" label="Station name"></v-text-field>
+                    </v-col>
+                    <v-col cols="6" class="d-flex flex-grow-1 flex-shrink-1 align-center">
+                      <v-text-field v-model.number="editedItem.latitude" label="Latitude"></v-text-field>
+                    </v-col>
+                    <v-col cols="6" class="d-flex flex-grow-1 flex-shrink-1 align-center">
+                      <v-text-field v-model.number="editedItem.longitude" label="Longitude"></v-text-field>
+                    </v-col>
+                    <v-col v-if="variable" cols="12" class="d-flex flex-grow-1 flex-shrink-1 align-center">
+                      <v-text-field v-model.number="editedItem.measured" :label="variable.name"></v-text-field>
+                    </v-col>
+                  </v-row>
+                </v-container>
+              </v-card-text>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="blue darken-1" text @click="closeAddValue">Cancel</v-btn>
+                <v-btn color="blue darken-1" text @click="addValue">Save</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-spacer></v-spacer>
+          <v-btn small @click="exportData">Export Data</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn small @click="toggleMarkers">Show/Hide Markers</v-btn>
+        </v-card-actions>
+      </div>
+      </v-card>
+    </v-navigation-drawer>
+
+    <div style="height: 100vh; width: 100%;">
+      <l-map
+        :key="mapKey"
+        ref="myMap"
+        :zoom="zoom"
+        :center="center"
+        :options="options"
+        style="z-index: 10;"
+      >
+
+        <l-marker
+          v-for="marker in availableMarkers"
+          :key="marker.id"
+          :lat-lng.sync="marker.position"
+          :visible="marker.visible"
+          :draggable="marker.draggable"
+          :tooltip="marker.name"
+        >
+          <l-icon :icon-size="iconSizeTest" :icon-anchor="iconAnchor">
+            <span class="measured-values">[[ Math.round(marker.measured * 100) / 100 ]]</span>
+            <div class="station-name" v-if="marker.show">[[ marker.name ]]</div>
+          </l-icon>
+          <l-tooltip>[[ marker.name ]]</l-tooltip>
+        </l-marker>
+
+        <l-geo-json
+          v-if="Groundwater"
+          :options="geoOptionsGroundwater"
+          :geojson="Groundwater_geojson"
+          :options-style="styleFunctionGroundwater"
+        ></l-geo-json>
+        <l-geo-json
+          v-if="Watershed"
+          :geojson="Watersheds_geojson"
+          :options="geoOptionsWatershed"
+          :options-style="styleFunctionWatershed"
+        ></l-geo-json>
+        <l-geo-json
+          v-if="Basemap"
+          :geojson="Basemap_geojson"
+          :options="geoOptionsBasemap"
+          :options-style="styleFunctionBasemap"
+        ></l-geo-json>
+        <l-geo-json
+          v-if="River"
+          :geojson="River_geojson"
+          :options="geoOptionsRivers"
+          :options-style="styleFunctionRiver"
+        ></l-geo-json>
+        <l-geo-json
+          v-if="NationalWaters"
+          :geojson="NationalWaters_geojson"
+          :options="geoOptionsNationalWaters"
+          :options-style="styleFunctionNationalWaters"
+        ></l-geo-json>
+
+        <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
+        <l-image-overlay v-if="img_url" :url="img_url" :bounds="img_bounds" :opacity="0.8"/>
+        <l-control-zoom :position="zoomPosition"></l-control-zoom>/>
+      </l-map>
+      <div id="color_bar_img" style="position:absolute; top:10px; left:10px; width:20px; height:20px; z-index: 100">
+      </div>
+    </div>
+
+    <!-- <v-btn v-if="!drawer" class="btn-show-options" @click="toggleSidenav()">
+      <v-icon class="left material-icons" left>keyboard_arrow_left</v-icon>
+      <span>Show options</span>
+    </v-btn> -->
+
+    <div class="overlays-filter" v-bind:class="{ 'options-menu-opened': drawer === true }">
+      <v-menu content-class="layers-menu" left offset-x :close-on-content-click="closeOnContentClick">
+        <template v-slot:activator="{ on }">
+          <v-btn
+            color="white"
+            dark
+            v-on="on"
+          >
+            <v-icon class="material-icons" color="black">layers</v-icon>
+          </v-btn>
+        </template>
+
+        <v-list class="overlays-list">
+          <v-list-item-title class="pl-4">Overlays</v-list-item-title>
+          
+          <v-list-item>
+            <v-switch @change="showWatershed = !showWatershed" label="Watershed"></v-switch>
+          </v-list-item>
+          <v-list-item>
+            <v-switch @change="showGroundwater = !showGroundwater" label="Groundwater"></v-switch>
+          </v-list-item>
+          <v-list-item>
+            <v-switch @change="showBasemap = !showBasemap" label="Districts"></v-switch>
+          </v-list-item>
+          <!-- <v-list-item>
+            <v-switch @change="showRiver = !showRiver" label="Rivers"></v-switch>
+          </v-list-item> -->
+          <v-list-item>
+            <v-switch @change="showNationalWaters = !showNationalWaters" label="National waters"></v-switch>
+          </v-list-item>
+          
+          <v-divider></v-divider>
+          <v-list-item-title class="pl-4">Basemaps</v-list-item-title>
+          
+          <v-radio-group
+            color="black"
+            class="w-100"
+            v-model="selectedBasemap"
+            @change="setBasemap()"
+          >
+            <v-list class="overlays-list">
+              <v-list-item v-for="(basemap, index) in basemaps" :key="basemap.index">
+                <v-radio
+                  :label="basemap.displayName"
+                  :value="basemap"
+                ></v-radio>
+              </v-list-item>
+            </v-list>
+          </v-radio-group>
+        </v-list>
+        
+      </v-menu>
+    </div>
+
+    <div class="options-menu" v-bind:class="{ 'options-menu-opened': drawer === true }">
+      <v-btn
+        color="white"
+        dark
+        @click="toggleSidenav()"
+      >
+        <v-icon class="material-icons" color="black">settings</v-icon>
+      </v-btn>
+    </div>
+
+  </v-app>
+</div>
+
+{% endblock %} {% block localjavascript %}
+
+<script>
+  var {
+    LMap,
+    LTileLayer,
+    LControlZoom,
+    LMarker,
+    LTooltip,
+    LControlLayers,
+    LGeoJson,
+    LImageOverlay,
+    LIcon
+  } = Vue2Leaflet;
+
+  new Vue({
+    el: "#app",
+    vuetify: new Vuetify(),
+    delimiters: ["[[", "]]"],
+    components: {
+      LMap,
+      LTileLayer,
+      LControlZoom,
+      LMarker,
+      LTooltip,
+      LControlLayers,
+      LGeoJson,
+      LImageOverlay,
+      LIcon
+    },
+    filters: {
+      truncate(text, value) {
+        return (text || "").toString().substring(0, value);
+      }
+    },
+    data: {
+      mapKey: 0,
+      timezone: "{{ TIMEZONE_NAME|escapejs }}",
+      quality_flags: [
+        {% for quality_flag in quality_flags %}
+          {value: {{ quality_flag.id }}, text: "{{ quality_flag.name }}", name: "{{ quality_flag.name }}"},
+          {% endfor %}
+      ],
+      selected_quality_flag: [1, 4],
+      searchFlags: null,
+      loading_overlay: false,
+      no_data: false,
+      hours: (function() {
+        const hours = [];
+        hours.length = 24;
+        hours.fill('');
+        return hours.map((el, index) => `${index < 10 ? '0' : ''}${index}:00`);
+      })(),
+      interpolation_parameters: {
+        hres: 0.01,
+        minimum_neighbors: 1,
+        search_radius: 0.7,
+        cmap: {text: "Spectral_r", value: "Spectral_r"},
+      },
+      closeOnContentClick: false,
+      selectedBasemap: null,
+      basemaps: [
+        {
+          displayName: 'Open Street Map',
+          name: 'Mapnik',
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        },
+        {
+          displayName: 'World Imagery',
+          name: 'WorldImagery',
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        },
+        {
+          displayName: 'World Street Map',
+          name: 'WorldStreetMap',
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+        }
+      ],
+
+      // LAYERS
+
+      Watersheds_geojson: null,
+      Groundwater_geojson: null,
+      Basemap_geojson: null,
+      River_geojson: null,
+      NationalWaters_geojson: null,
+
+      showWatershed: false,
+      showGroundwater: false,
+      showBasemap: false,
+      showRiver: false,
+      showNationalWaters: false,
+
+      parameters_dialog: false,
+      source: {text: "Raw data", value: "raw_data"},
+      sources: [
+        {text: "Raw data", value: "raw_data"},
+        {text: "Hourly summary", value: "hourly"},
+        {text: "Daily summary", value: "daily"},
+        {text: "Monthly summary", value: "monthly"},
+        {text: "Yearly summary", value: "yearly"},
+      ],
+      aggregation: {text: "Instant", value: "instant"},
+      aggregations: [
+        {text: "Instant", value: "instant"},
+        {text: "Maximum", value: "max"},
+        {text: "Minimum", value: "min"},
+        {text: "Average", value: "mean"},
+        {text: "Median", value: "median"},
+        {text: "Sum", value: "sum"},
+      ],
+      cmaps: [
+        { text: 'Accent', value: 'Accent' },
+        { text: 'Accent_r', value: 'Accent_r' },
+        { text: 'Blues', value: 'Blues' },
+        { text: 'Blues_r', value: 'Blues_r' },
+        { text: 'BrBG', value: 'BrBG' },
+        { text: 'BrBG_r', value: 'BrBG_r' },
+        { text: 'BuGn', value: 'BuGn' },
+        { text: 'BuGn_r', value: 'BuGn_r' },
+        { text: 'BuPu', value: 'BuPu' },
+        { text: 'BuPu_r', value: 'BuPu_r' },
+        { text: 'CMRmap', value: 'CMRmap' },
+        { text: 'CMRmap_r', value: 'CMRmap_r' },
+        { text: 'Dark2', value: 'Dark2' },
+        { text: 'Dark2_r', value: 'Dark2_r' },
+        { text: 'GnBu', value: 'GnBu' },
+        { text: 'GnBu_r', value: 'GnBu_r' },
+        { text: 'Greens', value: 'Greens' },
+        { text: 'Greens_r', value: 'Greens_r' },
+        { text: 'Greys', value: 'Greys' },
+        { text: 'Greys_r', value: 'Greys_r' },
+        { text: 'OrRd', value: 'OrRd' },
+        { text: 'OrRd_r', value: 'OrRd_r' },
+        { text: 'Oranges', value: 'Oranges' },
+        { text: 'Oranges_r', value: 'Oranges_r' },
+        { text: 'PRGn', value: 'PRGn' },
+        { text: 'PRGn_r', value: 'PRGn_r' },
+        { text: 'Paired', value: 'Paired' },
+        { text: 'Paired_r', value: 'Paired_r' },
+        { text: 'Pastel1', value: 'Pastel1' },
+        { text: 'Pastel1_r', value: 'Pastel1_r' },
+        { text: 'Pastel2', value: 'Pastel2' },
+        { text: 'Pastel2_r', value: 'Pastel2_r' },
+        { text: 'PiYG', value: 'PiYG' },
+        { text: 'PiYG_r', value: 'PiYG_r' },
+        { text: 'PuBu', value: 'PuBu' },
+        { text: 'PuBuGn', value: 'PuBuGn' },
+        { text: 'PuBuGn_r', value: 'PuBuGn_r' },
+        { text: 'PuBu_r', value: 'PuBu_r' },
+        { text: 'PuOr', value: 'PuOr' },
+        { text: 'PuOr_r', value: 'PuOr_r' },
+        { text: 'PuRd', value: 'PuRd' },
+        { text: 'PuRd_r', value: 'PuRd_r' },
+        { text: 'Purples', value: 'Purples' },
+        { text: 'Purples_r', value: 'Purples_r' },
+        { text: 'RdBu', value: 'RdBu' },
+        { text: 'RdBu_r', value: 'RdBu_r' },
+        { text: 'RdGy', value: 'RdGy' },
+        { text: 'RdGy_r', value: 'RdGy_r' },
+        { text: 'RdPu', value: 'RdPu' },
+        { text: 'RdPu_r', value: 'RdPu_r' },
+        { text: 'RdYlBu', value: 'RdYlBu' },
+        { text: 'RdYlBu_r', value: 'RdYlBu_r' },
+        { text: 'RdYlGn', value: 'RdYlGn' },
+        { text: 'RdYlGn_r', value: 'RdYlGn_r' },
+        { text: 'Reds', value: 'Reds' },
+        { text: 'Reds_r', value: 'Reds_r' },
+        { text: 'Set1', value: 'Set1' },
+        { text: 'Set1_r', value: 'Set1_r' },
+        { text: 'Set2', value: 'Set2' },
+        { text: 'Set2_r', value: 'Set2_r' },
+        { text: 'Set3', value: 'Set3' },
+        { text: 'Set3_r', value: 'Set3_r' },
+        { text: 'Spectral', value: 'Spectral' },
+        { text: 'Spectral_r', value: 'Spectral_r' },
+        { text: 'Wistia', value: 'Wistia' },
+        { text: 'Wistia_r', value: 'Wistia_r' },
+        { text: 'YlGn', value: 'YlGn' },
+        { text: 'YlGnBu', value: 'YlGnBu' },
+        { text: 'YlGnBu_r', value: 'YlGnBu_r' },
+        { text: 'YlGn_r', value: 'YlGn_r' },
+        { text: 'YlOrBr', value: 'YlOrBr' },
+        { text: 'YlOrBr_r', value: 'YlOrBr_r' },
+        { text: 'YlOrRd', value: 'YlOrRd' },
+        { text: 'YlOrRd_r', value: 'YlOrRd_r' },
+        { text: 'afmhot', value: 'afmhot' },
+        { text: 'afmhot_r', value: 'afmhot_r' },
+        { text: 'autumn', value: 'autumn' },
+        { text: 'autumn_r', value: 'autumn_r' },
+        { text: 'binary', value: 'binary' },
+        { text: 'binary_r', value: 'binary_r' },
+        { text: 'bone', value: 'bone' },
+        { text: 'bone_r', value: 'bone_r' },
+        { text: 'brg', value: 'brg' },
+        { text: 'brg_r', value: 'brg_r' },
+        { text: 'bwr', value: 'bwr' },
+        { text: 'bwr_r', value: 'bwr_r' },
+        { text: 'cividis', value: 'cividis' },
+        { text: 'cividis_r', value: 'cividis_r' },
+        { text: 'cool', value: 'cool' },
+        { text: 'cool_r', value: 'cool_r' },
+        { text: 'coolwarm', value: 'coolwarm' },
+        { text: 'coolwarm_r', value: 'coolwarm_r' },
+        { text: 'copper', value: 'copper' },
+        { text: 'copper_r', value: 'copper_r' },
+        { text: 'cubehelix', value: 'cubehelix' },
+        { text: 'cubehelix_r', value: 'cubehelix_r' },
+        { text: 'flag', value: 'flag' },
+        { text: 'flag_r', value: 'flag_r' },
+        { text: 'gist_earth', value: 'gist_earth' },
+        { text: 'gist_earth_r', value: 'gist_earth_r' },
+        { text: 'gist_gray', value: 'gist_gray' },
+        { text: 'gist_gray_r', value: 'gist_gray_r' },
+        { text: 'gist_heat', value: 'gist_heat' },
+        { text: 'gist_heat_r', value: 'gist_heat_r' },
+        { text: 'gist_ncar', value: 'gist_ncar' },
+        { text: 'gist_ncar_r', value: 'gist_ncar_r' },
+        { text: 'gist_rainbow', value: 'gist_rainbow' },
+        { text: 'gist_rainbow_r', value: 'gist_rainbow_r' },
+        { text: 'gist_stern', value: 'gist_stern' },
+        { text: 'gist_stern_r', value: 'gist_stern_r' },
+        { text: 'gist_yarg', value: 'gist_yarg' },
+        { text: 'gist_yarg_r', value: 'gist_yarg_r' },
+        { text: 'gnuplot', value: 'gnuplot' },
+        { text: 'gnuplot2', value: 'gnuplot2' },
+        { text: 'gnuplot2_r', value: 'gnuplot2_r' },
+        { text: 'gnuplot_r', value: 'gnuplot_r' },
+        { text: 'gray', value: 'gray' },
+        { text: 'gray_r', value: 'gray_r' },
+        { text: 'hot', value: 'hot' },
+        { text: 'hot_r', value: 'hot_r' },
+        { text: 'hsv', value: 'hsv' },
+        { text: 'hsv_r', value: 'hsv_r' },
+        { text: 'inferno', value: 'inferno' },
+        { text: 'inferno_r', value: 'inferno_r' },
+        { text: 'jet', value: 'jet' },
+        { text: 'jet_r', value: 'jet_r' },
+        { text: 'magma', value: 'magma' },
+        { text: 'magma_r', value: 'magma_r' },
+        { text: 'nipy_spectral', value: 'nipy_spectral' },
+        { text: 'nipy_spectral_r', value: 'nipy_spectral_r' },
+        { text: 'ocean', value: 'ocean' },
+        { text: 'ocean_r', value: 'ocean_r' },
+        { text: 'pink', value: 'pink' },
+        { text: 'pink_r', value: 'pink_r' },
+        { text: 'plasma', value: 'plasma' },
+        { text: 'plasma_r', value: 'plasma_r' },
+        { text: 'prism', value: 'prism' },
+        { text: 'prism_r', value: 'prism_r' },
+        { text: 'rainbow', value: 'rainbow' },
+        { text: 'rainbow_r', value: 'rainbow_r' },
+        { text: 'seismic', value: 'seismic' },
+        { text: 'seismic_r', value: 'seismic_r' },
+        { text: 'spring', value: 'spring' },
+        { text: 'spring_r', value: 'spring_r' },
+        { text: 'summer', value: 'summer' },
+        { text: 'summer_r', value: 'summer_r' },
+        { text: 'tab10', value: 'tab10' },
+        { text: 'tab10_r', value: 'tab10_r' },
+        { text: 'tab20', value: 'tab20' },
+        { text: 'tab20_r', value: 'tab20_r' },
+        { text: 'tab20b', value: 'tab20b' },
+        { text: 'tab20b_r', value: 'tab20b_r' },
+        { text: 'tab20c', value: 'tab20c' },
+        { text: 'tab20c_r', value: 'tab20c_r' },
+        { text: 'terrain', value: 'terrain' },
+        { text: 'terrain_r', value: 'terrain_r' },
+        { text: 'twilight', value: 'twilight' },
+        { text: 'twilight_r', value: 'twilight_r' },
+        { text: 'twilight_shifted', value: 'twilight_shifted' },
+        { text: 'twilight_shifted_r', value: 'twilight_shifted_r' },
+        { text: 'viridis', value: 'viridis' },
+        { text: 'viridis_r', value: 'viridis_r' },
+        { text: 'winter', value: 'winter' },
+        { text: 'winter_r', value: 'winter_r' },
+      ],
+      markersVisible: true,
+      add_value_dialog: false,
+      vmin: 15,
+      vmax: 35,
+      editedItem: {
+        code: '',
+        latitude: null,
+        longitude: null,
+        measured: null,
+        name: '',
+        station_id: null,
+        show: false,
+      },
+      table_headers: [
+        { text: "Show Name", value: "show", align: "end", width: "15%"},
+        { text: "Station", value: "name", align: "end", width: "55%"},
+        { text: "Lat", value: "latitude", align: "end", width: "10%"},
+        { text: "Lon", value: "longitude", align: "end", width: "10%"},
+        { text: "Value", value: "measured", align: "end", width: "10%"},
+      ],
+      valid: true,
+      date_menu: false,
+      end_date_menu: false,
+      time_menu: false,
+      end_time_menu: false,
+      start_date: moment().format('YYYY-MM-DD'),
+      end_date: moment().add(1, 'day').format('YYYY-MM-DD'),
+      start_time: "00:00",
+      end_time: "00:00",
+      variable: null,
+      variables: [],
+      img_url: null,
+      img_bounds: [[{{ SPATIAL_ANALYSIS_INITIAL_LATITUDE|safe }}, {{ SPATIAL_ANALYSIS_INITIAL_LONGITUDE|safe }}], [{{ SPATIAL_ANALYSIS_FINAL_LATITUDE|safe }}, {{ SPATIAL_ANALYSIS_FINAL_LONGITUDE|safe }}]],
+      zoom: {{ MAP_ZOOM|safe }},
+      center: L.latLng({{ MAP_LATITUDE|safe }}, {{ MAP_LONGITUDE|safe }}),
+      url: "http://{s}.tile.osm.org/{z}/{x}/{y}.png",
+      attribution:
+        '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      options: { zoomControl: false },
+      zoomPosition: "bottomleft",
+
+      // NAVIGATION DRAWER
+
+      drawer: true,
+      right: true,
+
+      stations: [],
+      markers: [],
+      stationMarkers: [],
+      iconSizeTest: [32, 32],
+      iconAnchor: [16, 32],
+
+      popupContent: "",
+      popupVariable: "",
+      formattedStartDate: null,
+      formattedEndDate: null,
+      formattedVariable: null
+    },
+    watch: {
+      selected_quality_flag (newSelectedArray, oldSelectedArray) {
+        this.searchFlags = '';
+      }
+    },
+    methods: {
+      getGeoJson() {
+        axios.get("{% static 'Belize_Basemap.geojson' %}").then(data => {
+          this.Basemap_geojson = data.data;
+        });
+        axios
+          .get("{% static 'Belize_Watersheds_4326.geojson' %}")
+          .then(data => {
+            this.Watersheds_geojson = data.data;
+          });
+        axios.get("{% static 'GWP_Campur.geojson' %}").then(data => {
+          this.Groundwater_geojson = data.data;
+        });
+        axios.get("{% static 'Belize_Rivers.geojson' %}").then(data => {
+          this.River_geojson = data.data;
+        });
+        axios.get("{% static 'Belize_NationalWaters.geojson' %}").then(data => {
+          this.NationalWaters_geojson = data.data;
+        });
+      },
+      setBasemap() {
+        this.url = this.selectedBasemap.url;
+      },
+      closeAddValue() {
+        this.add_value_dialog = false
+        setTimeout(() => {
+          this.editedItem = Object.assign({}, {
+            code: '',
+            latitude: null,
+            longitude: null,
+            measured: null,
+            name: '',
+            station_id: null
+          })
+        }, 300)
+      },
+      addValue() {
+        this.markers.push(this.editedItem)
+        this.markers.push({
+          draggable: false,
+          icon: "{% static 'images/placeholder.png' %}",
+          position: {
+            lat: this.editedItem.latitude,
+            lng: this.editedItem.longitude
+          },
+          show: false,
+          latitude: this.editedItem.latitude,
+          longitude: this.editedItem.longitude,
+          name: this.editedItem.name,
+          visible: this.markersVisible
+        })
+        this.closeAddValue()
+        this.editTable_save()
+      },
+      formatDatetimeToRequest(date, time){
+        if(this.source.value === 'daily' || this.source.value === 'monthly' || this.source.value === 'yearly')
+          return moment(`${date} ${time}`).tz(this.timezone, true).format('YYYY-MM-DD');
+        return moment(`${date} ${time}`).tz(this.timezone, true).toISOString();
+      },
+      formatDatetime(date, time){
+          return moment(`${date} ${time}`).tz(this.timezone, true).format('YYYY-MM-DD HH:mm:ss');        
+      },
+      getEndpointParameters() {
+        this.formattedStartDate = this.formatDatetime(this.start_date, this.start_time);
+        this.formattedEndDate = this.formatDatetime(this.end_date, this.end_time);
+        this.formattedVariable = this.variable.name;
+
+        let parameters = "start_datetime=" + this.formatDatetimeToRequest(this.start_date, this.start_time);
+        parameters += "&end_datetime=" +  this.formatDatetimeToRequest(this.end_date, this.end_time);
+        parameters += "&variable_id=" + this.variable.id;
+        parameters += "&agg=" + this.aggregation.value;
+        parameters += "&cmap=" + this.interpolation_parameters.cmap.value;
+        parameters += "&hres=" + this.interpolation_parameters.hres;
+        parameters += "&minimum_neighbors=" + this.interpolation_parameters.minimum_neighbors;
+        parameters += "&search_radius=" + this.interpolation_parameters.search_radius;
+        parameters += "&vmin=" + this.vmin + "&vmax=" + this.vmax;
+        parameters += "&source=" + this.source.value;
+        if(this.source.value === 'raw_data')
+          parameters += "&quality_flags=" + this.selected_quality_flag.join(',');
+        return parameters
+      },
+      changeSource(){
+        if(this.source.value === 'monthly') {
+          this.start_date = moment().format('YYYY-MM')
+          this.end_date = moment().add(1, 'month').format('YYYY-MM')
+        } else if (this.source.value === 'yearly') {
+          this.start_date = moment().format('YYYY-01')
+          this.end_date = moment().add(1, 'year').format('YYYY-01')
+        }
+      },
+      getDatepickFormat(){
+          return this.source.value === 'yearly' || this.source.value === 'monthly' ? 'month': 'date';
+      },
+      allowedDates(val){
+          if(this.source.value === 'yearly')
+            return val.split('-')[1] == '01' // just january
+          return true;
+      },
+      interpolateData() {
+        if (this.$refs.form.validate()) {
+          this.no_data = false;
+          this.loading_overlay = true;
+          this.img_url = "{% url 'spatial-analysis-image' %}?" + this.getEndpointParameters();
+          $( "#color_bar_img" ).html('<img src="' + "{% url 'spatial-analysis-color-bar' %}?" + this.getEndpointParameters() + '" width="450">');
+          axios.get("data?" + this.getEndpointParameters()).then(data => {
+            this.no_data = false;
+            if (data.data.data.length === 0) {
+              this.no_data = true;
+              this.loading_overlay = false;
+            }
+            
+            this.markers = data.data.data.map(station => ({
+              id: station.station_id,
+              station_id: station.station_id,
+              show: false,
+              name: station.name,
+              latitude: station.latitude,
+              longitude: station.longitude,
+              position: {
+                lat: station.latitude,
+                lng: station.longitude
+              },
+              visible: this.markersVisible,
+              draggable: false,
+              measured: station.measured,
+            }));
+
+            for(station in data.data.data){
+              this.$refs.data_table.selection[data.data.data[station].name] = true;
+            }
+            setTimeout(() => {
+              this.loading_overlay = false;
+            }, 2000)
+          });
+        }
+      },
+      getAll(path, url, oldData = []) {
+        return fetch(`/${path}`)
+          .then(res => {
+            if (!res.body) {
+              return { next: null, results: [] };
+            }
+            
+            return res.json();
+          })
+          .then(async data => {
+            const values = [...oldData, ...data.results];
+            if (!!data.next) {
+              return await getAll(
+                context,
+                path,
+                `/${path}/${data.next.substr(
+                  data.next.indexOf(`/${path}`)
+                )}`,
+                values
+              );
+            }
+            return values;
+          });
+      },
+      getVariables() {
+        this.getAll("api/variables/").then(data => {
+          this.variables = data;
+        });
+      },
+      editTable_save () {
+        this.loading_overlay = true;
+        axios.post("interpolate_data", {parameters: this.interpolation_parameters, vmin: this.vmin, vmax: this.vmax, data: this.availableMarkers}).then(data => {
+          this.img_url = "{% url 'spatial-analysis-get-image' %}" + "?image=" + data.data;
+          setTimeout(() => {
+            this.loading_overlay = false;
+          }, 200)
+        })
+      },
+      toggleMarkers() {
+        this.markersVisible = !this.markersVisible
+        this.markers.forEach(element => {
+          element.visible = this.markersVisible;
+        });
+        this.mapKey +=1;
+      },
+      exportData(){
+        const values = this.availableMarkers;
+        headers = ['Station', 'Latitude', 'Longitude', 'Value']
+          
+        const exportEngine = {
+            csv: () =>
+              this.exportAsCSV(
+                headers.join(','),
+                values.map(value => [value.name, value.latitude, value.longitude, value.measured.toFixed(2)]),
+                `Surface Spatial Analisys - ${this.formattedVariable}`
+              )
+          };
+
+          exportEngine['csv']();
+      },
+      exportAsCSV(headers, values, filename = null, title = 'Surface Spatial Analisys') {
+          const data = this.normalize(values.join("\n"));
+          const date = `Date: ${this.formattedStartDate} - ${this.formattedEndDate}`;
+          const variable = `Variable: ${this.formattedVariable}`;
+          const csvContent = `${title}\n${date}\n${variable}\n\n${headers}\n${data}`;
+          const blob = new Blob(
+            [new Uint8Array([0xef, 0xbb, 0xbf]), csvContent],
+            {
+              type: "text/csv;charset=utf-8"
+            }
+          );
+
+          const link = document.createElement("a");
+          document.body.appendChild(link);
+          link.setAttribute("href", URL.createObjectURL(blob));
+          link.setAttribute("download", `${filename || "surface-spatial-analisys-report"}.csv`);
+          link.click();
+          link.remove();
+      },
+      normalize(value) {
+          const replaces = [
+            [/[áàâãªä]/giu, "a"],
+            [/[ÁÀÂÃÄ]/giu, "A"],
+            [/[ÍÌÎÏ]/giu, "I"],
+            [/[íìîï]/giu, "i"],
+            [/[éèêë]/giu, "e"],
+            [/[ÉÈÊË]/giu, "E"],
+            [/[óòôõºö]/giu, "o"],
+            [/[ÓÒÔÕÖ]/giu, "O"],
+            [/[úùûü]/giu, "u"],
+            [/[ÚÙÛÜ]/giu, "U"],
+            [/ç/gi, "c"],
+            [/Ç/gi, "C"],
+            [/ñ/gi, "n"],
+            [/Ñ/gi, "N"]
+          ];
+          return replaces.reduce((p, c) => p.replace(c[0], c[1]), value);
+      }, 
+      toggleSidenav() {
+        this.drawer = !this.drawer;
+        this.parameters_dialog = false;
+      },
+      toggleParametersSidenav() {
+        this.parameters_dialog = !this.parameters_dialog;
+      },
+      selectVariable(variable) {
+        switch (variable.sampling_operation) {
+          case 3:
+            this.aggregation = {value: 'min', text: "Minimum"};
+            break;
+          case 4:
+            this.aggregation = {value: 'max', text: "Maximum"};
+            break;
+          case 6:
+          case 7:
+            this.aggregation = {value: 'sum', text: "Sum"};
+            break;
+          default:
+            this.aggregation = {value: 'mean', text: "Average"};
+        }
+      }
+    },
+    mounted() {
+      this.getVariables();
+      this.getGeoJson();
+    },
+    computed: {
+      availableMarkers(){
+        return this.markers.filter(x => {
+          return x.name in this.$refs.data_table.selection;
+        });
+      },
+      Watershed() {
+        if (this.showWatershed === true) {
+          return true;
+        }
+        return false;
+      },
+      Groundwater() {
+        if (this.showGroundwater === true) {
+          return true;
+        }
+        return false;
+      },
+      Basemap() {
+        if (this.showBasemap === true) {
+          return true;
+        }
+        return false;
+      },
+      River() {
+        if (this.showRiver === true) {
+          return true;
+        }
+        return false;
+      },
+      NationalWaters() {
+        if (this.showNationalWaters === true) {
+          return true;
+        }
+        return false;
+      },
+      styleFunctionWatershed() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#7a34eb",
+          fillOpacity: 0.3
+        };
+      },
+      styleFunctionGroundwater() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#32908F",
+          fillOpacity: 0.3
+        };
+      },
+      styleFunctionBasemap() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#787878",
+          fillOpacity: 0.3
+        };
+      },
+      styleFunctionRiver() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#5bb9d6",
+          fillOpacity: 0.3
+        };
+      },
+      styleFunctionNationalWaters() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#2965a7",
+          fillOpacity: 0.3
+        };
+      },
+      geoOptionsWatershed() {
+        return {
+          onEachFeature: this.onEachFeatureFunctionWatershed
+        };
+      },
+      geoOptionsGroundwater() {
+        return {
+          onEachFeature: this.onEachFeatureFunctionGroundwater
+        };
+      },
+      geoOptionsBasemap() {
+        return {
+          onEachFeature: this.onEachFeatureFunctionBasemap
+        };
+      },
+      geoOptionsRivers() {
+        return {
+          onEachFeature: this.onEachFeatureFunctionRivers
+        };
+      },
+      geoOptionsNationalWaters() {
+        return {
+          onEachFeature: this.onEachFeatureNationalWaters
+        };
+      },
+      onEachFeatureFunctionWatershed() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup(
+            "<div>Name: " +
+              feature.properties.WATERSHED +
+              "</div><div>Area: " +
+              feature.properties.HECTARES +
+              " ha" +
+              "</div>",
+            { permanent: false, sticky: true }
+          );
+        };
+      },
+      onEachFeatureFunctionGroundwater() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup("</div><div>Name: " + feature.properties.name, {
+            permanent: false,
+            sticky: true
+          });
+        };
+      },
+      onEachFeatureFunctionBasemap() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup("<div>Name: " +
+              feature.properties.DISTRICT +
+              "</div><div>Area: " +
+              feature.properties.HECTARES +
+              " ha" +
+              "</div>",
+            { permanent: false, sticky: true }
+          );
+        };
+      },
+      onEachFeatureFunctionRivers() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup("<div>Name: " +
+              feature.properties.Name +
+              "</div><div>Notes: " +
+              feature.properties.Notes +
+              "</div>",
+            { permanent: false, sticky: true }
+          );
+        };
+      },
+      onEachFeatureNationalWaters() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup("<div>Status: " +
+              feature.properties.STATUS +
+              "</div><div>Area: " +
+              feature.properties.HECTARES +
+              " ha" +
+              "</div>",
+            { permanent: false, sticky: true }
+          );
+        };
+      }
+    }
+  });
+</script>
+
+<style>
+
+  .options-menu-opened {
+    right: calc(25vw + 16px)!important;
+    transition: .15s;
+  }
+  .options-menu {
+    z-index: 995;
+    position: absolute;
+    top: 68px;
+    right: 16px;
+    transition: .15s;
+  }
+  .overlays-filter {
+    transition: .15s;
+    z-index: 995;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+  }
+  .overlays-list .v-messages {
+    display: none!important;
+  }
+
+  .custom-headline {
+    background-color: rgba(255, 255, 255, 0.884);
+    padding: 2px;
+    border-radius: 10px;
+    position: absolute;
+    top: -32px;
+    font-size: 15px !important;
+    border: 1px solid gray;
+  }
+  .btn-close-dialog {
+    position: absolute;
+    top: 116px;
+    left: 336px;
+    border-radius: 0px 20px 20px 0px;
+    z-index: 9999;
+    width: 36px;
+  }
+  .station-link:hover {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .v-card__text {
+    padding: 0px;
+  }
+  .v-dialog {
+    box-shadow: none;
+  }
+  .v-dialog__content,
+  .v-dialog__content--active {
+    z-index: 9999 !important;
+  }
+  .sandbox_last_update {
+    font-size: 9pt;
+    padding: 16px 16px 6px 18px;
+  }
+  .index-top {
+    z-index: 999;
+  }
+  .stations-detail {
+    position: absolute;
+    top: 108px;
+    left: 316px;
+    height: 100%;
+    max-height: calc(100vh - 196px) !important;
+    width: 100%;
+    max-width: 320px !important;
+    background-color: #fafafa;
+    border: 1px solid gray;
+    border-radius: 5px;
+  }
+  .sandbox {
+    position: absolute;
+    top: 108px;
+    left: 16px;
+    height: 100%;
+    max-height: calc(100vh - 196px);
+    background-color: white;
+    width: 100%;
+    max-width: 300px;
+    z-index: 999;
+    border: 1px solid gray;
+    border-radius: 5px;
+    box-sizing: border-box;
+  }
+  .station-information {
+    position: absolute;
+    top: 72px;
+    left: 16px;
+    width: 300px;
+    height: 28px;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 995;
+    border: 1px solid gray;
+    border-radius: 5px;
+  }
+  .btn-show-options {
+    position: absolute;
+    top: 16px;
+    right: 0px;
+    border-radius: 20px 0px 0px 20px;
+    z-index: 100;
+  }
+  .btn-hide-options {
+    position: absolute;
+    top: 16px;
+    right: 300px;
+    border-radius: 20px 0px 0px 20px;
+    z-index: 100;
+  }
+  aside {
+    z-index: 9999 !important;
+    position: absolute;
+  }
+  .collapsible {
+    border-top: 0px;
+    border-right: 0px;
+    border-left: 0px;
+    margin: 0;
+    box-shadow: none;
+  }
+  .display-none {
+    display: none;
+  }
+  .sidebar-body span.sidebar-header {
+    padding: 1rem;
+    position: fixed;
+    background-color: white;
+    height: 48px;
+    /* z-index: 999; */
+  }
+  .sidebar-body::after {
+    transition: opacity 0.5s, width 0.1s 0.5s;
+  }
+  .sidebar-body {
+    width: 300px;
+    position: absolute;
+    display: flex;
+    overflow: auto;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    top: 0px;
+    right: -350px;
+    height: 100vh;
+    /* z-index: 1000; */
+    box-sizing: border-box;
+    transition: transform 0.5s;
+    box-shadow: 0px 3px 10px -2px rgba(0, 0, 0, 0.2),
+      0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  }
+  .custom-padding {
+    padding-right: 16px !important;
+    padding-left: 8px;
+  }
+  .sidebar-toggle {
+    position: absolute;
+    top: 16px;
+    right: 0px;
+    background-color: white;
+    /* z-index: 999; */
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 20px 0px 0px 20px;
+    box-shadow: 0px 3px 10px -2px rgba(0, 0, 0, 0.2),
+      0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  }
+  .search-content {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    display: flex;
+    width: 100%;
+    max-width: 300px;
+    z-index: 995;
+  }
+  .search-content .v-input__control .v-input__slot {
+    border: 1px solid gray;
+    border-radius: 5px;
+  }
+  .search-box {
+    position: relative;
+    width: 350px;
+    padding-left: 8px;
+    padding-right: 8px;
+    overflow: hidden;
+    box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2),
+      0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  }
+  .search-input {
+    width: 100%;
+    height: 36px;
+  }
+  .measured-values {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  }
+  .v-data-table td, .v-data-table th {
+    padding: 0 0px;
+    font-size: 11px;
+  }
+
+  /* MATERIALIZE */
+  input:not([type]),
+  input[type="text"]:not(.browser-default),
+  input[type="password"]:not(.browser-default),
+  input[type="email"]:not(.browser-default),
+  input[type="url"]:not(.browser-default),
+  input[type="time"]:not(.browser-default),
+  input[type="date"]:not(.browser-default),
+  input[type="datetime"]:not(.browser-default),
+  input[type="datetime-local"]:not(.browser-default),
+  input[type="tel"]:not(.browser-default),
+  input[type="number"]:not(.browser-default),
+  input[type="search"]:not(.browser-default),
+  textarea.materialize-textarea {
+    background-color: transparent;
+    border: none !important;
+    border-bottom: 0px !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    /* height: 0em!important; */
+    width: 100%;
+    font-size: 16px;
+    margin: 0px;
+    padding: 0;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    -webkit-box-sizing: content-box;
+    box-sizing: content-box;
+    -webkit-transition: border 0.3s, -webkit-box-shadow 0.3s;
+    transition: border 0.3s, -webkit-box-shadow 0.3s;
+    transition: box-shadow 0.3s, border 0.3s;
+    transition: box-shadow 0.3s, border 0.3s, -webkit-box-shadow 0.3s;
+  }
+  
+  .v-input--selection-controls__ripple {
+    border-radius: 50%;
+    cursor: pointer;
+    height: 34px;
+    position: absolute;
+    transition: inherit;
+    width: 34px;
+    left: -12px;
+    top: calc(50% - 24px);
+    margin: 7px;
+    z-index: 10 !important;
+  }
+
+  nav i,
+  nav [class^="mdi-"], nav [class*="mdi-"],
+  nav i.material-icons {
+    display: block;
+    font-size: 24px;
+    height: 24px;
+    line-height: 56px; }
+
+  .station-name{
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    width: 400px;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  }
+}
+</style>
+
+{% endblock %}

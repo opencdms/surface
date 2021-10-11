@@ -1,0 +1,963 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="srf-container" style="max-height: 280px;">
+  <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+    <span class="srf-display-1 text-uppercase">Variable Report</span><br><br>
+  </div>
+  <div id="app" v-cloak>
+    <v-app>
+        <form class="col l12">
+          <v-row dense justify="start">
+            <v-col class="text-center" cols="12">
+              <v-autocomplete
+              v-model="request.variables"
+              item-text="name"
+              item-value="id"
+              :items="variable_list"
+              label="Variable"
+              chips
+              deletable-chips
+              small-chips
+              multiple
+              clearable
+              autocomplete="off"
+              ></v-autocomplete>
+            </v-col>
+          </v-row>
+
+          <v-row dense justify="start">
+
+            <v-col class="text-center" cols="9">
+              <v-autocomplete
+              v-model="request.stations"
+              :items="station_list"
+              item-text="text"
+              item-value="id"
+              label="Stations"
+              chips
+              deletable-chips
+              small-chips
+              multiple
+              clearable
+              autocomplete="off"
+              ></v-autocomplete>
+            </v-col>
+
+            <v-col class="text-center" cols="3">
+              <v-select
+              v-model="source"
+              :items="sources"
+              label="Data Source"
+              v-on:change="changeSource"
+              ></v-select>
+            </v-col>
+          </v-row>
+          
+          <v-row dense justify="start">
+
+            <v-col class="text-center" cols="3">
+              <v-menu
+                :close-on-content-click="false"
+                v-model="initial_date_menu"
+                transition="scale-transition"
+                offset-y
+                class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                  v-model="initial_date"
+                  label="Initial date"
+                  v-on="on"
+                  required
+                  prepend-icon="event"
+                  persistent-hint
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                v-model="initial_date"
+                @input="initial_date_menu = false"
+                :type='getDatepickFormat()'
+                :allowed-dates="allowedDates"
+                ></v-date-picker>
+              </v-menu>
+            </v-col>
+
+            <v-col class="text-center" cols="3" v-if="source === 1">
+              <v-select
+                v-model="initial_time"
+                label="Initial time"
+                :items="hours"
+                prepend-icon="access_time"
+                required
+                persistent-hint
+              ></v-select>
+            </v-col>
+            
+            <v-col class="text-center" cols="3"  v-if="source === 0">
+              <v-menu
+                :close-on-content-click="false"
+                v-model="initial_time_menu"
+                transition="scale-transition"
+                offset-y
+                class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                  v-model="initial_time"
+                  label="Initial time"
+                  v-on="on"
+                  required
+                  persistent-hint
+                  prepend-icon="access_time"
+                  ></v-text-field>
+                </template>
+                <v-time-picker
+                v-model="initial_time"
+                ></v-time-picker>
+              </v-menu>
+            </v-col>
+  
+            <v-col class="text-center" cols="3">
+              <v-menu
+                :close-on-content-click="false"
+                v-model="final_date_menu"
+                transition="scale-transition"
+                offset-y
+                class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                  v-model="final_date"
+                  label="Final date"
+                  v-on="on"
+                  required
+                  persistent-hint
+                  prepend-icon="event"
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                v-model="final_date"
+                @input="final_date_menu = false"
+                :type='getDatepickFormat()'
+                :allowed-dates="allowedDates"
+                ></v-date-picker>
+              </v-menu>
+            </v-col>
+
+            <v-col class="text-center" cols="3" v-if="source === 1">
+              <v-select                
+                v-model="final_time"
+                label="Final time"
+                required
+                persistent-hint
+                :items="hours"
+                prepend-icon="access_time"
+              ></v-select>
+            </v-col>
+            
+            <v-col class="text-center" cols="3"  v-if="source === 0">
+              <v-menu
+                :close-on-content-click="false"
+                v-model="final_time_menu"
+                transition="scale-transition"
+                offset-y
+                class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                  v-model="final_time"
+                  label="Final time"
+                  v-on="on"
+                  required
+                  persistent-hint
+                  prepend-icon="access_time"
+                  ></v-text-field>
+                </template>
+                <v-time-picker
+                v-model="final_time"
+                ></v-time-picker>
+              </v-menu>
+            </v-col>            
+          </v-row>
+          <v-row dense justify='start'>
+            <v-col class="text-center" cols="auto">
+              <v-btn @click="fetchData()" :disabled="$v.request.$invalid">
+                Query
+                <i class="material-icons right">send</i>
+              </v-btn>
+            </v-col>
+          </v-row>
+
+          <v-alert
+            v-model='error'
+            dismissible
+            type="error"
+          >
+            [[ error_message ]]
+          </v-alert>
+          <v-alert
+            v-model='no_data'
+            dismissible
+            type="info"
+          >
+            No data
+          </v-alert>
+          <div
+            v-if="loading || rendering"
+          >
+            <span class="headline font-weight-thin" v-if="loading">Loading...</span><br>
+            <span class="headline font-weight-thin" v-if="rendering">Rendering...</span><br>
+            <v-progress-linear
+            indeterminate
+            ></v-progress-linear>
+          </div>
+        </form>
+      <input type="hidden" id="data-url" value="{% url 'variable-report-data' %}">
+      <v-tabs
+        id="tabs"
+        v-model="tab"
+        :key="tabs.length"
+        show-arrows
+        centered
+        center-active
+      >
+        <v-tab
+          v-for="i in tabs"
+          :key="i"
+          :href="`#tab-${i}`"
+        >[[ i ]]</v-tab>
+      </v-tabs>
+      <v-tabs-items
+        v-model="tab"
+        continuous
+      >
+        <v-tab-item
+          v-for="i in tabs"
+          :key="i"
+          :value="'tab-' + i"
+          eager
+          :transition="false"
+          :reverse-transition="false"
+        >
+          <div :id='i + "-chart"' style='width:100%; height:400px;'></div>
+          <div class="space-between">
+            <v-btn color="info" @click="exportCSV(i)">Download CSV</v-btn>
+            <div v-if="currentSource === 0" style="margin-top: 16px; position: absolute; right: 16px;" class="mt-2">
+              <small>Table legend</small>
+              <div class="table-legend">
+          
+                <div class="column">
+                  <div class="item">
+                    <div class="type min-value">aA</div>
+                    <div class="name">Min value</div>
+                  </div>
+
+                  <div class="item">
+                    <div class="type max-value">aA</div>
+                    <div class="name">Max value</div>
+                  </div>
+                </div>
+
+                <div class="column">
+                  <div class="item">
+                    <div class="color good-quality"></div>
+                    <div class="name">Good quality</div>
+                  </div>
+
+                  <div class="item">
+                    <div class="color bad-quality"></div>
+                    <div class="name">Bad quality</div>
+                  </div>
+                </div>
+
+                <div class="column">
+                  <div class="item">
+                    <div class="color suspicious"></div>
+                    <div class="name">Suspicious</div>
+                  </div>
+                  
+                  <div class="item">
+                    <div class="color not-checked"></div>
+                    <div class="name">Not checked</div>
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+          </div>
+          <table
+            :id="`datatable-${i}`"
+            class="compact hover row-border stripe"
+            data-page-length="300"
+            data-searching="false"
+            style="width: 100%;"
+          >
+            <thead>
+              <tr>
+                <td v-for="header in tableHeadersList[i]">[[ header.text ]] <small v-if="header.value === 'datetime'">[[timezone]]</small></td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in tableItemsList[i]">
+                <td v-for="header in tableHeadersList[i]" :data-color="(item[header.value] || {}).color || '#fff'">
+                  <div v-if="header.value=='datetime'">
+                    [[ (item[header.value] || {}).value ]]
+                  </div>
+                  <div v-if="header.value!='datetime'">
+                    <div v-bind:class="{'min-value': (item[header.value] || {}).value == (summaries[header.value]['MIN'] || {}).value, 'max-value': (item[header.value] || {}).value == (summaries[header.value]['MAX'] || {}).value}">
+                    [[ (item[header.value] || {}).value ]]
+                    </div>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>
+                  SUM
+                </td>
+                <td v-for="v in tableHeadersList[i]" v-if="v.value!='datetime'">
+                  <div v-if="summaries[v.value]['SUM'] > 0">
+                    [[ summaries[v.value]['SUM'] ]]
+                  </div>
+                  <div v-if="summaries[v.value]['SUM'] <= 0">
+                    -
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  AVG
+                </td>
+                <td v-for="v in tableHeadersList[i]" v-if="v.value!='datetime'">
+                  [[ summaries[v.value]['AVG'] ]]
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  MIN
+                </td>
+                <td v-for="v in tableHeadersList[i]" v-if="v.value!='datetime'">
+                  <span>[[ summaries[v.value]['MIN'].value ]]</span><br>
+                  <span class="caption font-weight-light">First occurrence</span><br>
+                  <span class="caption font-weight-light">[[ summaries[v.value]['MIN'].timestamp ]]</span>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  MAX
+                </td>
+                <td v-for="v in tableHeadersList[i]" v-if="v.value!='datetime'">
+                  <span>[[ summaries[v.value]['MAX'].value ]]</span><br>
+                  <span class="caption font-weight-light">First occurrence</span><br>
+                  <span class="caption font-weight-light">[[ summaries[v.value]['MAX'].timestamp ]]</span>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  STDDEV
+                </td>
+                <td v-for="v in tableHeadersList[i]" v-if="v.value!='datetime'">
+                  [[ summaries[v.value]['STDDEV'] ]]
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  COUNT
+                </td>
+                <td v-for="v in tableHeadersList[i]" v-if="v.value!='datetime'">
+                  [[ summaries[v.value]['COUNT'] ]]
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+          <div v-if="currentSource === 0" style="display: flex; justify-content: flex-end;" class="mb-3">
+            <div>
+              <small>Table legend</small>
+              <div class="table-legend">
+          
+                <div class="column">
+                  <div class="item">
+                    <div class="type min-value">aA</div>
+                    <div class="name">Min value</div>
+                  </div>
+          
+                  <div class="item">
+                    <div class="type max-value">aA</div>
+                    <div class="name">Max value</div>
+                  </div>
+                </div>
+          
+                <div class="column">
+                  <div class="item">
+                    <div class="color good-quality"></div>
+                    <div class="name">Good quality</div>
+                  </div>
+          
+                  <div class="item">
+                    <div class="color bad-quality"></div>
+                    <div class="name">Bad quality</div>
+                  </div>
+                </div>
+          
+                <div class="column">
+                  <div class="item">
+                    <div class="color suspicious"></div>
+                    <div class="name">Suspicious</div>
+                  </div>
+                  
+                  <div class="item">
+                    <div class="color not-checked"></div>
+                    <div class="name">Not checked</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </v-tab-item>
+      </v-tabs-items>
+    </v-app>
+  </div>
+</div>
+{% endblock %}
+
+{% block localjavascript %}
+<!-- PUT PGIA FIRST -->
+<script>
+  'use strict';
+  Vue.use(window.vuelidate.default);
+  const monthsLabels =  ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const { required, minLength } = window.validators;
+
+  new Vue({
+    el: "#app",
+    vuetify: new Vuetify(),
+    delimiters: ["[[", "]]"],
+    validations: {
+        request: {
+          variables: { required },
+          stations: { required },
+        }
+      },
+    data: {
+      request: {
+        variable: null,
+        stations: null
+      },
+      currentSource: null,
+      allData: [],
+      formatedData: [],
+      timezone: "{{ TIMEZONE_NAME|escapejs }}",
+      hours: (function() {
+        const hours = [];
+        hours.length = 24;
+        hours.fill('');
+        return hours.map((el, index) => `${index < 10 ? '0' : ''}${index}:00`);
+      })(),
+      station_list: [
+        {% for station in station_list %}
+          { id: {{ station.id }},
+            text: "{{ station.name | safe }} - {{ station.code }}" 
+          },
+        {% endfor %}
+      ],
+      variable_list: [
+        {% for variable in variable_list %}
+          {
+            id: {{ variable.id }},
+            name: "{{ variable.name }}",
+          },
+        {% endfor %}
+      ],
+      station: null,
+      source: 0,
+      sources: [
+        {value: 0, text: "Raw data"},
+        {value: 1, text: "Hourly summary"},
+        {value: 2, text: "Daily summary"},
+        {value: 3, text: "Monthly summary"},
+        {value: 4, text: "Yearly summary"},
+      ],
+      day_limits: [
+        7,
+        30,
+        365,
+      ],
+      initial_date_menu: false,
+      initial_date:  moment().format('YYYY-MM-DD'),
+      initial_time_menu: false,
+      initial_time: '00:00',
+      final_date_menu: false,
+      final_date: moment().add(1, 'days').format('YYYY-MM-DD'),
+      final_time_menu: false,
+      final_time: '00:00',
+      valid_data: false,
+      tabs: [],
+      tab: null,
+      data: {},
+      filteredData: {},
+      tableHeadersList: {},
+      tableItemsList: {},
+      summaries: {},
+      error_message: "",
+      error: false,
+      loading: false,
+      rendering: false,
+      no_data: false,
+      simpleTextFieldsRules: [
+          v => (v !== undefined && v !== "") || "This field is required"
+        ],
+    },
+    mounted() {
+      axios.defaults.xsrfHeaderName = "X-CSRFToken";
+      axios.defaults.xsrfCookieName = 'csrftoken';
+    },
+    methods: {
+      getParams() {
+        let params = '?';
+        let initial_datetime = this.formatDatetimeForRequest(moment(`${this.initial_date} ${this.initial_time}`).tz(this.timezone, true));
+        let final_datetime = this.formatDatetimeForRequest(moment(`${this.final_date} ${this.final_time}`).tz(this.timezone, true));
+        params += 'variable_ids=[' + this.request.variables.join(',') + ']';
+        params += '&initial_datetime=' + initial_datetime;
+        params += '&final_datetime=' + final_datetime;
+        params += '&source=' + this.source;
+        params += '&station_ids=[' + this.request.stations.join(',') + ']';
+
+        return params;
+      },
+      formatDatetimeForRequest(datetime){
+        if (this.source === 0 || this.source === 1)
+          return datetime.utc().format('YYYY-MM-DDTHH:mm:ss[Z]');
+        else
+          return datetime.format('YYYY-MM-DD');
+      },
+      formatDatetimeForDataTable(datetime){
+        if (this.source === 0 || this.source === 1)
+          return datetime.format('YYYY-MM-DD HH:mm');
+        else
+          return datetime.format('YYYY-MM-DD');
+
+      },
+      fetchData() {
+        this.loading = true;
+        this.no_data = false;
+        this.tabs = [];
+
+        const startDate = new Date(this.initial_date);
+        const endDate   = new Date(this.final_date);
+        const days = (endDate.getTime() - startDate.getTime()) / (1000*60*60*24);
+
+        if (days > this.day_limits[this.source]) {
+          this.error_message = 'The maximum number of days for ' + this.sources[this.source].text.toLowerCase() + ' report is ' + this.day_limits[this.source];
+          this.loading = false;
+          this.error = true;
+        } else {
+          this.error = false;
+          axios.get( document.getElementById('data-url').value + this.getParams()).then(data => {
+            this.loading = false;
+            this.rendering = true;
+            this.currentSource = this.source;
+            this.data = Object.assign({}, data.data);
+            this.filteredData = Object.assign({}, data.data);
+            
+            this.tabs = Object.keys(this.data).sort();
+            
+            if (this.tabs.length > 0) {
+              if(this.source === 2 || this.source === 3 || this.source === 4) // Daily, Monthly and Yearly dates comes as with a calculated timezone
+                Highcharts.setOptions({
+                  time: {
+                    timezone: 'UTC'
+                  }
+                });
+              else
+                Highcharts.setOptions({
+                  time: {
+                    timezone: this.timezone
+                  }
+                });
+              this.tabs.forEach(tab => {
+                this.data[tab].series.forEach(el => {
+                  el.turboThreshold = 0;
+                  el.data.forEach(i => {
+                    if(this.source === 2 || this.source === 3 || this.source === 4) // Daily, Monthly and Yearly dates comes as with a calculated timezone
+                      i.xFormated = this.formatDatetimeForDataTable(moment.utc(i.x).tz(this.timezone, true))
+                    else
+                      i.xFormated = this.formatDatetimeForDataTable(moment.utc(i.x).tz(this.timezone))
+                  })
+                });
+              });
+            }
+            this.allData = JSON.parse(JSON.stringify(data.data));
+            // sessionStorage.setItem('stationReport:originalData', JSON.stringify(data.data));
+          }).then(data => {
+            this.createTables();
+            if (this.tabs.length > 0) {
+              window.requestAnimationFrame(evt => {
+                this.tabs.forEach(tab => {
+
+                  const $table = $('#datatable-' + tab);
+                  const xAxis = Object.assign({}, this.data[tab].xAxis, {
+                    events:{
+                      afterSetExtremes: (evt) => {
+                        this.filteredData = JSON.parse(JSON.stringify(this.allData));
+                        // this.filteredData = JSON.parse(sessionStorage.getItem('stationReport:originalData'));
+                        let auxData = Object.assign({}, this.data);
+                        if (evt.userMin && evt.userMax) {
+                          const series = auxData[tab].series.map(values => {
+                            const content = Object.assign({}, values);
+                            content.data = values.data.filter(item => {
+                              return item.x >= evt.userMin && item.x <= evt.userMax;
+                            });
+                            // content.turboThreshold = 1;
+                            return content;
+                          });
+                          this.filteredData[tab].series = series;
+                        }
+                        
+                        this.createTable(tab);
+                        this.$forceUpdate();
+                        $table.DataTable().destroy();
+                        
+                        setTimeout(() => {
+                          $table.DataTable({
+                            lengthMenu: [[ 50, 100, 300, 500, -1 ], [ 50, 100, 300, 500, "All"]],
+                            rowCallback: this.setCellColor(),
+                          });
+                        }, 200);
+                      }
+                    }
+                  });
+
+                  this.data[tab].xAxis = xAxis;
+                  this.data[tab].xAxis.type = 'datetime';
+                  Highcharts.chart(tab+'-chart', this.data[tab]);
+
+                  $table.DataTable(
+                    {
+                      lengthMenu: [[ 50, 100, 300, 500, -1 ], [ 50, 100, 300, 500, "All"]],
+                      rowCallback: this.setCellColor(),
+                    }
+                  );
+                });
+              });
+            } else {
+              this.no_data = true;
+            }
+            this.rendering = false;
+          })
+        }
+      },
+      changeSource(){
+        if(this.source === 3) {
+          this.initial_date = moment().format('YYYY-MM')
+          this.final_date = moment().add(1, 'month').format('YYYY-MM')
+        } else if(this.source === 4) {
+          this.initial_date = moment().format('YYYY-01')
+          this.final_date = moment().add(1, 'year').format('YYYY-01')
+        }
+      },
+      createTables: function() {        
+        for(let i in this.tabs) {
+          this.createTable(this.tabs[i]);
+        }
+      },
+      createTable: function(key) {
+        this.tableItemsList[key] = [];
+        this.tableHeadersList[key] = [{
+          value: "datetime",
+          text: this.source === 3 || this.source === 4 ? "REFERENCE" : "DATE",
+        }];
+        
+        this.filteredData[key].series.forEach(series => {
+          const vname = series.name
+          this.summaries[vname] = {};
+          this.summaries[vname]['SUM'] = 'loading...';
+          this.summaries[vname]['AVG'] = 'loading...';
+          this.summaries[vname]['MIN'] = 'loading...';
+          this.summaries[vname]['MAX'] = 'loading...';
+          this.summaries[vname]['STDDEV'] = 'loading...';
+          this.summaries[vname]['COUNT'] = 'loading...';
+          
+          this.tableHeadersList[key].push({
+            value: vname,
+            text: vname + " (" + series.unit + ")",
+          });
+
+          if (this.source === 3 || this.source === 4) {
+            for (let j in series.data) {
+              let found = false;
+              
+              let dt = series.data[j].xFormated;
+
+              for (let k=0; k<this.tableItemsList[key].length && !found; k++) {
+                if (this.tableItemsList[key][k].datetime.value == dt) {
+                  this.tableItemsList[key][k][vname] = series.data[j].y;
+                  found = true;
+                }
+              }
+
+              if (!found) {
+                this.tableItemsList[key].push({
+                  datetime: { value: dt },
+                })
+                this.tableItemsList[key][this.tableItemsList[key].length-1][vname] = {
+                  value: series.data[j].y
+                };
+                if (this.source === 0) {
+                  this.tableItemsList[key][this.tableItemsList[key].length-1][vname].color = series.data[j].flag_color;
+                }
+              }
+            }
+          } else {
+            for (let j in series.data) {
+              let found = false;
+              
+              let dt = series.data[j].xFormated;
+
+              for (let k=0; k<this.tableItemsList[key].length && !found; k++) {
+                if (this.tableItemsList[key][k].datetime.value == dt) {
+                  this.tableItemsList[key][k][vname] = { 
+                    value: series.data[j].y
+                  };
+                  if (this.source === 0) {
+                    this.tableItemsList[key][k][vname].color = series.data[j].flag_color;
+                  }
+                  found = true;
+                }
+              }
+
+              if (!found) {
+                this.tableItemsList[key].push({
+                  datetime: { value: dt },
+                })
+                this.tableItemsList[key][this.tableItemsList[key].length-1][vname] = {
+                  value: series.data[j].y
+                };
+                if (this.source === 0) {
+                  this.tableItemsList[key][this.tableItemsList[key].length-1][vname].color = series.data[j].flag_color;
+                }
+              }
+            }
+          }
+        });
+        this.updateStatistics(key);
+      },
+      updateStatistics(key) {
+        for(let v=1; v<this.tableHeadersList[key].length; v++){
+          let avg;
+          let sum = 0;
+          let validSum = 0; // Just in case the 'sum' variable get some 'null' value in some point. That will be invalid to make statistics like avg, for example.
+          let count = 0;
+          let min = null;
+          let min_ts = null;
+          let max = null;
+          let max_ts = null;
+          let stddev = 0;
+
+          for(let item=0; item<this.tableItemsList[key].length; item++) {
+            let value = (this.tableItemsList[key][item][this.tableHeadersList[key][v].value] || {}).value;
+            if(value != null && !isNaN(value)) {
+              count += 1;
+              sum += value;
+              if(min == null || min > value) {
+                min = value;
+                min_ts = this.tableItemsList[key][item]['datetime'].value;
+              }
+              if(max == null || max < value) {
+                max = value;
+                max_ts = this.tableItemsList[key][item]['datetime'].value;
+              }
+            }
+          }
+
+          if(count > 0) {
+            avg = sum / count;
+            if(count > 1) {              
+              for(let item=0; item<this.tableItemsList[key].length; item++) {
+                let value = (this.tableItemsList[key][item][this.tableHeadersList[key][v].value] || {}).value;
+                if(value != null && !isNaN(value)) {
+                  stddev += Math.pow((value - avg), 2);
+                }
+              }
+              stddev = Math.sqrt(stddev / (count))
+            }
+          }else{
+            avg = null;
+            stddev = null;
+          }
+          this.summaries[this.tableHeadersList[key][v].value]['SUM'] = sum !== null ? sum.toFixed(2) : null;
+          this.summaries[this.tableHeadersList[key][v].value]['AVG'] = avg !== null ? avg.toFixed(2) : null;
+          this.summaries[this.tableHeadersList[key][v].value]['MIN'] = {
+            value: min !== null ? min.toFixed(2) : null,
+            timestamp: min_ts
+          }
+          this.summaries[this.tableHeadersList[key][v].value]['MAX'] = {
+            value: max !== null ? max.toFixed(2) : null,
+            timestamp: max_ts
+          }
+          this.summaries[this.tableHeadersList[key][v].value]['STDDEV'] = stddev !== null ? stddev.toFixed(2): null;
+          this.summaries[this.tableHeadersList[key][v].value]['COUNT'] = count;
+        }
+      },
+      getDatepickFormat(){
+          return this.source === 4 || this.source === 3 ? 'month': 'date';
+      },
+      allowedDates(val){
+          if(this.source === 4)
+            return val.split('-')[1] == '01' // just january
+          return true;
+      },
+      arrayToCSV(array) {
+        const header = "data:text/csv;charset=utf-8,";
+        const keys = Object.keys(array[0]);
+        let result = keys.join(",") + "\n";
+        array.forEach(function(obj){
+            result += keys.map(k => obj[k].value).join(",") + "\n";
+        });
+        return header + encodeURIComponent(result);
+      },
+      exportCSV(key) {
+        const csvContent = this.arrayToCSV(this.tableItemsList[key]);
+        const link = document.createElement("a");
+        let variableName = this.tab.slice(4);
+        link.download = `${variableName} ${this.initial_date} - ${this.final_date}.csv`;
+        link.href = csvContent;
+        const event = new MouseEvent('click');
+        link.dispatchEvent(event);
+      },
+      setCellColor() {
+        if (this.source === 0) {
+          return (row, data, index) => {
+            for (let i = 1; i < data.length; i++) {
+              const element = $(row).find('td:eq('+i+')');
+              const color = element.attr('data-color');
+              element.css('background-color',  color);
+            }
+          }
+        }
+        return (row, data, index) => {
+          for (let i = 1; i < data.length; i++) {
+            // $(row).find('td:eq('+i+')').css('color', this.getColor(parseFloat(data[i]), this.tableHeadersList[this.tab.slice(4)][i].value));
+            $(row).find('td:eq('+i+')').css('color', "#000");
+          }
+        }
+      },
+      getColor(value, variable) {
+        if(this.summaries[variable]['MAX'].value == value.toFixed(2)) {
+          if (!['PRECIP', 'SOLRHEAT', 'SOLARRAD'].includes(variable) || value > 0.0) {
+            return "#f00";
+          }
+        }
+        if(this.summaries[variable]['MIN'].value == value.toFixed(2)) {
+          if (!['PRECIP', 'SOLRHEAT', 'SOLARRAD'].includes(variable) || value > 0.0) {
+            return "#00f";
+          }
+        }
+        return "#000";
+      },
+    },
+  });
+  
+</script>
+{% endblock %}
+
+{% block extrastyle %}
+<style>
+  .space-between {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.table-legend {
+  display: flex;
+  padding: 6px;
+  border: 1px solid grey;
+  border-radius: 12px
+}
+
+.table-legend .column {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  min-width: 115px;
+}
+
+.item .color {
+  width: 16px;
+  height: 16px;
+}
+
+.item .type {
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+}
+
+.item .name {
+  padding-left: 4px;
+  font-size: 14px;
+}
+.good-quality {
+  background-color: {{ quality_flag_colors.Good }};
+}
+.bad-quality {
+  background-color: {{ quality_flag_colors.Bad }};
+}
+.not-checked {
+  background-color: {{ quality_flag_colors.Not_checked }};
+}
+.suspicious {
+  background-color: {{ quality_flag_colors.Suspicious }};
+}
+.max-heigh-100{
+  max-height: 100px;
+  overflow: auto;
+}
+.min-value {
+  color: #0000ff;
+}
+.max-value {
+  color: #ff0000;
+}
+.add-comma:not(:last-child):after {
+  content: ", ";
+}
+.highcharts-data-table table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    background: white;
+    min-width: 100%;
+    margin-top: 10px;
+    font-family: sans-serif;
+    font-size: 0.9em;
+}
+.highcharts-data-table td, .highcharts-data-table th, .highcharts-data-table caption {
+    border: 1px solid silver;
+    padding: 0.5em;
+}
+.highcharts-data-table tr:nth-child(even), .highcharts-data-table thead tr {
+    background: #f8f8f8;
+}
+.highcharts-data-table tr:hover {
+    background: #eff;
+}
+.highcharts-data-table caption {
+    border-bottom: none;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+table.dataTable tfoot th, table.dataTable tfoot td {
+  padding: 2px;
+  border-top: 1px solid #ddd;
+}
+</style>
+<!--Let browser know website is optimized for mobile-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/> 
+{% endblock %}

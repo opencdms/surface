@@ -1,0 +1,432 @@
+{% extends "base.html" %} {% block content %}
+<div class="srf-container">
+  <div id="app" v-cloak>
+    <v-app>
+      <v-content fluid fill-height style="background: white">
+        <v-layout column>
+          <v-flex>
+            <h1 class="display-1 text-uppercase">Data Inventory</h1>
+          </v-flex>
+          <v-layout column fluid>
+            <v-layout mt-3 mb-5>
+              <v-flex lg2 class="d-flex justify-between">
+                <v-text-field
+                  v-model="requestObject.start_year"
+                  label="Start year"
+                  required
+                  hint="*Required"
+                ></v-text-field>
+              </v-flex>
+              <v-flex lg2 pl-5 class="d-flex justify-between">
+                <v-text-field
+                  v-model="requestObject.end_year"
+                  label="End date"
+                  required
+                  hint="*Required"
+                ></v-text-field>
+              </v-flex>
+              <v-flex mt-5 lg2 pl-5 class="d-flex justify-between">
+                <v-btn
+                  outlined
+                  color="primary"
+                  small
+                  @click="getDataInventory"
+                  :disabled="$v.requestObject.$invalid"
+                  >SUBMIT</v-btn
+                >
+              </v-flex>
+            </v-layout>
+            <v-alert v-model="request_error" dismissible type="error">
+              [[ request_error_message ]]
+            </v-alert>
+            <v-overlay :value="loading">
+              <v-progress-circular
+                indeterminate
+                size="64"
+              ></v-progress-circular>
+            </v-overlay>
+            <v-layout mt-3 :hidden="!seriesData.length">
+              <v-layout ml-3 mt-3 column>
+                <highcharts :options="chartOptions"></highcharts>
+              </v-layout>
+            </v-layout>
+          </v-layout>
+        </v-layout>
+      </v-content>
+      <pre id="csv" style="display: none"></pre>
+    </v-app>
+  </div>
+
+  {% endblock %} {% block localjavascript %}
+
+  <script>
+    Vue.use(HighchartsVue.default);
+    Vue.use(window.vuelidate.default);
+
+    const { required, minLength } = window.validators;
+
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      validations: {
+        requestObject: {
+          start_year: { required },
+          end_year: { required }
+        }
+      },
+      data: {
+        timezone: "{{ TIMEZONE_NAME|escapejs }}",
+        request_error:false,
+        request_error_message: '',
+        loading: false,
+        searchVariables: '',
+        seriesData: [],
+        variable_list: [
+          {% for variable in variable_list %}
+            {
+              variable: {{ variable.id }},
+              variable_name: "{{ variable.name }}",
+              unit_symbol: "{{ variable.unit.symbol }}"
+            },
+          {% endfor %}
+        ],
+        layout: {
+          yAxis: {
+            title: {
+              text: null
+            },
+          },
+        },
+        requestObject: {
+          start_year: moment().format('YYYY'),
+          end_year: moment().add(1, 'years').format('YYYY'),
+        },
+        simpleTextFieldsRules: [
+          v => (v !== undefined && v !== "") || "This field is required"
+        ],
+        drilldowns: {}
+      },
+      watch: {
+        variables (newSelectedArray, oldSelectedArray) {
+          this.searchVariables = '';
+        }
+      },
+      computed: {
+        chartOptions() {
+          return Object.assign(
+            {},
+            {
+              chart: {
+                type: 'heatmap',
+                events: {
+                  drillup: (event) => {
+                    const chart = event.target;
+                    chart.showLoading('Loading data');
+                    chart.update( {... chart.userOptions.upperLevelData} )
+                    chart.hideLoading();
+                  },
+                  drilldown: (event) => event.target.userOptions.drilldownFunction(event),
+                }
+              },
+              boost: {
+                useGPUTranslations: true
+              },
+              title: {
+                text: 'Data Inventory Graph',
+                align: 'left',
+                x: 40
+              },
+              yAxis: {
+              },
+              colorAxis: {
+                stops: [
+                  [0, '#f08080'],
+                  [0.5, '#fafad2'],
+                  [1, '#90ee90']
+                ],
+                min: 0,
+                max: 100,
+                startOnTick: false,
+                endOnTick: false,
+              },
+              tooltip: {
+                shared: true
+              },
+              legend: {
+                layout: "horizontal",
+                align: "center",
+                verticalAlign: "bottom"
+              },
+              plotOptions: {
+                series: {
+                    boostThreshold: 1,
+                    borderWidth: 0,
+                    nullColor: '#EFEFEF',
+                    dataLabels: {
+                      enabled: true,
+                      align: "center",
+                      pointFormat: '{point.value}%',
+                    }
+                }
+              },
+            },
+            this.layout
+          );
+        },
+      },
+      methods: {
+        getDataInventory(){
+          this.loading = true;
+          axios.get(`/api/data_inventory/?&start_date=${this.requestObject.start_year}&end_date=${this.requestObject.end_year}`)
+          .then(result => {
+            let stations = new Set();
+            let years = new Set();
+            let stationsDict = {}
+
+            result.data.forEach(record => {
+              stationsDict[record.station.id] = `${record.station.name} - ${record.station.code}`
+              stations.add(record.station.id);
+              years.add(record.datetime)
+            });
+
+            stations = [... stations]
+            years = [... years].sort((a, b) => a.localeCompare(b));
+
+            this.seriesData = result.data.map(record => {
+              return {
+                x: years.indexOf(record.datetime),
+                y: stations.indexOf(record.station.id),
+                datetime: Date.parse(record.datetime),
+                value: record.percentage,
+                station: record.station,
+                drilldown: record.station.name
+              }
+            });
+
+            stations = stations.map(station_id => stationsDict[station_id]);
+            const yearsArray = years.map(year => moment.utc(year).format('YYYY'))
+
+            this.loading = false;
+            this.layout = {
+              chart:{
+                height: (40 * stations.length) + 160
+              },
+              drilldownFunction: this.drilldownToStationLevel,
+              yAxis:{
+                categories: stations,
+                reversed: true,
+                minPadding: 0,
+                maxPadding: 0,
+              },
+              xAxis: {
+                type: 'category',
+                categories: yearsArray,
+                labels: {
+                  format: '{value:%Y}'
+                },
+              },
+              exporting: {
+                showTable: true
+              },
+              series: [
+                {
+                  type: 'heatmap',
+                  data: this.seriesData,
+                  tooltip: {
+                    headerFormat: null,
+                    pointFormat: '{point.datetime:%Y} - {point.station.name} {point.station.code}: <b>{point.value}%</b>'
+                  },
+                }
+              ],
+            };
+          });
+        },
+        drilldownToStationLevel(event){
+          if (!event.points) {
+
+            const drilldownStation = event.point.station;
+            const drilldownDatetime = moment(event.point.datetime).utc();
+
+            const requestStartDatetime = drilldownDatetime;
+            const requestEndDatetime = moment(requestStartDatetime).add(1, 'years');
+
+            const chart = event.target;
+            chart.showLoading(`Loading data for "${drilldownStation.name}/${drilldownDatetime.format('YYYY')}"`);
+
+            axios.get(`/api/station_data_inventory/?start_date=${requestStartDatetime.format('YYYY')}&end_date=${requestEndDatetime.format('YYYY')}&station_id=${drilldownStation.id}`)
+            .then(response => {
+
+              let variableIds = new Set();
+              let variablesDict = {}
+              const yearArray = [requestStartDatetime.format("YYYY")]
+
+              response.data.forEach(record => {
+                variableIds.add(record.variable.id)
+                variablesDict[record.variable.id] = record.variable.name
+              });
+
+              variableIds = [ ...variableIds ];
+              const variableArray = variableIds.map(variableId => variablesDict[variableId])
+
+              const seriesData = response.data.map(record => {
+                return {
+                  x: 0,
+                  y: variableIds.indexOf(record.variable.id),
+                  datetime: Date.parse(record.datetime),
+                  station: drilldownStation,
+                  variable: record.variable,
+                  value: record.percentage,
+                  drilldown: drilldownStation.name
+                };
+              })
+
+              const updatedOptions = {
+                chart:{
+                  height: (40 * seriesData.length) + 160
+                },
+                subtitle: {
+                  text: `Station: ${drilldownStation.code} - ${drilldownStation.name}
+                  <br/>Year: ${drilldownDatetime.format('YYYY')}`,
+                  align: 'left',
+                  x: 50
+                },
+                yAxis: {
+                  categories: variableArray,
+                },
+                xAxis: {
+                  type: 'category',
+                  categories: yearArray,
+                  labels: {
+                    format: '{value}'
+                  },
+                },
+                drilldownFunction: this.drilldownToStationVariableLevel,
+                firstLevelData: {
+                  yAxis: Object.assign({}, chart.userOptions.yAxis),
+                  xAxis: Object.assign({}, chart.userOptions.xAxis),
+                  chart: Object.assign({}, chart.userOptions.chart),
+                  subtitle: Object.assign({}, chart.userOptions.subtitle),
+                  drilldownFunction: chart.userOptions.drilldownFunction,
+                },
+              }
+
+              chart.update({
+                ... updatedOptions,
+                upperLevelData: updatedOptions.firstLevelData
+              });
+
+              chart.hideLoading();
+              chart.addSeriesAsDrilldown(event.point, {
+                name: event.point.drilldown,
+                tooltip: {
+                  headerFormat: null,
+                  pointFormat: '{point.datetime:%Y} - {point.variable.name}: <b>{point.value}%</b>'
+                },
+                data: seriesData
+              });
+            });
+          }
+        },
+        drilldownToStationVariableLevel(event){
+          if (!event.points) {
+
+            const drilldownStation = event.point.station;
+            const drilldownVariable = event.point.variable;
+
+            const drilldownDatetime = moment(event.point.datetime).utc();
+
+            const requestStartDatetime = drilldownDatetime;
+            const requestEndDatetime = moment(requestStartDatetime).add(1, 'years').add(-1, 'days');
+
+            const chart = event.target;
+            chart.showLoading(`Loading data for "${drilldownStation.name}/${drilldownDatetime.format('YYYY')} - ${drilldownVariable.name}"`);
+
+            const monthArray = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            const dayArray = Array.from({length: 31}, (_, index) => index + 1);
+
+            axios.get(`/api/station_variable_data_inventory/?start_date=${requestStartDatetime.format('YYYY-MM-DD')}&end_date=${requestEndDatetime.format('YYYY-MM-DD')}&station_id=${drilldownStation.id}&variable_id=${drilldownVariable.id}`)
+            .then(response => {
+              const seriesData = response.data.map(record => {
+                return {
+                  x: record.day -1,
+                  y: record.month - 1,
+                  datetime: Date.parse(record.datetime),
+                  station: drilldownStation,
+                  variable: drilldownVariable,
+                  value: record.percentage,
+                  measurement_variable: record.measurement_variable,
+                  drilldown: drilldownStation.name
+                };
+              });
+
+              const updatedOptions = {
+                chart:{
+                  height: (100 * (seriesData.length / 30)) + 240
+                },
+                subtitle: {
+                  text: `${chart.userOptions.subtitle.text}
+                  <br/>Variable: ${drilldownVariable.name}`
+                },
+                yAxis: {
+                  categories: monthArray,
+                },
+                xAxis: {
+                  type: 'category',
+                  categories: dayArray,
+                  labels: {
+                    format: '{value}'
+                  },
+                },
+                drilldownFunction: this.drilldownToStationReport,
+                stationLevelData: {
+                  yAxis: Object.assign({}, chart.userOptions.yAxis),
+                  xAxis: Object.assign({}, chart.userOptions.xAxis),
+                  chart: Object.assign({}, chart.userOptions.chart),
+                  subtitle: Object.assign({}, chart.userOptions.subtitle),
+                  upperLevelData: Object.assign({}, chart.userOptions.upperLevelData),
+                  drilldownFunction: chart.userOptions.drilldownFunction,
+                },
+              };
+
+              chart.update({
+                ... updatedOptions,
+                upperLevelData: updatedOptions.stationLevelData
+              });
+
+              chart.hideLoading();
+              chart.addSeriesAsDrilldown(event.point, {
+                name: event.point.drilldown,
+                tooltip: {
+                  headerFormat: null,
+                  pointFormat: '{point.datetime:%Y-%m-%d}: <b>{point.value}%</b>'
+                },
+                data: seriesData
+              });
+            });
+          }
+        },
+        drilldownToStationReport(event){
+          if (!event.points) {
+
+            const drilldownStation = event.point.station;
+            const drilldownMeasurementVariable = event.point.measurement_variable;
+
+            const drilldownDatetime = moment(event.point.datetime).utc();
+
+            const requestStartDatetime = drilldownDatetime;
+            const requestEndDatetime = moment(requestStartDatetime).add(1, 'days');
+
+            window.open(`/wx/products/station_report/?station_id=${drilldownStation.id}&start_date=${requestStartDatetime.format('YYYY-MM-DD')}&end_date=${requestEndDatetime.format('YYYY-MM-DD')}&measurement_variable=${drilldownMeasurementVariable}`, '_blank').focus();
+          }
+          return false
+        },
+      },
+      mounted() {
+        axios.defaults.xsrfHeaderName = "X-CSRFToken"
+        axios.defaults.xsrfCookieName = 'csrftoken'
+      }
+    });
+  </script>
+</div>
+{% endblock %}

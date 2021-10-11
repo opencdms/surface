@@ -1,0 +1,67 @@
+{% extends "wx/station_base.html" %} {% block station_content %}
+
+<div style="display: flex; justify-content: space-between; margin-bottom: 16px">
+  <span class="srf-display-1 text-uppercase">Timeline</span>
+  <div class="srf-flex">
+    <a href="{% url 'stationtimeline-create' station.id %}">
+      <button class="btn-outline-default btn-small" type="button">
+        Add timeline item
+      </button>
+    </a>
+  </div>
+</div>
+
+<div class="srf-layout flex-column" style="width:100%;">
+  <div class="srf-layout flex-row" style="width:100%;">
+      <table id="id_station_list" style="width:100%">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Action</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for object in object_list %}
+          <tr>
+            <td>
+              <a href="{{ object.station.get_absolute_url }}">{{ object.date }}</a>
+            </td>
+            <td>{{ object.action }}</td>
+            <td class="justify-center layout">
+  
+              <a href="{% url 'stationtimeline-delete' station.id object.id %}">
+                <button
+                  id="id_delete_station"
+                  class="mdl-button mdl-js-button mdl-button--icon"
+                >
+                  <i class="material-icons custon-icon-16 icon-danger">delete</i>
+                </button>
+                <div class="mdl-tooltip" data-mdl-for="id_delete_station">
+                  Delete timeline
+                </div>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+  
+    </div>
+</div>
+<!-- </div> -->
+{% endblock %} {% block localjavascript %}
+<script>
+  $(document).ready(function() {
+    $('#id_station_list').DataTable({
+      scrollX: true,
+      columnDefs: [
+        {
+          targets: [0, 1, 2],
+          className: 'mdl-data-table__cell--non-numeric'
+        }
+      ]
+    });
+  });
+</script>
+{% endblock %}
