@@ -5,6 +5,11 @@
 /api/static/material
 /api/static/rest_framework
 
+/data/
+
+/.idea
+/api/LrgsClient/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
