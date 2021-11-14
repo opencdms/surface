@@ -2,9 +2,8 @@
 
 import colorfield.fields
 import django.db.models.deletion
-from django.db import migrations, models
-
 import wx.models
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
@@ -1053,31 +1052,30 @@ class Migration(migrations.Migration):
         migrations.RunSQL('''
             CREATE EXTENSION IF NOT EXISTS tablefunc;
 
-            
-            
             CREATE TABLE public.raw_data (
-                station_id int4 NOT NULL,
-                variable_id int4 NOT NULL,
-                datetime timestamptz NOT NULL,
-                measured float4 NOT NULL,
-                qc_range_quality_flag int4 NULL,
-                qc_range_description varchar(256) NULL,
-                qc_step_quality_flag int4 NULL,
-                qc_step_description varchar(256) NULL,
-                qc_persist_quality_flag int4 NULL,
-                qc_persist_description varchar(256) NULL,
-                quality_flag int4 NULL,
-                manual_flag int4 NULL,
-                consisted float8 NULL,
-                is_daily bool NOT NULL DEFAULT false,
-                remarks varchar(150) NULL,
-                observer varchar(150) NULL,
-                code varchar(60) NULL,
-                created_at timestamptz NULL,
-                updated_at timestamptz NULL,
-                ml_flag int4 NULL DEFAULT 1,
-                CONSTRAINT raw_data_station_id_variable_id_datetime_key UNIQUE (station_id, variable_id, datetime)
+                created_at timestamp with time zone DEFAULT now() NOT NULL,
+                updated_at timestamp with time zone DEFAULT now() NOT NULL,
+                datetime timestamp with time zone NOT NULL,
+                measured double precision NOT NULL,
+                consisted double precision,
+                qc_range_description character varying(256),
+                qc_step_description character varying(256),
+                qc_persist_description character varying(256),
+                manual_flag integer,
+                qc_persist_quality_flag integer,
+                qc_range_quality_flag integer,
+                qc_step_quality_flag integer,
+                quality_flag integer NOT NULL,
+                station_id integer NOT NULL,
+                variable_id integer NOT NULL,
+                observation_flag_id integer,
+                is_daily boolean DEFAULT false NOT NULL,
+                remarks character varying(150),
+                observer character varying(150),
+                code character varying(60),
+                ml_flag integer DEFAULT 1
             );
+
             ALTER TABLE public.raw_data OWNER TO dba;
             
             ALTER TABLE ONLY public.raw_data
@@ -1101,9 +1099,9 @@ class Migration(migrations.Migration):
             ALTER TABLE ONLY public.raw_data
                 ADD CONSTRAINT raw_data_manual_flag_fkey FOREIGN KEY (manual_flag) REFERENCES public.wx_qualityflag(id);
             
+            CREATE INDEX raw_data_datetime_idx1 ON public.raw_data USING btree (datetime DESC);
+
             SELECT create_hypertable('raw_data', 'datetime');
-            
-            
             
             CREATE TABLE public.hourly_summary (
                 datetime timestamptz NULL,
