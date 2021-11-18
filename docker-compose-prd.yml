@@ -8,8 +8,10 @@ services:
     volumes:
       - ./api/static:/home/app/web/staticfiles
       - ./data:/home/app/web/data
+    env_file:
+      - api/production.env
     ports:
-      - 8880:80
+      - 8080:80
     depends_on:
       - api
 
@@ -33,6 +35,8 @@ services:
       - ./:/app
       - ./data/postgresql:/var/lib/postgresql/data
       - ./data/shared:/data/shared
+    ports:
+      - 5432:5432
     logging:
       driver: "json-file"
       options:
@@ -52,6 +56,7 @@ services:
       - ./api:/surface
       - ./data/media:/data/media
       - ./data/shared:/data/shared
+      - ./data/exported_data:/data/exported_data
       - ./data/documents:/data/documents
     depends_on:
       - postgres
@@ -68,14 +73,14 @@ services:
       dockerfile: Dockerfile
       context: api
     container_name: surface-celery-worker
-    command: celery -A tempestas_api worker -l info
+    command: /home/surface/.local/bin/celery -A tempestas_api worker -l info
     env_file:
       - api/production.env
     restart: unless-stopped
     volumes:
       - ./api:/surface
-      - ./data/media/documents/ingest:/data/documents/ingest
-      - ./data/media/exported_data:/data/exported_data
+      - ./data/documents/ingest:/data/documents/ingest
+      - ./data/exported_data:/data/exported_data
       - ./data/shared:/data/shared
     depends_on:
       - api
@@ -92,7 +97,7 @@ services:
       context: api
     container_name: surface-celery-beat
     restart: unless-stopped
-    command: celery -A tempestas_api beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: /home/surface/.local/bin/celery -A tempestas_api beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
       - api/production.env
     volumes:

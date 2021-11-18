@@ -1101,6 +1101,8 @@ class Migration(migrations.Migration):
             
             CREATE INDEX raw_data_datetime_idx1 ON public.raw_data USING btree (datetime DESC);
 
+            CREATE UNIQUE INDEX raw_data_datetime_station_id_variable_id_uidx ON raw_data (datetime, station_id, variable_id);
+
             SELECT create_hypertable('raw_data', 'datetime');
             
             CREATE TABLE public.hourly_summary (

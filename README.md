@@ -14,4 +14,6 @@ docker-compose -f docker-compose-dev.yml exec api python manage.py createsuperus
 
 ## Collect static files before build for production
 
-docker-compose -f docker-compose-prd.yml exec api python manage.py collectstatic --noinput
+docker-compose -f docker-compose-prd.yml -p surface_new exec api bash load_initial_data.sh
+
+docker-compose -f docker-compose-prd.yml -p surface_new exec api python manage.py collectstatic --noinput

@@ -126,7 +126,7 @@ def ScheduleDataExport(request):
 @api_view(('GET',))
 def DataExportFiles(request):
     files = []
-    for df in DataFile.objects.all().values():
+    for df in DataFile.objects.all().order_by('-created_at').values()[:100:1]:
         if df['ready'] and df['ready_at']:
             file_status = {'text': "Ready", 'value': 1}
         elif df['ready_at']:
@@ -167,7 +167,7 @@ def DataExportFiles(request):
 
 def DownloadDataFile(request):
     file_id = request.GET.get('id', None)
-    file_path = os.path.join('/data', 'media', 'exported_data', str(file_id) + '.csv')
+    file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
     if os.path.exists(file_path):
         with open(file_path, 'rb') as fh:
             response = HttpResponse(fh.read(), content_type="text/csv")
@@ -182,7 +182,7 @@ def DeleteDataFile(request):
     DataFileStation.objects.filter(datafile=df).delete()
     DataFileVariable.objects.filter(datafile=df).delete()
     df.delete()
-    file_path = os.path.join('/data', 'media', 'exported_data', str(file_id) + '.csv')
+    file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
     if os.path.exists(file_path):
         os.remove(file_path)
     return JsonResponse({}, status=status.HTTP_200_OK)
