@@ -7,7 +7,6 @@ import pytz
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from psycopg2.extras import execute_values
-
 from tempestas_api import settings
 from wx.enums import QualityFlagEnum
 from wx.models import QcRangeThreshold, QcStepThreshold, StationVariable, Station
@@ -170,7 +169,6 @@ def insert(raw_data_list, override_data_on_conflict=False):
                         qc_step_description = excluded.qc_step_description,
                         qc_persist_quality_flag = excluded.qc_persist_quality_flag,
                         qc_persist_description = excluded.qc_persist_description,
-                        observation_flag_id = null,
                         manual_flag = null,
                         consisted = null,
                         updated_at = now()
