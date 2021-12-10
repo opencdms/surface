@@ -21,6 +21,7 @@ from celery.utils.log import get_task_logger
 from django.core.cache import cache
 from django.db import connection
 
+
 from tempestas_api import settings
 from wx.decoders.flash import read_data as read_data_flash
 from wx.decoders.hobo import read_file as read_file_hobo
@@ -898,13 +899,13 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
             current_end_datetime = datetime_list[i + 1]
 
             with connection.cursor() as cursor:
-
                 if source == 'raw_data':
-                    cursor.execute(f'''
+                    
+                    query_raw_data = '''
                         WITH processed_data AS (
                             SELECT datetime
                                 ,var.id as variable_id
-                                ,CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END AS value
+                                ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, %(missing_value)s) AS value
                             FROM raw_data data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.datetime >= %(start_datetime)s
@@ -913,22 +914,147 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         )
                         SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
                             ,variable.id
-                            ,value
+                            ,COALESCE(value, %(missing_value)s)
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '%(data_interval)s seconds') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
-                    ''', {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
+                    ''' 
+                    
+                    logging.info(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
-                else:
-                    cursor.execute(f'''
-                        SELECT {date_source}, var.id, {measured_source}
-                        FROM {source} data
-                        JOIN wx_variable var ON data.variable_id = var.id AND var.id in %s
-                        WHERE data.{datetime_variable} >= %s 
-                        AND data.{datetime_variable} < %s
-                        AND data.station_id = %s
-                    ''', (variable_ids, current_start_datetime, current_end_datetime, station_id,))
+                          'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds, 'missing_value': str(settings.MISSING_VALUE)})
+
+                    cursor.execute(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds, 'missing_value': str(settings.MISSING_VALUE)})
+            
+                elif source == 'hourly_summary':
+
+                    query_hourly = '''
+                        WITH processed_data AS (
+                            SELECT datetime ,var.id as variable_id
+					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                            WHEN var.sampling_operation_id = 3      THEN data.min_value
+                            WHEN var.sampling_operation_id = 4      THEN data.max_value
+                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                            ELSE data.sum_value END, %(missing_value)s) as value  
+                            FROM hourly_summary data
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.datetime >= %(start_datetime)s
+                            AND data.datetime < %(end_datetime)s
+                            AND data.station_id = %(station_id)s
+                        )
+                        SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
+                            ,variable.id
+                            ,COALESCE(value, %(missing_value)s)
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 hours') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                        LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                    '''
+                    
+                    logging.info(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
+                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+
+                    cursor.execute(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
+                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                    
+                elif source == 'daily_summary':
+
+                    query_daily = '''
+                        WITH processed_data AS (
+                            SELECT day ,var.id as variable_id
+					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                            WHEN var.sampling_operation_id = 3      THEN data.min_value
+                            WHEN var.sampling_operation_id = 4      THEN data.max_value
+                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                            ELSE data.sum_value END, %(missing_value)s) as value  
+                            FROM daily_summary data
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.day >= %(start_datetime)s
+                            AND data.day < %(end_datetime)s
+                            AND data.station_id = %(station_id)s
+                        )
+                        SELECT (generated_time) as datetime
+                            ,variable.id
+                            ,COALESCE(value, %(missing_value)s)
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 days') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                        LEFT JOIN processed_data ON day = generated_time AND variable.id = variable_id
+                    '''
+
+                    logging.info(query_daily, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+
+                    cursor.execute(query_daily, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                
+                elif source == 'monthly_summary':
+
+                    query_monthly = '''
+                        WITH processed_data AS (
+                            SELECT date ,var.id as variable_id
+					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                            WHEN var.sampling_operation_id = 3      THEN data.min_value
+                            WHEN var.sampling_operation_id = 4      THEN data.max_value
+                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                            ELSE data.sum_value END, %(missing_value)s) as value  
+                            FROM monthly_summary data
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.date >= %(start_datetime)s
+                            AND data.date < %(end_datetime)s
+                            AND data.station_id = %(station_id)s
+                        )
+                        SELECT (generated_time) as datetime
+                            ,variable.id
+                            ,COALESCE(value, %(missing_value)s)
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 months') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                        LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
+                    '''
+                    
+                    logging.info(query_monthly, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+
+                    cursor.execute(query_monthly, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+
+                elif source == 'yearly_summary':
+
+                    query_yearly = '''
+                        WITH processed_data AS (
+                            SELECT date ,var.id as variable_id
+					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                            WHEN var.sampling_operation_id = 3      THEN data.min_value
+                            WHEN var.sampling_operation_id = 4      THEN data.max_value
+                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                            ELSE data.sum_value END, %(missing_value)s) as value  
+                            FROM yearly_summary data
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.date >= %(start_datetime)s
+                            AND data.date < %(end_datetime)s
+                            AND data.station_id = %(station_id)s
+                        )
+                        SELECT (generated_time) as datetime
+                            ,variable.id
+                            ,COALESCE(value, %(missing_value)s)
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 years') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                        LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
+                    '''
+
+                    logging.info(query_yearly, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+
+                    cursor.execute(query_yearly, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
 
                 query_result = query_result + cursor.fetchall()
 
