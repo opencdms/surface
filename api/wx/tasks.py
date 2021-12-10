@@ -905,7 +905,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         WITH processed_data AS (
                             SELECT datetime
                                 ,var.id as variable_id
-                                ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, %(missing_value)s) AS value
+                                ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
                             FROM raw_data data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.datetime >= %(start_datetime)s
@@ -914,7 +914,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         )
                         SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
                             ,variable.id
-                            ,COALESCE(value, %(missing_value)s)
+                            ,COALESCE(value, '-99.9')
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '%(data_interval)s seconds') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
@@ -922,11 +922,11 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     
                     logging.info(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
 
                     cursor.execute(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
             
                 elif source == 'hourly_summary':
 
@@ -937,7 +937,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                             WHEN var.sampling_operation_id = 3      THEN data.min_value
                             WHEN var.sampling_operation_id = 4      THEN data.max_value
                             WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, %(missing_value)s) as value  
+                            ELSE data.sum_value END, '-99.9') as value  
                             FROM hourly_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.datetime >= %(start_datetime)s
@@ -946,7 +946,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         )
                         SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
                             ,variable.id
-                            ,COALESCE(value, %(missing_value)s)
+                            ,COALESCE(value, '-99.9')
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 hours') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
@@ -954,11 +954,11 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     
                     logging.info(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
-                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id})
 
                     cursor.execute(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
-                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id})
                     
                 elif source == 'daily_summary':
 
@@ -969,7 +969,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                             WHEN var.sampling_operation_id = 3      THEN data.min_value
                             WHEN var.sampling_operation_id = 4      THEN data.max_value
                             WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, %(missing_value)s) as value  
+                            ELSE data.sum_value END, '-99.9') as value  
                             FROM daily_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.day >= %(start_datetime)s
@@ -978,7 +978,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         )
                         SELECT (generated_time) as datetime
                             ,variable.id
-                            ,COALESCE(value, %(missing_value)s)
+                            ,COALESCE(value, '-99.9')
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 days') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON day = generated_time AND variable.id = variable_id
@@ -986,11 +986,11 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
                     logging.info(query_daily, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id})
 
                     cursor.execute(query_daily, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id})
                 
                 elif source == 'monthly_summary':
 
@@ -1001,7 +1001,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                             WHEN var.sampling_operation_id = 3      THEN data.min_value
                             WHEN var.sampling_operation_id = 4      THEN data.max_value
                             WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, %(missing_value)s) as value  
+                            ELSE data.sum_value END, '-99.9') as value  
                             FROM monthly_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.date >= %(start_datetime)s
@@ -1010,7 +1010,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         )
                         SELECT (generated_time) as datetime
                             ,variable.id
-                            ,COALESCE(value, %(missing_value)s)
+                            ,COALESCE(value, '-99.9')
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 months') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
@@ -1018,11 +1018,11 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     
                     logging.info(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id})
 
                     cursor.execute(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id})
 
                 elif source == 'yearly_summary':
 
@@ -1033,7 +1033,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                             WHEN var.sampling_operation_id = 3      THEN data.min_value
                             WHEN var.sampling_operation_id = 4      THEN data.max_value
                             WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, %(missing_value)s) as value  
+                            ELSE data.sum_value END, '-99.9') as value  
                             FROM yearly_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.date >= %(start_datetime)s
@@ -1042,7 +1042,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         )
                         SELECT (generated_time) as datetime
                             ,variable.id
-                            ,COALESCE(value, %(missing_value)s)
+                            ,COALESCE(value, '-99.9')
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 years') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
@@ -1050,11 +1050,11 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
                     logging.info(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id})
 
                     cursor.execute(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id, 'missing_value': str(settings.MISSING_VALUE)})
+                          'station_id': station_id})
 
                 query_result = query_result + cursor.fetchall()
 
