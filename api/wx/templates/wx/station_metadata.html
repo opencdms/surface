@@ -9,7 +9,8 @@
   </div>
 
   <v-app>
-    <v-layout mt-3 ml-2 mb-3>
+    <v-container style="width: 100%;">
+    <v-layout mt-3 ml-2 mb-3 >
       <v-flex sm1 md3 lg3>
         <v-autocomplete
           :items="stationList"
@@ -28,7 +29,7 @@
     </v-layout>
 
     <v-layout column mt-3 v-if="selectedStation">
-      <v-layout>
+      <v-layout collumn>
         <v-col cols="6">
           <div style="height: 300px; width: 100%;">
             <l-map
@@ -76,14 +77,6 @@
           <v-tab :key="1">
             Station Information
           </v-tab>
-          <!--
-          <v-tab :key="2">
-            Images
-          </v-tab>
-          <v-tab :key="3">
-            Documents
-          </v-tab>
-          -->
           <v-tab :key="4">
             Local Environment
           </v-tab>
@@ -102,28 +95,6 @@
           <v-tab :key="9">
             Other Metadata
           </v-tab>
-         <!--
-           <v-tab :key="3" >
-            Station Identifiers
-          </v-tab>
-          <v-tab :key="4" >
-            Local Environment
-          </v-tab>
-          <v-tab :key="5" >
-            Instrumentation and Maintenance
-          </v-tab>
-          <v-tab :key="6" >
-            Observing Practices
-          </v-tab>
-          <v-tab :key="7" >
-            Data
-          </v-tab>
-          <v-tab :key="8" >
-            Historical Events
-          </v-tab>
-          <v-tab :key="9" >
-            Other Metadata
-          </v-tab> -->
 
           <!--Station information-->
           <v-tab-item :key="1">
@@ -1084,6 +1055,7 @@
       </v-tabs> -->
     </template>
     </v-layout>
+    </v-container>
   </v-app>
 </div>
 {% endblock %}
