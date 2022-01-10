@@ -616,6 +616,13 @@ class StationViewSet(viewsets.ModelViewSet):
     queryset = Station.objects.all()
 
     # queryset = Station.objects.all().select_related("country").order_by("name")
+    # def put(self, request, *args, **kwargs):
+    #     station_object = Station.objects.get()
+    #     data = request.data
+
+    #     station_object.save()
+    #     serializer = serializers.StationSerializerWrite
+    #     return Response(serializer.data)
 
     def get_serializer_class(self):
         if self.request.method in ['GET']:
