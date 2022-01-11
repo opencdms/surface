@@ -77,7 +77,38 @@
           <v-tab :key="1">
             Station Information
           </v-tab>
+          <!--
           <v-tab :key="2">
+            Images
+          </v-tab>
+          <v-tab :key="3">
+            Documents
+          </v-tab>
+          -->
+          <v-tab :key="4">
+            Local Environment
+          </v-tab>
+          <v-tab :key="5">
+            Instrumentation and Maintenance
+          </v-tab>
+          <v-tab :key="6">
+            Observing Practices
+          </v-tab>
+          <v-tab :key="7">
+            Data Processing
+          </v-tab>
+          <v-tab :key="8">
+            Historical Events
+          </v-tab>
+          <v-tab :key="9">
+            Other Metadata
+          </v-tab>
+         <!--
+           <v-tab :key="3" >
+            Station Identifiers
+          </v-tab>
+          <v-tab :key="4" >
+
             Local Environment
           </v-tab>
           <v-tab :key="3">
@@ -780,8 +811,10 @@
           </v-data-table>
         </v-tab-item> -->
 
+
         <!--Local Enviroment-->
         <v-tab-item :key="2" >
+
         <form id="localEnviroment" @submit="">
 
           <div class="row w-100 mt-3">
@@ -792,6 +825,10 @@
               >
               </v-text-field>
             </div>
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -809,6 +846,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+          
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -819,7 +861,7 @@
           </div>
 
           <div class="row w-100 mt-3">
-            
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -827,6 +869,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -835,9 +882,11 @@
               </v-text-field>
             </div>
           </div>
-          
-          <div class="row w-100 mt-3">
             
+
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -845,6 +894,10 @@
               >
               </v-text-field>
             </div>
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -853,6 +906,7 @@
               </v-text-field>
             </div>
           </div>
+
           
           <v-btn
               v-if="!isEditing"
@@ -873,8 +927,10 @@
         </form>
         </v-tab-item>
 
+      
         <!--Instrumentation and Maintenance-->
         <v-tab-item :key="3" >
+
         <form id="instrumentationAndMaintenance" @submit="">
 
           <div class="row w-100 mt-3">
@@ -885,6 +941,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -902,6 +963,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -919,6 +985,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -936,6 +1007,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -953,6 +1029,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+          
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field
               type="text"
@@ -971,6 +1052,7 @@
               </v-text-field>
             </div>
           </div>
+
 
           <v-btn
               v-if="!isEditing"
@@ -991,8 +1073,11 @@
         </form>
         </v-tab-item> 
 
+        
+
         <!--Observing Practices-->
         <v-tab-item :key="4" >
+
         <form id="observingPratices" @submit="">
 
           <div class="row w-100 mt-3">
@@ -1003,6 +1088,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1020,6 +1110,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1037,6 +1132,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1054,6 +1154,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1071,6 +1176,10 @@
               >
               </v-text-field>
             </div>
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1108,9 +1217,11 @@
             >CANCEL EDITION</v-btn>
         </form>
         </v-tab-item> 
+       
 
         <!--Data Processing-->
         <v-tab-item :key="5" >
+
         <form id="dataProcessing" @submit="">
 
           <div class="row w-100 mt-3">
@@ -1121,6 +1232,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1138,6 +1254,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1155,6 +1276,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1172,6 +1298,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1189,6 +1320,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1206,6 +1342,11 @@
               >
               </v-text-field>
             </div>
+
+          </div>
+
+          <div class="row w-100 mt-3">
+
             <div class="col s4">
               <v-text-field 
               type="text" 
@@ -1214,6 +1355,7 @@
               </v-text-field>
             </div>
           </div>
+
 
           <v-btn
               v-if="!isEditing"
@@ -1317,6 +1459,12 @@
         </form>
         </v-tab-item>
 
+      </v-tabs>
+
+        </form>
+        </v-tab-item> 
+     
+        
       </v-tabs>
     </template>
     </v-layout>
