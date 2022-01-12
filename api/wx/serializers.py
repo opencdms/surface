@@ -231,3 +231,33 @@ class StationImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.StationImage
         fields = '__all__'
+
+class StationMetadataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Station
+        fields = (
+        'name', 
+        'alias_name',
+        'id',
+        'wigos',
+        'wmo',
+        'begin_date',
+        'end_date',
+        'relocation_date',
+        'is_active',
+        'is_automatic',
+        'network',
+        'wmo_station_type',
+        'profile',
+        'communication_type',
+        'latitude',
+        'longitude',
+        'elevation',
+        'country',
+        'region', 
+        'watershed',
+        'wmo_region',
+        'utc_offset_minutes',
+        'wmo_station_plataform',
+        'data_type'
+        )

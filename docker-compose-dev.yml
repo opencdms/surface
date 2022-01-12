@@ -41,6 +41,7 @@ services:
       - ./api:/surface
       - ./data/media:/data/media
       - ./data/shared:/data/shared
+      - ./data/exported_data:/data/exported_data
       - ./data/documents:/data/documents
     ports:
       - "8080:8000"
@@ -59,7 +60,7 @@ services:
       dockerfile: Dockerfile
       context: api
     container_name: surface-celery-worker
-    command: celery -A tempestas_api worker -l info
+    command: /home/surface/.local/bin/celery -A tempestas_api worker -l info
     env_file:
       - api/production.env
     restart: unless-stopped
@@ -83,7 +84,7 @@ services:
       context: api
     container_name: surface-celery-beat
     restart: unless-stopped
-    command: celery -A tempestas_api beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: /home/surface/.local/bin/celery -A tempestas_api beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
       - api/production.env
     volumes:

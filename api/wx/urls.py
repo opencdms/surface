@@ -9,7 +9,7 @@ router = routers.DefaultRouter()
 router.register(r'station_images', views.StationImageViewSet)
 router.register(r'station_files', views.StationFileViewSet)
 router.register(r'quality_flags', views.QualityFlagList)
-router.register(r'station_metadata', views.StationViewSet)
+router.register(r'stations_metadata', views.StationMetadataViewSet)
 
 urlpatterns = [
     path('api/stations/metadata', include(router.urls)),

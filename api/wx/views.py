@@ -610,6 +610,11 @@ class VariableViewSet(viewsets.ModelViewSet):
     queryset = Variable.objects.all().order_by("name")
     serializer_class = serializers.VariableSerializer
 
+class StationMetadataViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Station.objects.all()
+    serializer_class = serializers.StationMetadataSerializer
+
 
 class StationViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -621,8 +626,8 @@ class StationViewSet(viewsets.ModelViewSet):
     #     data = request.data
 
     #     station_object.save()
-    #     serializer = serializers.StationSerializerWrite
-    #     return Response(serializer.data)
+    # serializer = serializers.StationSerializerWrite
+        
 
     def get_serializer_class(self):
         if self.request.method in ['GET']:
