@@ -21,6 +21,7 @@ from celery.utils.log import get_task_logger
 from django.core.cache import cache
 from django.db import connection
 
+
 from tempestas_api import settings
 from wx.decoders.flash import read_data as read_data_flash
 from wx.decoders.hobo import read_file as read_file_hobo
@@ -899,6 +900,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
             with connection.cursor() as cursor:
                 if source == 'raw_data':
+
                     query_raw_data = '''
                         WITH processed_data AS (
                             SELECT datetime
@@ -921,12 +923,15 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     logging.info(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
+
                     cursor.execute(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
             
+
             
                 elif source == 'hourly_summary':
+
                     query_hourly = '''
                         WITH processed_data AS (
                             SELECT datetime ,var.id as variable_id
@@ -944,7 +949,9 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
+
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds' , INTERVAL '1 hours') generated_time
+
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
                     '''
@@ -952,12 +959,15 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     logging.info(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
                           'station_id': station_id})
+
                     cursor.execute(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
                           'station_id': station_id})
                     
                 elif source == 'daily_summary':
-                    query_daily ='''
+
+
+                    query_daily = '''
                         WITH processed_data AS (
                             SELECT day ,var.id as variable_id
 					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
@@ -974,19 +984,26 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         SELECT (generated_time) as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
+
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 days') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON day = generated_time AND variable.id = variable_id
-                    ''' 
+
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 days') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                        LEFT JOIN processed_data ON day = generated_time AND variable.id = variable_id
+                    '''
 
                     logging.info(query_daily, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id})
+
                     cursor.execute(query_daily, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id})
                 
                 elif source == 'monthly_summary':
+
                     query_monthly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
@@ -1006,17 +1023,19 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                             ,COALESCE(value, '-99.9')
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 months') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
-                        LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
-                    ''' 
+                        LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id'''
+
                     
                     logging.info(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id})
+
                     cursor.execute(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id})
 
                 elif source == 'yearly_summary':
+
                     query_yearly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
@@ -1037,14 +1056,21 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 years') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
+
                     ''' 
+
 
                     logging.info(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id})
+
                     cursor.execute(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id})      
+
+
+                  
+
 
                 query_result = query_result + cursor.fetchall()
 
