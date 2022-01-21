@@ -7,7 +7,7 @@
   <div style="display: flex; justify-content: space-between; margin-bottom: 16px">
     <span class="srf-display-1 text-uppercase">Station Metadata</span>
   </div>
-
+  
   <v-app>
     <v-container style="width: 100%;">
     <v-layout mt-3 ml-3 mb-3 >
@@ -143,6 +143,7 @@
                     persistent-hint
                     :rules="simpleTextFieldsRules"
                     :disabled="!isEditing"
+                    v-bind:disabled="readOnly"
                   >
                   <v-tooltip slot="append" right>
                     <template v-slot:activator="{ on }">
@@ -648,7 +649,7 @@
                 </v-text-field>
               </div>
             </div>
-
+            {% if request.user.is_staff or request.user.is_superuser %}
             <v-btn
               v-if="isEditing"
               class="ml-2"
@@ -665,7 +666,7 @@
               color="primary"
               @click="cancelEditing"
             >CANCEL EDITION</v-btn>  
-
+            {% endif %}
           </form>  
         </v-tab-item >
       <!--  <v-tab-item :key="2" grow>
@@ -1530,6 +1531,7 @@
         documentToUpload: {},
         stationDocumentsList: [],
         errors: [],
+        readOnly:  {%if request.user.is_staff or request.user.is_superuser %}true{%else%}false{%endif%},
         loading: false,
         integerRegularExpression: /^[-+]?[0-9]+$/,
         simpleTextFieldsRules: [

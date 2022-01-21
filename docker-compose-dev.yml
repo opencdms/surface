@@ -45,8 +45,6 @@ services:
       - ./data/shared:/data/shared
       - ./data/exported_data:/data/exported_data
       - ./data/documents:/data/documents
-    ports:
-      - "8080:8000"
     depends_on:
       - postgres
       - cache
