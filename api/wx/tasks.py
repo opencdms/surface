@@ -968,8 +968,6 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                           'station_id': station_id})
                     
                 elif source == 'daily_summary':
-
-
                     query_daily = '''
                         WITH processed_data AS (
                             SELECT day ,var.id as variable_id
@@ -987,8 +985,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         SELECT (generated_time) as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
-
-                        FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 days') generated_time
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 days') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON day = generated_time AND variable.id = variable_id
                     '''
@@ -1002,7 +999,6 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                           'station_id': station_id})
                 
                 elif source == 'monthly_summary':
-
                     query_monthly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
@@ -1024,7 +1020,6 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
                         '''
-
                     
                     logging.info(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
@@ -1035,7 +1030,6 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                           'station_id': station_id})
 
                 elif source == 'yearly_summary':
-
                     query_yearly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
@@ -1053,11 +1047,10 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         SELECT (generated_time) as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
-                        FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 years') generated_time
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s, INTERVAL '1 years') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
-                    ''' 
-
+                        ''' 
 
                     logging.info(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
@@ -1065,12 +1058,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
                     cursor.execute(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})      
-
-
-                  
-
-
+                          'station_id': station_id})
                 query_result = query_result + cursor.fetchall()
 
 
@@ -1094,67 +1082,31 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
         lines = 0
         if query_result:
+            df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
+            df.rename(columns=variable_dict, inplace=True)
+            df.columns = df.columns.droplevel(0)
             if source == 'daily_summary':
-                df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
-                df.rename(columns=variable_dict, inplace=True)
-                df.columns = df.columns.droplevel(0)
-
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
                 df['Month'] = df.index.map(lambda x: x.strftime('%m'))
                 df['Day'] = df.index.map(lambda x: x.strftime('%d'))
-                df['Time'] = df.index.map(lambda x: x.strftime('%H:%M:%S'))
                 cols = df.columns.tolist()
-                cols = cols[-4:] + cols[:-4]
+                cols = cols[-3:] + cols[:-3]
                 df = df[cols]
-
                 df = df.drop_duplicates(subset='Day', keep='first')
-
-                df.to_csv(filepath, index=False, mode='a', header=True)
-                lines = len(df.index)
-
-            elif source == 'monthly_summary':
-                
-                df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
-                df.rename(columns=variable_dict, inplace=True)
-                df.columns = df.columns.droplevel(0)
-
+            elif source == 'monthly_summary':                
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
                 df['Month'] = df.index.map(lambda x: x.strftime('%m'))
-                df['Day'] = df.index.map(lambda x: x.strftime('%d'))
-                df['Time'] = df.index.map(lambda x: x.strftime('%H:%M:%S'))
                 cols = df.columns.tolist()
-                cols = cols[-4:] + cols[:-4]
+                cols = cols[-2:] + cols[:-1]
                 df = df[cols]
-
                 df = df.drop_duplicates(subset='Month', keep='first')
-
-                df.to_csv(filepath, index=False, mode='a', header=True)
-                lines = len(df.index)
-
             elif source == 'yearly_summary':
-                df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
-                df.rename(columns=variable_dict, inplace=True)
-                df.columns = df.columns.droplevel(0)
-
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
-                df['Month'] = df.index.map(lambda x: x.strftime('%m'))
-                df['Day'] = df.index.map(lambda x: x.strftime('%d'))
-                df['Time'] = df.index.map(lambda x: x.strftime('%H:%M:%S'))
                 cols = df.columns.tolist()
-                cols = cols[-4:] + cols[:-4]
+                cols = cols[-1:] + cols[:-1]
                 df = df[cols]
-
                 df = df.drop_duplicates(subset='Year', keep='first')
-
-                df.to_csv(filepath, index=False, mode='a', header=True)
-                lines = len(df.index)
-
-
             else:
-                df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
-                df.rename(columns=variable_dict, inplace=True)
-                df.columns = df.columns.droplevel(0)
-
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
                 df['Month'] = df.index.map(lambda x: x.strftime('%m'))
                 df['Day'] = df.index.map(lambda x: x.strftime('%d'))
@@ -1162,9 +1114,8 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                 cols = df.columns.tolist()
                 cols = cols[-4:] + cols[:-4]
                 df = df[cols]
-
-                df.to_csv(filepath, index=False, mode='a', header=True)
-                lines = len(df.index)
+            df.to_csv(filepath, index=False, mode='a', header=True)
+            lines = len(df.index)
 
         current_datafile.ready = True
         current_datafile.ready_at = date_of_completion
