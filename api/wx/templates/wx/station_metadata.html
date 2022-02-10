@@ -1903,13 +1903,9 @@
           this.loading = true;
           const payload = { ...this.selectedStation };
 
-         if( payload.relocation_date == "") { 
-           payload.relocation_date = null; 
-          }          
+          payload.relocation_date == ""? payload.relocation_date = moment.utc(payload.relocation_date).format('YYYY-MM-DD[T]HH:mm:ss') : payload.relocation_date = null       
 
-          if(payload.end_date == "") { 
-            payload.end_date = null; 
-          }
+          payload.end_date == ""?  payload.end_date = moment.utc(payload.end_date).format('YYYY-MM-DD[T]HH:mm:ss') : payload.end_date = null
           
           if (!!payload.begin_date) {
             payload.begin_date = moment.utc(payload.begin_date).format('YYYY-MM-DD[T]HH:mm:ss');
