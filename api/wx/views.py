@@ -615,6 +615,10 @@ class StationMetadataViewSet(viewsets.ModelViewSet):
     queryset = Station.objects.all()
     serializer_class = serializers.StationMetadataSerializer
 
+    def get_serializer_class(self):
+        if self.request.method in ['GET']:
+            return serializers.StationSerializerRead
+        return serializers.StationMetadataSerializer
 
 class StationViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)

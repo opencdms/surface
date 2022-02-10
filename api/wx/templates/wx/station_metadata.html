@@ -77,14 +77,6 @@
           <v-tab :key="1">
             Station Information
           </v-tab>
-          <!--
-          <v-tab :key="2">
-            Images
-          </v-tab>
-          <v-tab :key="3">
-            Documents
-          </v-tab>
-          -->
           <v-tab :key="4">
             Local Environment
           </v-tab>
@@ -101,29 +93,6 @@
             Historical Events
           </v-tab>
           <v-tab :key="9">
-            Other Metadata
-          </v-tab>
-         <!--
-           <v-tab :key="3" >
-            Station Identifiers
-          </v-tab>
-          <v-tab :key="4" >
-
-            Local Environment
-          </v-tab>
-          <v-tab :key="3">
-            Instrumentation and Maintenance
-          </v-tab>
-          <v-tab :key="4">
-            Observing Practices
-          </v-tab>
-          <v-tab :key="5">
-            Data Processing
-          </v-tab>
-          <v-tab :key="6">
-            Historical Events
-          </v-tab>
-          <v-tab :key="7">
             Other Metadata
           </v-tab>
 
@@ -819,154 +788,10 @@
               justify-end
               color="red"
               @click="cancelEditing"
-            >CANCEL EDITION</v-btn>  
+            >CANCEL</v-btn>  
             {% endif %}
           </form>  
         </v-tab-item >
-      <!--  <v-tab-item :key="2" grow>
-
-          <v-overlay
-            absolute
-            :value="loading"
-          >
-            <span>LOADING</span>
-            <v-progress-circular
-              indeterminate
-              color="primary"
-            ></v-progress-circular>
-          </v-overlay>
-          
-          <v-row class="mt-3 ml-1 pa-2">
-            <h5>Add new images</h5>
-          </v-row>
-
-          <v-row class="mt-3 pa-2">
-            <v-col cols="12">
-              <v-file-input label="Images" multiple v-model="imageToUpload.path"></v-file-input>
-            </v-col>
-          </v-row>
-
-          <v-row class="mt-3 pa-2" justify="end" align-end style="align-self: end;">
-            <v-btn
-              class="mr-2"
-              outlined
-              justify-end
-              color="primary"
-              @click="uploadImage"
-              :disabled="!imageToUpload.path"
-            >ADD</v-btn>  
-          </v-row>
-
-          <v-row class="mt-3 ml-1 pa-2">
-            <h5>Station images</h5>
-          </v-row>
-
-          <v-row class="w-100">
-            <v-col class="mt-4" cols="4" v-for="stationImage in stationImagesList" :key="stationImage.id">
-              <v-img @mouseover="showStationImage(stationImage)" @mouseleave="hideStationImage(stationImage)"  :src="stationImage.path" contain>
-                <div v-if="stationImage.show" class="image-overlay">
-                  <v-row class="ml-3 w-100">
-                    <v-col cols="10">
-                      <h6 class="pt-2">[[stationImage.name]]</h6>
-                    </v-col>
-                    <v-col cols="2" justify="end" align-end style="display:flex; justify-content: end; padding-right: 5%;" class="pt-3">
-                      <v-tooltip bottom>
-                        <template v-slot:activator="{ on }">
-                          <v-icon class="mr-2" color="error" v-on="on" @click="removeImage(stationImage)">
-                            close
-                          </v-icon>
-                        </template>
-                        <span>Remove image</span>
-                      </v-tooltip>
-                    </v-col>
-                  </v-row>
-                  <v-row class="ml-3">
-                    <v-col cols="12">
-                      [[stationImage.description]]
-                    </v-col>
-                  </v-row>
-                </div>
-              </v-img>
-            </v-col>
-          </v-row>
-        </v-tab-item > -->
-        <!-- <v-tab-item :key="3" >
-          <v-overlay
-            absolute
-            :value="loading"
-          >
-            <span>LOADING</span>
-            <v-progress-circular
-              indeterminate
-              color="primary"
-            ></v-progress-circular>
-          </v-overlay>
-          
-          <v-row class="mt-3 pa-2">
-            <h5>Add new documents</h5>
-          </v-row>
-
-          <v-row class="pa-2">
-            <v-col cols="12">
-              <v-file-input label="Documents" multiple v-model="documentToUpload.path"></v-file-input>
-            </v-col>
-          </v-row>
-
-          <v-row class="mt-3 pa-2" justify="end" align-end style="align-self: end;">
-            <v-btn
-              class="mr-2"
-              outlined
-              justify-end
-              color="primary"
-              @click="uploadDocument"
-              :disabled="!documentToUpload.path"
-            >ADD</v-btn>  
-          </v-row>
-
-          <v-row class="mt-3 pa-2">
-            <h5>Station documents</h5>
-          </v-row>
-
-          <v-data-table
-            ref="documents_table"
-            :headers="documents_headers"
-            :items="stationDocumentsList"
-            :items-per-page="10"
-            class="elevation-1"
-            dense
-            calculate-widths
-          >
-            <template v-slot:item.action="{ item }">
-              <v-tooltip bottom>
-                <template v-slot:activator="{ on }">
-                  <v-icon
-                    small
-                    class="mr-2"
-                    @click="downloadDocument(item)"
-                    v-on="on"
-                  >
-                    get_app
-                  </v-icon>
-                </template>
-                <span>Download file</span>
-              </v-tooltip>
-              <v-tooltip bottom>
-                <template v-slot:activator="{ on }">
-                    <v-icon
-                    small
-                    @click="deleteItem(item)"
-                    v-on="on"
-                  >
-                    delete
-                  </v-icon>
-                    </template>
-                <span>Delete file</span>
-              </v-tooltip>
-            </template>
-          </v-data-table>
-        </v-tab-item> -->
-
-
         <!--Local Enviroment-->
         <v-tab-item :key="2" >
 
@@ -1761,7 +1586,7 @@
       },
       methods: {
         getStations(){
-          this.getAll("api/stations").then(data => {
+          this.getAll("api/stations_metadata/").then(data => {
             this.stationList = data;
             this.onChangeStation();
           });
@@ -1903,10 +1728,19 @@
           this.loading = true;
           const payload = { ...this.selectedStation };
 
-          payload.relocation_date == ""? payload.relocation_date = moment.utc(payload.relocation_date).format('YYYY-MM-DD[T]HH:mm:ss') : payload.relocation_date = null       
+          if(!!payload.relocation_date) {
+             payload.relocation_date = moment.utc(payload.relocation_date).format('YYYY-MM-DD[T]HH:mm:ss')
+          } else {
+            payload.relocation_date = null
+          } 
 
-          payload.end_date == ""?  payload.end_date = moment.utc(payload.end_date).format('YYYY-MM-DD[T]HH:mm:ss') : payload.end_date = null
-          
+          if(!!payload.end_date)
+          {  
+            payload.end_date = moment.utc(payload.end_date).format('YYYY-MM-DD[T]HH:mm:ss')
+          } else { 
+            payload.end_date = null
+          }
+
           if (!!payload.begin_date) {
             payload.begin_date = moment.utc(payload.begin_date).format('YYYY-MM-DD[T]HH:mm:ss');
           }
@@ -1928,7 +1762,6 @@
               this.selectedStation.begin_date = moment.utc(this.selectedStation.begin_date).format('YYYY-MM-DD');
               if(!!this.selectedStation.end_date) { 
                 this.selectedStation.end_date = moment.utc(this.selectedStation.end_date).format('YYYY-MM-DD')
-                console.log(this.selectedStation)
               }
               if(!!this.selectedStation.relocation_date){
                 this.selectedStation.relocation_date = moment.utc(this.selectedStation.relocation_date).format('YYYY-MM-DD')
