@@ -265,4 +265,3 @@ class StationMetadataSerializer(serializers.ModelSerializer):
         'observer', 
         'organization',
         )
-        
