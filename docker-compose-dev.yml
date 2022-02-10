@@ -54,6 +54,8 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
+    ports:
+      - '8080:8000'
 
   celery_worker:
     build:

@@ -147,6 +147,8 @@ class StationSerializerRead(serializers.ModelSerializer):
             'wmo_program',
             'wmo_station_plataform',
             'operation_status',
+            'relocation_date',
+            'network',
         )
 
 
@@ -259,5 +261,7 @@ class StationMetadataSerializer(serializers.ModelSerializer):
         'wmo_region',
         'utc_offset_minutes',
         'wmo_station_plataform',
-        'data_type'
+        'data_type', 
+        'observer', 
+        'organization',
         )
