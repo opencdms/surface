@@ -813,8 +813,9 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
     station = Station.objects.get(pk=station_id)
     current_datafile = DataFile.objects.get(pk=file_id)
-    #variable_ids = tuple(variable_ids)
-    variable_ids = ','.join([str(x) for x in variable_ids])
+
+    variable_ids = tuple(variable_ids)
+    # variable_ids = ','.join([str(x) for x in variable_ids])
 
     # Diferent data sources have diferents columns names for the measurement data and diferents intervals
     if source == 'raw_data':
@@ -869,6 +870,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
     try:
         variable_dict = {}
         variable_names_string = ''
+
         with connection.cursor() as cursor_variable:
             cursor_variable.execute(f'''
                 SELECT var.symbol
@@ -877,7 +879,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         ELSE CONCAT(var.symbol, ' - ', var.name) END as var_name
                 FROM wx_variable var 
                 LEFT JOIN wx_unit unit ON var.unit_id = unit.id 
-                WHERE var.id in %s
+                WHERE var.id IN %s
                 ORDER BY var.name
             ''', (variable_ids,))
 
@@ -908,51 +910,52 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                                 ,var.id as variable_id
                                 ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
                             FROM raw_data data
-                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN (%(variable_ids)s)
-                            WHERE data.datetime >= '%(start_datetime)s'
-                            AND data.datetime < '%(end_datetime)s'
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.datetime >= %(start_datetime)s
+                            AND data.datetime < %(end_datetime)s
                             AND data.station_id = %(station_id)s
                         )
                         SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
                         FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '%(data_interval)s seconds') generated_time
-                        JOIN wx_variable variable ON variable.id IN (%(variable_ids)s)
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
                     ''' 
-                    
+
                     logging.info(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
+
 
                     cursor.execute(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
             
 
-            
+
                 elif source == 'hourly_summary':
 
                     query_hourly = '''
                         WITH processed_data AS (
                             SELECT datetime ,var.id as variable_id
-					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
                             WHEN var.sampling_operation_id = 3      THEN data.min_value
                             WHEN var.sampling_operation_id = 4      THEN data.max_value
                             WHEN var.sampling_operation_id = 6      THEN data.sum_value
                             ELSE data.sum_value END, '-99.9') as value  
                             FROM hourly_summary data
-                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN (%(variable_ids)s)
-                            WHERE data.datetime >= '%(start_datetime)s'
-                            AND data.datetime < '%(end_datetime)s'
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.datetime >= %(start_datetime)s
+                            AND data.datetime < %(end_datetime)s
                             AND data.station_id = %(station_id)s
                         )
                         SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
 
-                        FROM generate_series('%(start_datetime)s', '%(end_datetime)s' - INTERVAL '1 seconds' , INTERVAL '1 hours') generated_time
-                        JOIN wx_variable variable ON variable.id IN (%(variable_ids)s)
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds' , INTERVAL '1 hours') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
                     '''
                     
@@ -965,28 +968,25 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                           'station_id': station_id})
                     
                 elif source == 'daily_summary':
-
-
                     query_daily = '''
                         WITH processed_data AS (
                             SELECT day ,var.id as variable_id
-					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
                             WHEN var.sampling_operation_id = 3      THEN data.min_value
                             WHEN var.sampling_operation_id = 4      THEN data.max_value
                             WHEN var.sampling_operation_id = 6      THEN data.sum_value
                             ELSE data.sum_value END, '-99.9') as value  
                             FROM daily_summary data
-                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN (%(variable_ids)s)
-                            WHERE data.day >= '%(start_datetime)s'
-                            AND data.day < '%(end_datetime)s'
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.day >= %(start_datetime)s
+                            AND data.day < %(end_datetime)s
                             AND data.station_id = %(station_id)s
                         )
                         SELECT (generated_time) as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
-
-                        FROM generate_series('%(start_datetime)s', '%(end_datetime)s' , INTERVAL '1 days') generated_time
-                        JOIN wx_variable variable ON variable.id IN (%(variable_ids)s)
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 days') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON day = generated_time AND variable.id = variable_id
                     '''
 
@@ -999,29 +999,27 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                           'station_id': station_id})
                 
                 elif source == 'monthly_summary':
-
                     query_monthly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
-					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
                             WHEN var.sampling_operation_id = 3      THEN data.min_value
                             WHEN var.sampling_operation_id = 4      THEN data.max_value
                             WHEN var.sampling_operation_id = 6      THEN data.sum_value
                             ELSE data.sum_value END, '-99.9') as value  
                             FROM monthly_summary data
-                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN (%(variable_ids)s)
-                            WHERE data.date >= '%(start_datetime)s'
-                            AND data.date < '%(end_datetime)s'
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.date >= %(start_datetime)s
+                            AND data.date < %(end_datetime)s
                             AND data.station_id = %(station_id)s
                         )
                         SELECT (generated_time) as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
-                        FROM generate_series('%(start_datetime)s', '%(end_datetime)s', INTERVAL '1 months') generated_time
-                        JOIN wx_variable variable ON variable.id IN (%(variable_ids)s)
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s, INTERVAL '1 months') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
                         '''
-
                     
                     logging.info(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
@@ -1032,11 +1030,10 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                           'station_id': station_id})
 
                 elif source == 'yearly_summary':
-
                     query_yearly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
-					        ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
                             WHEN var.sampling_operation_id = 3      THEN data.min_value
                             WHEN var.sampling_operation_id = 4      THEN data.max_value
                             WHEN var.sampling_operation_id = 6      THEN data.sum_value
@@ -1050,11 +1047,10 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                         SELECT (generated_time) as datetime
                             ,variable.id
                             ,COALESCE(value, '-99.9')
-                        FROM generate_series(%(start_datetime)s, %(end_datetime)s , INTERVAL '1 years') generated_time
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s, INTERVAL '1 years') generated_time
                         JOIN wx_variable variable ON variable.id IN %(variable_ids)s
                         LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
-                    ''' 
-
+                        ''' 
 
                     logging.info(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
@@ -1062,17 +1058,15 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
                     cursor.execute(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})      
-
-
-                  
-
-
+                          'station_id': station_id})
                 query_result = query_result + cursor.fetchall()
+
+
 
         filepath = f'{settings.EXPORTED_DATA_CELERY_PATH}{file_id}.csv'
         date_of_completion = datetime.utcnow()
-        with open(filepath, 'w') as f:
+
+        with open(filepath, 'w') as f: 
             start_date_header = start_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
             end_date_header = end_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -1085,68 +1079,34 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
             f.write(f'Prepared by:,{current_datafile.prepared_by}\n')
             f.write(f'Start date:,{start_date_header},End date:,{end_date_header}\n\n')
 
+
         lines = 0
         if query_result:
+            df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
+            df.rename(columns=variable_dict, inplace=True)
+            df.columns = df.columns.droplevel(0)
             if source == 'daily_summary':
-                df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
-                df.rename(columns=variable_dict, inplace=True)
-                df.columns = df.columns.droplevel(0)
-
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
                 df['Month'] = df.index.map(lambda x: x.strftime('%m'))
                 df['Day'] = df.index.map(lambda x: x.strftime('%d'))
-                df['Time'] = df.index.map(lambda x: x.strftime('%H:%M:%S'))
                 cols = df.columns.tolist()
-                cols = cols[-4:] + cols[:-4]
+                cols = cols[-3:] + cols[:-3]
                 df = df[cols]
-
-                df.drop_duplicates(subset='Day', keep='first')
-
-                df.to_csv(filepath, index=False, mode='a', header=True)
-                lines = len(df.index)
-
-            elif source == 'monthly_summary':
-                
-                df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
-                df.rename(columns=variable_dict, inplace=True)
-                df.columns = df.columns.droplevel(0)
-
+                df = df.drop_duplicates(subset='Day', keep='first')
+            elif source == 'monthly_summary':                
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
                 df['Month'] = df.index.map(lambda x: x.strftime('%m'))
-                df['Day'] = df.index.map(lambda x: x.strftime('%d'))
-                df['Time'] = df.index.map(lambda x: x.strftime('%H:%M:%S'))
                 cols = df.columns.tolist()
-                cols = cols[-4:] + cols[:-4]
+                cols = cols[-2:] + cols[:-2]
                 df = df[cols]
-
-                df.drop_duplicates(subset='Month', keep='first')
-
-                df.to_csv(filepath, index=False, mode='a', header=True)
-                lines = len(df.index)
-
+                df = df.drop_duplicates(subset='Month', keep='first')
             elif source == 'yearly_summary':
-                df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
-                df.rename(columns=variable_dict, inplace=True)
-                df.columns = df.columns.droplevel(0)
-
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
-                df['Month'] = df.index.map(lambda x: x.strftime('%m'))
-                df['Day'] = df.index.map(lambda x: x.strftime('%d'))
-                df['Time'] = df.index.map(lambda x: x.strftime('%H:%M:%S'))
                 cols = df.columns.tolist()
-                cols = cols[-4:] + cols[:-4]
+                cols = cols[-1:] + cols[:-1]
                 df = df[cols]
-
-                df.drop_duplicates(subset='Year', keep='first')
-
-                df.to_csv(filepath, index=False, mode='a', header=True)
-                lines = len(df.index)
-
+                df = df.drop_duplicates(subset='Year', keep='first')
             else:
-                df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
-                df.rename(columns=variable_dict, inplace=True)
-                df.columns = df.columns.droplevel(0)
-
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
                 df['Month'] = df.index.map(lambda x: x.strftime('%m'))
                 df['Day'] = df.index.map(lambda x: x.strftime('%d'))
@@ -1154,15 +1114,16 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                 cols = df.columns.tolist()
                 cols = cols[-4:] + cols[:-4]
                 df = df[cols]
-
-                df.to_csv(filepath, index=False, mode='a', header=True)
-                lines = len(df.index)
+            df.to_csv(filepath, index=False, mode='a', header=True)
+            lines = len(df.index)
 
         current_datafile.ready = True
         current_datafile.ready_at = date_of_completion
         current_datafile.lines = lines
         current_datafile.save()
         logger.info(f'Data exported successfully (file "{file_id}")')
+
+
     except Exception as e:
         current_datafile.ready = False
         current_datafile.ready_at = datetime.utcnow()
