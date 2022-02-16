@@ -331,7 +331,9 @@ class Station(BaseModel):
     name = models.CharField(max_length=256)
     alias_name = models.CharField(max_length=256, null=True, blank=True)
     begin_date = models.DateTimeField(null=True, blank=True)
+    relocation_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
+    network = models.CharField(max_length=256, null=True, blank=True)
     longitude = models.FloatField(validators=[
         MinValueValidator(-180.), MaxValueValidator(180.)
     ])
