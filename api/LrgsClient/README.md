@@ -32,6 +32,8 @@
 
 ### Database Check
  -  Stations are present in 'satations' table
+ -  Stations regions/districts are present in 'administrative region' table
+ -  Stations watersheds are present in 'watershed' table
  -  Variables are present in 'variables' and 'station variables' tables
  -  Variable formats 'NOAA' and 'DCP_TXT' are present in 'variable formats' table for each variable
 
