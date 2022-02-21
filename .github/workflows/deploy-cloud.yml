@@ -1,0 +1,19 @@
+name: CI
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  deploy:    
+    runs-on: ubuntu-latest
+    steps:    
+    - name: Deploy source code on cloud
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.KEY }}
+        port: ${{ secrets.PORT }}
+        script: |
+          cd ${{ secrets.PATH }}
+          git pull origin develop
