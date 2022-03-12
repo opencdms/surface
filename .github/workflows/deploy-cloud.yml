@@ -17,6 +17,6 @@ jobs:
         script: |
           cd ${{ secrets.PATH }}
           git pull origin develop
-          docker-compose -f docker-compose-prd.yml exec api python manage.py makemigrations
-          docker-compose -f docker-compose-prd.yml exec api bash load_initial_data.sh
-          docker-compose -f docker-compose-prd.yml exec api python manage.py collectstatic --noinput
+          docker-compose -f docker-compose-prd.yml exec -T api python manage.py makemigrations
+          docker-compose -f docker-compose-prd.yml exec -T api bash load_initial_data.sh
+          docker-compose -f docker-compose-prd.yml exec -T api python manage.py collectstatic --noinput
