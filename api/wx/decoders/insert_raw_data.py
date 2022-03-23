@@ -9,7 +9,7 @@ from django.utils import timezone
 from psycopg2.extras import execute_values
 from tempestas_api import settings
 from wx.enums import QualityFlagEnum
-from wx.models import QcRangeThreshold, QcStepThreshold, StationVariable, Station
+from wx.models import QcRangeThreshold, QcStepThreshold, StationVariable, Station, Variable
 
 logger = logging.getLogger('surface')
 
@@ -24,6 +24,47 @@ insert_columns = ["station_id", "variable_id", "datetime", "measured", "quality_
 GOOD = QualityFlagEnum.GOOD.id
 NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
 BAD = QualityFlagEnum.BAD.id
+
+def get_qc_range(thresholds, station_id, variable_id, interval, month):
+    try:
+        # Trying to set range thresholds using current station
+        _range = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval, month=month)
+        thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+    except ObjectDoesNotExist:
+        try:
+            # Trying to set range thresholds using current station with NULL intervall
+            _range = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval__isnull=True, month=month)        
+            thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+        except ObjectDoesNotExist:
+            try:
+                # Trying to set range thresholds using referece station
+                _station = Station.objects.get(pk=station_id)
+                _range = QcRangeThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval=interval, month=month)
+                thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+            except ObjectDoesNotExist:
+                try:
+                    # Trying to set range thresholds using referece station with NULL intervall
+                    _station = Station.objects.get(pk=station_id)
+                    _range = QcRangeThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval__isnull=True, month=month)
+                    thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+                except ObjectDoesNotExist:
+                    try:
+                        # Trying to set range thresholds using global ranges
+                        _range = Variable.objects.get(pk=variable_id)                
+                        thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+                    except ObjectDoesNotExist:
+                        pass;
+    return thresholds
+
+
+def get_qc_step(thresholds, station_id, variable_id, interval, month):
+    try:
+        _step = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval)
+        thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+    except ObjectDoesNotExist:
+        pass
+
+    return thresholds
 
 
 def qc_step(seconds, diff_value, diff_datetime, thresholds):
@@ -116,21 +157,12 @@ def insert(raw_data_list, override_data_on_conflict=False):
             logger.debug(
                 f"processing station_id={station_id}, variable_id={variable_id}, seconds={seconds} #{count} records.")
 
+        
+        # defining threshholds
         thresholds = {}
-        try:
-            _step = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=seconds)
-            thresholds['step_min'] = _step.step_min
-            thresholds['step_max'] = _step.step_max
-        except ObjectDoesNotExist:
-            pass
+        thresholds = get_qc_step(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds, month=month)
+        thresholds = get_qc_range(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds, month=month)
 
-        try:
-            _range = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=seconds,
-                                                  month=month)
-            thresholds['range_min'] = _range.range_min
-            thresholds['range_max'] = _range.range_max
-        except ObjectDoesNotExist:
-            pass
 
         # sort values by datetime
         df1.sort_values(by='datetime', inplace=True)

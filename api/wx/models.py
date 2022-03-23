@@ -327,7 +327,7 @@ class WMOProgram(BaseModel):
         return self.name
 
 
-class Station(BaseModel):
+class Station(BaseModel):    
     name = models.CharField(max_length=256)
     alias_name = models.CharField(max_length=256, null=True, blank=True)
     begin_date = models.DateTimeField(null=True, blank=True)
@@ -343,6 +343,10 @@ class Station(BaseModel):
     ])
     elevation = models.FloatField(null=True, blank=True)
     code = models.CharField(max_length=64)
+    reference_station = models.ForeignKey('self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
     wmo = models.IntegerField(
         null=True,
         blank=True
@@ -627,8 +631,6 @@ class StationVariable(BaseModel):
     last_measurement = models.DateTimeField(null=True, blank=True)
     last_value = models.FloatField(null=True, blank=True)
     height = models.FloatField(null=True, blank=True)
-    test_range_min = models.FloatField(null=True, blank=True)
-    test_range_max = models.FloatField(null=True, blank=True)
     test_step_min = models.FloatField(null=True, blank=True)
     test_step_max = models.FloatField(null=True, blank=True)
     test_persistence_variance = models.FloatField(null=True, blank=True)
