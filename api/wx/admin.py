@@ -17,8 +17,7 @@ class AdministrativeRegionTypeAdmin(admin.ModelAdmin):
 
 @admin.register(models.Country)
 class CountryAdmin(admin.ModelAdmin):
-    list_display = ("name", "code")
-
+    list_display = ("name", "notation","description")
 
 @admin.register(models.DataSource)
 class DataSourceAdmin(admin.ModelAdmin):
@@ -32,7 +31,7 @@ class QualityFlagAdmin(admin.ModelAdmin):
 
 @admin.register(models.Station)
 class StationAdmin(ExportMixin, admin.ModelAdmin):
-    list_display = ("name", "country", "data_source", "code", "longitude", "latitude", "elevation", "alternative_names")
+    list_display = ("name", "data_source", "code", "longitude", "latitude", "elevation", "alternative_names")
 
 
 @admin.register(models.StationCommunication)
@@ -52,7 +51,7 @@ class StationTypeAdmin(admin.ModelAdmin):
 
 @admin.register(models.StationVariable)
 class StationVariableAdmin(admin.ModelAdmin):
-    list_display = ("station", "variable", "height", "first_measurement", "last_measurement", "last_value")
+    list_display = ( "variable", "height", "first_measurement", "last_measurement", "last_value")
 
 
 @admin.register(models.Unit)
