@@ -25,81 +25,109 @@ GOOD = QualityFlagEnum.GOOD.id
 NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
 BAD = QualityFlagEnum.BAD.id
 
+
+def get_qc_step(thresholds, station_id, variable_id, interval):
+    try:
+        # Trying to set step thresholds using current station
+        _step = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval)
+        thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
+        thresholds['step_description'] = 'Custom station Threshold'
+    except ObjectDoesNotExist:
+        try:
+            # Trying to set step thresholds using current station with NULL intervall
+            _step = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval__isnull=True)        
+            thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
+            thresholds['step_description'] = 'Custom station Threshold'
+        except ObjectDoesNotExist:
+            try:
+                # Trying to set step thresholds using referece station
+                _station = Station.objects.get(pk=station_id)
+                _step = QcStepThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval=interval)
+                thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
+                thresholds['step_description'] = 'Reference station threshold'
+            except ObjectDoesNotExist:
+                try:
+                    # Trying to set step thresholds using referece station with NULL intervall
+                    _station = Station.objects.get(pk=station_id)
+                    _step = QcStepThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval__isnull=True)
+                    thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
+                    thresholds['step_description'] = 'Reference station threshold'
+                except ObjectDoesNotExist:
+                    pass
+
+    return thresholds
+
 def get_qc_range(thresholds, station_id, variable_id, interval, month):
     try:
         # Trying to set range thresholds using current station
         _range = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval, month=month)
-        thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+        thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+        thresholds['range_description'] = 'Custom station Threshold'
     except ObjectDoesNotExist:
         try:
             # Trying to set range thresholds using current station with NULL intervall
             _range = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval__isnull=True, month=month)        
-            thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+            thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+            thresholds['range_description'] = 'Custom station threshold'
         except ObjectDoesNotExist:
             try:
                 # Trying to set range thresholds using referece station
                 _station = Station.objects.get(pk=station_id)
                 _range = QcRangeThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval=interval, month=month)
-                thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+                thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+                thresholds['range_description'] = 'Reference station threshold'
             except ObjectDoesNotExist:
                 try:
                     # Trying to set range thresholds using referece station with NULL intervall
                     _station = Station.objects.get(pk=station_id)
                     _range = QcRangeThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval__isnull=True, month=month)
-                    thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+                    thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+                    thresholds['range_description'] = 'Reference station threshold'
                 except ObjectDoesNotExist:
                     try:
                         # Trying to set range thresholds using global ranges
                         _range = Variable.objects.get(pk=variable_id)                
-                        thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
+                        thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+                        thresholds['range_description'] = 'Global threshold'
                     except ObjectDoesNotExist:
                         pass;
     return thresholds
 
-
-def get_qc_step(thresholds, station_id, variable_id, interval, month):
-    try:
-        _step = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval)
-        thresholds['range_min', 'range_max'] = _range.range_min, _range.range_max
-    except ObjectDoesNotExist:
-        pass
-
-    return thresholds
-
-
 def qc_step(seconds, diff_value, diff_datetime, thresholds):
-    if 'step_min' not in thresholds or 'step_min' not in thresholds:
+    if 'step_min' not in thresholds or 'step_max' not in thresholds:
+        print("Step threshold not found: ", thresholds)
         return NOT_CHECKED, "Threshold not found"
 
     s_min = thresholds['step_min']
     s_max = thresholds['step_max']
+    s_des = thresholds['step_description']
 
     # interval is different
     if seconds != diff_datetime:
         return NOT_CHECKED, "Consecutive value not present"
     elif s_min <= diff_value <= s_max:
-        return GOOD, ""
+        return GOOD, s_des
     elif diff_value < s_min:
-        msg = f"{diff_value} < {s_min}"
-        return BAD, msg
+        return BAD, s_des
     else:
-        msg = f"{diff_value} > {s_max}"
-        return BAD, msg
+        return BAD, s_des
 
 
 def qc_range(value, thresholds):
-    if 'range_min' not in thresholds or 'range_min' not in thresholds:
+    if 'range_min' not in thresholds or 'range_max' not in thresholds:
+        print("Range threshold not found: ", thresholds)
         return NOT_CHECKED, "Threshold not found"
 
     r_min = thresholds['range_min']
     r_max = thresholds['range_max']
+    r_des = thresholds['range_description']
 
     if r_min <= value <= r_max:
-        return GOOD, ""
+        return GOOD, r_des
     elif value < r_min:
-        return BAD, f"{value} < {r_min}"
+        return BAD, r_des
     else:
-        return BAD, f"{value} > {r_max}"
+        return BAD, r_des
 
 
 def qc_final(result_step, result_range):
@@ -157,12 +185,11 @@ def insert(raw_data_list, override_data_on_conflict=False):
             logger.debug(
                 f"processing station_id={station_id}, variable_id={variable_id}, seconds={seconds} #{count} records.")
 
-        
+
         # defining threshholds
         thresholds = {}
-        thresholds = get_qc_step(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds, month=month)
+        thresholds = get_qc_step(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds)
         thresholds = get_qc_range(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds, month=month)
-
 
         # sort values by datetime
         df1.sort_values(by='datetime', inplace=True)
