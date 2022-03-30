@@ -21,10 +21,18 @@ insert_columns = ["station_id", "variable_id", "datetime", "measured", "quality_
                   "qc_range_description", "qc_step_quality_flag", "qc_step_description", "qc_persist_quality_flag",
                   "qc_persist_description", "manual_flag", "consisted", "is_daily", "updated_at", "created_at"]
 
+qc_columns = ["qc_step_quality_flag",
+              "qc_step_description",
+              "qc_range_quality_flag",
+              "qc_range_description",
+              "quality_flag"]                  
+
 GOOD = QualityFlagEnum.GOOD.id
 NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
 BAD = QualityFlagEnum.BAD.id
 
+
+######################## Quality Control #######################
 
 def get_qc_step(thresholds, station_id, variable_id, interval):
     try:
@@ -95,7 +103,6 @@ def get_qc_range(thresholds, station_id, variable_id, interval, month):
 
 def qc_step(seconds, diff_value, diff_datetime, thresholds):
     if 'step_min' not in thresholds or 'step_max' not in thresholds:
-        print("Step threshold not found: ", thresholds)
         return NOT_CHECKED, "Threshold not found"
 
     s_min = thresholds['step_min']
@@ -112,10 +119,8 @@ def qc_step(seconds, diff_value, diff_datetime, thresholds):
     else:
         return BAD, s_des
 
-
 def qc_range(value, thresholds):
     if 'range_min' not in thresholds or 'range_max' not in thresholds:
-        print("Range threshold not found: ", thresholds)
         return NOT_CHECKED, "Threshold not found"
 
     r_min = thresholds['range_min']
@@ -129,7 +134,6 @@ def qc_range(value, thresholds):
     else:
         return BAD, r_des
 
-
 def qc_final(result_step, result_range):
     if BAD in (result_range, result_step):
         return BAD
@@ -140,10 +144,8 @@ def qc_final(result_step, result_range):
     else:
         return GOOD
 
-
 def qc_thresholds(row, thresholds):
     seconds = row.seconds
-
     value = row.measured
 
     diff_value = row.diff_value
@@ -157,59 +159,63 @@ def qc_thresholds(row, thresholds):
 
     return result_array
 
+##########################  Functions ##########################
 
-def insert(raw_data_list, override_data_on_conflict=False):
-    df = pd.DataFrame(raw_data_list, columns=columns)
-
+def get_data(raw_data_list):
     now = timezone.now()
-    # convert dates to date object at time zone utc
+
+    df = pd.DataFrame(raw_data_list, columns=columns)    
+
+    # Convert dates to date object at time zone utc
     df['created_at'] = now
     df['updated_at'] = now
     df['month'] = pd.to_datetime(df['datetime']).dt.month
 
     reads = []
-    for idx, [station_id, variable_id, seconds, month] in df[
-        ['station_id', 'variable_id', 'seconds', 'month']].drop_duplicates().iterrows():
+    for idx, [station_id, variable_id, seconds, month] in df[['station_id', 'variable_id', 'seconds', 'month']].drop_duplicates().iterrows():
 
-        df1 = df.loc[(df.station_id == station_id) & (df.variable_id == variable_id) & (df.seconds == seconds) & (
-                df.month == month)].copy()
+        df1 = df.loc[(df.station_id == station_id) &
+                     (df.variable_id == variable_id) &
+                     (df.seconds == seconds) &
+                     (df.month == month)].copy()
+                     
         df1.sort_values(by="datetime", inplace=True)
 
         count = len(df1)
-
         if count == 0:
             logger.debug(
-                f"skipping station_id={station_id}, variable_id={variable_id}, seconds={seconds} found 0 records, skipping it!")
+                f"Skipping station_id={station_id}, variable_id={variable_id}, seconds={seconds} found 0 records, skipping it!")
             continue
         else:
             logger.debug(
-                f"processing station_id={station_id}, variable_id={variable_id}, seconds={seconds} #{count} records.")
+                f"Processing station_id={station_id}, variable_id={variable_id}, seconds={seconds} #{count} records.")
 
 
-        # defining threshholds
+        # Defining threshholds
         thresholds = {}
         thresholds = get_qc_step(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds)
         thresholds = get_qc_range(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds, month=month)
 
-        # sort values by datetime
+        # Sort values by datetime
         df1.sort_values(by='datetime', inplace=True)
 
-        df1["measured_1"] = df1.measured.shift(1)
-        df1["datetime_1"] = df1.datetime.shift(1)
+        # Calculating step values
+        df1['diff_value'] = df1.measured.diff(periods=1)
 
-        df1['diff_value'] = df1.measured - df1.measured_1
-        df1['diff_datetime'] = (df1.datetime - df1.datetime_1).dt.total_seconds().replace(np.nan, 0).astype("int32")
+        # Calculating step time
+        df1['diff_datetime'] = df1.datetime.diff(periods=1).dt.total_seconds().replace(np.nan, 0).astype("int32")
 
-        df1[["qc_step_quality_flag", "qc_step_description",
-             "qc_range_quality_flag", "qc_range_description",
-             "quality_flag"]] = df1.apply(lambda row: qc_thresholds(row, thresholds), axis=1, result_type="expand")
+        # Apllying  quality control logic and thresholds
+        df1[qc_columns] = df1.apply(lambda row: qc_thresholds(row, thresholds), axis=1, result_type="expand")
 
-        # replace "" empty string to None/null
-        df1.loc[df1["qc_step_description"] == "", "qc_step_description"] = None
-        df1.loc[df1["qc_range_description"] == "", "qc_range_description"] = None
+        # Replace "" empty string to None/Null
+        df1["qc_step_description"].replace("", None)
+        df1["qc_range_description"].replace("", None)
 
         reads.extend(df1[insert_columns].values.tolist())
+    return reads
 
+def insert_query(reads, override_data_on_conflict):
     with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
         with conn.cursor() as cursor:
 
@@ -250,8 +256,7 @@ def insert(raw_data_list, override_data_on_conflict=False):
             if inserted_raw_data:
                 distinct_raw_data = set(inserted_raw_data)
                 not_daily_raw_data = filter(lambda data: data[4] == False, distinct_raw_data)
-                filtered_raw_data = set(
-                    map(lambda raw_data: (raw_data[0], raw_data[1], raw_data[2], raw_data[3]), not_daily_raw_data))
+                filtered_raw_data = set(map(lambda raw_data: (raw_data[0], raw_data[1], raw_data[2], raw_data[3]), not_daily_raw_data))
 
                 if filtered_raw_data:
                     execute_values(cursor, """
@@ -265,8 +270,7 @@ def insert(raw_data_list, override_data_on_conflict=False):
                     # When a datetime is inserted on the database, the inserted value returns converted to UTC timezone
                     # Convert UTC datetime to the station_fixed_offset and then transform datetime field in date to insert in wx_dailysummarytask table
 
-                    filtered_raw_data = map(lambda raw_data: (
-                        raw_data[0], raw_data[1].astimezone(station_fixed_offset).date(), raw_data[2], raw_data[3]),
+                    filtered_raw_data = map(lambda raw_data: (raw_data[0], raw_data[1].astimezone(station_fixed_offset).date(), raw_data[2], raw_data[3]),
                                             filtered_raw_data)
                     filtered_raw_data = set(filtered_raw_data)
 
@@ -278,6 +282,7 @@ def insert(raw_data_list, override_data_on_conflict=False):
 
         conn.commit()
 
+def update_stationvariable(reads):
     # holds last value for (station_id, variable_id) to update StationVariable last_data_datetime
     update_station_variable = {}
     for read in reads:
@@ -298,6 +303,7 @@ def insert(raw_data_list, override_data_on_conflict=False):
                     station_id, variable_id, observation_datetime, observation_value
                 ]
 
+
     for read in update_station_variable.values():
 
         station_id = read[0]
@@ -317,3 +323,15 @@ def insert(raw_data_list, override_data_on_conflict=False):
 
             logger.info(f'Updating StationVariable {station_id} {variable_id} '
                         f'{observation_datetime} {observation_value}')
+
+############################# Main #############################
+
+def insert(raw_data_list, override_data_on_conflict=False):
+    # Extracting and formating data from raw data list
+    reads = get_data(raw_data_list)
+
+    # Inserting new data
+    insert_query(reads, override_data_on_conflict)
+
+    # Updating "station varaiable" table
+    update_stationvariable(reads)
