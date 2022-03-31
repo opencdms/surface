@@ -126,6 +126,9 @@ def qc_range(value, thresholds):
     r_min = thresholds['range_min']
     r_max = thresholds['range_max']
     r_des = thresholds['range_description']
+           
+    if r_min is None or r_max is None:
+        return NOT_CHECKED, "Threshold not found"           
 
     if r_min <= value <= r_max:
         return GOOD, r_des
