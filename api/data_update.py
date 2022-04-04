@@ -4,69 +4,79 @@ import hashlib
 import json
 import logging
 import os
+import io
 import socket
 import subprocess
-from datetime import datetime, timedelta
-from ftplib import FTP, error_perm, error_reply
-from time import sleep, time
-
-import cronex
-import dateutil.parser
 import pandas as pd
 import psycopg2
 import pytz
 import requests
-from celery import shared_task
-from celery.utils.log import get_task_logger
-from django.core.cache import cache
-from django.db import connection
+from tempestas_api import settings
 
 
-
-def import_csv():
+def tables_update():
     #use pandas to import and save WMO csv from github
     #2-02 = WMO Program
     #3-01 = WMO Region
     #3-02 = Country
     #3-04 = Station Type
-    #name, description, notation
+    #wmoregion, country and stationtype collumns: name, description, notation
+    #wmo program collumns: name, description, notation, path
     all_csv = [
         {
         "table": "wx_wmoregion",
-        "url":"https://github.com/wmo-im/wmds/blob/master/tables_en/3-01.csv"
+        "csv_path":"./csv/3-01.csv"
         },
         {
         "table": "wx_country",
-        "url":"https://github.com/wmo-im/wmds/blob/master/tables_en/3-02.csv"
+        "csv_path":"./csv/3-02.csv"
         },
         {
         "table": "wx_wmostationtype",
-        "url":"https://github.com/wmo-im/wmds/blob/master/tables_en/3-04.csv"
+        "csv_path":"https://github.com/wmo-im/wmds/blob/master/tables_en/3-04.csv"
         },
         {
         "table": "wx_wmoprogram",
-        "url":"https://github.com/wmo-im/wmds/blob/master/tables_en/2-02.csv"
+        "csv_path":"https://github.com/wmo-im/wmds/blob/master/tables_en/2-02.csv"
         }
     ]
 
     for data in all_csv:
-        data_csv = pd.read_csv(data.url())
-        with connection.cursor() as cursor:
-            if data.table == "wx_wmoprogram":
 
-                query = ''' '''
-                logging.info(query)
-                cursor.execute(query)
-                pass
+        table = data["table"]
+        path = data["csv_path"]
+        df = pd.read_csv(path)
+        csv_data = df.to_dict('records')
 
-            else:
+        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
+            with conn.cursor() as cursor:
 
-                query2 = ''' '''
-                logging.info(query2)
-                cursor.execute(query2)
-                pass
+                if table == "wx_wmoprogram":
 
+                    program_query = ''' 
+                        INSERT INTO %(update_table)s(created_at, updated_at, name, notation, description)
+                        VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %(name)s, %(notation)s, %(description)s, %(path)s)
+                        ON CONFLICT (name) DO UPDATE
+                        SET updated_at = CURRENT_TIMESTAMP,
+                        notation = %(notation)s,
+                        description = %(description)s
+                    '''
+                    logging.info(program_query, csv_data)
+                    cursor.executemany(program_query, csv_data)
+                    
+                else:
 
-def update_table(csv_new_data):
-    #use psycopg2 to update the table data whit the csv, update set if already exists insert into
-    pass
+                    geral_query = ''' 
+                        INSERT INTO %(update_table)s(created_at, updated_at, name, notation, description)
+                        VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %(name)s, %(notation)s, %(description)s)
+                        ON CONFLICT (name) DO UPDATE
+                        SET updated_at = CURRENT_TIMESTAMP,
+                        notation = %(notation)s,
+                        description = %(description)s
+                    '''
+                    logging.info(geral_query ,csv_data)
+                    cursor.executemany(geral_query, csv_data)
+
+            conn.commit()        
+                
+tables_update()
