@@ -559,12 +559,7 @@ class Station(BaseModel):
         null=True,
         blank=True
     )
-    country = models.CharField(
-        max_length=256,
-        null=True,
-        blank=True
-    )
-    country_link = models.ForeignKey(
+    country = models.ForeignKey(
         Country,
         on_delete=models.DO_NOTHING,
         null=True,
