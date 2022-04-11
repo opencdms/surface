@@ -316,7 +316,6 @@ class WMORegion(BaseModel):
     name = models.CharField(max_length=256, unique=True)
     description = models.CharField(max_length=256, null=True, blank=True)
     notation = models.CharField(max_length=256, null=True, blank=True)
-    path = models.CharField(max_length=256, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -326,6 +325,7 @@ class WMOProgram(BaseModel):
     name = models.CharField(max_length=256, unique=True)
     description = models.CharField(max_length=256, null=True, blank=True)
     notation = models.CharField(max_length=256, null=True, blank=True)
+    path = models.CharField(max_length=256, null=True, blank=True)    
 
     def __str__(self):
         return self.name
