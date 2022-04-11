@@ -559,6 +559,11 @@ class Station(BaseModel):
         null=True,
         blank=True
     )
+    remarks = models.CharField(
+        max_length=256,
+        null=True,
+        blank=True
+    )        
     country = models.ForeignKey(
         Country,
         on_delete=models.DO_NOTHING,
