@@ -38,7 +38,7 @@ class Decoder(BaseModel):
 
 
 class Country(BaseModel):
-    code = models.CharField(max_length=16)
+    notation = models.CharField(max_length=16)
     name = models.CharField(max_length=256, unique=True)
     description = models.CharField(max_length=256, null=True, blank=True)
     class Meta:

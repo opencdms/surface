@@ -17,7 +17,7 @@ class AdministrativeRegionTypeAdmin(admin.ModelAdmin):
 
 @admin.register(models.Country)
 class CountryAdmin(admin.ModelAdmin):
-    list_display = ("name", "code")
+    list_display = ("name", "notation", "description")
 
 
 @admin.register(models.DataSource)
@@ -245,17 +245,17 @@ class StationImageAdmin(admin.ModelAdmin):
 
 @admin.register(models.WMOStationType)
 class WMOStationTypeAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
+    list_display = ("name", "notation", "description")
 
 
 @admin.register(models.WMORegion)
 class WMORegionAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
+    list_display = ("name", "notation", "description")
 
 
 @admin.register(models.WMOProgram)
 class WMOProgramAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
+    list_display = ("name", "notation", "description")
 
 
 @admin.register(models.StationFile)

@@ -5,7 +5,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AF",
+      "notation": "AF",
       "name": "Afghanistan"
     }
   },
@@ -15,7 +15,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AL",
+      "notation": "AL",
       "name": "Albania"
     }
   },
@@ -25,7 +25,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "DZ",
+      "notation": "DZ",
       "name": "Algeria"
     }
   },
@@ -35,7 +35,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AD",
+      "notation": "AD",
       "name": "Andorra"
     }
   },
@@ -45,7 +45,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AO",
+      "notation": "AO",
       "name": "Angola"
     }
   },
@@ -55,7 +55,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AG",
+      "notation": "AG",
       "name": "Antigua and Barbuda"
     }
   },
@@ -65,7 +65,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AR",
+      "notation": "AR",
       "name": "Argentina"
     }
   },
@@ -75,7 +75,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AM",
+      "notation": "AM",
       "name": "Armenia"
     }
   },
@@ -85,7 +85,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AU",
+      "notation": "AU",
       "name": "Australia"
     }
   },
@@ -95,7 +95,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AT",
+      "notation": "AT",
       "name": "Austria"
     }
   },
@@ -105,7 +105,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AZ",
+      "notation": "AZ",
       "name": "Azerbaijan"
     }
   },
@@ -115,7 +115,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BS",
+      "notation": "BS",
       "name": "Bahamas, The"
     }
   },
@@ -125,7 +125,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BH",
+      "notation": "BH",
       "name": "Bahrain"
     }
   },
@@ -135,7 +135,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BD",
+      "notation": "BD",
       "name": "Bangladesh"
     }
   },
@@ -145,7 +145,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BB",
+      "notation": "BB",
       "name": "Barbados"
     }
   },
@@ -155,7 +155,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BY",
+      "notation": "BY",
       "name": "Belarus"
     }
   },
@@ -165,7 +165,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BE",
+      "notation": "BE",
       "name": "Belgium"
     }
   },
@@ -175,7 +175,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BZ",
+      "notation": "BZ",
       "name": "Belize"
     }
   },
@@ -185,7 +185,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BJ",
+      "notation": "BJ",
       "name": "Benin"
     }
   },
@@ -195,7 +195,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BT",
+      "notation": "BT",
       "name": "Bhutan"
     }
   },
@@ -205,7 +205,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BO",
+      "notation": "BO",
       "name": "Bolivia"
     }
   },
@@ -215,7 +215,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BA",
+      "notation": "BA",
       "name": "Bosnia and Herzegovina"
     }
   },
@@ -225,7 +225,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BW",
+      "notation": "BW",
       "name": "Botswana"
     }
   },
@@ -235,7 +235,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BR",
+      "notation": "BR",
       "name": "Brazil"
     }
   },
@@ -245,7 +245,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BN",
+      "notation": "BN",
       "name": "Brunei"
     }
   },
@@ -255,7 +255,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BG",
+      "notation": "BG",
       "name": "Bulgaria"
     }
   },
@@ -265,7 +265,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BF",
+      "notation": "BF",
       "name": "Burkina Faso"
     }
   },
@@ -275,7 +275,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BI",
+      "notation": "BI",
       "name": "Burundi"
     }
   },
@@ -285,7 +285,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KH",
+      "notation": "KH",
       "name": "Cambodia"
     }
   },
@@ -295,7 +295,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CM",
+      "notation": "CM",
       "name": "Cameroon"
     }
   },
@@ -305,7 +305,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CA",
+      "notation": "CA",
       "name": "Canada"
     }
   },
@@ -315,7 +315,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CV",
+      "notation": "CV",
       "name": "Cape Verde"
     }
   },
@@ -325,7 +325,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CF",
+      "notation": "CF",
       "name": "Central African Republic"
     }
   },
@@ -335,7 +335,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TD",
+      "notation": "TD",
       "name": "Chad"
     }
   },
@@ -345,7 +345,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CL",
+      "notation": "CL",
       "name": "Chile"
     }
   },
@@ -355,7 +355,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CN",
+      "notation": "CN",
       "name": "China, People's Republic of"
     }
   },
@@ -365,7 +365,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CO",
+      "notation": "CO",
       "name": "Colombia"
     }
   },
@@ -375,7 +375,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KM",
+      "notation": "KM",
       "name": "Comoros"
     }
   },
@@ -385,7 +385,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CD",
+      "notation": "CD",
       "name": "Congo, (Congo \u00c2\u2013 Kinshasa)"
     }
   },
@@ -395,7 +395,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CG",
+      "notation": "CG",
       "name": "Congo, (Congo \u00c2\u2013 Brazzaville)"
     }
   },
@@ -405,7 +405,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CR",
+      "notation": "CR",
       "name": "Costa Rica"
     }
   },
@@ -415,7 +415,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CI",
+      "notation": "CI",
       "name": "Cote d'Ivoire (Ivory Coast)"
     }
   },
@@ -425,7 +425,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "HR",
+      "notation": "HR",
       "name": "Croatia"
     }
   },
@@ -435,7 +435,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CU",
+      "notation": "CU",
       "name": "Cuba"
     }
   },
@@ -445,7 +445,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CY",
+      "notation": "CY",
       "name": "Cyprus"
     }
   },
@@ -455,7 +455,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CZ",
+      "notation": "CZ",
       "name": "Czech Republic"
     }
   },
@@ -465,7 +465,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "DK",
+      "notation": "DK",
       "name": "Denmark"
     }
   },
@@ -475,7 +475,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "DJ",
+      "notation": "DJ",
       "name": "Djibouti"
     }
   },
@@ -485,7 +485,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "DM",
+      "notation": "DM",
       "name": "Dominica"
     }
   },
@@ -495,7 +495,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "DO",
+      "notation": "DO",
       "name": "Dominican Republic"
     }
   },
@@ -505,7 +505,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "EC",
+      "notation": "EC",
       "name": "Ecuador"
     }
   },
@@ -515,7 +515,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "EG",
+      "notation": "EG",
       "name": "Egypt"
     }
   },
@@ -525,7 +525,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SV",
+      "notation": "SV",
       "name": "El Salvador"
     }
   },
@@ -535,7 +535,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GQ",
+      "notation": "GQ",
       "name": "Equatorial Guinea"
     }
   },
@@ -545,7 +545,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ER",
+      "notation": "ER",
       "name": "Eritrea"
     }
   },
@@ -555,7 +555,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "EE",
+      "notation": "EE",
       "name": "Estonia"
     }
   },
@@ -565,7 +565,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ET",
+      "notation": "ET",
       "name": "Ethiopia"
     }
   },
@@ -575,7 +575,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "FJ",
+      "notation": "FJ",
       "name": "Fiji"
     }
   },
@@ -585,7 +585,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "FI",
+      "notation": "FI",
       "name": "Finland"
     }
   },
@@ -595,7 +595,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "FR",
+      "notation": "FR",
       "name": "France"
     }
   },
@@ -605,7 +605,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GA",
+      "notation": "GA",
       "name": "Gabon"
     }
   },
@@ -615,7 +615,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GM",
+      "notation": "GM",
       "name": "Gambia, The"
     }
   },
@@ -625,7 +625,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GE",
+      "notation": "GE",
       "name": "Georgia"
     }
   },
@@ -635,7 +635,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "DE",
+      "notation": "DE",
       "name": "Germany"
     }
   },
@@ -645,7 +645,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GH",
+      "notation": "GH",
       "name": "Ghana"
     }
   },
@@ -655,7 +655,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GR",
+      "notation": "GR",
       "name": "Greece"
     }
   },
@@ -665,7 +665,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GD",
+      "notation": "GD",
       "name": "Grenada"
     }
   },
@@ -675,7 +675,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GT",
+      "notation": "GT",
       "name": "Guatemala"
     }
   },
@@ -685,7 +685,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GN",
+      "notation": "GN",
       "name": "Guinea"
     }
   },
@@ -695,7 +695,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GW",
+      "notation": "GW",
       "name": "Guinea-Bissau"
     }
   },
@@ -705,7 +705,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GY",
+      "notation": "GY",
       "name": "Guyana"
     }
   },
@@ -715,7 +715,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "HT",
+      "notation": "HT",
       "name": "Haiti"
     }
   },
@@ -725,7 +725,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "HN",
+      "notation": "HN",
       "name": "Honduras"
     }
   },
@@ -735,7 +735,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "HU",
+      "notation": "HU",
       "name": "Hungary"
     }
   },
@@ -745,7 +745,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IS",
+      "notation": "IS",
       "name": "Iceland"
     }
   },
@@ -755,7 +755,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IN",
+      "notation": "IN",
       "name": "India"
     }
   },
@@ -765,7 +765,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ID",
+      "notation": "ID",
       "name": "Indonesia"
     }
   },
@@ -775,7 +775,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IR",
+      "notation": "IR",
       "name": "Iran"
     }
   },
@@ -785,7 +785,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IQ",
+      "notation": "IQ",
       "name": "Iraq"
     }
   },
@@ -795,7 +795,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IE",
+      "notation": "IE",
       "name": "Ireland"
     }
   },
@@ -805,7 +805,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IL",
+      "notation": "IL",
       "name": "Israel"
     }
   },
@@ -815,7 +815,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IT",
+      "notation": "IT",
       "name": "Italy"
     }
   },
@@ -825,7 +825,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "JM",
+      "notation": "JM",
       "name": "Jamaica"
     }
   },
@@ -835,7 +835,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "JP",
+      "notation": "JP",
       "name": "Japan"
     }
   },
@@ -845,7 +845,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "JO",
+      "notation": "JO",
       "name": "Jordan"
     }
   },
@@ -855,7 +855,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KZ",
+      "notation": "KZ",
       "name": "Kazakhstan"
     }
   },
@@ -865,7 +865,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KE",
+      "notation": "KE",
       "name": "Kenya"
     }
   },
@@ -875,7 +875,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KI",
+      "notation": "KI",
       "name": "Kiribati"
     }
   },
@@ -885,7 +885,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KP",
+      "notation": "KP",
       "name": "Korea, North"
     }
   },
@@ -895,7 +895,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KR",
+      "notation": "KR",
       "name": "Korea, South"
     }
   },
@@ -905,7 +905,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KW",
+      "notation": "KW",
       "name": "Kuwait"
     }
   },
@@ -915,7 +915,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KG",
+      "notation": "KG",
       "name": "Kyrgyzstan"
     }
   },
@@ -925,7 +925,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LA",
+      "notation": "LA",
       "name": "Laos"
     }
   },
@@ -935,7 +935,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LV",
+      "notation": "LV",
       "name": "Latvia"
     }
   },
@@ -945,7 +945,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LB",
+      "notation": "LB",
       "name": "Lebanon"
     }
   },
@@ -955,7 +955,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LS",
+      "notation": "LS",
       "name": "Lesotho"
     }
   },
@@ -965,7 +965,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LR",
+      "notation": "LR",
       "name": "Liberia"
     }
   },
@@ -975,7 +975,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LY",
+      "notation": "LY",
       "name": "Libya"
     }
   },
@@ -985,7 +985,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LI",
+      "notation": "LI",
       "name": "Liechtenstein"
     }
   },
@@ -995,7 +995,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LT",
+      "notation": "LT",
       "name": "Lithuania"
     }
   },
@@ -1005,7 +1005,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LU",
+      "notation": "LU",
       "name": "Luxembourg"
     }
   },
@@ -1015,7 +1015,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MK",
+      "notation": "MK",
       "name": "Macedonia"
     }
   },
@@ -1025,7 +1025,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MG",
+      "notation": "MG",
       "name": "Madagascar"
     }
   },
@@ -1035,7 +1035,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MW",
+      "notation": "MW",
       "name": "Malawi"
     }
   },
@@ -1045,7 +1045,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MY",
+      "notation": "MY",
       "name": "Malaysia"
     }
   },
@@ -1055,7 +1055,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MV",
+      "notation": "MV",
       "name": "Maldives"
     }
   },
@@ -1065,7 +1065,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ML",
+      "notation": "ML",
       "name": "Mali"
     }
   },
@@ -1075,7 +1075,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MT",
+      "notation": "MT",
       "name": "Malta"
     }
   },
@@ -1085,7 +1085,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MH",
+      "notation": "MH",
       "name": "Marshall Islands"
     }
   },
@@ -1095,7 +1095,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MR",
+      "notation": "MR",
       "name": "Mauritania"
     }
   },
@@ -1105,7 +1105,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MU",
+      "notation": "MU",
       "name": "Mauritius"
     }
   },
@@ -1115,7 +1115,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MX",
+      "notation": "MX",
       "name": "Mexico"
     }
   },
@@ -1125,7 +1125,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "FM",
+      "notation": "FM",
       "name": "Micronesia"
     }
   },
@@ -1135,7 +1135,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MD",
+      "notation": "MD",
       "name": "Moldova"
     }
   },
@@ -1145,7 +1145,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MC",
+      "notation": "MC",
       "name": "Monaco"
     }
   },
@@ -1155,7 +1155,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MN",
+      "notation": "MN",
       "name": "Mongolia"
     }
   },
@@ -1165,7 +1165,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ME",
+      "notation": "ME",
       "name": "Montenegro"
     }
   },
@@ -1175,7 +1175,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MA",
+      "notation": "MA",
       "name": "Morocco"
     }
   },
@@ -1185,7 +1185,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MZ",
+      "notation": "MZ",
       "name": "Mozambique"
     }
   },
@@ -1195,7 +1195,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MM",
+      "notation": "MM",
       "name": "Myanmar (Burma)"
     }
   },
@@ -1205,7 +1205,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NA",
+      "notation": "NA",
       "name": "Namibia"
     }
   },
@@ -1215,7 +1215,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NR",
+      "notation": "NR",
       "name": "Nauru"
     }
   },
@@ -1225,7 +1225,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NP",
+      "notation": "NP",
       "name": "Nepal"
     }
   },
@@ -1235,7 +1235,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NL",
+      "notation": "NL",
       "name": "Netherlands"
     }
   },
@@ -1245,7 +1245,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NZ",
+      "notation": "NZ",
       "name": "New Zealand"
     }
   },
@@ -1255,7 +1255,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NI",
+      "notation": "NI",
       "name": "Nicaragua"
     }
   },
@@ -1265,7 +1265,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NE",
+      "notation": "NE",
       "name": "Niger"
     }
   },
@@ -1275,7 +1275,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NG",
+      "notation": "NG",
       "name": "Nigeria"
     }
   },
@@ -1285,7 +1285,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NO",
+      "notation": "NO",
       "name": "Norway"
     }
   },
@@ -1295,7 +1295,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "OM",
+      "notation": "OM",
       "name": "Oman"
     }
   },
@@ -1305,7 +1305,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PK",
+      "notation": "PK",
       "name": "Pakistan"
     }
   },
@@ -1315,7 +1315,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PW",
+      "notation": "PW",
       "name": "Palau"
     }
   },
@@ -1325,7 +1325,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PA",
+      "notation": "PA",
       "name": "Panama"
     }
   },
@@ -1335,7 +1335,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PG",
+      "notation": "PG",
       "name": "Papua New Guinea"
     }
   },
@@ -1345,7 +1345,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PY",
+      "notation": "PY",
       "name": "Paraguay"
     }
   },
@@ -1355,7 +1355,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PE",
+      "notation": "PE",
       "name": "Peru"
     }
   },
@@ -1365,7 +1365,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PH",
+      "notation": "PH",
       "name": "Philippines"
     }
   },
@@ -1375,7 +1375,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PL",
+      "notation": "PL",
       "name": "Poland"
     }
   },
@@ -1385,7 +1385,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PT",
+      "notation": "PT",
       "name": "Portugal"
     }
   },
@@ -1395,7 +1395,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "QA",
+      "notation": "QA",
       "name": "Qatar"
     }
   },
@@ -1405,7 +1405,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "RO",
+      "notation": "RO",
       "name": "Romania"
     }
   },
@@ -1415,7 +1415,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "RU",
+      "notation": "RU",
       "name": "Russia"
     }
   },
@@ -1425,7 +1425,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "RW",
+      "notation": "RW",
       "name": "Rwanda"
     }
   },
@@ -1435,7 +1435,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KN",
+      "notation": "KN",
       "name": "Saint Kitts and Nevis"
     }
   },
@@ -1445,7 +1445,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LC",
+      "notation": "LC",
       "name": "Saint Lucia"
     }
   },
@@ -1455,7 +1455,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "VC",
+      "notation": "VC",
       "name": "Saint Vincent and the Grenadines"
     }
   },
@@ -1465,7 +1465,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "WS",
+      "notation": "WS",
       "name": "Samoa"
     }
   },
@@ -1475,7 +1475,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SM",
+      "notation": "SM",
       "name": "San Marino"
     }
   },
@@ -1485,7 +1485,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ST",
+      "notation": "ST",
       "name": "Sao Tome and Principe"
     }
   },
@@ -1495,7 +1495,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SA",
+      "notation": "SA",
       "name": "Saudi Arabia"
     }
   },
@@ -1505,7 +1505,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SN",
+      "notation": "SN",
       "name": "Senegal"
     }
   },
@@ -1515,7 +1515,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "RS",
+      "notation": "RS",
       "name": "Serbia"
     }
   },
@@ -1525,7 +1525,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SC",
+      "notation": "SC",
       "name": "Seychelles"
     }
   },
@@ -1535,7 +1535,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SL",
+      "notation": "SL",
       "name": "Sierra Leone"
     }
   },
@@ -1545,7 +1545,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SG",
+      "notation": "SG",
       "name": "Singapore"
     }
   },
@@ -1555,7 +1555,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SK",
+      "notation": "SK",
       "name": "Slovakia"
     }
   },
@@ -1565,7 +1565,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SI",
+      "notation": "SI",
       "name": "Slovenia"
     }
   },
@@ -1575,7 +1575,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SB",
+      "notation": "SB",
       "name": "Solomon Islands"
     }
   },
@@ -1585,7 +1585,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SO",
+      "notation": "SO",
       "name": "Somalia"
     }
   },
@@ -1595,7 +1595,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ZA",
+      "notation": "ZA",
       "name": "South Africa"
     }
   },
@@ -1605,7 +1605,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ES",
+      "notation": "ES",
       "name": "Spain"
     }
   },
@@ -1615,7 +1615,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "LK",
+      "notation": "LK",
       "name": "Sri Lanka"
     }
   },
@@ -1625,7 +1625,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SD",
+      "notation": "SD",
       "name": "Sudan"
     }
   },
@@ -1635,7 +1635,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SR",
+      "notation": "SR",
       "name": "Suriname"
     }
   },
@@ -1645,7 +1645,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SZ",
+      "notation": "SZ",
       "name": "Swaziland"
     }
   },
@@ -1655,7 +1655,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SE",
+      "notation": "SE",
       "name": "Sweden"
     }
   },
@@ -1665,7 +1665,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CH",
+      "notation": "CH",
       "name": "Switzerland"
     }
   },
@@ -1675,7 +1675,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SY",
+      "notation": "SY",
       "name": "Syria"
     }
   },
@@ -1685,7 +1685,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TJ",
+      "notation": "TJ",
       "name": "Tajikistan"
     }
   },
@@ -1695,7 +1695,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TZ",
+      "notation": "TZ",
       "name": "Tanzania"
     }
   },
@@ -1705,7 +1705,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TH",
+      "notation": "TH",
       "name": "Thailand"
     }
   },
@@ -1715,7 +1715,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TL",
+      "notation": "TL",
       "name": "Timor-Leste (East Timor)"
     }
   },
@@ -1725,7 +1725,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TG",
+      "notation": "TG",
       "name": "Togo"
     }
   },
@@ -1735,7 +1735,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TO",
+      "notation": "TO",
       "name": "Tonga"
     }
   },
@@ -1745,7 +1745,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TT",
+      "notation": "TT",
       "name": "Trinidad and Tobago"
     }
   },
@@ -1755,7 +1755,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TN",
+      "notation": "TN",
       "name": "Tunisia"
     }
   },
@@ -1765,7 +1765,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TR",
+      "notation": "TR",
       "name": "Turkey"
     }
   },
@@ -1775,7 +1775,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TM",
+      "notation": "TM",
       "name": "Turkmenistan"
     }
   },
@@ -1785,7 +1785,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TV",
+      "notation": "TV",
       "name": "Tuvalu"
     }
   },
@@ -1795,7 +1795,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UG",
+      "notation": "UG",
       "name": "Uganda"
     }
   },
@@ -1805,7 +1805,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UA",
+      "notation": "UA",
       "name": "Ukraine"
     }
   },
@@ -1815,7 +1815,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AE",
+      "notation": "AE",
       "name": "United Arab Emirates"
     }
   },
@@ -1825,7 +1825,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GB",
+      "notation": "GB",
       "name": "United Kingdom"
     }
   },
@@ -1835,7 +1835,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "US",
+      "notation": "US",
       "name": "United States"
     }
   },
@@ -1845,7 +1845,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UY",
+      "notation": "UY",
       "name": "Uruguay"
     }
   },
@@ -1855,7 +1855,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UZ",
+      "notation": "UZ",
       "name": "Uzbekistan"
     }
   },
@@ -1865,7 +1865,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "VU",
+      "notation": "VU",
       "name": "Vanuatu"
     }
   },
@@ -1875,7 +1875,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "VA",
+      "notation": "VA",
       "name": "Vatican City"
     }
   },
@@ -1885,7 +1885,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "VE",
+      "notation": "VE",
       "name": "Venezuela"
     }
   },
@@ -1895,7 +1895,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "VN",
+      "notation": "VN",
       "name": "Vietnam"
     }
   },
@@ -1905,7 +1905,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "YE",
+      "notation": "YE",
       "name": "Yemen"
     }
   },
@@ -1915,7 +1915,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ZM",
+      "notation": "ZM",
       "name": "Zambia"
     }
   },
@@ -1925,7 +1925,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "ZW",
+      "notation": "ZW",
       "name": "Zimbabwe"
     }
   },
@@ -1935,7 +1935,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GE",
+      "notation": "GE",
       "name": "Abkhazia"
     }
   },
@@ -1945,7 +1945,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TW",
+      "notation": "TW",
       "name": "China, Republic of (Taiwan)"
     }
   },
@@ -1955,7 +1955,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AZ",
+      "notation": "AZ",
       "name": "Nagorno-Karabakh"
     }
   },
@@ -1965,7 +1965,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CY",
+      "notation": "CY",
       "name": "Northern Cyprus"
     }
   },
@@ -1975,7 +1975,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MD",
+      "notation": "MD",
       "name": "Pridnestrovie (Transnistria)"
     }
   },
@@ -1985,7 +1985,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SO",
+      "notation": "SO",
       "name": "Somaliland"
     }
   },
@@ -1995,7 +1995,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GE",
+      "notation": "GE",
       "name": "South Ossetia"
     }
   },
@@ -2005,7 +2005,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AU",
+      "notation": "AU",
       "name": "Ashmore and Cartier Islands"
     }
   },
@@ -2015,7 +2015,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CX",
+      "notation": "CX",
       "name": "Christmas Island"
     }
   },
@@ -2025,7 +2025,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CC",
+      "notation": "CC",
       "name": "Cocos (Keeling) Islands"
     }
   },
@@ -2035,7 +2035,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AU",
+      "notation": "AU",
       "name": "Coral Sea Islands"
     }
   },
@@ -2045,7 +2045,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "HM",
+      "notation": "HM",
       "name": "Heard Island and McDonald Islands"
     }
   },
@@ -2055,7 +2055,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NF",
+      "notation": "NF",
       "name": "Norfolk Island"
     }
   },
@@ -2065,7 +2065,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NC",
+      "notation": "NC",
       "name": "New Caledonia"
     }
   },
@@ -2075,7 +2075,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PF",
+      "notation": "PF",
       "name": "French Polynesia"
     }
   },
@@ -2085,7 +2085,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "YT",
+      "notation": "YT",
       "name": "Mayotte"
     }
   },
@@ -2095,7 +2095,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GP",
+      "notation": "GP",
       "name": "Saint Barthelemy"
     }
   },
@@ -2105,7 +2105,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GP",
+      "notation": "GP",
       "name": "Saint Martin"
     }
   },
@@ -2115,7 +2115,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PM",
+      "notation": "PM",
       "name": "Saint Pierre and Miquelon"
     }
   },
@@ -2125,7 +2125,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "WF",
+      "notation": "WF",
       "name": "Wallis and Futuna"
     }
   },
@@ -2135,7 +2135,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TF",
+      "notation": "TF",
       "name": "French Southern and Antarctic Lands"
     }
   },
@@ -2145,7 +2145,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PF",
+      "notation": "PF",
       "name": "Clipperton Island"
     }
   },
@@ -2155,7 +2155,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BV",
+      "notation": "BV",
       "name": "Bouvet Island"
     }
   },
@@ -2165,7 +2165,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "CK",
+      "notation": "CK",
       "name": "Cook Islands"
     }
   },
@@ -2175,7 +2175,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "NU",
+      "notation": "NU",
       "name": "Niue"
     }
   },
@@ -2185,7 +2185,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TK",
+      "notation": "TK",
       "name": "Tokelau"
     }
   },
@@ -2195,7 +2195,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GG",
+      "notation": "GG",
       "name": "Guernsey"
     }
   },
@@ -2205,7 +2205,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IM",
+      "notation": "IM",
       "name": "Isle of Man"
     }
   },
@@ -2215,7 +2215,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "JE",
+      "notation": "JE",
       "name": "Jersey"
     }
   },
@@ -2225,7 +2225,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AI",
+      "notation": "AI",
       "name": "Anguilla"
     }
   },
@@ -2235,7 +2235,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "BM",
+      "notation": "BM",
       "name": "Bermuda"
     }
   },
@@ -2245,7 +2245,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "IO",
+      "notation": "IO",
       "name": "British Indian Ocean Territory"
     }
   },
@@ -2255,7 +2255,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "VG",
+      "notation": "VG",
       "name": "British Virgin Islands"
     }
   },
@@ -2265,7 +2265,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "KY",
+      "notation": "KY",
       "name": "Cayman Islands"
     }
   },
@@ -2275,7 +2275,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "FK",
+      "notation": "FK",
       "name": "Falkland Islands (Islas Malvinas)"
     }
   },
@@ -2285,7 +2285,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GI",
+      "notation": "GI",
       "name": "Gibraltar"
     }
   },
@@ -2295,7 +2295,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MS",
+      "notation": "MS",
       "name": "Montserrat"
     }
   },
@@ -2305,7 +2305,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PN",
+      "notation": "PN",
       "name": "Pitcairn Islands"
     }
   },
@@ -2315,7 +2315,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SH",
+      "notation": "SH",
       "name": "Saint Helena"
     }
   },
@@ -2325,7 +2325,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GS",
+      "notation": "GS",
       "name": "South Georgia & South Sandwich Islands"
     }
   },
@@ -2335,7 +2335,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TC",
+      "notation": "TC",
       "name": "Turks and Caicos Islands"
     }
   },
@@ -2345,7 +2345,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MP",
+      "notation": "MP",
       "name": "Northern Mariana Islands"
     }
   },
@@ -2355,7 +2355,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "PR",
+      "notation": "PR",
       "name": "Puerto Rico"
     }
   },
@@ -2365,7 +2365,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AS",
+      "notation": "AS",
       "name": "American Samoa"
     }
   },
@@ -2375,7 +2375,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Baker Island"
     }
   },
@@ -2385,7 +2385,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GU",
+      "notation": "GU",
       "name": "Guam"
     }
   },
@@ -2395,7 +2395,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Howland Island"
     }
   },
@@ -2405,7 +2405,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Jarvis Island"
     }
   },
@@ -2415,7 +2415,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Johnston Atoll"
     }
   },
@@ -2425,7 +2425,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Kingman Reef"
     }
   },
@@ -2435,7 +2435,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Midway Islands"
     }
   },
@@ -2445,7 +2445,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Navassa Island"
     }
   },
@@ -2455,7 +2455,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Palmyra Atoll"
     }
   },
@@ -2465,7 +2465,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "VI",
+      "notation": "VI",
       "name": "U.S. Virgin Islands"
     }
   },
@@ -2475,7 +2475,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "UM",
+      "notation": "UM",
       "name": "Wake Island"
     }
   },
@@ -2485,7 +2485,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "HK",
+      "notation": "HK",
       "name": "Hong Kong"
     }
   },
@@ -2495,7 +2495,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MO",
+      "notation": "MO",
       "name": "Macau"
     }
   },
@@ -2505,7 +2505,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "FO",
+      "notation": "FO",
       "name": "Faroe Islands"
     }
   },
@@ -2515,7 +2515,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GL",
+      "notation": "GL",
       "name": "Greenland"
     }
   },
@@ -2525,7 +2525,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GF",
+      "notation": "GF",
       "name": "French Guiana"
     }
   },
@@ -2535,7 +2535,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "GP",
+      "notation": "GP",
       "name": "Guadeloupe"
     }
   },
@@ -2545,7 +2545,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "MQ",
+      "notation": "MQ",
       "name": "Martinique"
     }
   },
@@ -2555,7 +2555,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "RE",
+      "notation": "RE",
       "name": "Reunion"
     }
   },
@@ -2565,7 +2565,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AX",
+      "notation": "AX",
       "name": "Aland"
     }
   },
@@ -2575,7 +2575,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AW",
+      "notation": "AW",
       "name": "Aruba"
     }
   },
@@ -2585,7 +2585,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AN",
+      "notation": "AN",
       "name": "Netherlands Antilles"
     }
   },
@@ -2595,7 +2595,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "SJ",
+      "notation": "SJ",
       "name": "Svalbard"
     }
   },
@@ -2605,7 +2605,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AC",
+      "notation": "AC",
       "name": "Ascension"
     }
   },
@@ -2615,7 +2615,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "TA",
+      "notation": "TA",
       "name": "Tristan da Cunha"
     }
   },
@@ -2625,7 +2625,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AQ",
+      "notation": "AQ",
       "name": "Australian Antarctic Territory"
     }
   },
@@ -2635,7 +2635,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AQ",
+      "notation": "AQ",
       "name": "Ross Dependency"
     }
   },
@@ -2645,7 +2645,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AQ",
+      "notation": "AQ",
       "name": "Peter I Island"
     }
   },
@@ -2655,7 +2655,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AQ",
+      "notation": "AQ",
       "name": "Queen Maud Land"
     }
   },
@@ -2665,7 +2665,7 @@
     "fields": {
       "created_at": "2015-01-21T17:01:28Z",
       "updated_at": "2015-01-21T17:01:28Z",
-      "code": "AQ",
+      "notation": "AQ",
       "name": "British Antarctic Territory"
     }
   }
