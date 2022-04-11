@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, max_length=256, null=True),
         ),
         migrations.AddField(
-            model_name='wmoregion',
+            model_name='wmoprogram',
             name='path',
             field=models.CharField(blank=True, max_length=256, null=True),
         ),
