@@ -255,7 +255,7 @@ class WMORegionAdmin(admin.ModelAdmin):
 
 @admin.register(models.WMOProgram)
 class WMOProgramAdmin(admin.ModelAdmin):
-    list_display = ("name", "notation", "description")
+    list_display = ("name", "notation", "description", "path")
 
 
 @admin.register(models.StationFile)

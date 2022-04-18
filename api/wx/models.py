@@ -323,7 +323,7 @@ class WMORegion(BaseModel):
 
 class WMOProgram(BaseModel):
     name = models.CharField(max_length=256, unique=True)
-    description = models.CharField(max_length=256, null=True, blank=True)
+    description = models.CharField(max_length=512, null=True, blank=True)
     notation = models.CharField(max_length=256, null=True, blank=True)
     path = models.CharField(max_length=256, null=True, blank=True)    
 
