@@ -38,9 +38,9 @@ class Decoder(BaseModel):
 
 
 class Country(BaseModel):
-    code = models.CharField(max_length=2)
+    notation = models.CharField(max_length=16)
     name = models.CharField(max_length=256, unique=True)
-
+    description = models.CharField(max_length=256, null=True, blank=True)
     class Meta:
         verbose_name_plural = "countries"
 
@@ -306,6 +306,7 @@ class StationCommunication(BaseModel):
 class WMOStationType(BaseModel):
     name = models.CharField(max_length=256, unique=True)
     description = models.CharField(max_length=256, null=True, blank=True)
+    notation = models.CharField(max_length=256, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -314,6 +315,7 @@ class WMOStationType(BaseModel):
 class WMORegion(BaseModel):
     name = models.CharField(max_length=256, unique=True)
     description = models.CharField(max_length=256, null=True, blank=True)
+    notation = models.CharField(max_length=256, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -321,7 +323,9 @@ class WMORegion(BaseModel):
 
 class WMOProgram(BaseModel):
     name = models.CharField(max_length=256, unique=True)
-    description = models.CharField(max_length=256, null=True, blank=True)
+    description = models.CharField(max_length=512, null=True, blank=True)
+    notation = models.CharField(max_length=256, null=True, blank=True)
+    path = models.CharField(max_length=256, null=True, blank=True)    
 
     def __str__(self):
         return self.name
@@ -555,11 +559,17 @@ class Station(BaseModel):
         null=True,
         blank=True
     )
-    country = models.CharField(
+    remarks = models.CharField(
         max_length=256,
         null=True,
         blank=True
-    )
+    )        
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True
+    )    
     region = models.CharField(
         max_length=256,
         null=True,
