@@ -38,6 +38,17 @@ from wx.models import Station
 from wx.models import StationFileIngestion, StationDataFile, HourlySummaryTask, DailySummaryTask, \
     HydroMLPredictionStation, HydroMLPredictionMapping
 
+
+from django.core.exceptions import ObjectDoesNotExist
+import numpy as np
+import pandas as pd
+from wx.models import QcPersistThreshold
+from wx.enums import QualityFlagEnum
+GOOD = QualityFlagEnum.GOOD.id
+NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
+BAD = QualityFlagEnum.BAD.id
+
+
 logger = get_task_logger(__name__)
 db_logger = get_task_logger('db')
 
@@ -162,15 +173,11 @@ def calculate_hourly_summary(start_datetime=None, end_datetime=None, station_id_
     """
 
     conn = get_connection()
-
     with conn.cursor() as cursor:
         cursor.execute(delete_sql, {"station_ids": station_ids, "start_datetime": start_datetime})
-        cursor.execute(insert_sql,
-                       {"station_ids": station_ids, "start_datetime": start_datetime, "end_datetime": end_datetime,
-                        "MISSING_VALUE": settings.MISSING_VALUE})
+        cursor.execute(insert_sql, {"station_ids": station_ids, "start_datetime": start_datetime, "end_datetime": end_datetime, "MISSING_VALUE": settings.MISSING_VALUE})
     conn.commit()
     conn.close()
-
     logger.info(f'Hourly summary finished at {datetime.now(pytz.UTC)}. Took {time() - start_at} seconds.')
 
 
@@ -1175,15 +1182,220 @@ def process_station_data_files(historical_data=False, force_reprocess=False):
             station_data_file.status_id = 3
             station_data_file.save()
 
+########################################### Persist Threshold ###########################################
+# Utils
+def get_window(station_id, variable_id):
+    return 3600
+
+def most_frequent(List):
+    return max(set(List), key = List.count)
+
+def get_interval(df_sv):
+    interval_list = df_sv.datetime.diff(periods=-1).dt.total_seconds().replace(np.nan, 0).astype("int32")
+    interval_list = list(interval_list)
+    return most_frequent(interval_list)
+
+# Quality control logic
+def get_qc_persist(thresholds, station_id, variable_id, interval, window):
+    if window == 0 or interval==0:
+        return thresholds
+
+    try:
+        # Trying to set persist thresholds using current station
+        _persist = QcPersistThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval, window=window)
+        thresholds['persist_min_variance'] = _persist.min_variance
+        thresholds['persist_description'] = 'Custom station Threshold'
+    except ObjectDoesNotExist:
+        try:
+            # Trying to set persist thresholds using current station with NULL intervall
+            _range = QcPersistThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval__isnull=True, window=window)        
+            thresholds['persist_min_variance'] = _persist.min_variance
+            thresholds['persist_description'] = 'Custom station Threshold'
+        except ObjectDoesNotExist:
+            try:
+                # Trying to set persist thresholds using current station
+                _station = Station.objects.get(pk=station_id)
+                _persist = QcPersistThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval=interval, window=window)
+                thresholds['persist_min_variance'] = _persist.min_variance
+                thresholds['persist_description'] = 'Reference station threshold'
+            except ObjectDoesNotExist:
+                try:
+                    # Trying to set persist thresholds using current station with NULL intervall
+                    _station = Station.objects.get(pk=station_id)
+                    _persist = QcPersistThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval__isnull=True, window=window)        
+                    thresholds['persist_min_variance'] = _persist.min_variance
+                    thresholds['persist_description'] = 'Reference station threshold'
+                except ObjectDoesNotExist:
+                    thresholds['persist_min_variance'] = 0.1
+                    thresholds['persist_description'] = 'Global Threshold (Test)'
+    return thresholds
+
+def qc_persist(value, thresholds):
+    if 'persist_min_variance' not in thresholds:
+        return NOT_CHECKED, "Threshold not found"
+
+    p_min = thresholds['persist_min_variance']
+    p_des = thresholds['persist_description']
+           
+    if p_min is None:
+        return NOT_CHECKED, "Threshold not found"           
+
+    if p_min <= value:
+        return GOOD, p_des
+    else:
+        return BAD, p_des
+
+def qc_final(result_persist, result_range, result_step):
+    flags = (result_persist, result_range, result_step)
+    if BAD in flags:
+        return BAD
+    elif GOOD in flags:
+        return GOOD
+    return NOT_CHECKED
+
+def qc_thresholds(row, thresholds):
+    variance = row.variance
+
+
+    result_persist, msg_persist = qc_persist(variance, thresholds)
+    result_range = row.qc_range_quality_flag
+    result_step = row.qc_step_quality_flag
+
+    result_final = qc_final(result_persist, result_range, result_step)
+    result_array = [result_persist, msg_persist, result_final]
+
+    return result_array
+
+# Persistance function and calculation
+
+def persit_function(values):
+    return max(values)-min(values)
+
+def get_persist(datetime, window, df):
+    df_window = df[(df['datetime']>=datetime ) & (df['datetime']<=datetime+timedelta(seconds=window))]
+    return persit_function(list(df_window['measured']))
+
+def get_persist_data(station_id, variable_id, start_datetime, end_datetime, window, thresholds):
+    con = get_connection()
+    sql = '''SELECT datetime, station_id, variable_id, measured, qc_persist_description, qc_persist_quality_flag, qc_range_quality_flag, qc_step_quality_flag, quality_flag
+             FROM raw_data
+             WHERE datetime BETWEEN %(start_datetime)s AND %(end_datetime)s
+               AND station_id = %(station_id)s
+               AND variable_id = %(variable_id)s
+          '''
+    end_datetime_delta = end_datetime+timedelta(seconds=window)
+    params = {"station_id": station_id, "variable_id": variable_id, "start_datetime": start_datetime, "end_datetime": end_datetime_delta}    
+    
+    sql_query = pd.read_sql_query(sql=sql, con=con, params=params)
+    df = pd.DataFrame(sql_query)
+
+    df['variance'] = df['datetime'].apply(get_persist, args=(window, df))
+    df[['qc_persist_quality_flag', 'qc_persist_description', 'quality_flag']] = df.apply(lambda row: qc_thresholds(row, thresholds), axis=1, result_type="expand")
+
+
+    df = df.drop(columns=['measured', 'qc_range_quality_flag', 'qc_step_quality_flag', 'variance'])
+
+    data = df.to_dict('records')
+    return data
+
+# Persistance update
+
+def qc_persist_hourly(start_datetime=None, end_datetime=None, station_ids=None):
+    # if not start_datetime:
+    #     start_datetime = datetime.today() - timedelta(hours=48)
+
+    # if not end_datetime:
+    #     end_datetime = datetime.today()
+
+    # if start_datetime.tzinfo is None:
+    #     start_datetime = pytz.UTC.localize(start_datetime)
+
+    # if end_datetime.tzinfo is None:
+    #     end_datetime = pytz.UTC.localize(end_datetime)
+
+    # if start_datetime > end_datetime:
+    #     print('Error - start date is more recent than end date.')
+    #     return
+
+    # if station_ids is None:
+    #     station_ids = Station.objects.filter(is_active=True).values_list('id', flat=True)
+
+    station_ids = tuple(station_ids)
+    con = get_connection()
+    sql = '''SELECT *
+             FROM raw_data
+             WHERE datetime BETWEEN %(start_datetime)s AND %(end_datetime)s
+               AND qc_persist_quality_flag IS NULL            
+               AND station_id IN %(station_ids)s
+          '''
+    params = {"station_ids": station_ids, "start_datetime": start_datetime, "end_datetime": end_datetime}
+    sql_query = pd.read_sql_query(sql=sql, con=con, params=params)
+    df = pd.DataFrame(sql_query)
+
+
+    data = []
+    for station_id in station_ids:
+        df_s = df[df['station_id']==station_id]
+        variable_ids = df_s.variable_id.unique()
+
+        for variable_id in variable_ids:
+            variable_id = int(variable_id)
+            df_sv = df_s[df_s['variable_id']==variable_id]
+            df_sv = df_sv.sort_values(by=['datetime'], ascending=False)
+
+            window = get_window(station_id, variable_id)
+            interval = get_interval(df_sv)
+
+            thresholds = {}
+            thresholds = get_qc_persist(thresholds, station_id, variable_id, interval, window)
+
+            data += get_persist_data(station_id, variable_id, start_datetime, end_datetime, window, thresholds)
+
+    print('DATA:')
+    print(data)
+
+    query = ''' UPDATE raw_data
+                SET updated_at=CURRENT_TIMESTAMP, qc_persist_quality_flag = %(qc_persist_quality_flag)s, qc_persist_description = %(qc_persist_description)s,  quality_flag = %(quality_flag)s
+                WHERE station_id = %(station_id)s
+                  AND variable_id = %(variable_id)s
+                  AND datetime = %(datetime)s
+            '''
+    with con.cursor() as cursor:
+        cursor.executemany(query, data)
+    con.commit()
+
+
+            # # If thresholds not found
+            # if not thresholds:
+            #     query = ''' UPDATE raw_data
+            #                 SET updated_at=CURRENT_TIMESTAMP, qc_persist_quality_flag = 4, qc_persist_description = 'Threshold not found'
+            #                 WHERE station_id = %(station_id)s
+            #                   AND variable_id = %(variable_id)s
+            #                   AND datetime BETWEEN %(start_datetime)s AND %(end_datetime)s
+            #             '''
+            #     with con.cursor() as cursor:
+            #         cursor.execute(query, {})
+            #     con.commit()
+            # else:            
+
+
+
+
+###########################################
+
+
+
+
 
 @shared_task
 def process_hourly_summary_tasks():
-    # process only 500 hourly summaries per execution
-    unprocessed_hourly_summary_datetimes = HourlySummaryTask.objects.filter(started_at=None).values_list('datetime',
-                                                                                                         flat=True).distinct()[
-                                           :501]
-    for hourly_summary_datetime in unprocessed_hourly_summary_datetimes:
+    print('------------------------------------------')
+    print('Starting Hourly Summary')
 
+
+    # Process only 500 hourly summaries per execution
+    unprocessed_hourly_summary_datetimes = HourlySummaryTask.objects.filter(started_at=None).values_list('datetime',flat=True).distinct()[:501]
+    for hourly_summary_datetime in unprocessed_hourly_summary_datetimes:
         start_datetime = hourly_summary_datetime
         end_datetime = hourly_summary_datetime + timedelta(hours=1)
 
@@ -1191,9 +1403,26 @@ def process_hourly_summary_tasks():
         hourly_summary_tasks_ids = list(hourly_summary_tasks.values_list('id', flat=True))
         station_ids = list(hourly_summary_tasks.values_list('station_id', flat=True).distinct())
 
+
+        print('Calculating Hourly Persist')
+        qc_persist_hourly(start_datetime, end_datetime, station_ids)
+
+
+        # # Updating persistance quality control flags
+        # try:
+            
+        # except Exception as err:
+        #     logger.error(
+        #         'Error calculation persistance for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
+        #     db_logger.error(
+        #         'Error calculation persistance for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
+
+
+
+        print('Calculating Hourly Summary')
+        # Updating Hourly summary task
         try:
-            HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(
-                started_at=datetime.now(tz=pytz.UTC))
+            HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
             calculate_hourly_summary(start_datetime, end_datetime, station_id_list=station_ids)
         except Exception as err:
             logger.error(
@@ -1203,6 +1432,10 @@ def process_hourly_summary_tasks():
         else:
             HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(
                 finished_at=datetime.now(tz=pytz.UTC))
+
+    print('Ending Hourly Summary')
+    print('------------------------------------------')
+# def qc_persist_daily():
 
 
 @shared_task
