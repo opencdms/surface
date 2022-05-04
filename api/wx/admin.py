@@ -62,8 +62,8 @@ class UnitAdmin(admin.ModelAdmin):
 
 @admin.register(models.Variable)
 class VariableAdmin(ExportMixin, admin.ModelAdmin):
-    list_display = (
-        "name", "symbol", "measurement_variable", "unit", "sampling_operation", "variable_type", "code_table")
+    search_fields = ('name',)
+    list_display = ("id", "name", "symbol", "measurement_variable", "unit", "sampling_operation", "variable_type", "code_table", "range_min", "range_max")
 
 
 # @admin.register(models.VariableType)
@@ -185,6 +185,7 @@ class StationFileIngestionAdmin(admin.ModelAdmin):
 
 @admin.register(models.StationDataFile)
 class StationDataFileAdmin(admin.ModelAdmin):
+    search_fields = ('station__name', 'status__name',)
     list_display = ("created_at", "station", "decoder", "status", "file_size", "utc_offset_minutes", "filepath_url")
     exclude = ('filepath',)
     readonly_fields = ('filepath_url',)
@@ -195,6 +196,7 @@ class StationDataFileAdmin(admin.ModelAdmin):
         return format_html('<a href={0}>{0}</a>', obj.filepath.replace(' ', '%20'))
 
     filepath_url.short_description = 'File path'
+
 
 
 @admin.register(models.StationDataFileStatus)
