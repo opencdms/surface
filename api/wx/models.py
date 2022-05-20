@@ -643,6 +643,7 @@ class StationVariable(BaseModel):
     height = models.FloatField(null=True, blank=True)
     test_persistence_variance = models.FloatField(null=True, blank=True)
     test_persistence_interval = models.FloatField(null=True, blank=True)
+    test_persistence_window = models.FloatField(null=True, blank=True)
     test_spike_value = models.FloatField(null=True, blank=True)
     last_data_datetime = models.DateTimeField(null=True, blank=True)
     last_data_value = models.FloatField(null=True, blank=True)
