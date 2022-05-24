@@ -32,6 +32,7 @@ class QualityFlagAdmin(admin.ModelAdmin):
 
 @admin.register(models.Station)
 class StationAdmin(ExportMixin, admin.ModelAdmin):
+    search_fields = ('name',)
     list_display = ("name", "country", "data_source", "code", "longitude", "latitude", "elevation", "alternative_names")
 
 
@@ -164,13 +165,17 @@ class FlashAdmin(admin.ModelAdmin):
 
 @admin.register(models.QcRangeThreshold)
 class QcRangeThresholdAdmin(ExportMixin, admin.ModelAdmin):
-    list_display = ("station", "variable", "range_min", "range_max")
+    list_display = ("station", "variable", "interval", "month", "range_min", "range_max")
 
 
 @admin.register(models.QcStepThreshold)
 class QcStepThresholdAdmin(ExportMixin, admin.ModelAdmin):
     list_display = ("station", "variable", "interval", "step_min", "step_max")
 
+@admin.register(models.QcPersistThreshold)
+class QcPersistThresholdAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = ("station", "variable", "interval", "window", "minimum_variance")
+    
 
 @admin.register(models.FTPServer)
 class FTPServerAdmin(admin.ModelAdmin):
