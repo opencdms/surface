@@ -42,7 +42,7 @@ from wx.models import StationFileIngestion, StationDataFile, HourlySummaryTask, 
 from django.core.exceptions import ObjectDoesNotExist
 import numpy as np
 import pandas as pd
-from wx.models import StationVariable, QcPersistThreshold
+from wx.models import QcPersistThreshold
 from wx.enums import QualityFlagEnum
 
 NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
@@ -357,7 +357,7 @@ def calculate_station_minimum_interval(start_date=None, end_date=None, station_i
                     ,updated_at
                 ) 
                 SELECT current_day
-                      ,stationvariable.station_id
+                      ,[station_id]station_id
                       ,stationvariable.variable_id
                       ,min(value.data_interval) as minimum_interval
                       ,COALESCE(count(value.formated_datetime), 0) as record_count 
@@ -1253,13 +1253,16 @@ def get_interval(df):
     return abs(interval)
 
 # Window
-def get_window(station_id, variable_id):
+def get_window(station_id):
     try:
-        _stationvariable = StationVariable.objects.get(station_id=station_id, variable_id=variable_id)
-        return _stationvariable.test_persistence_window
+        _station = Station.objects.get(id=station_id)
+        is_automatic = _station.is_automatic
     except ObjectDoesNotExist:
-        pass
-    return 3600
+        return 3600 # 1 hour
+
+    if is_automatic:
+        return 3600 # 1 hour
+    return 345600 # 4 days    
 
 # Thresholds
 def get_thresholds(station_id, variable_id, interval, window):
@@ -1389,15 +1392,16 @@ def update_insert_persist(df):
     with con.cursor() as cursor:
         cursor.executemany(query, data)
     con.commit()
-    con.close()    
+    con.close()
+
 
 # Main Persist Function
-def update_qc_persist(start_datetime, end_datetime, station_ids):
+def update_qc_persist(start_datetime, end_datetime, station_ids, summary_type):
     dict_sv = get_hourly_sv_dict(start_datetime, end_datetime, station_ids)
     for station_id in dict_sv:
         for variable_id in dict_sv[station_id]:
             s_datetime, e_datetime = dict_sv[station_id][variable_id]
-            window = get_window(station_id, variable_id)
+            window = get_window(station_id)
             df = get_hourly_sv_data(s_datetime, e_datetime, station_id, variable_id, window)
             
             if not df.empty:
@@ -1408,10 +1412,38 @@ def update_qc_persist(start_datetime, end_datetime, station_ids):
                 columns = ['updated', 'qc_persist_quality_flag', 'qc_persist_description', 'quality_flag']
                 df[columns] = df.apply(lambda row: set_persist(row, df, s_datetime, e_datetime, interval, window, thresholds), axis=1, result_type="expand")
 
-                df = df[df['updated']==True]
+                df = df[df['updated']==True]                
 
                 columns = ['station_id', 'variable_id', 'qc_persist_quality_flag', 'qc_persist_description', 'quality_flag', 'datetime']
                 update_insert_persist(df[columns])
+
+                recalculate_summary(df, station_id, s_datetime, e_datetime, summary_type)
+
+def recalculate_summary(df, station_id, s_datetime, e_datetime, summary_type):
+    mask = df.datetime.between(s_datetime, e_datetime)    
+    datetimes = list(df[~mask]['datetime'])
+
+    if datetimes:
+        if summary_type == 'hourly':
+            datetimes = set([dt.replace(microsecond=0, second=0, minute=0) for dt in datetimes])
+
+            hourly_summary_tasks_ids = HourlySummaryTask.objects.filter(station_id=station_id, datetime__in=datetimes).values('id').distinct()
+            hourly_summary(hourly_summary_tasks_ids, [station_id], s_datetime, e_datetime)
+
+        elif summary_type == 'daily':
+            dates = set([dt.date() for dt in datetimes])
+            daily_summary_tasks_ids = DailySummaryTask.objects.filter(station_id=station_id, date__in=dates).values('id').distinct()
+            daily_summary(daily_summary_tasks_ids, [station_id], s_datetime, e_datetime)
+
+def hourly_summary(hourly_summary_tasks_ids, station_ids, s_datetime, e_datetime):
+    try:
+        HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
+        calculate_hourly_summary(s_datetime, e_datetime, station_id_list=station_ids)
+    except Exception as err:
+        logger.error('Error calculation hourly summary for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
+        db_logger.error('Error calculation hourly summary for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
+    else:
+        HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(finished_at=datetime.now(tz=pytz.UTC))
 
 @shared_task
 def process_hourly_summary_tasks():
@@ -1426,19 +1458,23 @@ def process_hourly_summary_tasks():
         station_ids = list(hourly_summary_tasks.values_list('station_id', flat=True).distinct())
 
         if station_ids:
-            update_qc_persist(start_datetime, end_datetime, station_ids)
+            update_qc_persist(start_datetime, end_datetime, station_ids, 'hourly')
 
         # Updating Hourly summary task
-        try:
-            HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
-            calculate_hourly_summary(start_datetime, end_datetime, station_id_list=station_ids)
-        except Exception as err:
-            logger.error(
-                'Error calculation hourly summary for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
-            db_logger.error(
-                'Error calculation hourly summary for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
-        else:
-            HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(finished_at=datetime.now(tz=pytz.UTC))
+        hourly_summary(hourly_summary_tasks_ids, station_ids, start_datetime, end_datetime)
+
+def daily_summary(daily_summary_tasks_ids, station_ids, s_datetime, e_datetime):
+    try:
+        DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
+        calculate_daily_summary(s_datetime, e_datetime, station_id_list=station_ids)
+        # for station_id in station_ids:
+        #    calculate_station_minimum_interval(s_datetime, e_datetime, station_id_list=(station_id,))
+
+    except Exception as err:
+        logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
+        db_logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
+    else:
+        DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(finished_at=datetime.now(tz=pytz.UTC))
 
 @shared_task
 def process_daily_summary_tasks():
@@ -1454,21 +1490,9 @@ def process_daily_summary_tasks():
         station_ids = list(daily_summary_tasks.values_list('station_id', flat=True).distinct())
 
         if station_ids:
-            update_qc_persist(start_date, end_date, station_ids)
+            update_qc_persist(start_date, end_date, station_ids, 'daily')
 
-        try:
-            DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
-            calculate_daily_summary(start_date, end_date, station_id_list=station_ids)
-            # for station_id in station_ids:
-            #    calculate_station_minimum_interval(start_date, end_date, station_id_list=(station_id,))
-
-        except Exception as err:
-            logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
-            db_logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
-        else:
-            DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(
-                finished_at=datetime.now(tz=pytz.UTC))
-
+        daily_summary(daily_summary_tasks_ids, station_ids, start_date, end_date)
 
 def predict_data(start_datetime, end_datetime, prediction_id, station_ids, target_station_id, variable_id,
                  data_period_in_minutes, interval_in_minutes, result_mapping):
