@@ -38,6 +38,18 @@ from wx.models import Station
 from wx.models import StationFileIngestion, StationDataFile, HourlySummaryTask, DailySummaryTask, \
     HydroMLPredictionStation, HydroMLPredictionMapping
 
+
+from django.core.exceptions import ObjectDoesNotExist
+import numpy as np
+import pandas as pd
+from wx.models import QcPersistThreshold
+from wx.enums import QualityFlagEnum
+
+NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
+SUSPICIOUS = QualityFlagEnum.SUSPICIOUS.id
+BAD = QualityFlagEnum.BAD.id
+GOOD = QualityFlagEnum.GOOD.id
+
 logger = get_task_logger(__name__)
 db_logger = get_task_logger('db')
 
@@ -162,15 +174,11 @@ def calculate_hourly_summary(start_datetime=None, end_datetime=None, station_id_
     """
 
     conn = get_connection()
-
     with conn.cursor() as cursor:
         cursor.execute(delete_sql, {"station_ids": station_ids, "start_datetime": start_datetime})
-        cursor.execute(insert_sql,
-                       {"station_ids": station_ids, "start_datetime": start_datetime, "end_datetime": end_datetime,
-                        "MISSING_VALUE": settings.MISSING_VALUE})
+        cursor.execute(insert_sql, {"station_ids": station_ids, "start_datetime": start_datetime, "end_datetime": end_datetime, "MISSING_VALUE": settings.MISSING_VALUE})
     conn.commit()
     conn.close()
-
     logger.info(f'Hourly summary finished at {datetime.now(pytz.UTC)}. Took {time() - start_at} seconds.')
 
 
@@ -287,6 +295,7 @@ def calculate_daily_summary(start_date=None, end_date=None, station_id_list=None
                             "offset": offset, "MISSING_VALUE": settings.MISSING_VALUE})
             conn.commit()
 
+
     conn.commit()
     conn.close()
 
@@ -348,7 +357,7 @@ def calculate_station_minimum_interval(start_date=None, end_date=None, station_i
                     ,updated_at
                 ) 
                 SELECT current_day
-                      ,stationvariable.station_id
+                      ,[station_id]station_id
                       ,stationvariable.variable_id
                       ,min(value.data_interval) as minimum_interval
                       ,COALESCE(count(value.formated_datetime), 0) as record_count 
@@ -1176,14 +1185,297 @@ def process_station_data_files(historical_data=False, force_reprocess=False):
             station_data_file.save()
 
 
+# Persist Logic Starts here
+# Get hourly data from raw data
+def get_hourly_raw_data(start_datetime, end_datetime, station_ids):
+    con = get_connection()
+    sql = '''SELECT *
+             FROM raw_data
+             WHERE datetime BETWEEN %(start_datetime)s AND %(end_datetime)s
+               AND station_id IN %(station_ids)s
+               AND qc_persist_quality_flag IS NULL
+             ORDER BY datetime DESC
+          '''
+    params = {"station_ids": tuple(station_ids), "start_datetime": start_datetime, "end_datetime": end_datetime}
+    
+
+    sql_query = pd.read_sql_query(sql=sql, con=con, params=params)
+    con.close()
+
+    df = pd.DataFrame(sql_query)
+    return df
+
+# Station and variables used
+def get_hourly_sv_dict(start_datetime, end_datetime, station_ids):
+    df = get_hourly_raw_data(start_datetime, end_datetime, station_ids)
+
+    dict_sv = {}
+    for station_id in station_ids:
+        variable_ids = df[df['station_id']==station_id].variable_id.unique()
+        dict_v = {}
+        for variable_id in variable_ids:
+            s_datetime = df[(df['station_id']==station_id) & (df['variable_id']==variable_id)].datetime.min()
+            e_datetime = df[(df['station_id']==station_id) & (df['variable_id']==variable_id)].datetime.max()
+            dict_v[variable_id] = (s_datetime, e_datetime)
+        dict_sv[station_id] = dict_v
+    return dict_sv
+
+# Get data from each statation and variable with window interval
+def get_hourly_sv_data(start_datetime, end_datetime, station_id, variable_id, window):
+    con = get_connection()
+    sql = '''SELECT *
+             FROM raw_data
+             WHERE (datetime BETWEEN %(start_datetime)s AND %(end_datetime)s)
+               AND station_id = %(station_id)s
+               AND variable_id = %(variable_id)s
+          '''
+    params = {"station_id": station_id, "variable_id": int(variable_id), "start_datetime": start_datetime-timedelta(seconds=window), "end_datetime": end_datetime}
+
+    sql_query = pd.read_sql_query(sql=sql, con=con, params=params)
+    con.close()
+
+    df = pd.DataFrame(sql_query)
+
+    if not df.empty:
+        mask = df.datetime.between(start_datetime, end_datetime)
+        df['updated'] = False
+        df.loc[mask, 'updated'] = True
+    return df
+
+def most_frequent(List):
+    return max(set(List), key = List.count)
+
+# Interval
+def get_interval(df):
+    interval_list = df.datetime.diff(periods=1).dt.total_seconds().replace(np.nan, 0).astype("int32")
+    interval_list = list(interval_list)
+    interval = most_frequent(interval_list)
+    return abs(interval)
+
+# Window
+def get_window(station_id):
+    try:
+        _station = Station.objects.get(id=station_id)
+        is_automatic = _station.is_automatic
+    except ObjectDoesNotExist:
+        return 3600 # 1 hour
+
+    if is_automatic:
+        return 3600 # 1 hour
+    return 345600 # 4 days    
+
+# Thresholds
+def get_thresholds(station_id, variable_id, interval, window):
+    thresholds = {}
+    if window == 0 or interval==0:
+        return thresholds
+
+    try:
+        # Trying to set persist thresholds using current station
+        _persist = QcPersistThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval, window=window)
+        thresholds['persist_min'] = _persist.minimum_variance
+        thresholds['persist_des'] = 'Custom station Threshold'
+    except ObjectDoesNotExist:
+        try:
+            # Trying to set persist thresholds using current station with NULL intervall
+            _range = QcPersistThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval__isnull=True, window=window)        
+            thresholds['persist_min'] = _persist.minimum_variance
+            thresholds['persist_des'] = 'Custom station Threshold'
+        except ObjectDoesNotExist:
+            try:
+                # Trying to set persist thresholds using current station
+                _station = Station.objects.get(pk=station_id)
+                _persist = QcPersistThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval=interval, window=window)
+                thresholds['persist_min'] = _persist.minimum_variance
+                thresholds['persist_des'] = 'Reference station threshold'
+            except ObjectDoesNotExist:
+                try:
+                    # Trying to set persist thresholds using current station with NULL intervall
+                    _station = Station.objects.get(pk=station_id)
+                    _persist = QcPersistThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval__isnull=True, window=window)        
+                    thresholds['persist_min'] = _persist.minimum_variance
+                    thresholds['persist_des'] = 'Reference station threshold'
+                except ObjectDoesNotExist:
+                    thresholds['persist_min'] = 0.1
+                    thresholds['persist_des'] = 'Global Threshold (Test)'
+    return thresholds
+
+# Persistance function and calculation
+def persit_function(values):
+    return abs(max(values)-min(values))
+
+def get_persist(row, df, window):
+    datetime = row.datetime
+
+    s_datetime = datetime-timedelta(seconds=window)
+    e_datetime = datetime
+
+    mask = df.datetime.between(s_datetime, e_datetime)
+    List = list(df[mask]['measured'])
+
+    persist = persit_function(List)
+    return persist
+
+def qc_persist(value, thresholds):
+    if 'persist_min' not in thresholds:
+        return NOT_CHECKED, "Threshold not found"
+
+    p_min = thresholds['persist_min']
+    p_des = thresholds['persist_des']
+           
+    if p_min is None:
+        return NOT_CHECKED, "Threshold not found"           
+
+    if value >= p_min:
+        return GOOD, p_des
+    else:
+        return BAD, p_des    
+
+def set_persist_sus(row, df, window, persist_flag):
+    updated = row.updated
+    datetime = row.datetime
+
+    if persist_flag in [BAD, SUSPICIOUS]:
+        return persist_flag, updated
+
+    s_datetime = datetime
+    e_datetime = datetime+timedelta(seconds=window)
+
+    mask = df.datetime.between(s_datetime, e_datetime)
+    List = list(df[mask]['qc_persist_quality_flag'])
+
+    if BAD in List:
+        return SUSPICIOUS, True
+    return persist_flag, updated
+
+def qc_final(row, persist_flag):
+    range_flag = row.qc_range_quality_flag
+    step_flag = row.qc_step_quality_flag
+
+    flags = (persist_flag, range_flag, step_flag)
+    if BAD in flags:
+        return BAD
+    elif GOOD in flags:
+        return GOOD
+    elif SUSPICIOUS in flags:
+        return SUSPICIOUS        
+    return NOT_CHECKED
+
+def set_persist(row, df, s_datetime, e_datetime, interval, window, thresholds):
+    if s_datetime <= row.datetime <= e_datetime:
+        persist = get_persist(row, df, window)
+        persist_flag, persist_des = qc_persist(persist, thresholds)
+    else:
+        persist_flag, persist_des = row.qc_persist_quality_flag, row.qc_persist_description
+
+    # By the pandas apply function order, the previous rows are calculated so we can set suspicous flags using them
+    persist_flag, updated = set_persist_sus(row, df, window, persist_flag)
+
+    # Finally compute the final flag using all three flags, range, step, and persistence
+    final_flag =  qc_final(row, persist_flag)
+
+    return updated, persist_flag, persist_des, final_flag
+
+# Persistance update
+def update_insert_persist(df):
+    data = df.to_dict('records')
+    query = '''
+            INSERT INTO raw_data(created_at, updated_at, datetime, station_id, variable_id, measured, qc_persist_quality_flag, qc_persist_description, quality_flag)
+                VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %(datetime)s, %(station_id)s, %(variable_id)s, 0, %(qc_persist_quality_flag)s, %(qc_persist_description)s, %(quality_flag)s)
+            ON CONFLICT (datetime, station_id, variable_id) DO UPDATE SET
+                updated_at=CURRENT_TIMESTAMP,
+                qc_persist_quality_flag = %(qc_persist_quality_flag)s,
+                qc_persist_description = %(qc_persist_description)s,
+                quality_flag = %(quality_flag)s
+            '''
+    con = get_connection()            
+    with con.cursor() as cursor:
+        cursor.executemany(query, data)
+    con.commit()
+    con.close()
+
+
+# Main Persist Function
+def update_qc_persist(start_datetime, end_datetime, station_ids, summary_type):
+    dict_sv = get_hourly_sv_dict(start_datetime, end_datetime, station_ids)
+    for station_id in dict_sv:
+        for variable_id in dict_sv[station_id]:
+            s_datetime, e_datetime = dict_sv[station_id][variable_id]
+            window = get_window(station_id)
+            df = get_hourly_sv_data(s_datetime, e_datetime, station_id, variable_id, window)
+            
+            if not df.empty:
+                interval = get_interval(df)
+
+                thresholds = get_thresholds(station_id, variable_id, interval, window)   
+                
+                columns = ['updated', 'qc_persist_quality_flag', 'qc_persist_description', 'quality_flag']
+                df[columns] = df.apply(lambda row: set_persist(row, df, s_datetime, e_datetime, interval, window, thresholds), axis=1, result_type="expand")
+
+                df = df[df['updated']==True]                
+
+                columns = ['station_id', 'variable_id', 'qc_persist_quality_flag', 'qc_persist_description', 'quality_flag', 'datetime']
+                update_insert_persist(df[columns])
+
+                recalculate_summary(df, station_id, s_datetime, e_datetime, summary_type)
+
+def insert_summay(date, station_id, summary_type):
+    query_hourly = '''
+                    INSERT INTO wx_hourlysummarytask(created_at, updated_at, datetime, started_at, finished_at, station_id)
+                       VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %(date)s, NULL, NULL, %(station_id)s)
+                   '''
+    query_daily = '''
+                    INSERT INTO wx_dailysummarytask(created_at, updated_at, date, started_at, finished_at, station_id)
+                       VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %(date)s, NULL, NULL, %(station_id)s)
+                   '''
+
+    if summary_type == 'hourly':
+        query = query_hourly
+    elif summary_type == 'daily':
+        query = query_daily
+
+
+    data = {'station_id': station_id, 'date': date}
+    con = get_connection()            
+    with con.cursor() as cursor:
+        cursor.execute(query, data)
+    con.commit()
+    con.close()
+
+def recalculate_summary(df, station_id, s_datetime, e_datetime, summary_type):
+    mask = df.datetime.between(s_datetime, e_datetime)    
+    datetimes = list(df[~mask]['datetime'])
+
+    if datetimes:
+        if summary_type == 'hourly':
+            datetimes = set([dt.replace(microsecond=0, second=0, minute=0) for dt in datetimes])
+            for datetime in datetimes:
+                _hourlysummaries = HourlySummaryTask.objects.filter(station_id=station_id, datetime=datetime, started_at__isnull=True)
+                if not _hourlysummaries:
+                    insert_summay(datetime, station_id, summary_type)
+
+        elif summary_type == 'daily':
+            dates = set([dt.date() for dt in datetimes])
+            for date in dates:
+                _dailysummaries = DailySummaryTask.objects.filter(station_id=station_id, date=date, started_at__isnull=True)
+                if not _hourlysummaries:
+                    insert_summay(date, station_id, summary_type)
+
+def hourly_summary(hourly_summary_tasks_ids, station_ids, s_datetime, e_datetime):
+    try:
+        HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
+        calculate_hourly_summary(s_datetime, e_datetime, station_id_list=station_ids)
+    except Exception as err:
+        logger.error('Error calculation hourly summary for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
+        db_logger.error('Error calculation hourly summary for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
+    else:
+        HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(finished_at=datetime.now(tz=pytz.UTC))
+
 @shared_task
 def process_hourly_summary_tasks():
-    # process only 500 hourly summaries per execution
-    unprocessed_hourly_summary_datetimes = HourlySummaryTask.objects.filter(started_at=None).values_list('datetime',
-                                                                                                         flat=True).distinct()[
-                                           :501]
+    # Process only 500 hourly summaries per execution
+    unprocessed_hourly_summary_datetimes = HourlySummaryTask.objects.filter(started_at=None).values_list('datetime',flat=True).distinct()[:501]
     for hourly_summary_datetime in unprocessed_hourly_summary_datetimes:
-
         start_datetime = hourly_summary_datetime
         end_datetime = hourly_summary_datetime + timedelta(hours=1)
 
@@ -1191,48 +1483,42 @@ def process_hourly_summary_tasks():
         hourly_summary_tasks_ids = list(hourly_summary_tasks.values_list('id', flat=True))
         station_ids = list(hourly_summary_tasks.values_list('station_id', flat=True).distinct())
 
-        try:
-            HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(
-                started_at=datetime.now(tz=pytz.UTC))
-            calculate_hourly_summary(start_datetime, end_datetime, station_id_list=station_ids)
-        except Exception as err:
-            logger.error(
-                'Error calculation hourly summary for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
-            db_logger.error(
-                'Error calculation hourly summary for hour "{0}". '.format(hourly_summary_datetime) + repr(err))
-        else:
-            HourlySummaryTask.objects.filter(id__in=hourly_summary_tasks_ids).update(
-                finished_at=datetime.now(tz=pytz.UTC))
+        if station_ids:
+            update_qc_persist(start_datetime, end_datetime, station_ids, 'hourly')
 
+        # Updating Hourly summary task
+        hourly_summary(hourly_summary_tasks_ids, station_ids, start_datetime, end_datetime)
+
+def daily_summary(daily_summary_tasks_ids, station_ids, s_datetime, e_datetime):
+    try:
+        DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
+        calculate_daily_summary(s_datetime, e_datetime, station_id_list=station_ids)
+        # for station_id in station_ids:
+        #    calculate_station_minimum_interval(s_datetime, e_datetime, station_id_list=(station_id,))
+
+    except Exception as err:
+        logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
+        db_logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
+    else:
+        DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(finished_at=datetime.now(tz=pytz.UTC))
 
 @shared_task
 def process_daily_summary_tasks():
     # process only 500 daily summaries per execution
-    unprocessed_daily_summary_dates = DailySummaryTask.objects.filter(started_at=None).values_list('date',
-                                                                                                   flat=True).distinct()[
-                                      :501]
+    unprocessed_daily_summary_dates = DailySummaryTask.objects.filter(started_at=None).values_list('date',flat=True).distinct()[:501]
     for daily_summary_date in unprocessed_daily_summary_dates:
 
         start_date = daily_summary_date
-        end_date = start_date + timedelta(days=1)
+        end_date = daily_summary_date + timedelta(days=1)
 
         daily_summary_tasks = DailySummaryTask.objects.filter(started_at=None, date=daily_summary_date)
         daily_summary_tasks_ids = list(daily_summary_tasks.values_list('id', flat=True))
         station_ids = list(daily_summary_tasks.values_list('station_id', flat=True).distinct())
 
-        try:
-            DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
-            calculate_daily_summary(start_date, end_date, station_id_list=station_ids)
-            # for station_id in station_ids:
-            #    calculate_station_minimum_interval(start_date, end_date, station_id_list=(station_id,))
+        if station_ids:
+            update_qc_persist(start_date, end_date, station_ids, 'daily')
 
-        except Exception as err:
-            logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
-            db_logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
-        else:
-            DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(
-                finished_at=datetime.now(tz=pytz.UTC))
-
+        daily_summary(daily_summary_tasks_ids, station_ids, start_date, end_date)
 
 def predict_data(start_datetime, end_datetime, prediction_id, station_ids, target_station_id, variable_id,
                  data_period_in_minutes, interval_in_minutes, result_mapping):
