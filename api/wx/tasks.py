@@ -1419,6 +1419,29 @@ def update_qc_persist(start_datetime, end_datetime, station_ids, summary_type):
 
                 recalculate_summary(df, station_id, s_datetime, e_datetime, summary_type)
 
+def insert_summay(date, station_id, summary_type):
+    query_hourly = '''
+                    INSERT INTO wx_hourlysummarytask(created_at, updated_at, datetime, started_at, finished_at, station_id)
+                       VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %(date)s, NULL, NULL, %(station_id)s)
+                   '''
+    query_daily = '''
+                    INSERT INTO wx_dailysummarytask(created_at, updated_at, date, started_at, finished_at, station_id)
+                       VALUES (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %(date)s, NULL, NULL, %(station_id)s)
+                   '''
+
+    if summary_type == 'hourly':
+        query = query_hourly
+    elif summary_type == 'daily':
+        query = query_daily
+
+
+    data = {'station_id': station_id, 'date': date}
+    con = get_connection()            
+    with con.cursor() as cursor:
+        cursor.execute(query, data)
+    con.commit()
+    con.close()
+
 def recalculate_summary(df, station_id, s_datetime, e_datetime, summary_type):
     mask = df.datetime.between(s_datetime, e_datetime)    
     datetimes = list(df[~mask]['datetime'])
@@ -1426,14 +1449,17 @@ def recalculate_summary(df, station_id, s_datetime, e_datetime, summary_type):
     if datetimes:
         if summary_type == 'hourly':
             datetimes = set([dt.replace(microsecond=0, second=0, minute=0) for dt in datetimes])
-
-            hourly_summary_tasks_ids = HourlySummaryTask.objects.filter(station_id=station_id, datetime__in=datetimes).values('id').distinct()
-            hourly_summary(hourly_summary_tasks_ids, [station_id], s_datetime, e_datetime)
+            for datetime in datetimes:
+                _hourlysummaries = HourlySummaryTask.objects.filter(station_id=station_id, datetime=datetime, started_at__isnull=True)
+                if not _hourlysummaries:
+                    insert_summay(datetime, station_id, summary_type)
 
         elif summary_type == 'daily':
             dates = set([dt.date() for dt in datetimes])
-            daily_summary_tasks_ids = DailySummaryTask.objects.filter(station_id=station_id, date__in=dates).values('id').distinct()
-            daily_summary(daily_summary_tasks_ids, [station_id], s_datetime, e_datetime)
+            for date in dates:
+                _dailysummaries = DailySummaryTask.objects.filter(station_id=station_id, date=date, started_at__isnull=True)
+                if not _hourlysummaries:
+                    insert_summay(date, station_id, summary_type)
 
 def hourly_summary(hourly_summary_tasks_ids, station_ids, s_datetime, e_datetime):
     try:
