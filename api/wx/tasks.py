@@ -42,6 +42,7 @@ from wx.models import StationFileIngestion, StationDataFile, HourlySummaryTask, 
 from django.core.exceptions import ObjectDoesNotExist
 import numpy as np
 import pandas as pd
+from wx.models import Variable
 from wx.models import QcPersistThreshold
 from wx.enums import QualityFlagEnum
 
@@ -1296,8 +1297,18 @@ def get_thresholds(station_id, variable_id, interval, window):
                     thresholds['persist_min'] = _persist.minimum_variance
                     thresholds['persist_des'] = 'Reference station threshold'
                 except ObjectDoesNotExist:
-                    thresholds['persist_min'] = 0.1
-                    thresholds['persist_des'] = 'Global Threshold (Test)'
+                    try:
+                        # Trying to set range thresholds using global ranges
+                        _station = Station.objects.get(pk=station_id)
+                        _persist = Variable.objects.get(pk=variable_id)
+                        if _station.is_automatic:
+                            thresholds['persist_min']= _persist.persistence_hourly
+                            thresholds['persist_des'] = 'Global threshold (Automatic)'
+                        else:
+                            thresholds['persist_min']= _persist.persistence
+                            thresholds['persist_des'] = 'Global threshold (Manual)'
+                    except ObjectDoesNotExist:
+                        pass;                    
     return thresholds
 
 # Persistance function and calculation

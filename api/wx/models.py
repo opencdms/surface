@@ -200,15 +200,18 @@ class Variable(BaseModel):
 
     color = ColorField(default='#FF0000', null=True, blank=True)
 
-    range_min = models.IntegerField(
-        null=True,
-        blank=True,
-    )
+    range_min = models.FloatField(null=True, blank=True,)
+    range_max = models.FloatField(null=True, blank=True,)
 
-    range_max = models.IntegerField(
-        null=True,
-        blank=True,
-    )
+    range_min_hourly = models.FloatField(null=True, blank=True,)
+    range_max_hourly = models.FloatField(null=True, blank=True,)
+
+    step = models.FloatField(null=True, blank=True,)
+    step_hourly = models.FloatField(null=True, blank=True,)
+
+    persistence = models.FloatField(null=True, blank=True,)    
+    persistence_hourly = models.FloatField(null=True, blank=True,)
+
 
     default_representation = models.CharField(
         max_length=60,
@@ -831,8 +834,7 @@ class NoaaTransmissionRate(models.Model):
 class NoaaDcp(BaseModel):
     dcp_address = models.CharField(max_length=256)
     first_channel = models.IntegerField(null=True, blank=True)
-    first_channel_type = models.ForeignKey(NoaaTransmissionType, on_delete=models.CASCADE,
-                                           related_name="first_channels", null=True, blank=True)
+    first_channel_type = models.ForeignKey(NoaaTransmissionType, on_delete=models.CASCADE, related_name="first_channels", null=True, blank=True)
     second_channel = models.IntegerField(null=True, blank=True)
     second_channel_type = models.ForeignKey(NoaaTransmissionType, on_delete=models.CASCADE,
                                             related_name="second_channels", null=True, blank=True)
