@@ -53,7 +53,8 @@ class StationTypeAdmin(admin.ModelAdmin):
 
 @admin.register(models.StationVariable)
 class StationVariableAdmin(admin.ModelAdmin):
-    list_display = ("station", "variable", "height", "first_measurement", "last_measurement", "last_value")
+    search_fields = ('station__name', 'variable__name',)
+    list_display = ("station", "variable", "height", "first_measurement", "last_measurement", "last_value",)
 
 
 @admin.register(models.Unit)
@@ -114,6 +115,7 @@ class IntervalAdmin(admin.ModelAdmin):
 
 @admin.register(models.VariableFormat)
 class VariableFormatAdmin(admin.ModelAdmin):
+    search_fields = ('variable__name',)
     list_display = ("variable", "format", "interval", "lookup_key",)
 
 
@@ -149,12 +151,14 @@ class NoaaTransmissionRateAdmin(admin.ModelAdmin):
 
 @admin.register(models.NoaaDcp)
 class NoaaDcpAdmin(admin.ModelAdmin):
+    search_fields = ("dcp_address",)
     list_display = ("dcp_address", "first_channel", "first_channel_type", "second_channel", "second_channel_type",
                     "first_transmission_time", "transmission_window", "transmission_period", "last_datetime")
 
 
 @admin.register(models.NoaaDcpsStation)
 class NoaaDcpsStationAdmin(admin.ModelAdmin):
+    search_fields = ("station__name",)
     list_display = ("station", "noaa_dcp", "decoder", "interval", "format", "start_date", "end_date")
 
 
@@ -185,6 +189,7 @@ class FTPServerAdmin(admin.ModelAdmin):
 
 @admin.register(models.StationFileIngestion)
 class StationFileIngestionAdmin(admin.ModelAdmin):
+    search_fields = ('station__name',)
     list_display = ("ftp_server", "station", "decoder", "cron_schedule", "is_active", "is_binary_transfer")
 
 
@@ -244,7 +249,7 @@ class WxGroupPermissionAdmin(admin.ModelAdmin):
     form = forms.WxGroupPermissionForm
     list_display = ("group",)
 
-
+# Station images, may be used in the future.
 @admin.register(models.StationImage)
 class StationImageAdmin(admin.ModelAdmin):
     list_display = ("station", "name", "path")
@@ -265,9 +270,10 @@ class WMOProgramAdmin(admin.ModelAdmin):
     list_display = ("name", "notation", "description", "path")
 
 
-@admin.register(models.StationFile)
-class StationFileAdmin(admin.ModelAdmin):
-    list_display = ("name", "station")
+# Station files, may be used in the future.
+# @admin.register(models.StationFile)
+# class StationFileAdmin(admin.ModelAdmin):
+#     list_display = ("name", "station")
 
 
 @admin.register(models.HydroMLPrediction)
@@ -280,12 +286,12 @@ class HydroMLPredictionMappingAdmin(admin.ModelAdmin):
     list_display = ("hydroml_prediction", "prediction_result", "quality_flag")
 
 
-@admin.register(models.Neighborhood)
+@admin.register(models.Neighborhood) # Machine Learning
 class NeighborhoodAdmin(admin.ModelAdmin):
     list_display = ("name",)
 
 
-@admin.register(models.StationNeighborhood)
+@admin.register(models.StationNeighborhood) # Machine Learning
 class StationNeighborhoodAdmin(admin.ModelAdmin):
     list_display = ("neighborhood", "station")
 

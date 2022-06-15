@@ -61,7 +61,20 @@ def get_qc_step(thresholds, station_id, variable_id, interval):
                     thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
                     thresholds['step_description'] = 'Reference station threshold'
                 except ObjectDoesNotExist:
-                    pass
+                    try:
+                        # Trying to set range thresholds using global ranges
+                        _station = Station.objects.get(pk=station_id)
+                        _step = Variable.objects.get(pk=variable_id)
+                        if _station.is_automatic:
+                            if _step.step_hourly is not None:
+                                thresholds['step_min'], thresholds['step_max'] = -_step.step_hourly, _step.step_hourly
+                                thresholds['step_description'] = 'Global threshold (Automatic)'
+                        else:
+                            if _step.step is not None:
+                                thresholds['step_min'], thresholds['step_max'] = -_step.step, _step.step
+                                thresholds['step_description'] = 'Global threshold (Manual)'
+                    except ObjectDoesNotExist:
+                        pass;
 
     return thresholds
 
@@ -94,9 +107,14 @@ def get_qc_range(thresholds, station_id, variable_id, interval, month):
                 except ObjectDoesNotExist:
                     try:
                         # Trying to set range thresholds using global ranges
-                        _range = Variable.objects.get(pk=variable_id)                
-                        thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
-                        thresholds['range_description'] = 'Global threshold'
+                        _station = Station.objects.get(pk=station_id)
+                        _range = Variable.objects.get(pk=variable_id)
+                        if _station.is_automatic:
+                            thresholds['range_min'], thresholds['range_max'] = _range.range_min_hourly, _range.range_max_hourly
+                            thresholds['range_description'] = 'Global threshold (Automatic)'
+                        else:
+                            thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+                            thresholds['range_description'] = 'Global threshold (Manual)'                                       
                     except ObjectDoesNotExist:
                         pass;
     return thresholds
@@ -126,7 +144,7 @@ def qc_range(value, thresholds):
     r_min = thresholds['range_min']
     r_max = thresholds['range_max']
     r_des = thresholds['range_description']
-           
+
     if r_min is None or r_max is None:
         return NOT_CHECKED, "Threshold not found"           
 
@@ -195,6 +213,7 @@ def get_data(raw_data_list):
 
 
         # Defining threshholds
+
         thresholds = {}
         thresholds = get_qc_step(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds)
         thresholds = get_qc_range(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds, month=month)
