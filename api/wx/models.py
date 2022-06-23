@@ -212,6 +212,9 @@ class Variable(BaseModel):
     persistence = models.FloatField(null=True, blank=True,)    
     persistence_hourly = models.FloatField(null=True, blank=True,)
 
+    persistence_window = models.IntegerField(null=True, blank=True,)    
+    persistence_window_hourly = models.IntegerField(null=True, blank=True,)
+
 
     default_representation = models.CharField(
         max_length=60,
