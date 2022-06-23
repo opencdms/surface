@@ -1304,14 +1304,14 @@ def get_thresholds(station_id, variable_id, interval, window):
                     thresholds['persist_des'] = 'Reference station threshold'
                 except ObjectDoesNotExist:
                     try:
-                        # Trying to set range thresholds using global ranges
+                        # Trying to set persistence thresholds using global ranges
                         _station = Station.objects.get(pk=station_id)
                         _persist = Variable.objects.get(pk=variable_id)
                         if _station.is_automatic:
-                            thresholds['persist_min']= _persist.persistence_hourly
+                            thresholds['persist_min'] = _persist.persistence_hourly
                             thresholds['persist_des'] = 'Global threshold (Automatic)'
                         else:
-                            thresholds['persist_min']= _persist.persistence
+                            thresholds['persist_min'] = _persist.persistence
                             thresholds['persist_des'] = 'Global threshold (Manual)'
                     except ObjectDoesNotExist:
                         pass;                    
@@ -1512,7 +1512,6 @@ def daily_summary(daily_summary_tasks_ids, station_ids, s_datetime, e_datetime):
         calculate_daily_summary(s_datetime, e_datetime, station_id_list=station_ids)
         # for station_id in station_ids:
         #    calculate_station_minimum_interval(s_datetime, e_datetime, station_id_list=(station_id,))
-
     except Exception as err:
         logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
         db_logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
