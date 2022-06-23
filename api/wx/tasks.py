@@ -1194,7 +1194,7 @@ def get_hourly_raw_data(start_datetime, end_datetime, station_ids):
              FROM raw_data
              WHERE datetime BETWEEN %(start_datetime)s AND %(end_datetime)s
                AND station_id IN %(station_ids)s
-               AND qc_persist_quality_flag IS NULL
+               -- AND qc_persist_quality_flag IS NULL
              ORDER BY datetime DESC
           '''
     params = {"station_ids": tuple(station_ids), "start_datetime": start_datetime, "end_datetime": end_datetime}
@@ -1254,16 +1254,22 @@ def get_interval(df):
     return abs(interval)
 
 # Window
-def get_window(station_id):
+def get_window(station_id, variable_id):
     try:
         _station = Station.objects.get(id=station_id)
-        is_automatic = _station.is_automatic
+        _variable = Variable.objects.get(id=variable_id) 
     except ObjectDoesNotExist:
-        return 3600 # 1 hour
-
-    if is_automatic:
-        return 3600 # 1 hour
-    return 345600 # 4 days    
+        return 3600
+        
+    if  _station.is_automatic:
+        hours = _variable.persistence_window_hourly
+        if hours is None:
+            hours = 1 # 1 Days
+    else:
+        hours = _variable.persistence_window
+        if hours is None:
+            hours = 96 # 4 Days
+    return hours*3600
 
 # Thresholds
 def get_thresholds(station_id, variable_id, interval, window):
@@ -1412,7 +1418,7 @@ def update_qc_persist(start_datetime, end_datetime, station_ids, summary_type):
     for station_id in dict_sv:
         for variable_id in dict_sv[station_id]:
             s_datetime, e_datetime = dict_sv[station_id][variable_id]
-            window = get_window(station_id)
+            window = get_window(station_id, variable_id)
             df = get_hourly_sv_data(s_datetime, e_datetime, station_id, variable_id, window)
             
             if not df.empty:
