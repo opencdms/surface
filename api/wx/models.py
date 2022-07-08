@@ -38,9 +38,9 @@ class Decoder(BaseModel):
 
 
 class Country(BaseModel):
-    code = models.CharField(max_length=2)
+    notation = models.CharField(max_length=16)
     name = models.CharField(max_length=256, unique=True)
-
+    description = models.CharField(max_length=256, null=True, blank=True)
     class Meta:
         verbose_name_plural = "countries"
 
@@ -200,15 +200,21 @@ class Variable(BaseModel):
 
     color = ColorField(default='#FF0000', null=True, blank=True)
 
-    range_min = models.IntegerField(
-        null=True,
-        blank=True,
-    )
+    range_min = models.FloatField(null=True, blank=True,)
+    range_max = models.FloatField(null=True, blank=True,)
 
-    range_max = models.IntegerField(
-        null=True,
-        blank=True,
-    )
+    range_min_hourly = models.FloatField(null=True, blank=True,)
+    range_max_hourly = models.FloatField(null=True, blank=True,)
+
+    step = models.FloatField(null=True, blank=True,)
+    step_hourly = models.FloatField(null=True, blank=True,)
+
+    persistence = models.FloatField(null=True, blank=True,)    
+    persistence_hourly = models.FloatField(null=True, blank=True,)
+
+    persistence_window = models.IntegerField(null=True, blank=True,)    
+    persistence_window_hourly = models.IntegerField(null=True, blank=True,)
+
 
     default_representation = models.CharField(
         max_length=60,
@@ -306,6 +312,7 @@ class StationCommunication(BaseModel):
 class WMOStationType(BaseModel):
     name = models.CharField(max_length=256, unique=True)
     description = models.CharField(max_length=256, null=True, blank=True)
+    notation = models.CharField(max_length=256, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -314,6 +321,7 @@ class WMOStationType(BaseModel):
 class WMORegion(BaseModel):
     name = models.CharField(max_length=256, unique=True)
     description = models.CharField(max_length=256, null=True, blank=True)
+    notation = models.CharField(max_length=256, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -321,17 +329,21 @@ class WMORegion(BaseModel):
 
 class WMOProgram(BaseModel):
     name = models.CharField(max_length=256, unique=True)
-    description = models.CharField(max_length=256, null=True, blank=True)
+    description = models.CharField(max_length=512, null=True, blank=True)
+    notation = models.CharField(max_length=256, null=True, blank=True)
+    path = models.CharField(max_length=256, null=True, blank=True)    
 
     def __str__(self):
         return self.name
 
 
-class Station(BaseModel):
+class Station(BaseModel):    
     name = models.CharField(max_length=256)
     alias_name = models.CharField(max_length=256, null=True, blank=True)
     begin_date = models.DateTimeField(null=True, blank=True)
+    relocation_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
+    network = models.CharField(max_length=256, null=True, blank=True)
     longitude = models.FloatField(validators=[
         MinValueValidator(-180.), MaxValueValidator(180.)
     ])
@@ -341,6 +353,10 @@ class Station(BaseModel):
     ])
     elevation = models.FloatField(null=True, blank=True)
     code = models.CharField(max_length=64)
+    reference_station = models.ForeignKey('self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
     wmo = models.IntegerField(
         null=True,
         blank=True
@@ -549,11 +565,17 @@ class Station(BaseModel):
         null=True,
         blank=True
     )
-    country = models.CharField(
+    remarks = models.CharField(
         max_length=256,
         null=True,
         blank=True
-    )
+    )        
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True
+    )    
     region = models.CharField(
         max_length=256,
         null=True,
@@ -625,13 +647,6 @@ class StationVariable(BaseModel):
     last_measurement = models.DateTimeField(null=True, blank=True)
     last_value = models.FloatField(null=True, blank=True)
     height = models.FloatField(null=True, blank=True)
-    test_range_min = models.FloatField(null=True, blank=True)
-    test_range_max = models.FloatField(null=True, blank=True)
-    test_step_min = models.FloatField(null=True, blank=True)
-    test_step_max = models.FloatField(null=True, blank=True)
-    test_persistence_variance = models.FloatField(null=True, blank=True)
-    test_persistence_interval = models.FloatField(null=True, blank=True)
-    test_spike_value = models.FloatField(null=True, blank=True)
     last_data_datetime = models.DateTimeField(null=True, blank=True)
     last_data_value = models.FloatField(null=True, blank=True)
     last_data_code = models.CharField(max_length=60, null=True, blank=True)
@@ -822,8 +837,7 @@ class NoaaTransmissionRate(models.Model):
 class NoaaDcp(BaseModel):
     dcp_address = models.CharField(max_length=256)
     first_channel = models.IntegerField(null=True, blank=True)
-    first_channel_type = models.ForeignKey(NoaaTransmissionType, on_delete=models.CASCADE,
-                                           related_name="first_channels", null=True, blank=True)
+    first_channel_type = models.ForeignKey(NoaaTransmissionType, on_delete=models.CASCADE, related_name="first_channels", null=True, blank=True)
     second_channel = models.IntegerField(null=True, blank=True)
     second_channel_type = models.ForeignKey(NoaaTransmissionType, on_delete=models.CASCADE,
                                             related_name="second_channels", null=True, blank=True)

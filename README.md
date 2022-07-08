@@ -12,7 +12,7 @@ docker-compose -f docker-compose-dev.yml stop
 
 ## Production env
 
-in api file add the production env, you can find a example in "./api/production.env.example", add the values of variables, in hosts and ports you can put 0
+in api file add the production env, you can find a example in "./api/production.env.example", add the values of variables, in hosts and ports you can put 0.
 
 ## Generate Docker Images
 docker-compose -f docker-compose-dev.yml build

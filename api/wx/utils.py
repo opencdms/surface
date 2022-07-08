@@ -104,32 +104,6 @@ def verify_none_value(first_value, second_value):
     return second_value
 
 
-def check_range_qc_result(current_station_variable, measured_value):
-    try:
-        qc_result = {'result': QualityFlagEnum.NOT_CHECKED.id, 'description': None, 'quality_flag': None}
-
-        if current_station_variable is not None and (
-                current_station_variable.test_range_min is not None or current_station_variable.test_range_min is not None):
-            range_min = verify_none_value(current_station_variable.test_range_min, measured_value)
-            range_max = verify_none_value(current_station_variable.test_range_max, measured_value)
-
-            bool_result = range_min <= measured_value <= range_max
-
-            qc_result['quality_flag'] = bool_result
-            qc_result['result'] = QualityFlagEnum.GOOD.id if bool_result else QualityFlagEnum.BAD.id
-            qc_result['description'] = 'The measured value "{0}" is {1} between the interval [{2}, {3}].'.format(
-                measured_value,
-                "" if bool_result else "not",
-                verify_none_value(range_min, '...'),
-                verify_none_value(range_max, '...'))
-
-        return qc_result
-    except Exception as error:
-        print(error)
-        return {'result': QualityFlagEnum.BAD.id, 'description': 'Error checking the range quality control attribute.',
-                'quality_flag': False}
-
-
 def get_basic_map(proj):
     """Make our basic default map for plotting"""
     fig = plt.figure(figsize=(8, 10))

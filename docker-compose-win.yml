@@ -45,8 +45,6 @@ services:
       - ./data/shared:/data/shared
       - ./data/exported_data:/data/exported_data
       - ./data/documents:/data/documents
-    ports:
-      - "8080:8000"
     depends_on:
       - postgres
       - cache
@@ -56,6 +54,8 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
+    ports:
+      - '8080:8000'
 
   celery_worker:
     build:

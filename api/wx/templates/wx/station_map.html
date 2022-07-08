@@ -616,7 +616,7 @@
         timezone: "{{ TIMEZONE_NAME|escapejs }}",
         zoom: {{ MAP_ZOOM|safe }},
         center: L.latLng({{ MAP_LATITUDE|safe }}, {{ MAP_LONGITUDE|safe }}),
-        url: "http://{s}.tile.osm.org/{z}/{x}/{y}.png",
+        url: "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
         attribution:
           '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         options: { zoomControl: false },

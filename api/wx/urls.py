@@ -9,8 +9,10 @@ router = routers.DefaultRouter()
 router.register(r'station_images', views.StationImageViewSet)
 router.register(r'station_files', views.StationFileViewSet)
 router.register(r'quality_flags', views.QualityFlagList)
+router.register(r'stations_metadata', views.StationMetadataViewSet)
 
 urlpatterns = [
+    path('api/stations/metadata', include(router.urls)),
     path('api/administrative_regions/', views.AdministrativeRegionViewSet.as_view({'get': 'list'})),
     path('api/stations/', views.StationViewSet.as_view({'get': 'list', 'post': 'create', 'put': 'update'})),
     path('api/stations_simple/', views.StationSimpleViewSet.as_view({'get': 'list'})),
