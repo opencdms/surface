@@ -974,14 +974,14 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                 cols = df.columns.tolist()
                 cols = cols[-3:] + cols[:-3]
                 df = df[cols]
-                df = df.drop_duplicates(subset=['Day','Month','Year'], keep='first')
+                df = df.drop_duplicates(subset=['Day', 'Month', 'Year'], keep='first')
             elif source == 'monthly_summary':                
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
                 df['Month'] = df.index.map(lambda x: x.strftime('%m'))
                 cols = df.columns.tolist()
                 cols = cols[-2:] + cols[:-2]
                 df = df[cols]
-                df = df.drop_duplicates(subset=['Day','Month'], keep='first')
+                df = df.drop_duplicates(subset=['Month', 'Year'], keep='first')
             elif source == 'yearly_summary':
                 df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
                 cols = df.columns.tolist()
