@@ -9,7 +9,7 @@ from django.utils import timezone
 from psycopg2.extras import execute_values
 from tempestas_api import settings
 from wx.enums import QualityFlagEnum
-from wx.models import QcRangeThreshold, QcStepThreshold, StationVariable, Variable
+from wx.models import QcRangeThreshold, QcStepThreshold, StationVariable, Station, Variable
 
 logger = logging.getLogger('surface')
 
@@ -22,45 +22,139 @@ insert_columns = ["station_id", "variable_id", "datetime", "measured", "quality_
                   "qc_persist_description", "manual_flag", "consisted", "is_daily", "remarks", "observer", "code",
                   "updated_at", "created_at"]
 
+qc_columns = ["qc_step_quality_flag",
+              "qc_step_description",
+              "qc_range_quality_flag",
+              "qc_range_description",
+              "quality_flag"]         
+
 GOOD = QualityFlagEnum.GOOD.id
 NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
 BAD = QualityFlagEnum.BAD.id
 
+######################## Quality Control #######################
+
+def get_qc_step(thresholds, station_id, variable_id, interval):
+    try:
+        # Trying to set step thresholds using current station
+        _step = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval)
+        thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
+        thresholds['step_description'] = 'Custom station Threshold'
+    except ObjectDoesNotExist:
+        try:
+            # Trying to set step thresholds using current station with NULL intervall
+            _step = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval__isnull=True)        
+            thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
+            thresholds['step_description'] = 'Custom station Threshold'
+        except ObjectDoesNotExist:
+            try:
+                # Trying to set step thresholds using referece station
+                _station = Station.objects.get(pk=station_id)
+                _step = QcStepThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval=interval)
+                thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
+                thresholds['step_description'] = 'Reference station threshold'
+            except ObjectDoesNotExist:
+                try:
+                    # Trying to set step thresholds using referece station with NULL intervall
+                    _station = Station.objects.get(pk=station_id)
+                    _step = QcStepThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval__isnull=True)
+                    thresholds['step_min'], thresholds['step_max'] = _step.step_min, _step.step_max
+                    thresholds['step_description'] = 'Reference station threshold'
+                except ObjectDoesNotExist:
+                    try:
+                        # Trying to set range thresholds using global ranges
+                        _station = Station.objects.get(pk=station_id)
+                        _step = Variable.objects.get(pk=variable_id)
+                        if _station.is_automatic:
+                            if _step.step_hourly is not None:
+                                thresholds['step_min'], thresholds['step_max'] = -_step.step_hourly, _step.step_hourly
+                                thresholds['step_description'] = 'Global threshold (Automatic)'
+                        else:
+                            if _step.step is not None:
+                                thresholds['step_min'], thresholds['step_max'] = -_step.step, _step.step
+                                thresholds['step_description'] = 'Global threshold (Manual)'
+                    except ObjectDoesNotExist:
+                        pass;
+
+    return thresholds
+
+def get_qc_range(thresholds, station_id, variable_id, interval, month):
+    try:
+        # Trying to set range thresholds using current station
+        _range = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval, month=month)
+        thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+        thresholds['range_description'] = 'Custom station Threshold'
+    except ObjectDoesNotExist:
+        try:
+            # Trying to set range thresholds using current station with NULL intervall
+            _range = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval__isnull=True, month=month)        
+            thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+            thresholds['range_description'] = 'Custom station threshold'
+        except ObjectDoesNotExist:
+            try:
+                # Trying to set range thresholds using referece station
+                _station = Station.objects.get(pk=station_id)
+                _range = QcRangeThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval=interval, month=month)
+                thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+                thresholds['range_description'] = 'Reference station threshold'
+            except ObjectDoesNotExist:
+                try:
+                    # Trying to set range thresholds using referece station with NULL intervall
+                    _station = Station.objects.get(pk=station_id)
+                    _range = QcRangeThreshold.objects.get(station_id=_station.reference_station_id, variable_id=variable_id, interval__isnull=True, month=month)
+                    thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+                    thresholds['range_description'] = 'Reference station threshold'
+                except ObjectDoesNotExist:
+                    try:
+                        # Trying to set range thresholds using global ranges
+                        _station = Station.objects.get(pk=station_id)
+                        _range = Variable.objects.get(pk=variable_id)
+                        if _station.is_automatic:
+                            thresholds['range_min'], thresholds['range_max'] = _range.range_min_hourly, _range.range_max_hourly
+                            thresholds['range_description'] = 'Global threshold (Automatic)'
+                        else:
+                            thresholds['range_min'], thresholds['range_max'] = _range.range_min, _range.range_max
+                            thresholds['range_description'] = 'Global threshold (Manual)'                                       
+                    except ObjectDoesNotExist:
+                        pass;
+    return thresholds
 
 def qc_step(seconds, diff_value, diff_datetime, thresholds):
-    if 'step_min' not in thresholds or 'step_min' not in thresholds:
+    if 'step_min' not in thresholds or 'step_max' not in thresholds:
         return NOT_CHECKED, "Threshold not found"
 
     s_min = thresholds['step_min']
     s_max = thresholds['step_max']
+    s_des = thresholds['step_description']
 
     # interval is different
     if seconds != diff_datetime:
         return NOT_CHECKED, "Consecutive value not present"
-    elif s_min <= diff_value <= s_max:
-        return GOOD, ""
-    elif diff_value < s_min:
-        msg = f"{diff_value} < {s_min}"
-        return BAD, msg
-    else:
-        msg = f"{diff_value} > {s_max}"
-        return BAD, msg
 
+    if s_min <= diff_value <= s_max:
+        return GOOD, s_des
+    elif diff_value < s_min:
+        return BAD, s_des
+    else:
+        return BAD, s_des
 
 def qc_range(value, thresholds):
-    if 'range_min' not in thresholds or 'range_min' not in thresholds:
+    if 'range_min' not in thresholds or 'range_max' not in thresholds:
         return NOT_CHECKED, "Threshold not found"
 
     r_min = thresholds['range_min']
     r_max = thresholds['range_max']
+    r_des = thresholds['range_description']
+
+    if r_min is None or r_max is None:
+        return NOT_CHECKED, "Threshold not found"           
 
     if r_min <= value <= r_max:
-        return GOOD, ""
+        return GOOD, r_des
     elif value < r_min:
-        return BAD, f"{value} < {r_min}"
+        return BAD, r_des
     else:
-        return BAD, f"{value} > {r_max}"
-
+        return BAD, r_des
 
 def qc_final(result_step, result_range):
     if BAD in (result_range, result_step):
@@ -72,10 +166,8 @@ def qc_final(result_step, result_range):
     else:
         return GOOD
 
-
 def qc_thresholds(row, thresholds):
     seconds = row.seconds
-
     value = row.measured
 
     diff_value = row.diff_value
@@ -89,33 +181,36 @@ def qc_thresholds(row, thresholds):
 
     return result_array
 
+##########################  Functions ##########################
 
-def insert(raw_data_list, date, station_id, override_data_on_conflict=False, utc_offset_minutes=-360):
+def get_data(raw_data_list):
+    now = timezone.now()
+
     df = pd.DataFrame(raw_data_list, columns=columns)
 
-    now = timezone.now()
     # convert dates to date object at time zone utc
     df['created_at'] = now
     df['updated_at'] = now
     df['month'] = pd.to_datetime(df['datetime']).dt.month
 
     reads = []
-    for idx, [station_id, variable_id, seconds, month] in df[
-        ['station_id', 'variable_id', 'seconds', 'month']].drop_duplicates().iterrows():
+    for idx, [station_id, variable_id, seconds, month] in df[['station_id', 'variable_id', 'seconds', 'month']].drop_duplicates().iterrows():
 
-        df1 = df.loc[(df.station_id == station_id) & (df.variable_id == variable_id) & (df.seconds == seconds) & (
-                df.month == month)].copy()
+        df1 = df.loc[(df.station_id == station_id) &
+                     (df.variable_id == variable_id) &
+                     (df.seconds == seconds) &
+                     (df.month == month)].copy()
+
         df1.sort_values(by="datetime", inplace=True)
 
         count = len(df1)
-
         if count == 0:
             logger.debug(
-                f"skipping station_id={station_id}, variable_id={variable_id}, seconds={seconds} found 0 records, skipping it!")
+                f"Skipping station_id={station_id}, variable_id={variable_id}, seconds={seconds} found 0 records, skipping it!")
             continue
         else:
             logger.debug(
-                f"processing station_id={station_id}, variable_id={variable_id}, seconds={seconds} #{count} records.")
+                f"Processing station_id={station_id}, variable_id={variable_id}, seconds={seconds} #{count} records.")
 
         try:
             process_qc = Variable.objects.filter(pk=variable_id).exclude(variable_type="Code").exists()
@@ -124,43 +219,32 @@ def insert(raw_data_list, date, station_id, override_data_on_conflict=False, utc
 
         if process_qc:
             thresholds = {}
-            try:
-                _step = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=seconds)
-                thresholds['step_min'] = _step.step_min
-                thresholds['step_max'] = _step.step_max
-            except ObjectDoesNotExist:
-                pass
+            thresholds = get_qc_step(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds)
+            thresholds = get_qc_range(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds, month=month)
 
-            try:
-                _range = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=seconds,
-                                                      month=month)
-                thresholds['range_min'] = _range.range_min
-                thresholds['range_max'] = _range.range_max
-            except ObjectDoesNotExist:
-                pass
-
-            # sort values by datetime
+            # Sort values by datetime
             df1.sort_values(by='datetime', inplace=True)
 
-            df1["measured_1"] = df1.measured.shift(1)
-            df1["datetime_1"] = df1.datetime.shift(1)
+            # Calculating step values
+            df1['diff_value'] = df1.measured.diff(periods=1)
 
-            df1['diff_value'] = df1.measured - df1.measured_1
-            df1['diff_datetime'] = (df1.datetime - df1.datetime_1).dt.total_seconds().replace(np.nan, 0).astype("int32")
+            # Calculating step time
+            df1['diff_datetime'] = df1.datetime.diff(periods=1).dt.total_seconds().replace(np.nan, 0).astype("int32")
 
-            df1[["qc_step_quality_flag", "qc_step_description",
-                 "qc_range_quality_flag", "qc_range_description",
-                 "quality_flag"]] = df1.apply(lambda row: qc_thresholds(row, thresholds), axis=1, result_type="expand")
+            df1[qc_columns] = df1.apply(lambda row: qc_thresholds(row, thresholds), axis=1, result_type="expand")
 
             # replace "" empty string to None/null
-            df1.loc[df1["qc_step_description"] == "", "qc_step_description"] = None
-            df1.loc[df1["qc_range_description"] == "", "qc_range_description"] = None
+            df1["qc_step_description"].replace("", None)
+            df1["qc_range_description"].replace("", None)
+
             df1 = df1.assign(code=None)
         else:
             df1 = df1.assign(measured=settings.MISSING_VALUE)
 
-        reads.extend(df1[insert_columns].values.tolist())
+        reads.extend(df1[insert_columns].values.tolist())        
+    return reads
 
+def insert_query(reads, station_id, date, override_data_on_conflict):
     with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
         with conn.cursor() as cursor:
 
@@ -220,6 +304,7 @@ def insert(raw_data_list, date, station_id, override_data_on_conflict=False, utc
 
         conn.commit()
 
+def update_stationvariable(reads):
     # holds last value for (station_id, variable_id) to update StationVariable last_data_datetime
     update_station_variable = {}
     for read in reads:
@@ -260,3 +345,15 @@ def insert(raw_data_list, date, station_id, override_data_on_conflict=False, utc
 
             logger.info(f'Updating StationVariable {station_id} {variable_id} '
                         f'{observation_datetime} {observation_value}')
+
+############################# Main #############################
+
+def insert(raw_data_list, date, station_id, override_data_on_conflict=False, utc_offset_minutes=-360):
+    # Extracting and formating data from raw data list
+    reads = get_data(raw_data_list)
+
+    # Inserting new data
+    insert_query(reads, station_id, date, override_data_on_conflict)
+
+    # Updating "station varaiable" table
+    update_stationvariable(reads)

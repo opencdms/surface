@@ -212,8 +212,8 @@ class Variable(BaseModel):
     persistence = models.FloatField(null=True, blank=True,)    
     persistence_hourly = models.FloatField(null=True, blank=True,)
 
-    persistence_window = models.IntegerField(null=True, blank=True,)    
-    persistence_window_hourly = models.IntegerField(null=True, blank=True,)
+    persistence_window = models.IntegerField(null=True, blank=True, verbose_name = 'Persistence Window (in hours)',)    
+    persistence_window_hourly = models.IntegerField(null=True, blank=True, verbose_name = 'Persistence Window hourly (in hours)',)
 
 
     default_representation = models.CharField(
@@ -1199,3 +1199,32 @@ class StationDataMinimumInterval(BaseModel):
 
     def __str__(self):
         return f'{self.datetime}: {self.station} - {self.variable}'
+
+from croniter import croniter
+from django.core.exceptions import ValidationError
+
+class BackupTask(BaseModel):
+    def cron_validator(cron_exp):
+        if not croniter.is_valid(cron_exp):
+            raise ValidationError('%(cron_exp)s is not a valid cron expression!',
+                                  params={'cron_exp': cron_exp})
+
+    name = models.CharField(max_length=1024)
+    cron_schedule = models.CharField(max_length=64, default='0 0 * * *', validators=[cron_validator])
+    file_name = models.CharField(max_length=1024)
+    retention = models.IntegerField(verbose_name="Retention (in days)")
+    ftp_server = models.ForeignKey(FTPServer, on_delete=models.DO_NOTHING, null=True, blank=True)
+    remote_folder = models.CharField(max_length=1024)
+    is_active = models.BooleanField()
+
+    def __str__(self):
+        return self.name  
+
+class BackupLog(BaseModel):
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=64)
+    message = models.CharField(max_length=1024)
+    backup_task = models.ForeignKey(BackupTask, on_delete=models.CASCADE)
+    file_path = models.CharField(max_length=1024)
+    file_size = models.FloatField(null=True, blank=True, verbose_name="File Size (MB)")

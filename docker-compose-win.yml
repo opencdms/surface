@@ -24,6 +24,7 @@ services:
       - ./:/app
       - database-volume:/var/lib/postgresql/data
       - ./data/shared:/data/shared
+      - ./data/backup:/data/backup    
     logging:
       driver: "json-file"
       options:
@@ -43,6 +44,7 @@ services:
       - ./api:/surface
       - ./data/media:/data/media
       - ./data/shared:/data/shared
+      - ./data/backup:/data/backup
       - ./data/exported_data:/data/exported_data
       - ./data/documents:/data/documents
     depends_on:
@@ -71,6 +73,7 @@ services:
       - ./data/documents/ingest:/data/documents/ingest
       - ./data/exported_data:/data/exported_data
       - ./data/shared:/data/shared
+      - ./data/backup:/data/backup      
     depends_on:
       - api
       - redis

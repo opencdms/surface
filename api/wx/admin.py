@@ -208,7 +208,6 @@ class StationDataFileAdmin(admin.ModelAdmin):
     filepath_url.short_description = 'File path'
 
 
-
 @admin.register(models.StationDataFileStatus)
 class StationDataFileStatusAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
@@ -299,3 +298,19 @@ class StationNeighborhoodAdmin(admin.ModelAdmin):
 @admin.register(models.HydroMLPredictionStation)
 class HydroMLPredictionStationAdmin(admin.ModelAdmin):
     list_display = ("prediction", "neighborhood", "target_station", "data_period_in_minutes", "interval_in_minutes")
+
+
+@admin.register(models.BackupTask)
+class BackupTaskAdmin(admin.ModelAdmin):
+    list_display = ("name", "cron_schedule", "file_name", "retention", "ftp_server", "remote_folder", "is_active")
+
+
+@admin.register(models.BackupLog)
+class BackupLogAdmin(admin.ModelAdmin):
+    list_display = ("backup_task", "started_at", "finished_at", "backup_duration", "status", "message", "file_path", "file_size")
+    readonly_fields = ("backup_task", "started_at", "finished_at", "backup_duration", "status", "message", "file_path", "file_size")
+
+    def backup_duration(self, obj):
+        if obj.finished_at is not None:
+            return obj.finished_at - obj.started_at
+        return None

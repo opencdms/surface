@@ -35,6 +35,7 @@ services:
       - ./:/app
       - ./data/postgresql:/var/lib/postgresql/data
       - ./data/shared:/data/shared
+      - ./data/backup:/data/backup
     ports:
       - 5432:5432
     logging:
@@ -56,6 +57,7 @@ services:
       - ./api:/surface
       - ./data/media:/data/media
       - ./data/shared:/data/shared
+      - ./data/backup:/data/backup
       - ./data/exported_data:/data/exported_data
       - ./data/documents:/data/documents
     depends_on:
@@ -82,6 +84,7 @@ services:
       - ./data/documents/ingest:/data/documents/ingest
       - ./data/exported_data:/data/exported_data
       - ./data/shared:/data/shared
+      - ./data/backup:/data/backup
     depends_on:
       - api
       - redis
