@@ -9,6 +9,7 @@ import subprocess
 from datetime import datetime, timedelta
 from ftplib import FTP, error_perm, error_reply
 from time import sleep, time
+from croniter import croniter
 
 import cronex
 import dateutil.parser
@@ -16,6 +17,7 @@ import pandas
 import psycopg2
 import pytz
 import requests
+import subprocess
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.core.cache import cache
@@ -43,7 +45,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import numpy as np
 import pandas as pd
 from wx.models import Variable
-from wx.models import QcPersistThreshold
+from wx.models import QcPersistThreshold, BackupTask, BackupLog
 from wx.enums import QualityFlagEnum
 
 NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
@@ -54,19 +56,8 @@ GOOD = QualityFlagEnum.GOOD.id
 logger = get_task_logger(__name__)
 db_logger = get_task_logger('db')
 
-
 def get_connection():
     return psycopg2.connect(settings.SURFACE_CONNECTION_STRING)
-
-
-
-import gzip
-import calendar
-import subprocess
-import glob
-import os
-from wx.models import BackupTask, BackupLog
-
 
 def backup_set_running(backup_task, started_at, file_path):
     status = 'RUNNING'
@@ -81,8 +72,6 @@ def backup_set_running(backup_task, started_at, file_path):
     return new_log.id
 
 def backup_create(file_path):
-    print('Creating backup of the database...')
-
     db = settings.DATABASES['default']
 
     db_host = db['HOST']
@@ -93,23 +82,18 @@ def backup_create(file_path):
 
     dbname = 'postgresql://'+db_user+':'+db_pass+'@'+db_host+':'+db_port+'/'+db_name
 
-    # command = '/usr/bin/pg_dump -h postgres -t wx_station -U dba -w -d surface_db -f '+ backup_path 
-    # command = '/usr/bin/pg_dump --dbname=postgresql://dba:dba@postgres:5432/surface_db -t wx_station -f ' + backup_path
-    command = '/usr/bin/pg_dump --dbname=' + dbname + ' -t wx_station | gzip -9 > ' + file_path
+    command = '/usr/bin/pg_dump --dbname=' + dbname + ' | gzip -9 > ' + file_path
 
     proc = subprocess.Popen(command, shell=True)
     proc.wait()
 
 def backup_ftp(file_name, file_path, ftp_server, remote_folder):
-    print('Sending backup via ftp...')
-
     remote_file_path = os.path.join(remote_folder, file_name)
 
     with FTP() as ftp:
-        # timeout=None
         ftp.connect(host=ftp_server.host, port=ftp_server.port)
         ftp.login(user=ftp_server.username, passwd=ftp_server.password)
-        # ftp.set_pasv(val = not ftp_server.is_active_mode)
+        ftp.set_pasv(val = not ftp_server.is_active_mode)
         print(ftp.pwd())
 
         with open(file_path, "rb") as file:
@@ -119,8 +103,6 @@ def backup_ftp(file_name, file_path, ftp_server, remote_folder):
         ftp.quit()
 
 def backup_log(log_id, backup_task, started_at, finished_at, status, message, file_path):
-    print('Creating backup log...')
-
     if status in ['SUCCESS', 'FTP ERROR']:
         file_size = os.stat(file_path).st_size/1024 # Bytes -> MegaBytes
 
@@ -147,15 +129,12 @@ def backup_log(log_id, backup_task, started_at, finished_at, status, message, fi
                         status=status,
                         message=message)
 
-def backup_free(backup_dir, retention, now):
-    print('Removing old backups and logs...')
-
-    delete_datetime = now-timedelta(days=retention)
+def backup_free(backup_task, now):
+    delete_datetime = now-timedelta(days=backup_task.retention)
     delete_date = delete_datetime.date()
 
-    _backup_logs = BackupLog.objects.filter(created_at__lt=delete_datetime)
-    file_names = [_backup_log.file_name for _backup_log in _backup_logs]
-    file_paths = [os.path.join(backup_dir, file_name) for file_name in file_names]
+    _backup_logs = BackupLog.objects.filter(created_at__lt=delete_datetime, backup_task=backup_task)
+    file_paths = [_backup_log.file_paths for _backup_log in _backup_logs]
 
     for file_path in file_paths:
         file_time = os.path.getctime(file_path)
@@ -200,10 +179,7 @@ def backup_process(_entry):
 
         backup_log(log_id, _entry, started_at, finished_at, status, message, file_path)
 
-        backup_free(backup_dir, _entry.retention, started_at)
-
-
-from croniter import croniter
+        backup_free(_entry, started_at)
 
 # delete branch dev
 @shared_task
@@ -212,7 +188,6 @@ def backup_postgres():
     _backup_tasks = BackupTask.objects.filter(is_active=True)
     for _entry in _backup_tasks:
         if croniter.match(_entry.cron_schedule, now):
-            print('Starting backup_process...')
             backup_process(_entry)
 
 @shared_task

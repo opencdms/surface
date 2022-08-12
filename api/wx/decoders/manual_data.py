@@ -61,15 +61,22 @@ variable_dict = {
 def parse_date(month_datetime, day, utc_offset):
     datetime_offset = pytz.FixedOffset(utc_offset)
     date = month_datetime.replace(day=day)
-
     return datetime_offset.localize(date)
 
+def is_integer_num(num):
+    if isinstance(num, int):
+        return True
+    if isinstance(num, float):
+        return num.is_integer()
+    return False
 
 def parse_line(line, station_id, month_datetime, utc_offset):
     """Parse a manual data row"""
 
     records_list = []
     day = line['day']
+    if is_integer_num(day):
+        day = int(day)
     parsed_date = parse_date(month_datetime, day, utc_offset)
     seconds = 86400
 
@@ -84,6 +91,22 @@ def parse_line(line, station_id, month_datetime, utc_offset):
 
     return records_list
 
+def find_station_by_name(station_name):
+    station = None   
+    try:
+        station = Station.objects.get(name=station_name, is_automatic=False)
+    except (ObjectDoesNotExist, MultipleObjectsReturned) as e:
+        try:
+            station = Station.objects.get(alias_name=station_name, is_automatic=False)
+        except (ObjectDoesNotExist, MultipleObjectsReturned) as e:
+            try:
+                station_name_for_query = station_name + ','
+                station = Station.objects.annotate(names=Concat('alternative_names', Value(','))).get(
+                            names=station_name_for_query, is_automatic=False)
+            except (ObjectDoesNotExist, MultipleObjectsReturned) as e:
+                raise Exception(f"Failed to find station by name '{station_name}'. {repr(e)}")
+
+    return station
 
 @shared_task
 def read_file(filename, station_object=None, utc_offset=-360, override_data_on_conflict=False):
@@ -106,19 +129,7 @@ def read_file(filename, station_object=None, utc_offset=-360, override_data_on_c
 
                 # get the sheet station info
                 station_name = sheet_name.strip()
-                station = None
-                try:
-                    station = Station.objects.get(name__icontains=station_name, is_automatic=False)
-                except (ObjectDoesNotExist, MultipleObjectsReturned) as e:
-                    try:
-                        station = Station.objects.get(alias_name__icontains=station_name, is_automatic=False)
-                    except (ObjectDoesNotExist, MultipleObjectsReturned) as e:
-                        try:
-                            station_name_for_query = station_name + ','
-                            station = Station.objects.annotate(names=Concat('alternative_names', Value(','))).get(
-                                names__icontains=station_name_for_query, is_automatic=False)
-                        except (ObjectDoesNotExist, MultipleObjectsReturned) as e:
-                            raise Exception(f"Failed to find station by name '{station_name}'. {repr(e)}")
+                station = find_station_by_name(station_name)
 
                 station_id = station.id
 
@@ -134,6 +145,7 @@ def read_file(filename, station_object=None, utc_offset=-360, override_data_on_c
                 # filter the sheet day
                 month_datetime = datetime.datetime.strptime(f'{sheet_month} {sheet_year}', '%B %Y')
                 first_month_day, last_month_day = calendar.monthrange(month_datetime.year, month_datetime.month)
+                
                 sheet_data = sheet_data[pd.to_numeric(sheet_data['day'], errors='coerce').notnull()]
                 for index, row in sheet_data[sheet_data['day'] <= last_month_day].iterrows():
                     for line_data in parse_line(row, station_id, month_datetime, utc_offset):
