@@ -31,7 +31,6 @@ GOOD = QualityFlagEnum.GOOD.id
 NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
 BAD = QualityFlagEnum.BAD.id
 
-
 ######################## Quality Control #######################
 
 def get_qc_step(thresholds, station_id, variable_id, interval):
@@ -213,7 +212,6 @@ def get_data(raw_data_list):
 
 
         # Defining threshholds
-
         thresholds = {}
         thresholds = get_qc_step(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds)
         thresholds = get_qc_range(thresholds=thresholds, station_id=station_id, variable_id=variable_id, interval=seconds, month=month)

@@ -9,6 +9,7 @@ import subprocess
 from datetime import datetime, timedelta
 from ftplib import FTP, error_perm, error_reply
 from time import sleep, time
+from croniter import croniter
 
 import cronex
 import dateutil.parser
@@ -16,6 +17,7 @@ import pandas
 import psycopg2
 import pytz
 import requests
+import subprocess
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.core.cache import cache
@@ -43,7 +45,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import numpy as np
 import pandas as pd
 from wx.models import Variable
-from wx.models import QcPersistThreshold
+from wx.models import QcPersistThreshold, BackupTask, BackupLog
 from wx.enums import QualityFlagEnum
 
 NOT_CHECKED = QualityFlagEnum.NOT_CHECKED.id
@@ -54,10 +56,139 @@ GOOD = QualityFlagEnum.GOOD.id
 logger = get_task_logger(__name__)
 db_logger = get_task_logger('db')
 
-
 def get_connection():
     return psycopg2.connect(settings.SURFACE_CONNECTION_STRING)
 
+def backup_set_running(backup_task, started_at, file_path):
+    status = 'RUNNING'
+    message = 'Backup process is currently running.'
+    new_log = BackupLog(backup_task=backup_task,
+                        started_at=started_at,
+                        status=status,
+                        message=message,
+                        file_path=file_path)
+
+    new_log.save()
+    return new_log.id
+
+def backup_create(file_path):
+    db = settings.DATABASES['default']
+
+    db_host = db['HOST']
+    db_port = db['PORT']
+    db_name = db['NAME']    
+    db_user = db['USER']
+    db_pass = db['PASSWORD'] 
+
+    dbname = 'postgresql://'+db_user+':'+db_pass+'@'+db_host+':'+db_port+'/'+db_name
+
+    command = '/usr/bin/pg_dump --dbname=' + dbname + ' | gzip -9 > ' + file_path
+
+    proc = subprocess.Popen(command, shell=True)
+    proc.wait()
+
+def backup_ftp(file_name, file_path, ftp_server, remote_folder):
+    remote_file_path = os.path.join(remote_folder, file_name)
+
+    with FTP() as ftp:
+        ftp.connect(host=ftp_server.host, port=ftp_server.port)
+        ftp.login(user=ftp_server.username, passwd=ftp_server.password)
+        ftp.set_pasv(val = not ftp_server.is_active_mode)
+        print(ftp.pwd())
+
+        with open(file_path, "rb") as file:
+            ftp.storbinary(f"STOR {remote_file_path}", file)
+
+        ftp.dir()
+        ftp.quit()
+
+def backup_log(log_id, backup_task, started_at, finished_at, status, message, file_path):
+    if status in ['SUCCESS', 'FTP ERROR']:
+        file_size = os.stat(file_path).st_size/1024 # Bytes -> MegaBytes
+
+        _log = BackupLog.objects.filter(id=log_id)
+        _log.update(finished_at=finished_at,
+                    status=status,
+                    message=message,
+                    file_size=file_size)
+    else:
+        if log_id is None:
+            if file_path is None:
+                file_name = 'FILE PATH ERROR'
+
+            new_log = BackupLog(backup_task=backup_task,
+                                started_at=started_at,
+                                finished_at=finished_at,
+                                status=status,
+                                message=message,
+                                file_path=file_path)
+            new_log.save()
+        else:
+            _log = BackupLog.objects.filter(id=log_id)
+            _log.update(finished_at=finished_at,
+                        status=status,
+                        message=message)
+
+def backup_free(backup_task, now):
+    delete_datetime = now-timedelta(days=backup_task.retention)
+    delete_date = delete_datetime.date()
+
+    _backup_logs = BackupLog.objects.filter(created_at__lt=delete_datetime, backup_task=backup_task)
+    file_paths = [_backup_log.file_paths for _backup_log in _backup_logs]
+
+    for file_path in file_paths:
+        file_time = os.path.getctime(file_path)
+        file_date = datetime.fromtimestamp(file_time).date()
+        if file_date < delete_date:
+            os.remove(file_path)
+
+    BackupLog.objects.filter(created_at__lt=delete_datetime).delete()
+
+def backup_process(_entry):
+    backup_dir = '/data/backup/'
+
+    log_id = None
+    file_name = None
+    file_path = None    
+
+    started_at = pytz.UTC.localize(datetime.now())
+    try:
+        file_name = started_at.strftime(_entry.file_name)
+        file_path = os.path.join(backup_dir, file_name)
+
+        log_id = backup_set_running(_entry, started_at, file_path)
+        backup_create(file_path)
+        if _entry.ftp_server is not None:
+            try:
+                backup_ftp(file_name, file_path, _entry.ftp_server, _entry.remote_folder)
+                status = 'SUCCESS'
+                message = 'Backup created and successfully send via FTP.'
+            except Exception as e:
+                status = 'FTP ERROR'
+                message = e
+                print('Exception happened during backup ftp %s' %(e))                    
+        else:
+            status = 'SUCCESS'
+            message = 'Backup created.'
+    except Exception as e:
+        status = 'BACKUP ERROR'
+        message = e
+        print('Exception happened during backup creation %s' %(e))
+    finally:
+        finished_at = pytz.UTC.localize(datetime.now())
+
+        backup_log(log_id, _entry, started_at, finished_at, status, message, file_path)
+
+        backup_free(_entry, started_at)
+
+# delete branch dev
+@shared_task
+def backup_postgres():
+    now = pytz.UTC.localize(datetime.now())
+    _backup_tasks = BackupTask.objects.filter(is_active=True)
+    for _entry in _backup_tasks:
+        if croniter.match(_entry.cron_schedule, now):
+            backup_process(_entry)
 
 @shared_task
 def calculate_hourly_summary(start_datetime=None, end_datetime=None, station_id_list=None):
@@ -1264,7 +1395,7 @@ def get_window(station_id, variable_id):
     if  _station.is_automatic:
         hours = _variable.persistence_window_hourly
         if hours is None:
-            hours = 1 # 1 Days
+            hours = 1 # 1 Hour
     else:
         hours = _variable.persistence_window
         if hours is None:

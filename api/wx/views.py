@@ -553,10 +553,23 @@ def GetImage(request):
         return response
 
 
+from django.db.models.functions import Cast
+from django.db.models import IntegerField
+
+
 @permission_classes([IsAuthenticated])
 def MonthlyFormView(request):
     template = loader.get_template('wx/monthly_form.html')
-    return HttpResponse(template.render({}, request))
+
+    station_list = Station.objects.filter(is_automatic=False, is_active=True)
+    station_list = station_list.values('id', 'name', 'code')
+    
+    # for station in station_list:
+    #     station['code'] = int(station['code'])
+
+    context = {'station_list': station_list}
+
+    return HttpResponse(template.render(context, request))
 
 
 class PGIAReportView(LoginRequiredMixin, TemplateView):

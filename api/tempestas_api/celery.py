@@ -48,6 +48,10 @@ app.conf.beat_schedule = {
         'task': 'wx.tasks.calculate_last24h_summary',
         'schedule': 300
     },
+    'backup_postgres': {
+        'task': 'wx.tasks.backup_postgres',
+        'schedule': 60
+    },    
 }
 
 app.conf.timezone = 'UTC'
