@@ -97,7 +97,7 @@ def parse_line(station_id, header_date, line, interval_lookup_table, records):
             records.append(columns)
 
 
-def read_data(station_id, dcp_address, response, err_message):
+def read_data(station_id, dcp_address, config_file, response, err_message):
     print(f'Inside NESA decoder - read_data(station_id={station_id}, dcp_address={dcp_address})')
 
     transmissions = response.split(dcp_address)
@@ -113,6 +113,9 @@ def read_data(station_id, dcp_address, response, err_message):
 
     for transmission in transmissions[1:]:
         header, *lines = transmission.split(" \r\n")
+
+        print(header)
+        print(lines)
 
         # code can't decode errors like missing transmission spot, soh skip error messages
         try:

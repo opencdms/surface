@@ -26,7 +26,7 @@ app.conf.beat_schedule = {
     },
     'dcp_tasks_scheduler': {
         'task': 'wx.tasks.dcp_tasks_scheduler',
-        'schedule': 900,
+        'schedule': 60,
     },
     'process_hourly_summary_tasks': {
         'task': 'wx.tasks.process_hourly_summary_tasks',

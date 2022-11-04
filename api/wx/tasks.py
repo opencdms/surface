@@ -31,6 +31,7 @@ from wx.decoders.hydro import read_file as read_file_hydrology
 from wx.decoders.manual_data import read_file as read_file_manual_data
 from wx.decoders.manual_data_hourly import read_file as read_file_manual_data_hourly
 from wx.decoders.nesa import read_data as read_data_nesa
+from wx.decoders.surtron import read_data as read_data_surtron
 from wx.decoders.surface import read_file as read_file_surface
 from wx.decoders.toa5 import read_file
 from wx.models import DataFile
@@ -674,6 +675,11 @@ def dcp_tasks_scheduler():
 
     noaa_list_to_process = []
     for noaaDcp in NoaaDcp.objects.all():
+        if noaaDcp.dcp_address == '50203044':
+            DEBUG = True
+        else:
+            DEBUG = False            
+
         now = pytz.UTC.localize(datetime.now())
 
         if noaaDcp.last_datetime is None:
@@ -692,6 +698,7 @@ def dcp_tasks_scheduler():
             next_execution = scheduled_execution + transmission_window_timedelta
             next_execution = pytz.UTC.localize(next_execution)
 
+        # if DEBUG or (next_execution <= now and (noaaDcp.last_datetime is None or noaaDcp.last_datetime < next_execution)):
         if next_execution <= now and (noaaDcp.last_datetime is None or noaaDcp.last_datetime < next_execution):
             noaa_list_to_process.append({"noaa_object": noaaDcp, "last_execution": noaaDcp.last_datetime})
             noaaDcp.last_datetime = now
@@ -699,16 +706,25 @@ def dcp_tasks_scheduler():
 
     for noaa_dcp in noaa_list_to_process:
         try:
-            retrieve_dpc_messages(noaa_dcp)
+            retrieve_dcp_messages(noaa_dcp)
         except Exception as e:
             logging.error(f'dcp_tasks_scheduler ERROR: {repr(e)}')
 
 
-def retrieve_dpc_messages(noaa_dict):
+def retrieve_dcp_messages(noaa_dict):
     current_noaa_dcp = noaa_dict["noaa_object"]
     last_execution = noaa_dict["last_execution"]
 
-    logger.info('Inside retrieve_dpc_messages ' + current_noaa_dcp.dcp_address)
+    if current_noaa_dcp.dcp_address == '50203044':
+        DEBUG = True
+    else:
+        DEBUG = False
+
+    if DEBUG:
+        print('-------------------------------')
+        print('-------------------------------')
+
+    logger.info('Inside retrieve_dcp_messages ' + current_noaa_dcp.dcp_address)
 
     related_stations = current_noaa_dcp.noaadcpsstation_set
     related_stations_count = related_stations.count()
@@ -723,6 +739,7 @@ def retrieve_dpc_messages(noaa_dict):
 
     available_decoders = {
         'NESA': read_data_nesa,
+        'SURTRON': read_data_surtron,
     }
 
     set_search_criteria(current_noaa_dcp, last_execution)
@@ -737,10 +754,15 @@ def retrieve_dpc_messages(noaa_dict):
 
     output, err_message = command.communicate()
     response = output.decode('ascii')
+
     try:
-        available_decoders[decoder](station_id, current_noaa_dcp.dcp_address, response, err_message)
+        available_decoders[decoder](station_id, current_noaa_dcp.dcp_address, current_noaa_dcp.config_data, response, err_message)
     except Exception as err:
-        logger.error(f'Error on retrieve_dpc_messages for dcp address "{current_noaa_dcp.dcp_address}". {repr(err)}')
+        logger.error(f'Error on retrieve_dcp_messages for dcp address "{current_noaa_dcp.dcp_address}". {repr(err)}')
+
+    if DEBUG:
+        print('-------------------------------')
+        print('-------------------------------')
 
 
 def set_search_criteria(dcp, last_execution):

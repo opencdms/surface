@@ -12,6 +12,8 @@ from django.utils.timezone import now
 
 from wx.enums import FlashTypeEnum
 
+from timescale.db.models.models import TimescaleModel
+
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -845,6 +847,15 @@ class NoaaDcp(BaseModel):
     transmission_window = models.TimeField()
     transmission_period = models.TimeField()
     last_datetime = models.DateTimeField(null=True, blank=True)
+    config_file = models.FileField(upload_to='', null=True, blank=True)
+    config_data = models.TextField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.config_file.name is not None:
+            if self.config_file.name.endswith('.ssf'):
+                self.config_data = self.config_file.open("r").read()
+                self.config_file.delete()
+        super().save(*args, **kwargs)         
 
     def __str__(self):
         return self.dcp_address
@@ -955,6 +966,7 @@ class StationFileIngestion(BaseModel):
     is_active = models.BooleanField(default=True)
     is_binary_transfer = models.BooleanField(default=False)
     is_historical_data = models.BooleanField(default=False)
+    is_highfrequency_data = models.BooleanField(default=True)
     override_data_on_conflict = models.BooleanField(default=False)
 
     class Meta:
@@ -1220,6 +1232,7 @@ class BackupTask(BaseModel):
     def __str__(self):
         return self.name  
 
+
 class BackupLog(BaseModel):
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -1228,3 +1241,29 @@ class BackupLog(BaseModel):
     backup_task = models.ForeignKey(BackupTask, on_delete=models.CASCADE)
     file_path = models.CharField(max_length=1024)
     file_size = models.FloatField(null=True, blank=True, verbose_name="File Size (MB)")
+
+
+class ElementDecoder(BaseModel):
+    element_name = models.CharField(max_length=64)
+    variable = models.ForeignKey(Variable, on_delete=models.DO_NOTHING, null=True, blank=True)
+    decoder = models.ForeignKey(Decoder, on_delete=models.DO_NOTHING, null=True, blank=True)
+
+
+from timescale.db.models.fields import TimescaleDateTimeField
+from timescale.db.models.managers import TimescaleManager
+
+class HightFrequencyData(BaseModel):
+    datetime = TimescaleDateTimeField(interval="1 day")
+    measured = models.FloatField()
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    variable = models.ForeignKey(Variable, on_delete=models.DO_NOTHING)
+
+    objects = models.Manager()
+    timescale = TimescaleManager()
+
+    class Meta:
+        constraints =[models.UniqueConstraint(
+                fields=['datetime', 'station', 'variable'],
+                name="unique_datetime_station_id_variable_id"
+             ),
+        ]
