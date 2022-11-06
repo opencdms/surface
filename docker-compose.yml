@@ -31,11 +31,6 @@ services:
         max-file: "10"
     networks:
       - opencdms-surface
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.fastapi.rule=Host(`$HOST_FQDN`)"
-      - "traefik.http.routers.fastapi.tls=true"
-      - "traefik.http.routers.fastapi.tls.certresolver=letsencrypt"
 
   api:
     build:
@@ -64,6 +59,13 @@ services:
         max-file: "10"
     networks:
       - opencdms-surface
+    expose:
+      - 8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.django.rule=Host(`$HOST_FQDN`)"
+      - "traefik.http.routers.django.tls=true"
+      - "traefik.http.routers.django.tls.certresolver=letsencrypt"
 
   celery_worker:
     build:
@@ -124,3 +126,6 @@ services:
       - "$PWD/traefik/traefik.toml:/etc/traefik/traefik.toml"
     networks:
       - opencdms-surface
+
+networks:
+  opencdms-surface:
