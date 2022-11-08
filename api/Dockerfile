@@ -19,8 +19,6 @@ RUN mkdir -p /data/shared
 RUN mkdir -p /data/exported_data
 RUN chown -R surface /data
 
-COPY ./ /surface
-
 COPY load_initial_data.sh .
 RUN chmod +x load_initial_data.sh
 

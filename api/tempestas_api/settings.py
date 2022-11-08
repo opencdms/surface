@@ -52,9 +52,6 @@ INSTALLED_APPS = [
     'pygeoapi'
 ]
 
-# Put following setting after STATIC_URL
-STATIC_ROOT = os.path.join( BASE_DIR / 'assets')
-
 # Specific pygeoapi setting
 PYGEOAPI_CONFIG = config()
 
