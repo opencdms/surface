@@ -872,7 +872,7 @@ paths:
       - stac
 servers:
 - description: pygeoapi provides an API to geospatial data
-  url: http://localhost:8000/sample-project
+  url: https://localhost/oapi/sample-project
 tags:
 - description: pygeoapi provides an API to geospatial data
   externalDocs:
