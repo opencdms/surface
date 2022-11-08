@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import os
 from datetime import timedelta
+from pygeoapi.django_app import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,7 +49,14 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'colorfield',
     'import_export',
+    'pygeoapi'
 ]
+
+# Put following setting after STATIC_URL
+STATIC_ROOT = os.path.join( BASE_DIR / 'assets')
+
+# Specific pygeoapi setting
+PYGEOAPI_CONFIG = config()
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
