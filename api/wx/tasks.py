@@ -1221,9 +1221,9 @@ def ftp_ingest_station_files(historical_data, highfrequency_data):
     ftp_servers = list(set([s.ftp_server for s in station_file_ingestions]))
 
     if highfrequency_data:
-        data_dir_name = 'hf_data'
+        data_type = 'hf_data'
     else:
-        data_dir_name = 'raw_data'
+        data_type = 'raw_data'
 
     # Loop over connecting to ftp servers, retrieving and processing files
     for ftp_server in ftp_servers:
@@ -1247,8 +1247,8 @@ def ftp_ingest_station_files(historical_data, highfrequency_data):
 
                 for fname in remote_files:
                     try:
-                        local_folder = '/data/documents/ingest/%s/%s/%04d/%02d/%02d' % (
-                            sfi.decoder.name, sfi.station.code, dt.year, dt.month, dt.day)
+                        local_folder = '/data/documents/ingest/%s/%s/%s/%04d/%02d/%02d' % (
+                            sfi.decoder.name, sfi.station.code, data_type, dt.year, dt.month, dt.day)
                         local_filename = '%04d%02d%02d%02d%02d%02d_%s' % (
                             dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, fname)
                         local_path = '%s/%s' % (local_folder, local_filename)

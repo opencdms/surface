@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from wx.models import FTPServer
+from ftplib import FTP, error_perm, error_reply
 
 from tempestas_api import settings
 from celery import shared_task
