@@ -7,6 +7,7 @@ import pytz
 from celery import shared_task
 
 from wx.decoders.insert_raw_data import insert
+from wx.decoders.insert_hf_data import insert as insert_hf
 from wx.models import VariableFormat, Station, StationVariable
 from wx.utils import update_station_variables
 
@@ -112,7 +113,7 @@ def read_header(file):
 
 
 @shared_task
-def read_file(filename, station_object=None, utc_offset=-360, override_data_on_conflict=False):
+def read_file(filename, highfrequency_data=False, station_object=None, utc_offset=-360, override_data_on_conflict=False):
     """Read a TOA5 file and return a seq of records or nil in case of error"""
 
     logger.info('processing %s' % filename)
@@ -158,9 +159,12 @@ def read_file(filename, station_object=None, utc_offset=-360, override_data_on_c
         logger.error(repr(e))
         raise
 
-    end = time.time()
+    if highfrequency_data:
+        insert_hf(reads, override_data_on_conflict)
+    else:
+        insert(reads, override_data_on_conflict)
 
-    insert(reads, override_data_on_conflict)
+    end = time.time()
 
     logger.info(f'Processing file {filename} in {end - start} seconds, '
                 f'returning #reads={len(reads)}.')

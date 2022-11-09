@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from psycopg2.extras import execute_values
 from tempestas_api import settings
+from wx.models import StationVariable
 
 logger = logging.getLogger('surface')
 
@@ -17,7 +18,10 @@ insert_columns = ["station_id", "variable_id", "datetime", "measured", "updated_
 def get_data(raw_data_list):
     now = timezone.now()
 
-    df = pd.DataFrame(raw_data_list, columns=columns)    
+    df = pd.DataFrame(raw_data_list)    
+    df = df.iloc[:,:len(columns)]
+    df.columns=columns
+
 
     # Convert dates to date object at time zone utc
     df['created_at'] = now
@@ -63,14 +67,13 @@ def insert_query(reads, override_data_on_conflict):
             else:
                 on_conflict_sql = " ON CONFLICT DO NOTHING "
 
-            execute_values(cursor, f"""
-                INSERT INTO wx_highfrequency_data (
-                        station_id, variable_id, datetime, measured, quality_flag,
-                        updated_at, created_at)
+            inserted_hf_data =  execute_values(cursor, f"""
+                INSERT INTO wx_hightfrequencydata (
+                        station_id, variable_id, datetime, measured, updated_at, created_at)
                 VALUES %s
                 {on_conflict_sql}
+                RETURNING station_id, date_trunc('second', datetime), now(), now()
             """, reads, fetch=True)
-
         conn.commit()
 
 def update_stationvariable(reads):
@@ -125,4 +128,4 @@ def insert(raw_data_list, override_data_on_conflict=False):
     insert_query(reads, override_data_on_conflict)
 
     # Updating "station varaiable" table
-    # update_stationvariable(reads)
+    update_stationvariable(reads)

@@ -30,7 +30,6 @@ def parse_float(value):
     except ValueError:
         return None
 
-
 '''
 def parse_header(header):
     dcp_code = header[:8]
@@ -55,9 +54,6 @@ def parse_header(header):
     print('spacecraft: ' + spacecraft)
     print()
 '''
-
-
-
 
 def parse_line(station_id, header_date, line, interval_lookup_table, records):
     fields = line.split(" ")

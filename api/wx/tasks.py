@@ -33,7 +33,7 @@ from wx.decoders.manual_data_hourly import read_file as read_file_manual_data_ho
 from wx.decoders.nesa import read_data as read_data_nesa
 from wx.decoders.surtron import read_data as read_data_surtron
 from wx.decoders.surface import read_file as read_file_surface
-from wx.decoders.toa5 import read_file
+from wx.decoders.toa5 import read_file as read_file_toa5
 from wx.models import DataFile
 from wx.models import Document
 from wx.models import NoaaDcp
@@ -59,6 +59,20 @@ db_logger = get_task_logger('db')
 
 def get_connection():
     return psycopg2.connect(settings.SURFACE_CONNECTION_STRING)
+
+############################################################
+
+
+from wx.wave_data_generator import gen_dataframe_and_filename, format_and_send_data
+from wx.models import FTPServer
+
+@shared_task
+def gen_toa5_file():
+    logger.info('Inside dcp_tasks_scheduler')
+    df, filename = gen_dataframe_and_filename()
+    format_and_send_data(df, filename)
+
+############################################################
 
 def backup_set_running(backup_task, started_at, file_path):
     status = 'RUNNING'
@@ -636,7 +650,7 @@ def calculate_last24h_summary():
 def process_document():
     available_decoders = {
         'HOBO': read_file_hobo,
-        'TOA5': read_file,
+        'TOA5': read_file_toa5,
         'HYDROLOGY': read_file_hydrology
         # Nesa
     }
@@ -1167,17 +1181,28 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
         logger.error(f'Error on export data file "{file_id}". {repr(e)}')
 
 
+
+
 @shared_task
 def ftp_ingest_historical_station_files():
-    ftp_ingest_station_files(True)
+    hist_data = True
+    hfreq_data = False   
+    ftp_ingest_station_files(hist_data, hfreq_data)
 
 
 @shared_task
 def ftp_ingest_not_historical_station_files():
-    ftp_ingest_station_files(False)
+    hist_data = False
+    hfreq_data = False    
+    ftp_ingest_station_files(hist_data, hfreq_data)
 
+@shared_task
+def ftp_ingest_highfrequency_station_files():
+    hist_data = False
+    hfreq_data = True
+    ftp_ingest_station_files(hist_data, hfreq_data)
 
-def ftp_ingest_station_files(historical_data):
+def ftp_ingest_station_files(historical_data, highfrequency_data):
     """
     Get and process station data files via FTP protocol
 
@@ -1187,13 +1212,18 @@ def ftp_ingest_station_files(historical_data):
     """
     dt = datetime.now()
 
-    station_file_ingestions = StationFileIngestion.objects.filter(is_active=True, is_historical_data=historical_data)
+    station_file_ingestions = StationFileIngestion.objects.filter(is_active=True, is_historical_data=historical_data, is_highfrequency_data=highfrequency_data)
     station_file_ingestions = [s for s in station_file_ingestions if
                                cronex.CronExpression(s.cron_schedule).check_trigger(
                                    (dt.year, dt.month, dt.day, dt.hour, dt.minute))]
 
     # List of unique ftp servers
     ftp_servers = list(set([s.ftp_server for s in station_file_ingestions]))
+
+    if highfrequency_data:
+        data_dir_name = 'hf_data'
+    else:
+        data_dir_name = 'raw_data'
 
     # Loop over connecting to ftp servers, retrieving and processing files
     for ftp_server in ftp_servers:
@@ -1257,6 +1287,7 @@ def ftp_ingest_station_files(historical_data):
                                                             , file_hash=hash_md5.hexdigest()
                                                             , file_size=os.path.getsize(local_path)
                                                             , is_historical_data=sfi.is_historical_data
+                                                            , is_highfrequency_data=sfi.is_highfrequency_data
                                                             , override_data_on_conflict=sfi.override_data_on_conflict)
                         station_data_file.save()
                         logging.info(f'Downloaded FTP file: {local_path}')
@@ -1266,10 +1297,10 @@ def ftp_ingest_station_files(historical_data):
 
                 ftp.cwd(home_folder)
 
-    process_station_data_files(historical_data)
+    process_station_data_files(historical_data, highfrequency_data)
 
 
-def process_station_data_files(historical_data=False, force_reprocess=False):
+def process_station_data_files(historical_data=False, highfrequency_data=False, force_reprocess=False):
     """
     Process station data files
 
@@ -1280,7 +1311,7 @@ def process_station_data_files(historical_data=False, force_reprocess=False):
 
     available_decoders = {
         'HOBO': read_file_hobo,
-        'TOA5': read_file,
+        'TOA5': read_file_toa5,
         'HYDROLOGY': read_file_hydrology,
         'BELIZE MANUAL DAILY DATA': read_file_manual_data,
         'BELIZE MANUAL HOURLY DATA': read_file_manual_data_hourly,
@@ -1290,7 +1321,7 @@ def process_station_data_files(historical_data=False, force_reprocess=False):
     # Get StationDataFile to process
     # Filter status id to process only StationDataFiles with code 1 (Not processed) or 6 (Reprocess)
     station_data_file_list = (StationDataFile.objects.select_related('decoder', 'station')
-                                  .filter(status_id__in=(1, 6), is_historical_data=historical_data).order_by('id')[:60])
+                                  .filter(status_id__in=(1, 6), is_historical_data=historical_data, is_highfrequency_data=highfrequency_data).order_by('id')[:60])
     logger.info('Station data files: %s' % station_data_file_list)
 
     # Mark all file as Being processed to avoid reprocess
@@ -1318,6 +1349,7 @@ def process_station_data_files(historical_data=False, force_reprocess=False):
             logger.info('Processing file "{0}" with "{1}" decoder.'.format(station_data_file.filepath, current_decoder))
 
             current_decoder(filename=station_data_file.filepath
+                            , highfrequency_data=station_data_file.is_highfrequency_data
                             , station_object=station_data_file.station
                             , utc_offset=station_data_file.utc_offset_minutes
                             , override_data_on_conflict=station_data_file.override_data_on_conflict)

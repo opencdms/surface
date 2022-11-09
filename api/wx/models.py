@@ -966,7 +966,7 @@ class StationFileIngestion(BaseModel):
     is_active = models.BooleanField(default=True)
     is_binary_transfer = models.BooleanField(default=False)
     is_historical_data = models.BooleanField(default=False)
-    is_highfrequency_data = models.BooleanField(default=True)
+    is_highfrequency_data = models.BooleanField(default=False)
     override_data_on_conflict = models.BooleanField(default=False)
 
     class Meta:
@@ -997,6 +997,7 @@ class StationDataFile(BaseModel):
     file_size = models.IntegerField()
     observation = models.TextField(max_length=1024, null=True, blank=True)
     is_historical_data = models.BooleanField(default=False)
+    is_highfrequency_data = models.BooleanField(default=False)
     override_data_on_conflict = models.BooleanField(default=False)
 
     def __str__(self):

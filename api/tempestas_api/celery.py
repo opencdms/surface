@@ -44,6 +44,10 @@ app.conf.beat_schedule = {
         'task': 'wx.tasks.ftp_ingest_not_historical_station_files',
         'schedule': 60
     },
+    'ftp_ingest_highfrequency_station_files': {
+        'task': 'wx.tasks.ftp_ingest_highfrequency_station_files',
+        'schedule': 60
+    },    
     'calculate_last24h_summary': {
         'task': 'wx.tasks.calculate_last24h_summary',
         'schedule': 300
@@ -51,6 +55,11 @@ app.conf.beat_schedule = {
     'backup_postgres': {
         'task': 'wx.tasks.backup_postgres',
         'schedule': 60
+    },
+    ## Wava data simulator
+    'gen_hf_data': {
+        'task': 'wx.tasks.gen_toa5_file',
+        'schedule': 900
     },    
 }
 
