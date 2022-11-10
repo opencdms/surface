@@ -1253,7 +1253,7 @@ class ElementDecoder(BaseModel):
 from timescale.db.models.fields import TimescaleDateTimeField
 from timescale.db.models.managers import TimescaleManager
 
-class HightFrequencyData(BaseModel):
+class HighFrequencyData(BaseModel):
     datetime = TimescaleDateTimeField(interval="1 day")
     measured = models.FloatField()
     station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
