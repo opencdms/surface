@@ -9,10 +9,14 @@ from django.contrib.gis.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django.utils.timezone import now
+from croniter import croniter
+from django.core.exceptions import ValidationError
 
 from wx.enums import FlashTypeEnum
 
 from timescale.db.models.models import TimescaleModel
+from timescale.db.models.fields import TimescaleDateTimeField
+from timescale.db.models.managers import TimescaleManager
 
 
 class BaseModel(models.Model):
@@ -1213,8 +1217,6 @@ class StationDataMinimumInterval(BaseModel):
     def __str__(self):
         return f'{self.datetime}: {self.station} - {self.variable}'
 
-from croniter import croniter
-from django.core.exceptions import ValidationError
 
 class BackupTask(BaseModel):
     def cron_validator(cron_exp):
@@ -1250,9 +1252,6 @@ class ElementDecoder(BaseModel):
     decoder = models.ForeignKey(Decoder, on_delete=models.DO_NOTHING, null=True, blank=True)
 
 
-from timescale.db.models.fields import TimescaleDateTimeField
-from timescale.db.models.managers import TimescaleManager
-
 class HighFrequencyData(BaseModel):
     datetime = TimescaleDateTimeField(interval="1 day")
     measured = models.FloatField()
@@ -1268,3 +1267,15 @@ class HighFrequencyData(BaseModel):
                 name="unique_datetime_station_id_variable_id"
              ),
         ]
+
+
+class HFSummaryTask(BaseModel):
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    variable = models.ForeignKey(Variable, on_delete=models.DO_NOTHING)
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('station', 'variable', 'start_datetime', 'end_datetime')

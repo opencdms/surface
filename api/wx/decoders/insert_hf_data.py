@@ -68,12 +68,37 @@ def insert_query(reads, override_data_on_conflict):
                 on_conflict_sql = " ON CONFLICT DO NOTHING "
 
             inserted_hf_data =  execute_values(cursor, f"""
-                INSERT INTO wx_hightfrequencydata (
+                INSERT INTO wx_highfrequencydata (
                         station_id, variable_id, datetime, measured, updated_at, created_at)
                 VALUES %s
                 {on_conflict_sql}
-                RETURNING station_id, date_trunc('second', datetime), now(), now()
+                RETURNING station_id, variable_id, datetime, now(), now()
             """, reads, fetch=True)
+
+            # print(inserted_hf_data)
+
+            if inserted_hf_data:
+
+                df = pd.DataFrame(inserted_hf_data, columns = ['station_id', 'variable_id', 'datetime', 'created_at','updated_at'])
+
+                filtered_hf_data = []
+                for idx, [station_id, variable_id] in df[['station_id', 'variable_id']].drop_duplicates().iterrows():
+                    df1 = df.loc[(df.station_id == station_id) & (df.variable_id == variable_id)]
+
+                    created_at = df1.created_at.max()
+                    updated_at = df1.updated_at.max()                    
+
+                    entry = [created_at, updated_at, station_id, variable_id, df1.datetime.min(), df1.datetime.max()]
+
+                    filtered_hf_data.append(entry)
+
+                if filtered_hf_data:
+                    execute_values(cursor, """
+                        INSERT INTO wx_hfsummarytask (created_at, updated_at, station_id, variable_id, start_datetime, end_datetime)
+                        VALUES %s
+                        ON CONFLICT DO NOTHING
+                    """, filtered_hf_data)
+
         conn.commit()
 
 def update_stationvariable(reads):
