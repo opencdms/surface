@@ -28,7 +28,6 @@ class wave(): # Wave object
         self.wave = self.height*np.sin(self.frequence*2*np.pi*time+self.phase_rad)
         return self.wave
 
-
 def gen_random_wave():
     frequency = random.uniform(0.05, 0.3)
     frequency = round(frequency, 2)
@@ -47,7 +46,6 @@ def gen_random_wave():
     height = round(height, 1)               
         
     return frequency, math.radians(phase_deg), height
-
 
 def gen_wave_components():
     num_waves = random.randint(3, 10)
@@ -69,7 +67,6 @@ def gen_wave_time(wave_list):
     time = np.arange(INI, END, MEASUREMENT_PERIOD)
     return time
     
-
 def gen_sea_wave_data():    
     wave_list = gen_wave_components() # Sine waves composing the wave
   
@@ -82,20 +79,21 @@ def gen_sea_wave_data():
         
     sea_wave_data = sum(sinewave_list)
     
-    return sea_wave_data
+    sea_level_offset = random.uniform(90, 110)
 
+    sea_wave_data += sea_level_offset
+
+    return sea_wave_data
        
 def gen_dataframe_and_filename():
     data = gen_sea_wave_data()
     records = range(len(data))
-    
-    
+        
     now = datetime.now()
     minute = math.floor(now.minute/15)*15
        
-    ini_timestamp = now.replace(minute=minute, second=0, microsecond=0)
-    
-    
+    ini_timestamp = now.replace(minute=minute, second=1, microsecond=0)
+        
     timestamps = [ini_timestamp+timedelta(seconds=i) for i in range(len(data))]
     
     df = pd.DataFrame(list(zip(timestamps, records, data)), columns = ["TIMESTAMP","RECORD","SL"])   
@@ -120,8 +118,8 @@ def add_header(data):
     return header+'\n'+data
 
 def send_via_ftp(data, file_name):
-    remote_folder = '/wave'
-    remote_file_path = os.path.join(remote_folder, file_name)
+    remote_folder = 'wave'
+    remote_file_path = os.path.join('/', remote_folder, file_name)
 
     buf_b = io.BytesIO()
     buf_b.write(data.encode())
@@ -132,11 +130,14 @@ def send_via_ftp(data, file_name):
         ftp.connect(host=ftp_server.host, port=ftp_server.port)
         ftp.login(user=ftp_server.username, passwd=ftp_server.password)
         ftp.set_pasv(val = not ftp_server.is_active_mode)
+
+        if not remote_folder in ftp.nlst():
+            ftp.mkd(remote_folder)
+
         ftp.storbinary(f"STOR {remote_file_path}", buf_b)
         ftp.quit()
 
     buf_b.close()
-
 
 def format_and_send_data(df, file_name):
     data = get_df_data(df)

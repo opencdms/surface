@@ -11,6 +11,7 @@ from ftplib import FTP, error_perm, error_reply
 from time import sleep, time
 from croniter import croniter
 
+import math, cmath
 import cronex
 import dateutil.parser
 import pandas
@@ -38,9 +39,11 @@ from wx.models import DataFile
 from wx.models import Document
 from wx.models import NoaaDcp
 from wx.models import Station
-from wx.models import StationFileIngestion, StationDataFile, HourlySummaryTask, DailySummaryTask, \
-    HydroMLPredictionStation, HydroMLPredictionMapping
-
+from wx.models import StationFileIngestion, StationDataFile
+from wx.models import HourlySummaryTask, DailySummaryTask
+from wx.models import HydroMLPredictionStation, HydroMLPredictionMapping
+from wx.models import HighFrequencyData, HFSummaryTask
+from wx.decoders.insert_raw_data import insert as insert_rd
 
 from django.core.exceptions import ObjectDoesNotExist
 import numpy as np
@@ -109,7 +112,6 @@ def backup_ftp(file_name, file_path, ftp_server, remote_folder):
         ftp.connect(host=ftp_server.host, port=ftp_server.port)
         ftp.login(user=ftp_server.username, passwd=ftp_server.password)
         ftp.set_pasv(val = not ftp_server.is_active_mode)
-        print(ftp.pwd())
 
         with open(file_path, "rb") as file:
             ftp.storbinary(f"STOR {remote_file_path}", file)
@@ -196,7 +198,6 @@ def backup_process(_entry):
 
         backup_free(_entry, started_at)
 
-# delete branch dev
 @shared_task
 def backup_postgres():
     now = pytz.UTC.localize(datetime.now())
@@ -328,7 +329,6 @@ def calculate_hourly_summary(start_datetime=None, end_datetime=None, station_id_
     conn.close()
     logger.info(f'Hourly summary finished at {datetime.now(pytz.UTC)}. Took {time() - start_at} seconds.')
 
-
 @shared_task
 def calculate_daily_summary(start_date=None, end_date=None, station_id_list=None):
     logger.info(f'DAILY SUMMARY started at {datetime.now(tz=pytz.UTC)} with parameters: '
@@ -449,7 +449,6 @@ def calculate_daily_summary(start_date=None, end_date=None, station_id_list=None
     cache.set('daily_summary_last_run', datetime.today(), None)
     logger.info(f'Daily summary finished at {datetime.now(pytz.UTC)}. Took {time() - start_at} seconds.')
 
-
 @shared_task
 def calculate_station_minimum_interval(start_date=None, end_date=None, station_id_list=None):
     logger.info(f'CALCULATE STATION MINIMUM INTERVAL started at {datetime.now(tz=pytz.UTC)} with parameters: '
@@ -545,7 +544,6 @@ def calculate_station_minimum_interval(start_date=None, end_date=None, station_i
     conn.close()
 
     logger.info(f'Calculate minimum interval finished at {datetime.now(pytz.UTC)}. Took {time() - start_at} seconds.')
-
 
 @shared_task
 def calculate_last24h_summary():
@@ -645,7 +643,6 @@ def calculate_last24h_summary():
     cache.set('last24h_summary_last_run', datetime.today(), None)
     print('Last 24h summary finished at {}'.format(datetime.today()))
 
-
 @shared_task
 def process_document():
     available_decoders = {
@@ -681,7 +678,6 @@ def process_document():
         else:
             document.processed = True
             document.save()
-
 
 @shared_task
 def dcp_tasks_scheduler():
@@ -723,7 +719,6 @@ def dcp_tasks_scheduler():
             retrieve_dcp_messages(noaa_dcp)
         except Exception as e:
             logging.error(f'dcp_tasks_scheduler ERROR: {repr(e)}')
-
 
 def retrieve_dcp_messages(noaa_dict):
     current_noaa_dcp = noaa_dict["noaa_object"]
@@ -778,7 +773,6 @@ def retrieve_dcp_messages(noaa_dict):
         print('-------------------------------')
         print('-------------------------------')
 
-
 def set_search_criteria(dcp, last_execution):
     with open(settings.LRGS_CS_FILE_PATH, 'w') as cs_file:
         if dcp.first_channel is not None:
@@ -788,17 +782,14 @@ def set_search_criteria(dcp, last_execution):
             cs_file.write(
                 f"""DRS_SINCE: now - {dcp_query_window(last_execution)} hour\nDRS_UNTIL: now\nDCP_ADDRESS: {dcp.dcp_address}\n""")
 
-
 def dcp_query_window(last_execution):
     return max(3, min(latest_received_dpc_data_in_hours(last_execution), int(settings.LRGS_MAX_INTERVAL)))
-
 
 def latest_received_dpc_data_in_hours(last_execution):
     try:
         return int(((datetime.now().astimezone(pytz.UTC) - last_execution).total_seconds()) / 3600)
     except TypeError as e:
         return 999999
-
 
 @shared_task
 def get_entl_data():
@@ -830,7 +821,6 @@ def get_entl_data():
         print('LIGHTNING DATA - Connection error. Reconnecting in 15 seconds...')
         sleep(15)
 
-
 def process_received_data(entl_socket):
     while True:
         data = entl_socket.recv(56)
@@ -845,12 +835,10 @@ def process_received_data(entl_socket):
             if (15 <= latitude <= 19 and -90 <= longitude <= -87):
                 save_flash_data.delay(data.decode('latin-1'))
 
-
 # Used to save Flash data asynchronously
 @shared_task
 def save_flash_data(data_string):
     read_data_flash(data_string.encode('latin-1'))
-
 
 @shared_task
 def export_data(station_id, source, start_date, end_date, variable_ids, file_id):
@@ -1180,15 +1168,11 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
         current_datafile.save()
         logger.error(f'Error on export data file "{file_id}". {repr(e)}')
 
-
-
-
 @shared_task
 def ftp_ingest_historical_station_files():
     hist_data = True
     hfreq_data = False   
     ftp_ingest_station_files(hist_data, hfreq_data)
-
 
 @shared_task
 def ftp_ingest_not_historical_station_files():
@@ -1299,7 +1283,6 @@ def ftp_ingest_station_files(historical_data, highfrequency_data):
 
     process_station_data_files(historical_data, highfrequency_data)
 
-
 def process_station_data_files(historical_data=False, highfrequency_data=False, force_reprocess=False):
     """
     Process station data files
@@ -1369,7 +1352,6 @@ def process_station_data_files(historical_data=False, highfrequency_data=False, 
             # Update status id to 3 (Processed)
             station_data_file.status_id = 3
             station_data_file.save()
-
 
 # Persist Logic Starts here
 # Get hourly data from raw data
@@ -1595,7 +1577,6 @@ def update_insert_persist(df):
         cursor.executemany(query, data)
     con.commit()
     con.close()
-
 
 # Main Persist Function
 def update_qc_persist(start_datetime, end_datetime, station_ids, summary_type):
@@ -1847,7 +1828,6 @@ def predict_data(start_datetime, end_datetime, prediction_id, station_ids, targe
     except Exception as e:
         logger.error(f'Error on update raw_data: {repr(e)}')
 
-
 @shared_task
 def predict_preciptation_data():
     hydroml_params = HydroMLPredictionStation.objects.all()
@@ -1877,3 +1857,159 @@ def predict_preciptation_data():
                          result_mapping=result_mapping)
         except Exception as e:
             logger.error(f'Error on predict_preciptation_data for "{current_prediction.name}": {repr(e)}')
+
+################################################################
+
+@shared_task
+def process_hfdata_summary_tasks():
+    # process only 500 HF summaries per execution
+    unprocessed_hf_summaries = HFSummaryTask.objects.filter(started_at=None).values_list('station', 'variable', 'start_datetime', 'end_datetime').distinct()[:501]
+    for  station_id, variable_id, s_datetime, e_datetime in unprocessed_hf_summaries:
+
+        hf_summary_task = HFSummaryTask.objects.filter(started_at=None, station_id=station_id, variable_id=variable_id, start_datetime=s_datetime, end_datetime=e_datetime)
+        hf_summary_task_ids = list(hf_summary_task.values_list('id', flat=True))
+
+        # Updating Hourly summary task
+        hfdata_summary(hf_summary_task_ids, station_id, variable_id, s_datetime, e_datetime)
+
+def hfdata_summary(hf_summary_task_ids, station_id, variable_id, s_datetime, e_datetime):
+    try:
+        HFSummaryTask.objects.filter(id__in=hf_summary_task_ids).update(started_at=datetime.now(tz=pytz.UTC))
+        calculate_hfdata_summary(station_id, variable_id, s_datetime, e_datetime)
+    except Exception as err:
+        logger.error('Error calculation hfdata summary for variable "{0}" and range ("{1}","{2}"). '.format(variable_id, s_datetime, s_datetime) + repr(err))
+        db_logger.error('Error calculation hfdata summary for variable "{0}" and range ("{1}","{2}"). '.format(variable_id, s_datetime, s_datetime) + repr(err))
+    else:
+        HFSummaryTask.objects.filter(id__in=hf_summary_task_ids).update(finished_at=datetime.now(tz=pytz.UTC))
+
+def calculate_hfdata_summary(station_id, variable_id, s_datetime, e_datetime):
+    start_at = time()
+    logger.info(f"HighFrequency summary started at {datetime.now(pytz.UTC)}")
+    logger.info(f"HighFrequency summary parameters: {station_id} {variable_id} {s_datetime} {e_datetime}")
+
+    _hfdata = HighFrequencyData.objects.filter(station_id=station_id, variable_id=variable_id, datetime__gte=s_datetime, datetime__lte=e_datetime)
+    
+    datetimes = list(_hfdata.values_list('datetime', flat=True))
+
+    seconds = (max(datetimes)-min(datetimes)).total_seconds()+1
+    interval = seconds/len(datetimes)
+
+    data = list(_hfdata.values_list('measured', flat=True))
+
+    _variable = Variable.objects.get(id=variable_id)
+    if _variable.name == 'Sea Level':
+        reads = process_wave_data(station_id, e_datetime, data, seconds)
+
+    insert_rd(reads)
+
+    logger.info(f'HighFrequency summary finished at {datetime.now(pytz.UTC)}. Took {time() - start_at} seconds.')
+
+class wave(): # Wave object
+    def __init__(self, frequency: float, phase_rad: float, height: float):
+        self.height = height # Wave height in cm
+        self.frequency = frequency # Frequency in Hz
+        self.phase_rad = phase_rad # Phase is radians
+        self.time = None
+        self.wave = None
+
+    def gen_sinewave(self, time):
+        self.time = time
+        self.wave = self.height*np.sin(self.frequency*2*np.pi*time+self.phase_rad)
+        return self.wave
+
+def fft_decompose(data, DEBUG = False):
+    MEASUREMENT_PERIOD = 1 #1 Second
+
+    MIN_AMPLITUDE = 1 #In cm
+
+    MIN_FREQUENCY = 0.0001 #In Hz
+    MAX_FREQUENCY = 0.3 #In Hz
+
+    # https://stackoverflow.com/questions/59725933/plot-fft-as-a-set-of-sine-waves-in-python
+    t = np.arange(0, len(data)*MEASUREMENT_PERIOD, MEASUREMENT_PERIOD)
+
+    fft = np.fft.fft(data)
+    fftfreq = np.fft.fftfreq(len(t), MEASUREMENT_PERIOD)
+
+    wave_list = []
+    sinewave_list = []
+    
+    mid = len(t)//2 + 1    
+    for i in range(mid):
+        phase_rad = cmath.phase(fft[i])+np.pi/2
+        amplitude = 2*abs(fft[i])/len(t)
+        frequency = fftfreq[i]
+
+        if MIN_FREQUENCY <= frequency <= MAX_FREQUENCY and MIN_AMPLITUDE <= amplitude:
+            W = wave(amplitude, frequency, phase_rad)
+
+            wave_list.append(W)
+            sinewave_list.append(W.gen_sinewave(t))
+
+            if DEBUG:
+                logger.info(f"WAVE  {len(sinewave_list)}:")
+                logger.info(f"   Height:    {amplitude}:")
+                logger.info(f"   Frequency: {frequency}:")
+                logger.info(f"   Phase:     {math.degrees(phase_rad)}:")
+    return wave_list
+
+def get_top_wave_components(wave_list):
+    # Top 5 amp
+    wave_list.sort(key=lambda W: abs(W.height), reverse=True)
+    top_wave_components = wave_list[:5]
+    return top_wave_components
+
+def process_wave_data(station_id, e_datetime, data, seconds):
+    avg = np.mean(data)
+    std = np.std(data)
+
+    reads = [['Sea Level [MIN]', np.min(data)],
+             ['Sea Level [MAX]', np.max(data)],
+             ['Sea Level [AVG]', avg],
+             ['Sea Level [STDV]', std],
+             ['Significant Wave Height', 4*std]]
+
+    # Normalizing Sea Level by average
+    norm_data = data-np.mean(data)
+
+    wave_list = fft_decompose(norm_data, DEBUG = False)
+    wave_list = get_top_wave_components(wave_list)
+
+    for i, W in enumerate(wave_list):
+        name = 'Wave Component '+str(i+1)
+        reads += [[name+' Frequency', W.frequency],
+                  [name+' Amplitude', W.height],
+                  [name+' Phase', math.degrees(W.phase_rad)]]
+
+    for read in reads:
+        read[0] = Variable.objects.get(name=read[0]).id
+
+    now = datetime.now()
+
+    df = pd.DataFrame(reads, columns=['variable_id', 'measured'])
+    df['station_id'] = station_id
+    df['datetime'] = e_datetime
+    df['updated_at'] = now
+    df['created_at'] = now
+    df['seconds'] = seconds
+    df['is_daily'] = False
+    df['quality_flag'] = None
+    df['qc_range_quality_flag'] = None
+    df['qc_range_description'] = None
+    df['qc_step_quality_flag'] = None
+    df['qc_step_description'] = None
+    df['qc_persist_quality_flag'] = None
+    df['qc_persist_description'] = None
+    df['manual_flag'] = None
+    df['consisted'] = None
+
+    cols = ["station_id", "variable_id", "seconds", "datetime", "measured", "quality_flag", "qc_range_quality_flag",
+           "qc_range_description", "qc_step_quality_flag", "qc_step_description", "qc_persist_quality_flag",
+           "qc_persist_description", "manual_flag", "consisted", "is_daily"]
+
+    reads = df[cols].values.tolist()
+
+    return reads
+
+
+
