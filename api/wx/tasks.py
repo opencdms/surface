@@ -1941,7 +1941,7 @@ def fft_decompose(data, DEBUG = False):
         frequency = fftfreq[i]
 
         if MIN_FREQUENCY <= frequency <= MAX_FREQUENCY and MIN_AMPLITUDE <= amplitude:
-            W = wave(amplitude, frequency, phase_rad)
+            W = wave(frequency=frequency, height=amplitude, phase_rad=phase_rad)
 
             wave_list.append(W)
             sinewave_list.append(W.gen_sinewave(t))
