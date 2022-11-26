@@ -1,6 +1,36 @@
 version: "3.5"
 
 services:
+  nginx:
+    container_name: surface-nginx
+    build: ./nginx
+    volumes:
+      - ./api/static:/home/app/web/staticfiles
+      - ./data:/home/app/web/data
+      - ./ssl/certbot/conf:/etc/letsencrypt
+      - ./ssl/certbot/www:/var/www/certbot
+    env_file:
+      - api/production.env
+    environment:
+      - HOST_FQDN=${HOST_FQDN:-localhost.dev}
+    ports:
+      - 8080:80
+    depends_on:
+      - api
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./ssl/certbot/conf:/etc/letsencrypt
+      - ./ssl/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
   cache:
     container_name: surface-cache
     image: memcached
@@ -29,8 +59,6 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
-    networks:
-      - opencdms-surface
 
   api:
     build:
@@ -57,15 +85,8 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
-    networks:
-      - opencdms-surface
     expose:
       - 8000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.django.rule=Host(`$HOST_FQDN`)"
-      - "traefik.http.routers.django.tls=true"
-      - "traefik.http.routers.django.tls.certresolver=letsencrypt"
 
   celery_worker:
     build:
@@ -90,8 +111,6 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
-    networks:
-      - opencdms-surface
 
   celery_beat:
     build:
@@ -113,19 +132,3 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
-    networks:
-      - opencdms-surface
-
-  traefik:
-    image: traefik:latest
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "$PWD/traefik/traefik.toml:/etc/traefik/traefik.toml"
-    networks:
-      - opencdms-surface
-
-networks:
-  opencdms-surface:
