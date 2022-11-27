@@ -11,6 +11,8 @@ services:
       - ./ssl/certbot/www:/var/www/certbot
     env_file:
       - api/production.env
+    environment:
+      HOST_FQDN: $HOST_FQDN
     ports:
       - 8080:80
     depends_on:

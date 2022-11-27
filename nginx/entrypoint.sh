@@ -2,7 +2,7 @@ export DOLLAR="$"
 cat /etc/nginx-conf-template/nginx.conf.http.template >| /etc/nginx/conf.d/nginx.conf
 /wait-for-it.sh -t 30 api:8000;
 echo $HOST_FQDN
-if [ -z ${HOST_FQDN+x} ];
+if [ -z "$HOST_FQDN" ];
 then
   nginx;
 else
