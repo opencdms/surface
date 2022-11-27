@@ -35,6 +35,11 @@ server {
     listen 443 ssl;
     server_name ${HOST_FQDN};
     server_tokens off;
+    client_body_buffer_size 16k;
+    client_max_body_size 2m;
+    client_body_in_single_buffer on;
+    client_header_buffer_size  1m;
+    large_client_header_buffers 4 8k;
 
     ssl_certificate /etc/letsencrypt/live/${HOST_FQDN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${HOST_FQDN}/privkey.pem;
