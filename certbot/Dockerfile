@@ -1,8 +1,8 @@
 FROM certbot/certbot
 
 ARG HOST_FQDN
-
 ENV HOST_FQDN ${HOST_FQDN:-localhost.dev}
 
-RUN echo $HOST_FQDN
+COPY wait-for-it.sh /wait-for-it.sh
+
 RUN mkdir -p /var/www/certbot
