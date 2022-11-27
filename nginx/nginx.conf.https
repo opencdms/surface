@@ -5,21 +5,21 @@ upstream api {
 server {
     listen 80;
     client_body_buffer_size 16k;
-    client_max_body_size 2m; 
-    client_body_in_single_buffer on;  
-    client_header_buffer_size  1m; 
+    client_max_body_size 2m;
+    client_body_in_single_buffer on;
+    client_header_buffer_size  1m;
     large_client_header_buffers 4 8k;
 
     location /static/ {
         alias /home/app/web/staticfiles/;
-        sendfile on; 
-        aio      on; 
+        sendfile on;
+        aio      on;
     }
 
     location /data/ {
         alias /home/app/web/data/;
-        sendfile on; 
-        aio      on; 
+        sendfile on;
+        aio      on;
     }
 
     location /.well-known/acme-challenge/ {
