@@ -9,10 +9,10 @@ else
   curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem
   cat /etc/nginx-conf-template/nginx.conf.http.template >| /etc/nginx/conf.d/nginx.conf
   nginx;
-  certbot certonly --webroot --webroot-path /var/www/certbot/ -d ${HOST_FQDN} --non-interactive --agree-tos -m info@opencdms.org
-  envsubst < /etc/nginx-conf-template/nginx.conf.https.template >| /etc/nginx/conf.d/nginx.conf
-  nginx -s stop;
-  nginx;
+#  certbot certonly --webroot --webroot-path /var/www/certbot/ -d ${HOST_FQDN} --non-interactive --agree-tos -m info@opencdms.org
+#  envsubst < /etc/nginx-conf-template/nginx.conf.https.template >| /etc/nginx/conf.d/nginx.conf
+#  nginx -s stop;
+#  nginx;
 fi
 while :;
 do
