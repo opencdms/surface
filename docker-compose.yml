@@ -13,6 +13,7 @@ services:
       - api/production.env
     environment:
       HOST_FQDN: $HOST_FQDN
+      WEBMASTER_EMAIL: $WEBMASTER_EMAIL
     ports:
       - "80:80"
       - "443:443"
