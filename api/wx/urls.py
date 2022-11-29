@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
 from rest_framework import routers
+from pygeoapi.django_ import urls
 
 from wx import views
 
@@ -97,6 +98,7 @@ urlpatterns = [
     path('api/step_threshold/', views.step_threshold_view),
     path('wx/quality_control/persist_threshold/', views.PersistThresholdView.as_view(), name='persist-threshold'),
     path('api/persist_threshold/', views.persist_threshold_view),
+    path('oapi/', include(urls))  # added here
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
