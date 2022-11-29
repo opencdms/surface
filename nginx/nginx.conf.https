@@ -53,4 +53,17 @@ server {
         proxy_set_header    X-Real-IP           ${DOLLAR}remote_addr;
         proxy_set_header    X-Forwarded-For     ${DOLLAR}proxy_add_x_forwarded_for;
     }
+
+    location /static/ {
+        alias /home/app/web/staticfiles/;
+        sendfile on;
+        aio      on;
+    }
+
+    location /data/ {
+        alias /home/app/web/data/;
+        sendfile on;
+        aio      on;
+    }
+
 }
