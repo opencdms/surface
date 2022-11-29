@@ -724,15 +724,6 @@ def retrieve_dcp_messages(noaa_dict):
     current_noaa_dcp = noaa_dict["noaa_object"]
     last_execution = noaa_dict["last_execution"]
 
-    if current_noaa_dcp.dcp_address == '50203044':
-        DEBUG = True
-    else:
-        DEBUG = False
-
-    if DEBUG:
-        print('-------------------------------')
-        print('-------------------------------')
-
     logger.info('Inside retrieve_dcp_messages ' + current_noaa_dcp.dcp_address)
 
     related_stations = current_noaa_dcp.noaadcpsstation_set
@@ -748,7 +739,7 @@ def retrieve_dcp_messages(noaa_dict):
 
     available_decoders = {
         'NESA': read_data_nesa,
-        'SURTRON': read_data_surtron,
+        # 'SURTRON': read_data_surtron,
     }
 
     set_search_criteria(current_noaa_dcp, last_execution)
@@ -768,10 +759,6 @@ def retrieve_dcp_messages(noaa_dict):
         available_decoders[decoder](station_id, current_noaa_dcp.dcp_address, current_noaa_dcp.config_data, response, err_message)
     except Exception as err:
         logger.error(f'Error on retrieve_dcp_messages for dcp address "{current_noaa_dcp.dcp_address}". {repr(err)}')
-
-    if DEBUG:
-        print('-------------------------------')
-        print('-------------------------------')
 
 def set_search_criteria(dcp, last_execution):
     with open(settings.LRGS_CS_FILE_PATH, 'w') as cs_file:
@@ -1905,7 +1892,7 @@ def calculate_hfdata_summary(station_id, variable_id, s_datetime, e_datetime):
     logger.info(f'HighFrequency summary finished at {datetime.now(pytz.UTC)}. Took {time() - start_at} seconds.')
 
 class wave(): # Wave object
-    def __init__(self, frequency: float, phase_rad: float, height: float):
+    def __init__(self, frequency: float, height: float, phase_rad: float):
         self.height = height # Wave height in cm
         self.frequency = frequency # Frequency in Hz
         self.phase_rad = phase_rad # Phase is radians
@@ -1920,7 +1907,7 @@ class wave(): # Wave object
 def fft_decompose(data, DEBUG = False):
     MEASUREMENT_PERIOD = 1 #1 Second
 
-    MIN_AMPLITUDE = 1 #In cm
+    MIN_AMPLITUDE = 0.01 #In m
 
     MIN_FREQUENCY = 0.0001 #In Hz
     MAX_FREQUENCY = 0.3 #In Hz
@@ -1948,9 +1935,9 @@ def fft_decompose(data, DEBUG = False):
 
             if DEBUG:
                 logger.info(f"WAVE  {len(sinewave_list)}:")
-                logger.info(f"   Height:    {amplitude}:")
-                logger.info(f"   Frequency: {frequency}:")
-                logger.info(f"   Phase:     {math.degrees(phase_rad)}:")
+                logger.info(f"Height: {amplitude}:")
+                logger.info(f"Frequency: {frequency}:")
+                logger.info(f"Phase: {math.degrees(phase_rad)}:")
     return wave_list
 
 def get_top_wave_components(wave_list):
@@ -1970,16 +1957,16 @@ def process_wave_data(station_id, e_datetime, data, seconds):
              ['Significant Wave Height', 4*std]]
 
     # Normalizing Sea Level by average
-    norm_data = data-np.mean(data)
+    norm_data = data-avg
 
-    wave_list = fft_decompose(norm_data, DEBUG = False)
+    wave_list = fft_decompose(norm_data, DEBUG = True)
     wave_list = get_top_wave_components(wave_list)
 
     for i, W in enumerate(wave_list):
         name = 'Wave Component '+str(i+1)
         reads += [[name+' Frequency', W.frequency],
                   [name+' Amplitude', W.height],
-                  [name+' Phase', math.degrees(W.phase_rad)]]
+                  [name+' Phase', math.degrees(W.phase_rad) % 360]]
 
     for read in reads:
         read[0] = Variable.objects.get(name=read[0]).id
@@ -2010,6 +1997,3 @@ def process_wave_data(station_id, e_datetime, data, seconds):
     reads = df[cols].values.tolist()
 
     return reads
-
-
-

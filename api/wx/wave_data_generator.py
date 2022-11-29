@@ -1,4 +1,4 @@
-import io, os, csv, random, math, cmath
+import io, os, csv, random, math, cmath, pytz
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
@@ -17,7 +17,7 @@ db_logger = get_task_logger('db')
 
 class wave(): # Wave object
     def __init__(self, frequency: float, phase_rad: float, height: float):
-        self.height = height # Wave height in cm
+        self.height = height # Wave height in m
         self.frequence = frequency # Frequency in Hz
         self.phase_rad = phase_rad # Phase is radians
         self.time = None
@@ -35,15 +35,15 @@ def gen_random_wave():
     phase_deg = random.randint(0, 359)
 
     if 0.2 <= frequency:
-        height = random.uniform(2, 5)
+        height = random.uniform(0.02, 0.05)
     elif 0.12 <= frequency < 0.2:
-        height = random.uniform(5, 10)    
+        height = random.uniform(0.05, 0.1)    
     elif 0.10 <= frequency < 0.12:
-        height = random.uniform(10, 20)
+        height = random.uniform(0.1, 0.2)
     else: # frequency < 0.1
-        height = random.uniform(20, 70)
-        
-    height = round(height, 1)               
+        height = random.uniform(0.2, 0.7)
+
+    height = round(height, 3) # In m
         
     return frequency, math.radians(phase_deg), height
 
@@ -86,13 +86,19 @@ def gen_sea_wave_data():
     return sea_wave_data
        
 def gen_dataframe_and_filename():
+
     data = gen_sea_wave_data()
     records = range(len(data))
-        
-    now = datetime.now()
-    minute = math.floor(now.minute/15)*15
-       
-    ini_timestamp = now.replace(minute=minute, second=1, microsecond=0)
+
+    belize_now = datetime.now(pytz.timezone('America/Belize'))
+    utcoffset = belize_now.utcoffset().total_seconds()/3600
+
+    end_timestamp = datetime.now()+timedelta(hours=int(utcoffset))
+    # end_timestamp -= timedelta(hours=pytz.timezone('America/Belize'))
+
+    ini_timestamp = end_timestamp - timedelta(minutes=15)
+    minute = math.floor(ini_timestamp.minute/15)*15
+    ini_timestamp = ini_timestamp.replace(minute=minute, second=1, microsecond=0)
         
     timestamps = [ini_timestamp+timedelta(seconds=i) for i in range(len(data))]
     
@@ -118,7 +124,7 @@ def add_header(data):
     return header+'\n'+data
 
 def send_via_ftp(data, file_name):
-    remote_folder = 'wave'
+    remote_folder = 'wave_test'
     remote_file_path = os.path.join('/', remote_folder, file_name)
 
     buf_b = io.BytesIO()

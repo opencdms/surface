@@ -22,19 +22,15 @@ def get_data(raw_data_list):
     df = df.iloc[:,:len(columns)]
     df.columns=columns
 
-
     # Convert dates to date object at time zone utc
     df['created_at'] = now
     df['updated_at'] = now
-    df['month'] = pd.to_datetime(df['datetime']).dt.month
 
     reads = []
-    for idx, [station_id, variable_id, seconds, month] in df[['station_id', 'variable_id', 'seconds', 'month']].drop_duplicates().iterrows():
-
+    for idx, [station_id, variable_id, seconds] in df[['station_id', 'variable_id', 'seconds']].drop_duplicates().iterrows():
         df1 = df.loc[(df.station_id == station_id) &
                      (df.variable_id == variable_id) &
-                     (df.seconds == seconds) &
-                     (df.month == month)].copy()
+                     (df.seconds == seconds)].copy()
                      
         df1.sort_values(by="datetime", inplace=True)
 
@@ -74,8 +70,6 @@ def insert_query(reads, override_data_on_conflict):
                 {on_conflict_sql}
                 RETURNING station_id, variable_id, datetime, now(), now()
             """, reads, fetch=True)
-
-            # print(inserted_hf_data)
 
             if inserted_hf_data:
 
