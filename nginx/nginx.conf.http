@@ -7,7 +7,7 @@ server {
     client_body_buffer_size 16k;
     client_max_body_size 2m; 
     client_body_in_single_buffer on;  
-    client_header_buffer_size  1m; 
+    client_header_buffer_size  1m;
     large_client_header_buffers 4 8k;
 
     location / {
