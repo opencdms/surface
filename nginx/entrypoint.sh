@@ -16,6 +16,6 @@ else
 fi
 while :;
 do
-  sleep 6h;
+  sleep 6h & wait;
   nginx -s reload;
 done

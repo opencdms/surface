@@ -14,7 +14,8 @@ services:
     environment:
       HOST_FQDN: $HOST_FQDN
     ports:
-      - 8080:80
+      - "80:80"
+      - "443:443"
     depends_on:
       - api
     logging:
