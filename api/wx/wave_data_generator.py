@@ -124,7 +124,7 @@ def add_header(data):
     return header+'\n'+data
 
 def send_via_ftp(data, file_name):
-    remote_folder = 'wave'
+    remote_folder = 'wave_test'
     remote_file_path = os.path.join('/', remote_folder, file_name)
 
     buf_b = io.BytesIO()

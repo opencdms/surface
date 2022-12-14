@@ -1279,3 +1279,13 @@ class HFSummaryTask(BaseModel):
 
     class Meta:
         unique_together = ('station', 'variable', 'start_datetime', 'end_datetime')
+
+
+class VisitType(BaseModel):
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=256)
+
+
+class Technicians(BaseModel):
+    name = models.CharField(max_length=64)
+

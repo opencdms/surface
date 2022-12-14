@@ -55,6 +55,7 @@ from wx.models import Country, Unit, Station, Variable, DataSource, StationVaria
 from wx.utils import get_altitude, get_watershed, get_district, get_interpolation_image, parse_float_value, \
     parse_int_value
 from .utils import get_raw_data, get_station_raw_data
+from wx.models import VisitType, Technicians
 
 logger = logging.getLogger('surface.urls')
 
@@ -3068,7 +3069,18 @@ def last24_summary_list(request):
 
 
 class ComingSoonView(LoginRequiredMixin, TemplateView):
-    template_name = "coming-soon.html"
+    # template_name = "coming-soon.html"
+
+    template_name = 'wx/maintenance_reports/new_report.html'
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        context['station_list'] = Station.objects.select_related('profile').all()
+        context['visittype_list'] = VisitType.objects.all()
+        context['technicians_list'] = Technicians.objects.all()
+
+
+        return self.render_to_response(context)
 
 
 class SpatialAnalysisView(LoginRequiredMixin, TemplateView):

@@ -1,0 +1,272 @@
+{% extends "base.html" %} {% block content %}
+<div class="srf-container">
+  <div id="app" v-cloak>
+    <v-app>
+      <v-content fluid fill-height style="background: white">
+        <v-layout column>
+          <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+            <span class="srf-display-1 text-uppercase">New Maintenance Reports - New Report</span
+            ><br /><br />
+          </div>
+          <v-layout column fluid>
+            <h6>Select the station and add initial data to create a report</h6>
+            <v-layout dense justify="start" class="mb-3">
+              <v-flex lg4 ml-3>
+                <v-switch
+                  v-model="filter.isAutomatic"
+                  @change="invertValue(filter.isAutomatic)"
+                  label="Automatic"
+                ></v-switch>
+              </v-flex>                
+              <v-flex lg4 ml-3>
+                <v-autocomplete
+                  :items="stationList"
+                  item-text="label"
+                  item-value="id"
+                  v-model="requestObject.station_id"
+                  label="Station"
+                  @change="getStationVariables(requestObject.station_id)"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex lg4 ml-3>
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="visist_date_menu"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                    v-model="visist_date"
+                    label="Date of visit"
+                    v-on="on"
+                    required
+                    persistent-hint
+                    prepend-icon="event"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                  v-model="visist_date"
+                  @input="visist_date_menu = false"
+                  ></v-date-picker>
+                </v-menu>
+              </v-flex>
+            </v-layout>
+
+            <v-layout dense justify="start" class="mb-3">
+              <v-flex lg4 ml-3>
+                <v-autocomplete
+                  :items="visittypeList"
+                  item-text="name"
+                  item-value="id"
+                  v-model="requestObject.visittype_id"
+                  label="Type of the visit"
+                  @change="getStationVariables(requestObject.station_id)"              
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex lg4 ml-3>
+                <v-autocomplete
+                  :items="techniciansList"
+                  item-text="name"
+                  item-value="id"
+                  v-model="requestObject.technicians_id"
+                  label="Responsible technician"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </v-flex>
+              <v-flex lg4 ml-3>
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="initial_time_menu"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                    v-model="initial_time"
+                    label="Initial time"
+                    v-on="on"
+                    required
+                    persistent-hint
+                    prepend-icon="access_time"
+                    ></v-text-field>
+                  </template>
+                  <v-time-picker
+                  v-model="initial_time"
+                  ></v-time-picker>
+                </v-menu>
+              </v-flex>                      
+            </v-layout>
+
+            <v-layout dense justify="end" class="mb-3">                     
+              <v-flex ml-3 mt-5 ml-5 class="d-flex justify-between">
+                <v-btn
+                  justify-end
+                  outlined
+                  color="primary"
+                  small
+                  @click="getRangeThresholds"
+                  :disabled="$v.requestObject.$invalid"
+                  >CREATE REPORT</v-btn
+                >
+              </v-flex>
+            </v-layout>
+
+
+            <v-alert v-model="request_error" dismissible type="error">
+              [[ request_error_message ]]
+            </v-alert>
+            <v-overlay :value="loading">
+              <v-progress-circular
+                indeterminate
+                size="64"
+              ></v-progress-circular>
+            </v-overlay>
+          </v-layout>
+        </v-layout>
+      </v-content>
+    </v-app>
+  </div>
+
+{% endblock %} {% block localjavascript %}
+<script>
+    Vue.use(window.vuelidate.default);
+    const { required, minLength } = window.validators;
+
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      validations: {
+        requestObject: {
+          station_id: { required },
+          visittype_id: { required },
+          technicians_id: { required },
+        },
+      },
+      data: {
+        visist_date_menu: false,
+        visist_date: moment().format('YYYY-MM-DD'),
+        initial_time_menu: false,
+        initial_time: moment().format('HH:mm'), 
+        hours: (function() {
+          const hours = [];
+          hours.length = 24;
+          hours.fill('');
+          return hours.map((el, index) => `${index < 10 ? '0' : ''}${index}:00`);
+        })(),
+
+        request_error: false,
+        request_error_message: "",
+        requestObject: {
+          station_id: null,
+          visittype_id: null,
+          technicians_id: null,
+        },
+        requestedObject:{},
+        loading: false,
+        simpleTextFieldsRules: [
+          (v) => (v != null && v !== "") || "This field is required",
+        ],
+        intervalFieldRules: [
+          (v) => (v != null && v !== "") || "This field is required",
+          (v) => (v != null && v > 0) || "Should be greater than 0",
+        ],
+        filter: {
+          isAutomatic: true
+        },
+        show_dialog: false,
+        datasource: [],
+        stations: [
+          {% for station in station_list %}
+          { id: {{ station.id }},
+            label: "{{ station.name | safe }} - {{ station.code }}",
+            is_automatic: {{ station.is_automatic | lower }},
+          },
+          {% endfor %}
+        ],
+        visittypeList: [
+          {% for visittype in visittype_list %}
+          {id: {{ visittype.id }},
+           name: "{{ visittype.name }}" },
+          {% endfor %}
+        ],
+        techniciansList: [
+          {% for technician in technicians_list %}
+          {id: {{ technician.id }},
+           name: "{{ technician.name }}" },
+          {% endfor %}
+        ],         
+      },
+      computed: {
+        stationList () {
+          let filteredStations = this.stations;
+
+          filteredStations = filteredStations.filter(station => this.filter.isAutomatic == station.is_automatic);
+
+          this.requestObject.station_id = null;
+
+          return filteredStations;
+        }
+      },
+    });
+  </script>
+
+  <style>
+    .firstColumn {
+      border-left: 1px solid gray;
+    }
+
+    th,
+    td {
+      padding: 3px;
+      padding-left: 10px;
+    }
+
+    .v-input--selection-controls__ripple {
+      border-radius: 50%;
+      cursor: pointer;
+      height: 34px;
+      position: absolute;
+      transition: inherit;
+      width: 34px;
+      left: -12px;
+      top: calc(50% - 24px);
+      margin: 7px;
+      z-index: 10 !important;
+    }
+
+    .v-dialog {
+      box-shadow: none;
+    }
+    .v-dialog__content,
+    .v-dialog__content--active {
+      z-index: 9999 !important;
+    }
+    .btn-close-dialog {
+      position: absolute;
+      top: 116px;
+      left: 336px;
+      border-radius: 0px 20px 20px 0px;
+      z-index: 9999;
+      width: 36px;
+    }
+  </style>
+</div>
+{% endblock %}
