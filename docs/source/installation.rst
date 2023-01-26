@@ -3,13 +3,7 @@ Installing SURFACE
 
 Here we'll include information on how to install SURFACE.
 
-S.U.R.F.A.C.E. CDMS installation involves the following six(6) steps
-Training Doc
-
-PLEASE NOTE - in an attempt to make the installation process easier, all linux commands are shown in ONE(1) line, to make copying/pasting easier. Therefore for long linux commands the font size will be smaller so that it can fit in one(1) line.(we had issues copying and pasting with multiline commands)
-
-
-OS and Virtual Machine Versions
+S.U.R.F.A.C.E. CDMS SYSTEM REQUIREMENTS
 
 Operating System: 
 Ubuntu 20.04.5 (Focal Fossa)
@@ -21,73 +15,79 @@ VirtualBox  7.0.2 (Windows hosts)
 https://www.virtualbox.org/wiki/Downloads
 Initial Setup/Updates - minimal machine specifications(for testing not production)
 System Information:(if using a VM you can use these specs)
+
 Main Memory:
-4 GB (min)
-16 GB (servers)
+4 GB (minimum requirement)
+16 GB
 Disk storage:
-25 GB (min)
-100 GB (servers)
+25 GB (minimum requirement)
+100 GB
 CPU cores:
-4 (min)
-8 (servers)
+4 (minimum requirement)
+8 
 
+S.U.R.F.A.C.E. CDMS installation involves the following steps
 
-Update, Upgrade and Packages
+Step 1 - Install Ubuntu 20.04.5 (Focal Fossa) on your machine(virtual or otherwise)
+
+Step 2 - Install, Update and Upgrade basic packages
+
 $ sudo apt update
 $ sudo apt upgrade
-ASIDE - Virtual machine users may want to install openssh. Continue setup via ssh by following commands below
+
+*ASIDE* - Virtual machine users may want to install openssh to enable easier. For example using putty to ssh into the machine to enable easier cut and paste of installation commands. Setup ssh by following the commands below:
+
 sudo apt install openssh-server
 sudo systemctl status ssh
 ctrl + C 
 sudo ufw allow ssh
 
 
-
-
 BACK TO SURFACE INSTALLATION
-STEP 1 - Install important pre-requisities
+
+STEP 3 - Install important pre-requisities
+
 $ sudo apt install build-essential gcc make perl dkms curl
 $ sudo apt install git
-Prerequisites (installation steps linked below and outlined in steps to follow)
+
+
+FYI - Documentation on Prerequisites needed for installation steps are linked below 
+
 Docker:
 https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
 Docker-Compose:
 https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-20-04
+
 PostgreSQL:(NOT NEEDED)
 https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart
 
-Step 2 - Docker Installation
+
+Step 4 - Docker Installation
+
 Update and Prerequisite Packages:
 $ sudo apt update
 $ sudo apt install apt-transport-https ca-certificates curl software-properties-common
 
-
 Add the GPG key for the official Docker repository
 $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-
 
 Add the Docker repository to APT sources:
 $ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
 
-
 Make sure you are about to install from the Docker repo instead of the default Ubuntu repo:
 $ apt-cache policy docker-ce
-
 
 Install Docker
 $ sudo apt install docker-ce
 $ sudo systemctl status docker
 ctrl+c
 
-
-
-
 Setting docker to run without sudo:
 $ sudo usermod -aG docker ${USER}
 $ su - ${USER}
 $ groups
 
-PLEASE NOTE - for some reason during the installation process(my experience) we had to run these commands repeatedly to make sure that “docker” was a user within “groups”. When you run the “groups” command if “docker” is not listed some of the following installation steps failed so we had to run these commands again to ensure that “docker” was displayed under “groups”. I do not know why this was happening.
+PLEASE NOTE - for some reason during our first installation process we had to run these commands repeatedly to make sure that “docker” was a user within “groups”. When you run the “groups” command if “docker” is not listed some of the following installation steps failed so we had to run these commands again to ensure that “docker” was displayed under “groups”. I do not know why this was happening.
 
 
 (VM) Restart your Virtual Machine(If you are running a VM)
