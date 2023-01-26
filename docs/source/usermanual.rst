@@ -3,7 +3,7 @@ User Manual
 
 This section will contain the SURFACE user manual.
 
-User Manual Overview
+User Manual Overview - https://docs.google.com/document/d/1Ic9VnD_K2rd9vUowEwWYT02tZAdMVIHxvqZd6lTmHVg/edit?usp=sharing
 
 SURFACE USER MANUAL
 
