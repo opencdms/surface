@@ -7,22 +7,9 @@ Operating System:
 Ubuntu 20.04.5 (Focal Fossa)
 https://releases.ubuntu.com/20.04.5
 
-
-Virtual Machine:
-VirtualBox  7.0.2 (Windows hosts)
-https://www.virtualbox.org/wiki/Downloads
-Initial Setup/Updates - minimal machine specifications(for testing not production)
-System Information:(if using a VM you can use these specs)
-
-Main Memory:
-4 GB (minimum requirement)
-16 GB
-Disk storage:
-25 GB (minimum requirement)
-100 GB
-CPU cores:
-4 (minimum requirement)
-8 
+Main Memory: 4 GB (minimum requirement), 16GB
+Disk storage: 25 GB (minimum requirement), 100GB
+CPU cores: 4 (minimum requirement), 8
 
 S.U.R.F.A.C.E. CDMS installation involves the following 10 steps
 
@@ -170,5 +157,12 @@ Open in Browser(if you are viewing from the same machine)
 
 Or use the private IP of the machine running the application
 
+Installation notes
 
+
+VirtualBox Machine:
+VirtualBox  7.0.2 (Windows hosts)
+https://www.virtualbox.org/wiki/Downloads
+Initial Setup/Updates - minimal machine specifications(for testing not production)
+System Information:(if using a VM you can use these specs)
 
