@@ -1,7 +1,5 @@
-Installing SURFACE
+Installing SURFACE CDMS
 ==================
-
-Here we'll include information on how to install SURFACE.
 
 S.U.R.F.A.C.E. CDMS SYSTEM REQUIREMENTS
 
@@ -26,7 +24,7 @@ CPU cores:
 4 (minimum requirement)
 8 
 
-S.U.R.F.A.C.E. CDMS installation involves the following steps
+S.U.R.F.A.C.E. CDMS installation involves the following 10 steps
 
 Step 1 - Install Ubuntu 20.04.5 (Focal Fossa) on your machine(virtual or otherwise)
 
@@ -87,96 +85,90 @@ $ sudo usermod -aG docker ${USER}
 $ su - ${USER}
 $ groups
 
-PLEASE NOTE - for some reason during our first installation process we had to run these commands repeatedly to make sure that “docker” was a user within “groups”. When you run the “groups” command if “docker” is not listed some of the following installation steps failed so we had to run these commands again to ensure that “docker” was displayed under “groups”. I do not know why this was happening.
+PLEASE NOTE - for some reason during our first installation process we had to run the last three commands repeatedly to make sure that “docker” was a user within “groups”. When you run the “groups” command if “docker” is not listed some of the following installation steps failed so we had to run these commands again to ensure that “docker” was displayed under “groups”. I do not know why this was happening. We have not encountered that issue again when installing but just made a note of it.
 
+(VM) Restart your Virtual Machine(If you are running a VM) - not sure if this is necessary
 
-(VM) Restart your Virtual Machine(If you are running a VM)
+Step 5 - Docker-Compose Installation
 
-
-
-
-
-
-
-Step 2 - Docker-Compose Installation
 Download the 1.29.2 release and save the executable file at ‘/usr/local/bin/docker-compose’:
 $ sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-ONE(1)line version below:
-$ sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-
 
 Setting Permissions for docker-compose
 $ sudo chmod +x /usr/local/bin/docker-compose
-
 
 Verifying Installation:
 $ docker-compose --version
 
 
-Step 3 - Download repository and production file 
+Step 6 - Download repository and production file 
+
 Download the source code from GitHub repository
 $ git clone https://github.com/opencdms/surface
 
+Configure environment variables in ‘surface/api/production.env’ file. For security purposes the production.env file needed to build the environment is not found in the repository. The repository contains a sample file that will need to be replaced. We need to go into the surface/api directory and delete the dummy production file and replace it with the real file. The file needed for installation is provided on the FTP server below.
 
+Remove dummy file
 
-Configure environment variables in ‘surface/api/production.env’ file.
-(NOTE - for security purposes the production.env file needed to build the environment is not found in the repository. The repository contains a sample file that will need to be replaced. The actual file is provided to you below:
-FTP Server details(production.env file located here)
-Host:		db.hydromet.gov.bz:5394
-User:		wxstation
-Password: 	wxst@t!0n
-Command is “get production.env”
+cd surface/api
+sudo rm -rf production.example.env
 
+Get real file
 
+ftp db.hydromet.gov.bz 5394
+Username: surfacefiles
+Password: surf@c3f!l3s
 
+get production.env
+ls (to check if the file is in the api directory)
+cd .. (exit api directory)
 
+STEP 7 - Build Docker images
 
-STEP 4 - Build Docker images
-Build Docker Images - 
-
-
+Build Docker Images
 $ docker-compose build
-(NOTE -  The build command should be run from the “/surface” directory (you may currently be in the surface/api directory after setting up the production.env file, therefore you need to “cd ..” to go back to the “/surface” directory)
+
+(NOTE -  The build command should be run from the “/surface” directory (you may currently be in the surface/api directory after setting up the production.env file, therefore you need to “cd ..” to exit “/surface/api”)
 
 
-Start Docker - must start only with these 4 containers
-
+Start Docker with ONLY these 4 containers
 
 $ docker-compose up postgres cache redis api
 
 
-NOTE  - You will need to open a new terminal at this point to run the commands to follow. If you are using a terminal only installation you will need to “Ctrl + \” to exit docker without killing the containers 
-Starting SURFACE database (had an error message here once - - problem noted in training doc)
-Without Data:
+NOTE  - We need to exit docker up without killing the 4 containers we just brought up. To do so use the command “Ctrl + \” and you should see the command prompt again.
+
+
+To install SURFACE Without Data:
 $ docker-compose exec api bash load_initial_data.sh
 
-
-
-
-With backup data dump file:
+To install With backup data dump file:
 $ docker-compose exec -T postgres psql -U dba -d surface_db < backup_data.sql
 
 
-STEP 5 - Initial setup to Postgres database
+STEP 8 - Initial setup to Postgres database
+
 Collect Static Files and Create User:
 $ docker-compose exec api python manage.py collectstatic --noinput
 
 $ docker-compose exec api python manage.py createsuperuser
 
 
-STEP 6 - Starting SURFACE
+STEP 9 - Starting SURFACE
+
 Stop Docker:
 $ docker-compose stop (CTRL+C)
-
 
 Start Docker
 $ docker-compose up
 (background start) $ docker-compose up -d
 
+Step 10 - Open browser and login to application
 
-Open in Browser:
+Open in Browser(if you are viewing from the same machine)
 0.0.0.0:8080
 
-Installation Questions
+Or use the private IP of the machine running the application
+
 
 
