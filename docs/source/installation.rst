@@ -1,5 +1,7 @@
+.. _installation:
+
 Installing SURFACE CDMS
-==================
+========================
 
 S.U.R.F.A.C.E. CDMS SYSTEM REQUIREMENTS
 
@@ -14,13 +16,14 @@ CPU cores: 4 (minimum requirement), 8
 S.U.R.F.A.C.E. CDMS installation involves the following 10 steps
 
 **Step 1 - Install Ubuntu 20.04.5 (Focal Fossa) on your machine(virtual or otherwise)**
+-------------------------------------
 
 **Step 2 - Install, Update and Upgrade basic packages**
-
+-------------------------------------
 $ sudo apt update
 $ sudo apt upgrade
 
-**ASIDE** - Virtual machine users may want to install openssh to enable easier. For example using putty to ssh into the machine to enable easier cut and paste of installation commands. Setup ssh by following the commands below:
+*ASIDE* - Virtual machine users may want to install openssh to enable easier. For example using putty to ssh into the machine to enable easier cut and paste of installation commands. Setup ssh by following the commands below:
 
 sudo apt install openssh-server
 sudo systemctl status ssh
@@ -31,7 +34,7 @@ sudo ufw allow ssh
 **BACK TO SURFACE INSTALLATION**
 
 **STEP 3 - Install important pre-requisities**
-
+------------------------------------
 $ sudo apt install build-essential gcc make perl dkms curl
 $ sudo apt install git
 
@@ -48,26 +51,26 @@ https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ub
 
 
 **Step 4 - Docker Installation**
-
-Update and Prerequisite Packages:
+-------------------------
+# Update and Prerequisite Packages:
 $ sudo apt update
 $ sudo apt install apt-transport-https ca-certificates curl software-properties-common
 
-Add the GPG key for the official Docker repository
+#. Add the GPG key for the official Docker repository
 $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 
-Add the Docker repository to APT sources:
+# Add the Docker repository to APT sources:
 $ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
 
-Make sure you are about to install from the Docker repo instead of the default Ubuntu repo:
+# Make sure you are about to install from the Docker repo instead of the default Ubuntu repo:
 $ apt-cache policy docker-ce
 
-Install Docker
+# Install Docker
 $ sudo apt install docker-ce
 $ sudo systemctl status docker
 ctrl+c
 
-Setting docker to run without sudo:
+# Setting docker to run without sudo:
 $ sudo usermod -aG docker ${USER}
 $ su - ${USER}
 $ groups
@@ -77,7 +80,7 @@ PLEASE NOTE - for some reason during our first installation process we had to ru
 (VM) Restart your Virtual Machine(If you are running a VM) - not sure if this is necessary
 
 **Step 5 - Docker-Compose Installation**
-
+----------------------------
 Download the 1.29.2 release and save the executable file at ‘/usr/local/bin/docker-compose’:
 $ sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 
@@ -89,7 +92,7 @@ $ docker-compose --version
 
 
 **Step 6 - Download repository and production file** 
-
+---------------------------------------------------
 Download the source code from GitHub repository
 $ git clone https://github.com/opencdms/surface
 
@@ -111,7 +114,7 @@ ls (to check if the file is in the api directory)
 cd .. (exit api directory)
 
 **STEP 7 - Build Docker images**
-
+----------------------------------
 Build Docker Images
 $ docker-compose build
 
@@ -134,7 +137,7 @@ $ docker-compose exec -T postgres psql -U dba -d surface_db < backup_data.sql
 
 
 **STEP 8 - Initial setup to Postgres database**
-
+---------------
 Collect Static Files and Create User:
 $ docker-compose exec api python manage.py collectstatic --noinput
 
@@ -142,7 +145,7 @@ $ docker-compose exec api python manage.py createsuperuser
 
 
 **STEP 9 - Starting SURFACE**
-
+-------------
 Stop Docker:
 $ docker-compose stop (CTRL+C)
 
@@ -151,7 +154,7 @@ $ docker-compose up
 (background start) $ docker-compose up -d
 
 **Step 10 - Open browser and login to application**
-
+----------------
 Open in Browser(if you are viewing from the same machine)
 0.0.0.0:8080
 
