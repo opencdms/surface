@@ -13,8 +13,11 @@ This is the initial documentation for the SURFACE CDMS project.
    :maxdepth: 2
    :caption: Contents:
 
-   usermanual
-   installation
+   
+   #. User manual
+   #. Installation Manual
+   #. Training Documentation
+   #. Development Plans
 
 
 Indices and tables
