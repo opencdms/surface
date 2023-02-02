@@ -1,7 +1,6 @@
 version: "3.5"
 
 services:
-
   nginx:
     container_name: surface-nginx
     build: ./nginx
@@ -48,6 +47,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: api
+      network: host
     container_name: surface-api
     command: ./startup.sh
     env_file:
@@ -74,6 +74,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: api
+      network: host
     container_name: surface-celery-worker
     command: /home/surface/.local/bin/celery -A tempestas_api worker -l info
     env_file:
@@ -98,6 +99,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: api
+      network: host
     container_name: surface-celery-beat
     restart: unless-stopped
     command: /home/surface/.local/bin/celery -A tempestas_api beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler

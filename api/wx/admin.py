@@ -320,3 +320,31 @@ class BackupLogAdmin(admin.ModelAdmin):
 class ElementDecoder(admin.ModelAdmin):
     search_fields = ("element_name", "variable__name", "decoder__name")
     list_display = ("element_name", "variable_id", "decoder")
+
+
+
+admin.site.register(models.StationComponent)
+
+# from wx import forms
+
+# @admin.register(models.StationComponent)
+# class StationComponentAdmin(admin.ModelAdmin):
+#     list_display = ('name', 'description')
+
+ 
+@admin.register(models.StationProfileComponent)
+class StationProfileComponentAdmin(admin.ModelAdmin):
+    list_display = ('profile', 'presentation_order', 'station_component')
+
+
+@admin.register(models.MaintenanceReportStationComponent)
+class MaintenanceReportStationComponentAdmin(admin.ModelAdmin):
+    list_display = ('maintenance_report', 'station_component', 'condition', 'component_classification')
+
+@admin.register(models.VisitType)
+class VisitTypeAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+@admin.register(models.Technician)
+class TechnicianAdmin(admin.ModelAdmin):
+    list_display = ("name",)

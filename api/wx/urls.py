@@ -97,6 +97,18 @@ urlpatterns = [
     path('api/step_threshold/', views.step_threshold_view),
     path('wx/quality_control/persist_threshold/', views.PersistThresholdView.as_view(), name='persist-threshold'),
     path('api/persist_threshold/', views.persist_threshold_view),
+
+    path('wx/maintenance_report/', views.get_maintenance_report_form, name='maintenance-report'),
+    path('wx/maintenance_report/create/', views.create_maintenance_report),
+    path('wx/maintenance_report/<int:id>/get/', views.get_maintenance_report),
+    path('wx/maintenance_report/<int:id>/update/', views.update_maintenance_report),
+    path('wx/maintenance_report/<int:id>/update/condition/', views.update_maintenance_report_condition),
+    path('wx/maintenance_report/<int:id>/update/component/<int:component_id>/', views.update_maintenance_report_component),
+    path('wx/maintenance_report/<int:id>/update/contacts/', views.update_maintenance_report_contacts),
+    path('wx/maintenance_report/<int:id>/update/summary/', views.update_maintenance_report_summary),
+    path('wx/maintenance_report/<int:id>/update/datalogger/', views.update_maintenance_report_datalogger),    
+    path('wx/maintenance_report/<int:id>/delete/', views.delete_maintenance_report),
+
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

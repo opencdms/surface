@@ -1,0 +1,125 @@
+{% extends "base.html" %} 
+{% block content %}
+{% load static %}
+
+<script type="text/javascript" src="{% static 'ckeditor/ckeditor-init.js' %}"></script>
+<script type="text/javascript" src="{% static 'ckeditor/ckeditor/ckeditor.js' %}"></script>
+
+<!-- <script type="text/javascript" src="{% static 'tinymce/tinymce.min.js' %}"></script> -->
+
+
+
+<div class="srf-container">
+  <div id="app" v-cloak>
+    <v-app>
+      <v-content fluid fill-height style="background: white">
+        <v-layout column>
+          <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+            <span class="srf-display-1 text-uppercase">Maintenance Reports - New Report</span
+            ><br /><br />
+          </div>
+
+          {{ article.content|safe }}
+
+<!--           <template>
+            {{ article.content|safe }}
+          </template> -->
+
+          <form method="post">
+            {% csrf_token %}
+
+            {{ form.media }}
+            {{ form.as_p }}
+
+            <button>Save changes</button>
+          </form>
+        </v-layout>
+
+      </v-content>
+    </v-app>
+  </div>
+
+{% endblock %} {% block localjavascript %}
+
+
+<script>
+    Vue.use(window.vuelidate.default);
+    const { required, minLength } = window.validators;
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      data: {    
+        article_title: "{{article.title}}",
+        article_content: null,
+        loading: false,
+        show_dialog: false,   
+      },
+      methods: {
+        updateArticle(id) {
+          this.loading = true;
+          axios.put(`/wx/maintenance_report/${id}/update/`,{
+              "article_title": this.article_content,
+              "article_content": this.article_title,
+            })
+            .then(res => {})
+            .catch((error) => {
+              console.log("error", error.response);
+              this.request_error_message = error.response.data.message;
+              this.request_error = true;
+            })
+            .finally(() => {
+              this.loading = false;
+              this.show_dialog = false;
+            });
+        },      
+      },
+      mounted() {
+        axios.defaults.xsrfHeaderName = "X-CSRFToken";
+        axios.defaults.xsrfCookieName = "csrftoken";
+      },      
+    });
+  </script>
+
+  <style>
+    .firstColumn {
+      border-left: 1px solid gray;
+    }
+
+    th,
+    td {
+      padding: 3px;
+      padding-left: 10px;
+    }
+
+    .v-input--selection-controls__ripple {
+      border-radius: 50%;
+      cursor: pointer;
+      height: 34px;
+      position: absolute;
+      transition: inherit;
+      width: 34px;
+      left: -12px;
+      top: calc(50% - 24px);
+      margin: 7px;
+      z-index: 10 !important;
+    }
+
+    .v-dialog {
+      box-shadow: none;
+    }
+    .v-dialog__content,
+    .v-dialog__content--active {
+      z-index: 9999 !important;
+    }
+    .btn-close-dialog {
+      position: absolute;
+      top: 116px;
+      left: 336px;
+      border-radius: 0px 20px 20px 0px;
+      z-index: 9999;
+      width: 36px;
+    }
+  </style>
+</div>
+{% endblock %}

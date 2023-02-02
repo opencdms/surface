@@ -23,7 +23,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.getenv('SURFACE_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.getenv('SURFACE_DJANGO_DEBUG', False)
 DEBUG = os.getenv('SURFACE_DJANGO_DEBUG', False)
 
 ALLOWED_HOSTS = ['*']
@@ -42,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'django_celery_beat',
+    'ckeditor',
     'wx',
     'rest_framework',
     'corsheaders',
@@ -200,6 +200,8 @@ LOGGING = {
 
     }
 }
+
+
 
 CACHES = {
     'default': {

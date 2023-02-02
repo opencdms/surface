@@ -5,7 +5,7 @@
       <v-content fluid fill-height style="background: white">
         <v-layout column>
           <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
-            <span class="srf-display-1 text-uppercase">New Maintenance Reports - New Report</span
+            <span class="srf-display-1 text-uppercase">Maintenance Reports - New Report</span
             ><br /><br />
           </div>
           <v-layout column fluid>
@@ -23,9 +23,8 @@
                   :items="stationList"
                   item-text="label"
                   item-value="id"
-                  v-model="requestObject.station_id"
+                  v-model="maintenanceReportObject.station_id"
                   label="Station"
-                  @change="getStationVariables(requestObject.station_id)"
                   required
                   hint="*Required"
                   persistent-hint
@@ -36,14 +35,14 @@
               <v-flex lg4 ml-3>
                 <v-menu
                   :close-on-content-click="false"
-                  v-model="visist_date_menu"
+                  v-model="visit_date_menu"
                   transition="scale-transition"
                   offset-y
                   class="max-50"
                 >
                   <template v-slot:activator="{ on }">
                     <v-text-field
-                    v-model="visist_date"
+                    v-model="maintenanceReportObject.visit_date"
                     label="Date of visit"
                     v-on="on"
                     required
@@ -52,8 +51,8 @@
                     ></v-text-field>
                   </template>
                   <v-date-picker
-                  v-model="visist_date"
-                  @input="visist_date_menu = false"
+                  v-model="maintenanceReportObject.visit_date"
+                  @input="visit_date_menu = false"
                   ></v-date-picker>
                 </v-menu>
               </v-flex>
@@ -65,9 +64,8 @@
                   :items="visittypeList"
                   item-text="name"
                   item-value="id"
-                  v-model="requestObject.visittype_id"
+                  v-model="maintenanceReportObject.visittype_id"
                   label="Type of the visit"
-                  @change="getStationVariables(requestObject.station_id)"              
                   required
                   hint="*Required"
                   persistent-hint
@@ -77,10 +75,10 @@
               </v-flex>
               <v-flex lg4 ml-3>
                 <v-autocomplete
-                  :items="techniciansList"
+                  :items="technicianList"
                   item-text="name"
                   item-value="id"
-                  v-model="requestObject.technicians_id"
+                  v-model="maintenanceReportObject.responsible_technician_id"
                   label="Responsible technician"
                   required
                   hint="*Required"
@@ -99,7 +97,7 @@
                 >
                   <template v-slot:activator="{ on }">
                     <v-text-field
-                    v-model="initial_time"
+                    v-model="maintenanceReportObject.initial_time"
                     label="Initial time"
                     v-on="on"
                     required
@@ -108,26 +106,26 @@
                     ></v-text-field>
                   </template>
                   <v-time-picker
-                  v-model="initial_time"
+                  v-model="maintenanceReportObject.initial_time"
                   ></v-time-picker>
                 </v-menu>
               </v-flex>                      
             </v-layout>
 
             <v-layout dense justify="end" class="mb-3">                     
-              <v-flex ml-3 mt-5 ml-5 class="d-flex justify-between">
+              <v-flex lg6 mt-5 ml-5 class="d-flex justify-between">
                 <v-btn
                   justify-end
                   outlined
                   color="primary"
                   small
-                  @click="getRangeThresholds"
-                  :disabled="$v.requestObject.$invalid"
+                  v-if="!maintenanceReportObject.id"
+                  @click="createMaintenanceReport(maintenanceReportObject)"
+                  :disabled="$v.maintenanceReportObject.$invalid"
                   >CREATE REPORT</v-btn
                 >
               </v-flex>
             </v-layout>
-
 
             <v-alert v-model="request_error" dismissible type="error">
               [[ request_error_message ]]
@@ -140,6 +138,347 @@
             </v-overlay>
           </v-layout>
         </v-layout>
+            <v-layout mt-3 v-if="maintenance_report" column fluid>
+                <v-layout  mt-3 mb-3>
+                  <v-flex  font-size="small" class="srf-display-1-1" style="background:#BBB">
+                    Reported Created by [[maintenance_report.responsible_technician.name]] at [[maintenanceReportObject.visit_date]] [[maintenanceReportObject.initial_time]]
+                  </v-flex>
+                </v-layout mt-3 mb-3>
+                <v-layout  mt-3 mb-3>
+                  <div class="srf-display-1-2"
+                    >Station information </div
+                  >
+                </v-layout mt-3 mb-3>
+                <hr style="height:0.75px;border:none;color:#333;background-color:#333;">
+                <v-layout  mt-3 mb-3>
+                  <v-flex lg3 ml-3>
+                    Station Name: [[maintenance_report.station.name]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Station Host Name: [[maintenance_report.station.name]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Station ID: [[maintenance_report.station.code]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    WIGOS ID: [[maintenance_report.station.wigos]]
+                  </v-flex>                                    
+                </v-layout mt-3 mb-3>
+
+                <v-layout  mt-3 mb-3>
+                  <v-flex lg3 ml-3>
+                    Station Type: [[maintenance_report.station.station_type]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Latitude: [[maintenance_report.station.latitude]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Longitude: [[maintenance_report.station.longitude]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Station Profile: [[maintenance_report.station.profile]]
+                  </v-flex>                                    
+                </v-layout mt-3 mb-3>          
+
+                <v-layout  mt-3 mb-3>
+                  <v-flex lg3 ml-3>
+                    Elevation: [[maintenance_report.station.elevation]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    District: [[maintenance_report.station.district]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Watershed: [[maintenance_report.station.watershed]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    
+                  </v-flex>                                    
+                </v-layout mt-3 mb-3> 
+
+                <v-layout  mt-3 mb-3>
+                  <v-flex lg3 ml-3>
+                    Transmission Type: [[maintenance_report.station.code]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Transmission ID: [[maintenance_report.station.code]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Transmission Interval: [[maintenance_report.station.code]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Measurement Interval: [[maintenance_report.station.code]]
+                  </v-flex>                                    
+                </v-layout mt-3 mb-3> 
+
+                <v-layout  mt-3 mb-3>
+                  <v-flex lg3 ml-3>
+                    Data of first Operation: [[maintenance_report.station.data_of_first_operation]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                    Date of Relocation: [[maintenance_report.station.data_of_relocation]]
+                  </v-flex>
+                  <v-flex lg3 ml-3>
+                  </v-flex>
+
+                  <v-flex lg3 ml-3>
+                  </v-flex>                                    
+                </v-layout mt-3 mb-3>
+                <hr style="height:0.75px;border:none;color:#333;background-color:#333;">  
+            </v-layout>
+
+            <v-stepper v-if="maintenance_report" v-model="e1" vertical class="elevation-0">
+              <v-stepper-step
+                :complete="e1 > 1"
+                editable
+                step="1"
+              >
+                Describe the station on arrival
+              </v-stepper-step>
+
+              <v-stepper-content step="1">
+                <v-card color="white" flat=true >
+                  <v-textarea
+                    v-model="station_on_arrival_conditions"
+                    style="color: white;
+                           background-color:#BBB;"
+                    class="ml-0 mr-0 mb-8 pa-5"
+                    placeholder="Description of station upon arrival:"
+                    auto-grow
+                  ></v-textarea>
+                </v-card>  
+                <v-btn
+                  mt-3
+                  color="primary" 
+                  @click="nextStep(1); updateMaintenanceReportConditions(maintenanceReportObject, station_on_arrival_conditions)"
+                >
+                  Save and Continue
+                </v-btn>
+              </v-stepper-content>
+
+              <v-divider
+                vertical
+              ></v-divider>
+
+              <v-stepper-item v-for="(component, n) in component_list">          
+                <v-stepper-step
+                  :key="`${n+2}-step`"
+                  :step="n+2"
+                  :complete="e1 > n+2"
+                  editable
+                >
+                  Evaluate Condition of [[component.component_name]]
+                </v-stepper-step>
+
+                <v-stepper-content
+                 :step="n+2"
+                 :key="`${n+2}-content`"
+                >
+                  <v-radio-group v-model="component.component_classification">
+                    <v-radio
+                      label="Fully Functional"
+                      value="F"
+                    ></v-radio>
+                    <v-radio
+                      label="Partially Functional"
+                      value="P"
+                    ></v-radio>
+                    <v-radio
+                      label="Not Functional"
+                      value="N"
+                    ></v-radio>
+                  </v-radio-group>
+                  <v-textarea
+                    v-model="component.condition"
+                    style="color: white;
+                           background-color:#BBB;"
+                    class="ml-0 mr-0 mb-8 pa-5"
+                    placeholder="Description of station upon arrival:"
+                    auto-grow
+                  ></v-textarea>                  
+                  <v-btn
+                    color="primary"
+                    @click="nextStep(n+2); updateMaintenanceReportComponent(maintenanceReportObject, component)"
+                  >
+                    Save and Continue
+                  </v-btn>
+                </v-stepper-content>
+
+                <v-divider
+                  v-if="n !== steps"
+                  :key="n"
+                  vertical
+                ></v-divider>
+              </v-stepper-item>
+
+              <!-- // -->
+
+              <v-stepper-step
+                :key="`${steps}-step`"
+                :step="steps+2"
+                :complete="e1 > steps+2"              
+                editable
+              >
+                Contacts
+              </v-stepper-step>
+
+              <v-stepper-content
+                :step="steps+2"
+                :key="`${steps+2}-content`"
+              >
+                <v-card color="white" flat=true >
+                  <v-textarea
+                    v-model="contacts"
+                    style="color: white;
+                           background-color:#BBB;"
+                    class="ml-0 mr-0 mb-8 pa-5"
+                    placeholder="Contacts:"
+                    auto-grow
+                  ></v-textarea>
+                </v-card>  
+                <v-btn
+                  mt-3
+                  color="primary" 
+                  @click="nextStep(steps+2); updateMaintenanceReportContacts(maintenanceReportObject, contacts)"
+                >
+                  Save and Continue
+                </v-btn>
+              </v-stepper-content>
+
+              <v-divider
+                vertical
+              ></v-divider>
+
+              <v-stepper-step
+                :key="`${steps}-step`"
+                :step="steps+3"
+                :complete="e1 > steps+3"  
+                editable
+              >
+                Summary of the visist
+              </v-stepper-step>
+
+              <v-stepper-content
+                :step="steps+3"
+                :key="`${steps+3}-content`"
+              >
+                <v-card color="#BBB" flat=true >
+                  <v-layout ml-3 mt-3 mb-3>
+                    <v-flex lg4>
+                      <v-autocomplete
+                        :items="technicianList"
+                        item-text="name"
+                        item-value="id"
+                        v-model="maintenanceReportObject.other_technician_1"
+                        autocomplete="off"
+                      ></v-autocomplete>
+                      <v-autocomplete
+                        :items="technicianList"
+                        item-text="name"
+                        item-value="id"
+                        v-model="maintenanceReportObject.other_technician_2"
+                        autocomplete="off"
+                      ></v-autocomplete>
+                      <v-autocomplete
+                        :items="technicianList"
+                        item-text="name"
+                        item-value="id"
+                        v-model="maintenanceReportObject.other_technician_3"
+                        autocomplete="off"
+                      ></v-autocomplete>                           
+                    </v-flex>
+                    <v-textarea
+                      v-model="maintenanceReportObject.current_visit_summary"
+                      class="ml-3 mr-3"
+                      auto-grow
+                      rows="10"
+                      row-height="15"
+                      placeholder="Summary of work done:"
+                    ></v-textarea>
+                  </v-layout>                     
+                  <v-layout ml-3>
+                    <v-flex lg4>
+                      <v-menu
+                        :close-on-content-click="false"
+                        v-model="maintenanceReportObject.next_visit_date_menu"
+                        transition="scale-transition"
+                        offset-y
+                        class="max-50"
+                      >
+                        <template v-slot:activator="{ on }">
+                          <v-text-field
+                          v-model="maintenanceReportObject.next_visit_date"
+                          label="Date of next visit"
+                          v-on="on"
+                          required
+                          persistent-hint
+                          prepend-icon="event"
+                          ></v-text-field>
+                        </template>
+                        <v-date-picker
+                        v-model="maintenanceReportObject.next_visit_date"
+                        @input="maintenanceReportObject.next_visit_date_menu = false"
+                        ></v-date-picker>
+                      </v-menu>
+                      <v-menu
+                        :close-on-content-click="false"
+                        v-model="maintenanceReportObject.end_time_menu"
+                        transition="scale-transition"
+                        offset-y
+                        class="max-50"
+                      >
+                        <template v-slot:activator="{ on }">
+                          <v-text-field
+                          v-model="maintenanceReportObject.end_time"
+                          label="End time"
+                          v-on="on"
+                          required
+                          persistent-hint
+                          prepend-icon="access_time"
+                          ></v-text-field>
+                        </template>
+                        <v-time-picker
+                        v-model="maintenanceReportObject.end_time"
+                        ></v-time-picker>
+                      </v-menu>
+                    </v-flex>
+                     <v-textarea
+                      v-model="maintenanceReportObject.next_visit_summary"
+                      class="ml-3 mr-3"
+                      auto-grow
+                      rows="10"
+                      row-height="15"
+                      placeholder="Work to be done on next visit:"
+                    ></v-textarea>
+                  </v-layout>
+                  <v-layout ml-3 mr-3>
+                    <v-flex ml-1>
+                      Data Logger File
+                      <v-file-input
+                        v-model="maintenanceReportObject.data_logger_file"
+                        label="Upload latest data logger program"
+                      ></v-file-input>
+                    </v-flex>
+                  </v-layout>
+                </v-card>
+                
+                <v-flex mt-8>
+                  <v-btn color="grey"> Preview </v-btn>
+                  <v-btn
+                    color="warning"
+                    @click="nextStep(steps+3);
+                            updateMaintenanceReportDataLogger(maintenanceReportObject);
+                            updateMaintenanceReportSummary(maintenanceReportObject, 'D')"
+                  > Save Draft </v-btn>
+                  <v-btn
+                    color="primary"
+                    @click="nextStep(steps+3);
+                            updateMaintenanceReportDataLogger(maintenanceReportObject);
+                            updateMaintenanceReportSummary(maintenanceReportObject, 'P')"
+                  >Publish
+                  </v-btn>                  
+                </v-flex>
+              </v-stepper-content>              
+            </v-stepper>
       </v-content>
     </v-app>
   </div>
@@ -148,45 +487,59 @@
 <script>
     Vue.use(window.vuelidate.default);
     const { required, minLength } = window.validators;
-
     new Vue({
       el: "#app",
       vuetify: new Vuetify(),
       delimiters: ["[[", "]]"],
       validations: {
-        requestObject: {
+        maintenanceReportObject: {
           station_id: { required },
           visittype_id: { required },
-          technicians_id: { required },
+          responsible_technician_id: { required },
         },
       },
       data: {
-        visist_date_menu: false,
-        visist_date: moment().format('YYYY-MM-DD'),
+        contacts: null,
+        station_on_arrival_conditions: null,
+        radioGroup: 1,
+        maintenance_report: null,
+        visit_date_menu: false,
         initial_time_menu: false,
-        initial_time: moment().format('HH:mm'), 
-        hours: (function() {
-          const hours = [];
-          hours.length = 24;
-          hours.fill('');
-          return hours.map((el, index) => `${index < 10 ? '0' : ''}${index}:00`);
-        })(),
-
         request_error: false,
         request_error_message: "",
         requestObject: {
           station_id: null,
           visittype_id: null,
-          technicians_id: null,
+          responsible_technician_id: null,
+          visit_date: null,
+          initial_time: null,
+        },      
+        maintenanceReportObject: {
+          id: null,
+          station_id: null,
+          station: null,
+          visittype_id: null,
+          responsible_technician_id: null,
+          visit_date: moment().format('YYYY-MM-DD'),
+          initial_time: moment().format('HH:mm'),
+          station_on_arrival_conditions: null,
+          contacts: null,
+          other_technician_1: null,
+          other_technician_2: null,
+          other_technician_3: null,
+          next_visit_date: null,
+          next_visit_date_menu: false,
+          end_time: null,
+          end_time_menu:false,
+          current_visit_summary: null,
+          next_visit_summary: null,
+          data_logger_file: null,
         },
+        component_list: null,
         requestedObject:{},
         loading: false,
         simpleTextFieldsRules: [
           (v) => (v != null && v !== "") || "This field is required",
-        ],
-        intervalFieldRules: [
-          (v) => (v != null && v !== "") || "This field is required",
-          (v) => (v != null && v > 0) || "Should be greater than 0",
         ],
         filter: {
           isAutomatic: true
@@ -207,12 +560,14 @@
            name: "{{ visittype.name }}" },
           {% endfor %}
         ],
-        techniciansList: [
-          {% for technician in technicians_list %}
+        technicianList: [
+          {% for technician in technician_list %}
           {id: {{ technician.id }},
            name: "{{ technician.name }}" },
           {% endfor %}
-        ],         
+        ],
+        e1: 1,
+        steps: 2,        
       },
       computed: {
         stationList () {
@@ -220,11 +575,137 @@
 
           filteredStations = filteredStations.filter(station => this.filter.isAutomatic == station.is_automatic);
 
-          this.requestObject.station_id = null;
+          this.maintenanceReportObject.station_id = null;
 
           return filteredStations;
-        }
+        } 
       },
+      watch: {
+        steps (val) {
+          if (this.e1 > val) {
+            this.e1 = val
+          }
+        },
+      },      
+      methods: {
+        nextStep(n) {
+          if (n === this.steps+3) {
+            this.e1 = 1
+          } else {
+            this.e1 = n + 1
+          }
+        },
+        getInitialData(id) {
+          this.loading = true;
+          axios.get(`/wx/maintenance_report/${id}/get/`).then(
+            res => {
+              this.maintenance_report = res.data;
+              this.steps = this.maintenance_report['steps'];
+              this.component_list = this.maintenance_report['component_list'];
+              this.contacts = res.data['contacts'];
+              this.station_on_arrival_conditions = res.data['station_on_arrival_conditions'];
+              this.maintenanceReportObject.other_technician_1 =  res.data['other_technician_1'];
+              this.maintenanceReportObject.other_technician_2 =  res.data['other_technician_2'];
+              this.maintenanceReportObject.other_technician_3 =  res.data['other_technician_3'];
+              this.maintenanceReportObject.next_visit_date =  res.data['next_visit_date'];
+              this.maintenanceReportObject.end_time =  res.data['end_time'];
+              this.maintenanceReportObject.current_visit_summary =  res.data['current_visit_summary'];
+              this.maintenanceReportObject.next_visit_summary =  res.data['next_visit_summary'];
+              this.loading = false;
+            }
+          );
+        },        
+        createMaintenanceReport(item) {
+          this.loading = true;
+          axios.post(`/wx/maintenance_report/create/`,{
+              "station_id": item.station_id,
+              "visittype_id": item.visittype_id,
+              "responsible_technician_id": item.responsible_technician_id,
+              "visit_date": item.visit_date,
+              "initial_time": item.initial_time,
+            })
+            .then(res => {
+              this.maintenanceReportObject.id = res.data['maintenance_report_id']
+              this.getInitialData(res.data['maintenance_report_id']);
+            })
+            .catch((error) => {
+              console.log("error", error.response);
+              this.request_error_message = error.response.data.message;
+              this.request_error = true;
+            })
+            .finally(() => {
+              this.loading = false;
+              this.show_dialog = false;
+            });
+        },
+        updateMaintenanceReportConditions(item, conditions){
+          this.loading = true;
+          axios.put(`/wx/maintenance_report/${item.id}/update/condition/`,{
+            'conditions': conditions,
+          })
+          .then(
+            res => {}
+          );
+          this.loading = false;
+        },
+        updateMaintenanceReportComponent(item, component){
+          this.loading = true;
+          axios.put(`/wx/maintenance_report/${item.id}/update/component/${component.component_id}/`,{
+            "component_classification": component.component_classification,
+            "component_condition": component.condition,
+          })
+          .then(
+            res => {}
+          );
+          this.loading = false;
+        },
+        updateMaintenanceReportContacts(item, contacts){
+          this.loading = true;
+          axios.put(`/wx/maintenance_report/${item.id}/update/contacts/`,{
+            "contacts": contacts,
+          })
+          .then(
+            res => {}
+          );
+          this.loading = false;
+        },
+        updateMaintenanceReportDataLogger(item){
+          this.loading = true;
+          var formData = new FormData();
+          formData.append("data_logger_file", item.data_logger_file);
+          axios.post(`/wx/maintenance_report/${item.id}/update/datalogger/`,
+            formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+          })
+          .then(
+            res => {}
+          );
+          this.loading = false;
+        },        
+        updateMaintenanceReportSummary(item, status){ 
+          this.loading = true;
+          axios.put(`/wx/maintenance_report/${item.id}/update/summary/`,{
+            "other_technician_1": item.other_technician_1,
+            "other_technician_2": item.other_technician_2,
+            "other_technician_3": item.other_technician_3,
+            "next_visit_date": item.next_visit_date,
+            "end_time": item.end_time,
+            "current_visit_summary": item.current_visit_summary,
+            "next_visit_summary": item.next_visit_summary,
+            "status": status,
+          })
+          .then(
+            res => {}
+          );
+          this.loading = false;
+        },        
+      },
+      mounted() {
+        axios.defaults.xsrfHeaderName = "X-CSRFToken";
+        axios.defaults.xsrfCookieName = "csrftoken";
+      },      
     });
   </script>
 

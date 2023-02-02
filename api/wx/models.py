@@ -1280,12 +1280,100 @@ class HFSummaryTask(BaseModel):
     class Meta:
         unique_together = ('station', 'variable', 'start_datetime', 'end_datetime')
 
-
 class VisitType(BaseModel):
+    name = models.CharField(max_length=64, unique=True, blank=False, null=False)
+    description = models.CharField(max_length=256, blank=True, null=True)
+
+
+class Technician(BaseModel): # Singular
+    name = models.CharField(max_length=64, unique=True, blank=False, null=False)
+
+################################################################################################
+# https://github.com/jazzband/django-tinymce
+from tinymce import models as tinymce_models
+from ckeditor.fields import RichTextField
+
+# https://stackoverflow.com/questions/54802616/how-to-use-enums-as-a-choice-field-in-django-model
+from django.utils.translation import gettext_lazy # Enumaretor
+from datetime import date
+
+def no_future(value):
+    today = date.today()
+    if value > today:
+        raise ValidationError('Visit date cannot be in the future.')
+
+class StationComponent(BaseModel):
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=256)
+    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
+    report_template = RichTextField(blank=True, null=True)
 
+    class Meta:
+        verbose_name = "station component"
+        verbose_name_plural = "station components"
 
-class Technicians(BaseModel):
-    name = models.CharField(max_length=64)
+    def __str__(self):
+        return self.name    
+
+class StationProfileComponent(BaseModel):
+    profile = models.ForeignKey(StationProfile, on_delete=models.DO_NOTHING)
+    presentation_order = models.IntegerField()
+    station_component = models.ForeignKey(StationComponent, on_delete=models.DO_NOTHING)
+
+    class Meta:
+        unique_together = ('profile', 'station_component')
+        unique_together = ('profile', 'presentation_order')
+
+class MaintenanceReport(BaseModel):
+    class Status(models.TextChoices):
+        APPROVED = 'A', gettext_lazy('Approved')
+        DRAFT = 'D', gettext_lazy('Draft')
+        PUBLISHED = 'P', gettext_lazy('Published')
+
+    # New Maintenace Report
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    # https://stackoverflow.com/questions/49882526/validation-for-datefield-so-it-doesnt-take-future-dates-in-django
+    visit_type = models.ForeignKey(VisitType, on_delete=models.DO_NOTHING)
+    responsible_technician = models.ForeignKey(Technician, related_name='responsible_technician', on_delete=models.DO_NOTHING)
+    visit_date = models.DateField(help_text="Enter the date of the visist", validators=[no_future])
+    initial_time = models.TimeField() # Sem timezone
+
+    status = models.CharField(max_length=1, choices=Status.choices, default=Status.DRAFT)
+    
+    # First Snippet
+    station_on_arrival_conditions = RichTextField(blank=True, null=True)
+
+    # Penultimate Snippet
+    contacts = RichTextField(blank=True, null=True)
+
+    # Last Snippet
+    other_technician_1 = models.ForeignKey(Technician, related_name='other_technician_1', on_delete=models.DO_NOTHING, blank=True, null=True)
+    other_technician_2 = models.ForeignKey(Technician, related_name='other_technician_2', on_delete=models.DO_NOTHING, blank=True, null=True)
+    other_technician_3 = models.ForeignKey(Technician, related_name='other_technician_3', on_delete=models.DO_NOTHING, blank=True, null=True)
+
+    next_visit_date = models.DateField(blank=True, null=True)
+    end_time = models.TimeField(blank=True, null=True) # Sem timezone
+
+    current_visit_summary = RichTextField(blank=True, null=True)
+    next_visit_summary = RichTextField(blank=True, null=True)
+
+    data_logger_file = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('station', 'visit_date')    
+
+class MaintenanceReportStationComponent(BaseModel):
+    class ComponentClassification(models.TextChoices):
+        FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
+        PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
+        NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
+
+    maintenance_report = models.ForeignKey(MaintenanceReport, on_delete=models.CASCADE)
+    station_component = models.ForeignKey(StationComponent, on_delete=models.DO_NOTHING)
+    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
+    condition = RichTextField()
+    component_classification = models.CharField(max_length=1, choices=ComponentClassification.choices, default=ComponentClassification.FULLY_FUNCTIONAL)
+
+    class Meta:
+        unique_together = ('maintenance_report', 'station_component')
 
