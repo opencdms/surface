@@ -1,3 +1,7 @@
+======================
+Training Documentation
+======================
+
 All issues raised during training will be documented here
 
 the SURFACE working group meets for one hour on thursdays at 1900UTC to 2000UTC
