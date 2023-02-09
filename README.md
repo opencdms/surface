@@ -52,3 +52,5 @@ docker-compose -f docker-compose-dev.yml exec postgres psql -U dba -d surface_db
 ## Access DB manually
 
 docker-compose -f docker-compose-dev.yml exec postgres psql -U dba -d surface_db
+
+## Branching Training
