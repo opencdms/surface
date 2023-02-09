@@ -138,353 +138,377 @@
             </v-overlay>
           </v-layout>
         </v-layout>
-            <v-layout mt-3 v-if="maintenance_report" column fluid>
-                <v-layout  mt-3 mb-3>
-                  <v-flex  font-size="small" class="srf-display-1-1" style="background:#BBB">
-                    Reported Created by [[maintenance_report.responsible_technician.name]] at [[maintenanceReportObject.visit_date]] [[maintenanceReportObject.initial_time]]
-                  </v-flex>
-                </v-layout mt-3 mb-3>
-                <v-layout  mt-3 mb-3>
-                  <div class="srf-display-1-2"
-                    >Station information </div
-                  >
-                </v-layout mt-3 mb-3>
-                <hr style="height:0.75px;border:none;color:#333;background-color:#333;">
-                <v-layout  mt-3 mb-3>
-                  <v-flex lg3 ml-3>
-                    Station Name: [[maintenance_report.station.name]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Station Host Name: [[maintenance_report.station.name]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Station ID: [[maintenance_report.station.code]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    WIGOS ID: [[maintenance_report.station.wigos]]
-                  </v-flex>                                    
-                </v-layout mt-3 mb-3>
-
-                <v-layout  mt-3 mb-3>
-                  <v-flex lg3 ml-3>
-                    Station Type: [[maintenance_report.station.station_type]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Latitude: [[maintenance_report.station.latitude]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Longitude: [[maintenance_report.station.longitude]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Station Profile: [[maintenance_report.station.profile]]
-                  </v-flex>                                    
-                </v-layout mt-3 mb-3>          
-
-                <v-layout  mt-3 mb-3>
-                  <v-flex lg3 ml-3>
-                    Elevation: [[maintenance_report.station.elevation]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    District: [[maintenance_report.station.district]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Watershed: [[maintenance_report.station.watershed]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    
-                  </v-flex>                                    
-                </v-layout mt-3 mb-3> 
-
-                <v-layout  mt-3 mb-3>
-                  <v-flex lg3 ml-3>
-                    Transmission Type: [[maintenance_report.station.code]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Transmission ID: [[maintenance_report.station.code]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Transmission Interval: [[maintenance_report.station.code]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Measurement Interval: [[maintenance_report.station.code]]
-                  </v-flex>                                    
-                </v-layout mt-3 mb-3> 
-
-                <v-layout  mt-3 mb-3>
-                  <v-flex lg3 ml-3>
-                    Data of first Operation: [[maintenance_report.station.data_of_first_operation]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                    Date of Relocation: [[maintenance_report.station.data_of_relocation]]
-                  </v-flex>
-                  <v-flex lg3 ml-3>
-                  </v-flex>
-
-                  <v-flex lg3 ml-3>
-                  </v-flex>                                    
-                </v-layout mt-3 mb-3>
-                <hr style="height:0.75px;border:none;color:#333;background-color:#333;">  
-            </v-layout>
-
-            <v-stepper v-if="maintenance_report" v-model="e1" vertical class="elevation-0">
-              <v-stepper-step
-                :complete="e1 > 1"
-                editable
-                step="1"
+        <v-layout mt-3 v-if="maintenance_report" column fluid>
+            <v-layout  mt-3 mb-3>
+              <v-flex  font-size="small" class="srf-display-1-1" style="background:#BBB">
+                Reported Created by [[maintenance_report.responsible_technician.name]] at [[maintenanceReportObject.visit_date]] [[maintenanceReportObject.initial_time]]
+              </v-flex>
+            </v-layout mt-3 mb-3>
+            <v-layout  mt-3 mb-3>
+              <div class="srf-display-1-2"
+                >Station information </div
               >
-                Describe the station on arrival
-              </v-stepper-step>
+            </v-layout mt-3 mb-3>
+            <hr style="height:0.75px;border:none;color:#333;background-color:#333;">
+            <v-layout  mt-3 mb-3>
+              <v-flex lg3 ml-3>
+                Station Name: [[maintenance_report.station.name]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Station Host Name: [[maintenance_report.station.name]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Station ID: [[maintenance_report.station.code]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                WIGOS ID: [[maintenance_report.station.wigos]]
+              </v-flex>                                    
+            </v-layout mt-3 mb-3>
 
-              <v-stepper-content step="1">
-                <v-card color="white" flat=true >
-                  <v-textarea
-                    v-model="station_on_arrival_conditions"
-                    style="color: white;
-                           background-color:#BBB;"
-                    class="ml-0 mr-0 mb-8 pa-5"
-                    placeholder="Description of station upon arrival:"
-                    auto-grow
-                  ></v-textarea>
-                </v-card>  
-                <v-btn
-                  mt-3
-                  color="primary" 
-                  @click="nextStep(1); updateMaintenanceReportConditions(maintenanceReportObject, station_on_arrival_conditions)"
-                >
-                  Save and Continue
-                </v-btn>
-              </v-stepper-content>
+            <v-layout  mt-3 mb-3>
+              <v-flex lg3 ml-3>
+                Station Type: [[maintenance_report.station.station_type]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Latitude: [[maintenance_report.station.latitude]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Longitude: [[maintenance_report.station.longitude]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Station Profile: [[maintenance_report.station.profile]]
+              </v-flex>                                    
+            </v-layout mt-3 mb-3>          
 
-              <v-divider
-                vertical
-              ></v-divider>
-
-              <v-stepper-item v-for="(component, n) in component_list">          
-                <v-stepper-step
-                  :key="`${n+2}-step`"
-                  :step="n+2"
-                  :complete="e1 > n+2"
-                  editable
-                >
-                  Evaluate Condition of [[component.component_name]]
-                </v-stepper-step>
-
-                <v-stepper-content
-                 :step="n+2"
-                 :key="`${n+2}-content`"
-                >
-                  <v-radio-group v-model="component.component_classification">
-                    <v-radio
-                      label="Fully Functional"
-                      value="F"
-                    ></v-radio>
-                    <v-radio
-                      label="Partially Functional"
-                      value="P"
-                    ></v-radio>
-                    <v-radio
-                      label="Not Functional"
-                      value="N"
-                    ></v-radio>
-                  </v-radio-group>
-                  <v-textarea
-                    v-model="component.condition"
-                    style="color: white;
-                           background-color:#BBB;"
-                    class="ml-0 mr-0 mb-8 pa-5"
-                    placeholder="Description of station upon arrival:"
-                    auto-grow
-                  ></v-textarea>                  
-                  <v-btn
-                    color="primary"
-                    @click="nextStep(n+2); updateMaintenanceReportComponent(maintenanceReportObject, component)"
-                  >
-                    Save and Continue
-                  </v-btn>
-                </v-stepper-content>
-
-                <v-divider
-                  v-if="n !== steps"
-                  :key="n"
-                  vertical
-                ></v-divider>
-              </v-stepper-item>
-
-              <!-- // -->
-
-              <v-stepper-step
-                :key="`${steps}-step`"
-                :step="steps+2"
-                :complete="e1 > steps+2"              
-                editable
-              >
-                Contacts
-              </v-stepper-step>
-
-              <v-stepper-content
-                :step="steps+2"
-                :key="`${steps+2}-content`"
-              >
-                <v-card color="white" flat=true >
-                  <v-textarea
-                    v-model="contacts"
-                    style="color: white;
-                           background-color:#BBB;"
-                    class="ml-0 mr-0 mb-8 pa-5"
-                    placeholder="Contacts:"
-                    auto-grow
-                  ></v-textarea>
-                </v-card>  
-                <v-btn
-                  mt-3
-                  color="primary" 
-                  @click="nextStep(steps+2); updateMaintenanceReportContacts(maintenanceReportObject, contacts)"
-                >
-                  Save and Continue
-                </v-btn>
-              </v-stepper-content>
-
-              <v-divider
-                vertical
-              ></v-divider>
-
-              <v-stepper-step
-                :key="`${steps}-step`"
-                :step="steps+3"
-                :complete="e1 > steps+3"  
-                editable
-              >
-                Summary of the visist
-              </v-stepper-step>
-
-              <v-stepper-content
-                :step="steps+3"
-                :key="`${steps+3}-content`"
-              >
-                <v-card color="#BBB" flat=true >
-                  <v-layout ml-3 mt-3 mb-3>
-                    <v-flex lg4>
-                      <v-autocomplete
-                        :items="technicianList"
-                        item-text="name"
-                        item-value="id"
-                        v-model="maintenanceReportObject.other_technician_1"
-                        autocomplete="off"
-                      ></v-autocomplete>
-                      <v-autocomplete
-                        :items="technicianList"
-                        item-text="name"
-                        item-value="id"
-                        v-model="maintenanceReportObject.other_technician_2"
-                        autocomplete="off"
-                      ></v-autocomplete>
-                      <v-autocomplete
-                        :items="technicianList"
-                        item-text="name"
-                        item-value="id"
-                        v-model="maintenanceReportObject.other_technician_3"
-                        autocomplete="off"
-                      ></v-autocomplete>                           
-                    </v-flex>
-                    <v-textarea
-                      v-model="maintenanceReportObject.current_visit_summary"
-                      class="ml-3 mr-3"
-                      auto-grow
-                      rows="10"
-                      row-height="15"
-                      placeholder="Summary of work done:"
-                    ></v-textarea>
-                  </v-layout>                     
-                  <v-layout ml-3>
-                    <v-flex lg4>
-                      <v-menu
-                        :close-on-content-click="false"
-                        v-model="maintenanceReportObject.next_visit_date_menu"
-                        transition="scale-transition"
-                        offset-y
-                        class="max-50"
-                      >
-                        <template v-slot:activator="{ on }">
-                          <v-text-field
-                          v-model="maintenanceReportObject.next_visit_date"
-                          label="Date of next visit"
-                          v-on="on"
-                          required
-                          persistent-hint
-                          prepend-icon="event"
-                          ></v-text-field>
-                        </template>
-                        <v-date-picker
-                        v-model="maintenanceReportObject.next_visit_date"
-                        @input="maintenanceReportObject.next_visit_date_menu = false"
-                        ></v-date-picker>
-                      </v-menu>
-                      <v-menu
-                        :close-on-content-click="false"
-                        v-model="maintenanceReportObject.end_time_menu"
-                        transition="scale-transition"
-                        offset-y
-                        class="max-50"
-                      >
-                        <template v-slot:activator="{ on }">
-                          <v-text-field
-                          v-model="maintenanceReportObject.end_time"
-                          label="End time"
-                          v-on="on"
-                          required
-                          persistent-hint
-                          prepend-icon="access_time"
-                          ></v-text-field>
-                        </template>
-                        <v-time-picker
-                        v-model="maintenanceReportObject.end_time"
-                        ></v-time-picker>
-                      </v-menu>
-                    </v-flex>
-                     <v-textarea
-                      v-model="maintenanceReportObject.next_visit_summary"
-                      class="ml-3 mr-3"
-                      auto-grow
-                      rows="10"
-                      row-height="15"
-                      placeholder="Work to be done on next visit:"
-                    ></v-textarea>
-                  </v-layout>
-                  <v-layout ml-3 mr-3>
-                    <v-flex ml-1>
-                      Data Logger File
-                      <v-file-input
-                        v-model="maintenanceReportObject.data_logger_file"
-                        label="Upload latest data logger program"
-                      ></v-file-input>
-                    </v-flex>
-                  </v-layout>
-                </v-card>
+            <v-layout  mt-3 mb-3>
+              <v-flex lg3 ml-3>
+                Elevation: [[maintenance_report.station.elevation]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                District: [[maintenance_report.station.district]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Watershed: [[maintenance_report.station.watershed]]
+              </v-flex>
+              <v-flex lg3 ml-3>
                 
-                <v-flex mt-8>
-                  <v-btn color="grey"> Preview </v-btn>
-                  <v-btn
-                    color="warning"
-                    @click="nextStep(steps+3);
-                            updateMaintenanceReportDataLogger(maintenanceReportObject);
-                            updateMaintenanceReportSummary(maintenanceReportObject, 'D')"
-                  > Save Draft </v-btn>
-                  <v-btn
-                    color="primary"
-                    @click="nextStep(steps+3);
-                            updateMaintenanceReportDataLogger(maintenanceReportObject);
-                            updateMaintenanceReportSummary(maintenanceReportObject, 'P')"
-                  >Publish
-                  </v-btn>                  
+              </v-flex>                                    
+            </v-layout mt-3 mb-3> 
+
+            <v-layout  mt-3 mb-3>
+              <v-flex lg3 ml-3>
+                Transmission Type: [[maintenance_report.station.code]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Transmission ID: [[maintenance_report.station.code]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Transmission Interval: [[maintenance_report.station.code]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Measurement Interval: [[maintenance_report.station.code]]
+              </v-flex>                                    
+            </v-layout mt-3 mb-3> 
+
+            <v-layout  mt-3 mb-3>
+              <v-flex lg3 ml-3>
+                Data of first Operation: [[maintenance_report.station.data_of_first_operation]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+                Date of Relocation: [[maintenance_report.station.data_of_relocation]]
+              </v-flex>
+              <v-flex lg3 ml-3>
+              </v-flex>
+
+              <v-flex lg3 ml-3>
+              </v-flex>                                    
+            </v-layout mt-3 mb-3>
+            <hr style="height:0.75px;border:none;color:#333;background-color:#333;">  
+        </v-layout>
+
+        <v-stepper v-if="maintenance_report" v-model="e1" vertical class="elevation-0">
+          <v-stepper-step
+            :complete="e1 > 1"
+            editable
+            step="1"
+          >
+            Describe the station on arrival
+          </v-stepper-step>
+
+          <v-stepper-content step="1">
+            <v-card color="white" flat=true >
+              <v-textarea
+                v-model="station_on_arrival_conditions"
+                style="color: white;
+                       background-color:#BBB;"
+                class="ml-0 mr-0 mb-8 pa-5"
+                placeholder="Description of station upon arrival:"
+                auto-grow
+              ></v-textarea>
+            </v-card>  
+            <v-btn
+              mt-3
+              color="primary" 
+              @click="nextStep(1); updateMaintenanceReportConditions(maintenanceReportObject, station_on_arrival_conditions)"
+            >
+              Save and Continue
+            </v-btn>
+          </v-stepper-content>
+
+          <v-divider
+            vertical
+          ></v-divider>
+
+          <v-stepper-item v-for="(component, n) in component_list">          
+            <v-stepper-step
+              :key="`${n+2}-step`"
+              :step="n+2"
+              :complete="e1 > n+2"
+              editable
+            >
+              Evaluate Condition of [[component.component_name]]
+            </v-stepper-step>
+
+            <v-stepper-content
+             :step="n+2"
+             :key="`${n+2}-content`"
+            >
+              <v-radio-group v-model="component.component_classification">
+                <v-radio
+                  label="Fully Functional"
+                  value="F"
+                ></v-radio>
+                <v-radio
+                  label="Partially Functional"
+                  value="P"
+                ></v-radio>
+                <v-radio
+                  label="Not Functional"
+                  value="N"
+                ></v-radio>
+              </v-radio-group>
+              <v-textarea
+                v-model="component.condition"
+                style="color: white;
+                       background-color:#BBB;"
+                class="ml-0 mr-0 mb-8 pa-5"
+                placeholder="Description of station upon arrival:"
+                auto-grow
+              ></v-textarea>                  
+              <v-btn
+                color="primary"
+                @click="nextStep(n+2); updateMaintenanceReportComponent(maintenanceReportObject, component)"
+              >
+                Save and Continue
+              </v-btn>
+            </v-stepper-content>
+
+            <v-divider
+              v-if="n !== steps"
+              :key="n"
+              vertical
+            ></v-divider>
+          </v-stepper-item>
+
+          <!-- // -->
+
+          <v-stepper-step
+            :key="`${steps}-step`"
+            :step="steps+2"
+            :complete="e1 > steps+2"              
+            editable
+          >
+            Contacts
+          </v-stepper-step>
+
+          <v-stepper-content
+            :step="steps+2"
+            :key="`${steps+2}-content`"
+          >
+            <v-card color="white" flat=true >
+              <v-textarea
+                v-model="contacts"
+                style="color: white;
+                       background-color:#BBB;"
+                class="ml-0 mr-0 mb-8 pa-5"
+                placeholder="Contacts:"
+                auto-grow
+              ></v-textarea>
+            </v-card>  
+            <v-btn
+              mt-3
+              color="primary" 
+              @click="nextStep(steps+2); updateMaintenanceReportContacts(maintenanceReportObject, contacts)"
+            >
+              Save and Continue
+            </v-btn>
+          </v-stepper-content>
+
+          <v-divider
+            vertical
+          ></v-divider>
+
+          <v-stepper-step
+            :key="`${steps}-step`"
+            :step="steps+3"
+            :complete="e1 > steps+3"  
+            editable
+          >
+            Summary of the visist
+          </v-stepper-step>
+
+          <v-stepper-content
+            :step="steps+3"
+            :key="`${steps+3}-content`"
+          >
+            <v-card color="#BBB" flat=true >
+              <v-layout ml-3 mt-3 mb-3>
+                <v-flex lg4>
+                  <v-autocomplete
+                    :items="technicianList"
+                    item-text="name"
+                    item-value="id"
+                    v-model="maintenanceReportObject.other_technician_1"
+                    autocomplete="off"
+                  ></v-autocomplete>
+                  <v-autocomplete
+                    :items="technicianList"
+                    item-text="name"
+                    item-value="id"
+                    v-model="maintenanceReportObject.other_technician_2"
+                    autocomplete="off"
+                  ></v-autocomplete>
+                  <v-autocomplete
+                    :items="technicianList"
+                    item-text="name"
+                    item-value="id"
+                    v-model="maintenanceReportObject.other_technician_3"
+                    autocomplete="off"
+                  ></v-autocomplete>                           
                 </v-flex>
-              </v-stepper-content>              
-            </v-stepper>
+                <v-textarea
+                  v-model="maintenanceReportObject.current_visit_summary"
+                  class="ml-3 mr-3"
+                  auto-grow
+                  rows="10"
+                  row-height="15"
+                  placeholder="Summary of work done:"
+                ></v-textarea>
+              </v-layout>                     
+              <v-layout ml-3>
+                <v-flex lg4>
+                  <v-menu
+                    :close-on-content-click="false"
+                    v-model="maintenanceReportObject.next_visit_date_menu"
+                    transition="scale-transition"
+                    offset-y
+                    class="max-50"
+                  >
+                    <template v-slot:activator="{ on }">
+                      <v-text-field
+                      v-model="maintenanceReportObject.next_visit_date"
+                      label="Date of next visit"
+                      v-on="on"
+                      required
+                      persistent-hint
+                      prepend-icon="event"
+                      ></v-text-field>
+                    </template>
+                    <v-date-picker
+                    v-model="maintenanceReportObject.next_visit_date"
+                    @input="maintenanceReportObject.next_visit_date_menu = false"
+                    ></v-date-picker>
+                  </v-menu>
+                  <v-menu
+                    :close-on-content-click="false"
+                    v-model="maintenanceReportObject.end_time_menu"
+                    transition="scale-transition"
+                    offset-y
+                    class="max-50"
+                  >
+                    <template v-slot:activator="{ on }">
+                      <v-text-field
+                      v-model="maintenanceReportObject.end_time"
+                      label="End time"
+                      v-on="on"
+                      required
+                      persistent-hint
+                      prepend-icon="access_time"
+                      ></v-text-field>
+                    </template>
+                    <v-time-picker
+                    v-model="maintenanceReportObject.end_time"
+                    ></v-time-picker>
+                  </v-menu>
+                </v-flex>
+                 <v-textarea
+                  v-model="maintenanceReportObject.next_visit_summary"
+                  class="ml-3 mr-3"
+                  auto-grow
+                  rows="10"
+                  row-height="15"
+                  placeholder="Work to be done on next visit:"
+                ></v-textarea>
+              </v-layout>
+              <v-layout ml-3 mr-3>
+                <v-flex ml-1>
+                  Data Logger File
+                  <v-file-input
+                    v-model="maintenanceReportObject.data_logger_file"
+                    label="Upload latest data logger program"
+                  ></v-file-input>
+                </v-flex>
+              </v-layout>
+            </v-card>
+            
+            <v-flex mt-8>
+<!--               <v-dialog v-model="dialog" width="500">
+                <template v-slot:activator="{ on, attrs }"> <v-btn v-bind="attrs" v-on="on" color="grey"> Preview </v-btn> </template>
+                <v-card>
+                <v-card-title class="text-h5 grey lighten-2">  Privacy Policy </v-card-title>
+                <v-card-text>  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. </v-card-text>
+
+                <v-divider></v-divider>
+
+                  <v-card-actions>
+                    <v-spacer></v-spacer> 
+                    <v-btn color="primary" text @click="dialog = false" > I accept </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog> -->
+
+              <v-btn
+                color="grey"
+                @click="nextStep(steps+3);
+                        updateMaintenanceReportDataLogger(maintenanceReportObject);
+                        updateMaintenanceReportSummary(maintenanceReportObject, 'D')"                
+                :href="viewMaintenanceReport(maintenanceReportObject.id)"
+              >
+                Preview
+              </v-btn>      
+
+              <v-btn
+                color="warning"
+                @click="nextStep(steps+3);
+                        updateMaintenanceReportDataLogger(maintenanceReportObject);
+                        updateMaintenanceReportSummary(maintenanceReportObject, 'D')"
+              > Save Draft </v-btn>
+              <v-btn
+                color="primary"
+                @click="nextStep(steps+3);
+                        updateMaintenanceReportDataLogger(maintenanceReportObject);
+                        updateMaintenanceReportSummary(maintenanceReportObject, 'P')"
+              >Publish
+              </v-btn>                  
+            </v-flex>
+          </v-stepper-content>              
+        </v-stepper>       
       </v-content>
     </v-app>
   </div>
 
-{% endblock %} {% block localjavascript %}
-<script>
+  {% endblock %} {% block localjavascript %}
+  <script>
     Vue.use(window.vuelidate.default);
     const { required, minLength } = window.validators;
     new Vue({
@@ -499,6 +523,7 @@
         },
       },
       data: {
+        dialog: false,
         contacts: null,
         station_on_arrival_conditions: null,
         radioGroup: 1,
@@ -588,6 +613,9 @@
         },
       },      
       methods: {
+        viewMaintenanceReport(id){
+          return `/wx/maintenance_report/${id}/view/`
+        },        
         nextStep(n) {
           if (n === this.steps+3) {
             this.e1 = 1

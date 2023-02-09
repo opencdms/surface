@@ -1,0 +1,58 @@
+<!-- templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@3.x/css/materialdesignicons.min.css"
+      rel="stylesheet"
+    />        
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.1.0/material.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/vuetify@2.5.4/dist/vuetify.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      .srf-display-1 {
+        font-size: 2em;
+      }
+      .srf-display-2 {
+        font-size: 1.3em;
+        color: #4d4d4d;
+      }
+    </style>
+    {% block extrastyle %} {% endblock %}
+  </head>
+  <body>
+    <main style="height: 100vh; width: 100%">
+      <div class="page-content">
+        <!-- BODY -->
+        <div id="block-content" class="srf-layout flex-column p-300">
+          {% if messages %}
+          {% endif %}
+          {% block content %}
+          {% endblock %}
+        </div>
+      </div>
+    </main>
+
+    <script src="https://unpkg.com/vue2-leaflet@1.2.3/dist/vue2-leaflet.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.1.0/dist/vuetify.js"></script>
+    <script src="https://unpkg.com/vuelidate@0.7.4/dist/vuelidate.min.js"></script>
+    <script src="https://unpkg.com/vuelidate@0.7.4/dist/validators.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@7.1.1/dist/handsontable.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@handsontable/vue@4.0.0/dist/vue-handsontable.min.js"></script>
+
+    {% block localjavascript %}{% endblock %}
+  </body>
+</html>
