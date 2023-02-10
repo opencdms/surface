@@ -10,9 +10,9 @@ S.U.R.F.A.C.E. CDMS SYSTEM REQUIREMENTS
 Operating System: 
 `Ubuntu 20.04.5 (Focal Fossa) <https://releases.ubuntu.com/20.04.5>`_
 
-- Main Memory: 4 GB (minimum requirement), 16GB
-- Disk storage: 25 GB (minimum requirement), 100GB
-- CPU cores: 4 (minimum requirement), 8
+* Main Memory: 4 GB (minimum requirement), 16GB
+* Disk storage: 25 GB (minimum requirement), 100GB
+* CPU cores: 4 (minimum requirement), 8
 
 S.U.R.F.A.C.E. CDMS installation involves the following 10 steps
 
@@ -46,9 +46,9 @@ S.U.R.F.A.C.E. CDMS installation involves the following 10 steps
 
 FYI - Documentation on Prerequisites needed for installation steps are linked below 
 
-- Docker: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
-- Docker-Compose: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-20-04
-- PostgreSQL: *(NOT NEEDED)* https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart
+* Docker: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
+* Docker-Compose: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-20-04
+* PostgreSQL: *(NOT NEEDED)* https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-20-04-quickstart
 
 
 **Step 4 -** Docker Installation
