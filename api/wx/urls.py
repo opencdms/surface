@@ -111,8 +111,8 @@ urlpatterns = [
     path('wx/maintenance_report/<int:id>/update/summary/', views.update_maintenance_report_summary),
     path('wx/maintenance_report/<int:id>/update/datalogger/', views.update_maintenance_report_datalogger),    
     path('wx/maintenance_report/<int:id>/delete/', views.delete_maintenance_report),
-
-    path('wx/maintenance_report/<int:id>/view/', views.get_maintenance_report_view, name='view-maintenance-report'),
+    path('wx/maintenance_report/<int:id>/approve/', views.approve_maintenance_report),
+    path('wx/maintenance_report/<int:id>/view/<int:source>/', views.get_maintenance_report_view, name='view-maintenance-report'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

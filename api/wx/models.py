@@ -1329,6 +1329,7 @@ class MaintenanceReport(BaseModel):
         APPROVED = 'A', gettext_lazy('Approved')
         DRAFT = 'D', gettext_lazy('Draft')
         PUBLISHED = 'P', gettext_lazy('Published')
+        DELETED = '-', gettext_lazy('Deleted')
 
     # New Maintenace Report
     station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)

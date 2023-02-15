@@ -104,7 +104,7 @@
               <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
                   <v-btn icon>
-                    <v-icon v-if="item.status==='Draft'" v-on="on" small @click="approveMaintenanceReport()">
+                    <v-icon v-if="item.status==='Draft'" v-on="on" small @click="dialog_apv = true; maintenance_report_id=item.maintenance_report_id">
                       mdi-check-decagram
                     </v-icon>  
                   </v-btn>                  
@@ -113,8 +113,8 @@
               </v-tooltip>
               <v-tooltip v-if="item.status!='Approved'" bottom>
                 <template v-slot:activator="{ on }">
-                  <v-btn icon>
-                    <v-icon v-on="on" small @click="editMaintenanceReport()">
+                  <v-btn icon :href="updateMaintenanceReport(item.maintenance_report_id)">
+                    <v-icon v-on="on" small>
                       edit
                     </v-icon>                     
                   </v-btn>
@@ -133,9 +133,8 @@
               </v-tooltip>              
               <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
-                  <!-- <v-btn icon href="{% url 'view-maintenance-report' 2 %}"> -->
                   <v-btn icon :href="viewMaintenanceReport(item.maintenance_report_id)">
-                    <v-icon v-on="on" small @click="viewMaintenanceReport()">
+                    <v-icon v-on="on" small>
                       mdi-eye 
                     </v-icon>  
                   </v-btn>                
@@ -144,10 +143,10 @@
               </v-tooltip>                
               <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
-                  <v-btn icon>
-                    <v-icon color="error" v-on="on" small @click="deleteMaintenanceReport()">
+                  <v-btn icon>                        
+                    <v-icon color="error" v-on="on" small @click="dialog_del = true; maintenance_report_id = item.maintenance_report_id">
                       delete
-                    </v-icon>  
+                    </v-icon>               
                   </v-btn>                    
                 </template>
                 <span>Delete Maintenance Report</span>
@@ -170,6 +169,36 @@
               </v-layout>     
             </template>
           </v-data-table>
+          <v-dialog v-model="dialog_del" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                Are you sure that you really want to delete this report?
+              </v-card-title>              
+              <v-card-actions>
+                <v-btn width="50%" color="error" @click="dialog_del = false; deleteMaintenanceReport(maintenance_report_id)">
+                  Delete Report
+                </v-btn>
+                <v-btn width="50%" @click="dialog_del = false">
+                  Cancel
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-dialog v-model="dialog_apv" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                Are you sure that you really want to approve this report?
+              </v-card-title>              
+              <v-card-actions>
+                <v-btn width="50%" color="primary" @click="dialog_apv = false; approveMaintenanceReport(maintenance_report_id)">
+                  Approve Report
+                </v-btn>
+                <v-btn width="50%" @click="dialog_apv = false">
+                  Cancel
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>                     
         </v-layout>
       </v-content>
     </v-app>
@@ -185,7 +214,9 @@
       delimiters: ["[[", "]]"],
       data:{
         search: '',
-        maintenance_report_id: 2,
+        dialog_del: false,
+        dialog_apv: false,
+        maintenance_report_id: null,
         today: moment().format('YYYY-MM-DD'),
         today_ny: moment().add(1, 'Y').format('YYYY-MM-DD'),
         start_date_menu: false,
@@ -277,8 +308,41 @@
             });
         },
         viewMaintenanceReport(id){
-          return `/wx/maintenance_report/${id}/view/`
+          return `/wx/maintenance_report/${id}/view/${1}/`
         },
+        updateMaintenanceReport(id){
+          return `/wx/maintenance_report/${id}/update/`
+        },        
+        deleteMaintenanceReport(id){
+          this.loading = true;
+          axios.put(`/wx/maintenance_report/${id}/delete/`)
+            .then(res => {
+              this.getMaintenanceReportList();
+            })
+            .catch((error) => {
+              console.log("error", error.response);
+              this.request_error_message = error.response.data.message;
+              this.request_error = true;
+            })
+            .finally(() => {
+              this.loading = false;
+            });
+        },
+        approveMaintenanceReport(id){
+          this.loading = true;
+          axios.put(`/wx/maintenance_report/${id}/approve/`)
+            .then(res => {
+              this.getMaintenanceReportList();
+            })
+            .catch((error) => {
+              console.log("error", error.response);
+              this.request_error_message = error.response.data.message;
+              this.request_error = true;
+            })
+            .finally(() => {
+              this.loading = false;
+            });
+        },        
         filterText (value, search, item) {
           return value != null
                  && search != null
