@@ -63,6 +63,13 @@
       type="text/css"
     />
 
+    <!-- css file for leaflet measure -->
+    <link
+      href="{% static 'gis/css/leaflet-measure.css' %}"
+      rel="stylesheet"
+      type="text/css"
+    />
+
     {% include 'material/includes/material_css.html' %}
 
     <style>
@@ -556,8 +563,8 @@
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
-                    <a id="monthly-form" href="{% url 'monthly-form' %}" class="hide-menu collection-item left-space">Monthly Capture<i class="material-icons secondary-content">keyboard</i></a>
-                    <a id="pgia-report" href="{% url 'pgia-report' %}" class="hide-menu collection-item left-space">PGIA Hourly Capture<i class="material-icons secondary-content">keyboard</i></a>
+                    <a id="daily-form" href="{% url 'daily-form' %}" class="hide-menu collection-item left-space">Daily Capture Form<i class="material-icons secondary-content">keyboard</i></a>
+                    <a id="synop-capture" href="{% url 'synop-capture' %}" class="hide-menu collection-item left-space">SYNOP Capture Form<i class="material-icons secondary-content">keyboard</i></a>
                     <a id="data-export" href="{% url 'data-export' %}" class="hide-menu collection-item left-space">Export<i class="material-icons secondary-content">cloud_download</i></a>
                     <a id="data-inventory" href="{% url 'data-inventory' %}" class="hide-menu collection-item left-space">Data Inventory<i class="material-icons secondary-content">web</i></a>
                   </ul>
@@ -589,7 +596,7 @@
                     <a id="product-compare" href="{% url 'product-compare' %}" class="hide-menu collection-item left-space">Station Compare<i class="material-icons secondary-content">compare_arrows</i></a>
                     <!-- <a id="yearly-average" href="{% url 'yearly-average' %}" class="collection-item left-space">Yearly Average<i class="material-icons secondary-content">timeline</i></a> -->
                     <a id="spatial-analysis" href="{% url 'spatial-analysis' %}" class="hide-menu collection-item left-space">Spatial analysis<i class="material-icons secondary-content">dashboard</i></a>
-                    <a id="daily-means" href="{% url 'daily-means' %}" class="hide-menu collection-item left-space">Daily Means<i class="material-icons secondary-content">equalizer</i></a>
+                    <a id="extremes-means" href="{% url 'extremes-means' %}" class="hide-menu collection-item left-space">Extremes and Means<i class="material-icons secondary-content">equalizer</i></a>
                   </ul>
                 </div>
             </div>
@@ -615,10 +622,13 @@
         </div>
       </ul>
     </ul>
+
     <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+    
     <a id="menu-closer" href="javascript:void(0)">
       <i class="material-icons">close</i>
     </a>
+
     <header class="mobile-menu">
       <nav>
         <a id="menu-toggler" href="javascript:void(0)">
@@ -627,25 +637,41 @@
         <h1>SURFACE</h1>
       </nav>
     </header>
+
     <main style="height: 100vh; width: 100%">
+
       <div class="page-content">
+
         <!-- BODY -->
+
         <div id="block-content" class="srf-layout flex-column p-300">
+
           {% if messages %}
+          
           <div id="hideMe" class="box-message">
+
             <div class="srf-message">
+
               {% for message in messages %}
+
               <span {% if message.tags %} class="{{ message.tags }}" {% endif %}>
                 {{ message }}
               </span>
+
               {% endfor %}
+
             </div>
+
           </div>
+
           {% endif %}
           {% block content %}
           {% endblock %}
+
         </div>
+
       </div>
+
     </main>
 
     <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
@@ -709,8 +735,8 @@
           'stations-map',
           'stations-list',
           'station-metadata',
-          'monthly-form',
-          'pgia-report',
+          'daily-form',
+          'synop-capture',
           'data-export',
           'instrumentlogs-list',
           'station-report',
@@ -718,7 +744,7 @@
           'yearly-average',
           'maintenance-group',
           'spatial-analysis',
-          'daily-means',
+          'extremes-means',
           'quality-control',
           'variable-report',
           'data-inventory',
@@ -727,8 +753,8 @@
           'persist-threshold'
         ]
 
-        const menuList = {{USER_PERMISSIONS|safe}};
-        const userIsAdmin = {{USER_IS_ADMIN|safe}};
+        const menuList = "{{USER_PERMISSIONS|safe}}";
+        const userIsAdmin = "{{USER_IS_ADMIN|safe}}";
 
         localMenus.forEach(menu => {
           if ($(`#${menu}`).length > 0) {
