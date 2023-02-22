@@ -499,7 +499,7 @@
     {% block extrastyle %} {% endblock %}
   </head>
   <body>
-    <ul id="slide-out" class="sidenav sidenav-fixed open-mode">
+    <ul id="slide-out" class="sidenav sidenav-fixed collapsed-mode" onmouseover="hoverOpenSidebar()" onmouseout="hoverCloseSidebar()" onmouseleave="closeSidebarSubMenu()">
       <div style="display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -611,16 +611,16 @@
             <li class="collapsible-item">
               <a href="{% url 'logout' %}" style="padding: 0px 16px;"><i class="material-icons">directions</i>LOGOUT</a>
             </li>
-          </div>
+          </ul>
 
-          <div id="toggle-sidebar">
+          <!-- <div id="toggle-sidebar">
             <li class="collapsible-item toggle-collapse" onclick="toggleSidebar()">
               <a href="javascript:void(0)" style="padding: 0px 16px;"><i id="collapse-icon" class="material-icons">chevron_left</i>COLLAPSE</a>
             </li>
-          </div>
+          </div> -->
 
         </div>
-      </ul>
+      </div>
     </ul>
 
     <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
@@ -643,9 +643,7 @@
       <div class="page-content">
 
         <!-- BODY -->
-
-        <div id="block-content" class="srf-layout flex-column p-300">
-
+        <div id="block-content" class="srf-layout flex-column p-55">
           {% if messages %}
           
           <div id="hideMe" class="box-message">
@@ -779,8 +777,6 @@
           }
         })
 
-        var menuInitialState = true;
-
         //MOBILE
         document.getElementById('menu-toggler')
           .addEventListener('click', function(evt) {
@@ -795,68 +791,53 @@
           });
         
         // WEB
-        toggleSidebar = function() {
-          if (menuInitialState === true) {
-            closeSidebar();
-          } else {
-            openSidebar();
-          }
-        };
-        
-        wrapSidenav.addEventListener('click', function(evt) {
-          if (menuInitialState === false) {
-            openSidebar();
-          }
-        });
-       
-        function openSidebar() {
+        hoverOpenSidebar = function() {
           menu.classList.add('open-mode');
           menu.classList.remove('collapsed-mode');
           blockContent.classList.add('p-300');
           blockContent.classList.remove('p-55');
-          collapseIcon.innerText = 'chevron_left';
-          removeWrapOnSidebar();
-          menuInitialState = true;
         }
 
-        function closeSidebar() {
+        hoverCloseSidebar = function() {
           menu.classList.remove('open-mode');
           menu.classList.add('collapsed-mode');
           blockContent.classList.remove('p-300');
           blockContent.classList.add('p-55');
-          collapseIcon.innerText = 'chevron_right';
-          instance.close($('li.active').index());
 
           setTimeout(() => {
-            window.mapReference.invalidateSize();
-          }, 200); // Wait until close animation finish to execute function
-
-          addWrapOnSidebar();
-          menuInitialState = false;
+            instance.close($('li.active').index());
+          }, 1000000); // Wait until close animation finish to execute function
         }
 
-        function addWrapOnSidebar() {
-          wrapSidenav.classList.add('wrap-menu');
+        closeSidebarSubMenu = function() {
+          instance.close($('li.active').index());
         }
+
+
+
+
+        // function addWrapOnSidebar() {
+        //   wrapSidenav.classList.add('wrap-menu');
+        // }
         
-        function removeWrapOnSidebar() {
-          wrapSidenav.classList.remove('wrap-menu');
-        }
+        // function removeWrapOnSidebar() {
+        //   wrapSidenav.classList.remove('wrap-menu');
+        // }
 
-        [].slice.call(document.querySelectorAll('.active.collection-item'))
-          .forEach(el => {
-            el.classList.remove('active', 'text-white');
-          });
-        [].slice.call(document.querySelectorAll(`.collection-item[href="${window.location.pathname}"]`))
-          .forEach(el => { 
-            el.classList.add('active', 'text-white');
-          });
+        // [].slice.call(document.querySelectorAll('.active.collection-item'))
+        //   .forEach(el => {
+        //     el.classList.remove('active', 'text-white');
+        //   });
+        // [].slice.call(document.querySelectorAll(`.collection-item[href="${window.location.pathname}"]`))
+        //   .forEach(el => { 
+        //     el.classList.add('active', 'text-white');
+        //   });
         
-          let query = document.querySelector(`.collection-item[href="${window.location.pathname}"]`)
-          if (query) {
-            const li = query.parentElement.parentElement.parentElement.parentElement;
-            instance.open([].slice.call(document.querySelector('.collapsible').children).indexOf(li));
-          }
+        //   let query = document.querySelector(`.collection-item[href="${window.location.pathname}"]`)
+        //   if (query) {
+        //     const li = query.parentElement.parentElement.parentElement.parentElement;
+        //     instance.open([].slice.call(document.querySelector('.collapsible').children).indexOf(li));
+        //   }
       });
     </script>
     {% endblock %}
