@@ -558,8 +558,8 @@ from django.db.models import IntegerField
 
 
 @permission_classes([IsAuthenticated])
-def MonthlyFormView(request):
-    template = loader.get_template('wx/monthly_form.html')
+def DailyFormView(request):
+    template = loader.get_template('wx/daily_form.html')
 
     station_list = Station.objects.filter(is_automatic=False, is_active=True)
     station_list = station_list.values('id', 'name', 'code')
@@ -572,8 +572,8 @@ def MonthlyFormView(request):
     return HttpResponse(template.render(context, request))
 
 
-class PGIAReportView(LoginRequiredMixin, TemplateView):
-    template_name = "wx/pgiareport.html"
+class SynopCaptureView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/synopcapture.html"
 
 
 @permission_classes([IsAuthenticated])
@@ -3235,8 +3235,8 @@ class StationFileViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class DailyMeansView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/products/daily_means.html'
+class ExtremesMeansView(LoginRequiredMixin, TemplateView):
+    template_name = 'wx/products/extremes_means.html'
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
