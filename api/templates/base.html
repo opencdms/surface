@@ -63,13 +63,6 @@
       type="text/css"
     />
 
-    <!-- css file for leaflet measure -->
-    <link
-      href="{% static 'gis/css/leaflet-measure.css' %}"
-      rel="stylesheet"
-      type="text/css"
-    />
-
     {% include 'material/includes/material_css.html' %}
 
     <style>
@@ -542,7 +535,7 @@
 
           <ul class="collapsible to-uppercase">
             <li id="stations-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">my_location</i>STATIONS</div>
+              <div class="collapsible-header"><i class="material-icons">my_location</i><span id="hide-menu-text" class="hide-menu">STATIONS</span></div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -555,11 +548,11 @@
             </li>
             </li>
             <li id="maintenance-group" class="hide-menu collapsible-item">
-              <a href="{% url 'coming-soon' %}" style="padding: 0px 16px;"><i class="material-icons">build</i>MAINTENANCE</a>
+              <a href="{% url 'coming-soon' %}" style="padding: 0px 16px;"><i class="material-icons">build</i><span id="hide-menu-text" class="hide-menu">MAINTENANCE</span></a>
             </li>
 
             <li id="data-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">data_usage</i>DATA</div>
+              <div class="collapsible-header"><i class="material-icons">data_usage</i><span id="hide-menu-text" class="hide-menu">DATA</span></div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -573,7 +566,7 @@
             </li>
 
             <li id="quality-control-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality Control</div>
+              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i><span id="hide-menu-text" class="hide-menu">Quality Control</span></div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -587,7 +580,7 @@
             </li>
 
             <li id="products-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">list_alt</i>PRODUCTS</div>
+              <div class="collapsible-header"><i class="material-icons">list_alt</i><span id="hide-menu-text" class="hide-menu">PRODUCTS</span></div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -604,12 +597,12 @@
             
             {% if request.user.is_staff or request.user.is_superuser %}
             <li class="collapsible-item">
-              <a href="{% url 'admin:index' %}" style="padding: 0px 16px;"><i class="material-icons">people</i>ADMINISTRATIVE AREA</a>
+              <a href="{% url 'admin:index' %}" style="padding: 0px 16px;"><i class="material-icons">people</i><span id="hide-menu-text" class="hide-menu">ADMINISTRATIVE AREA</span></a>
             </li>
             {% endif %}
 
             <li class="collapsible-item">
-              <a href="{% url 'logout' %}" style="padding: 0px 16px;"><i class="material-icons">directions</i>LOGOUT</a>
+              <a href="{% url 'logout' %}" style="padding: 0px 16px;"><i class="material-icons">directions</i><span id="hide-menu-text" class="hide-menu">LOGOUT</span></a>
             </li>
           </ul>
 
@@ -791,11 +784,22 @@
           });
         
         // WEB
+        collapseHideMenuText = function() {
+          var element = document.getElementById('hide-menu-text');
+          element.classList.add('hide-menu');
+        }
+
+        collapseShowMenuText = function() {
+          var element = document.getElementById('hide-menu-text');
+          element.classList.remove('hide-menu');
+        }
+
         hoverOpenSidebar = function() {
           menu.classList.add('open-mode');
           menu.classList.remove('collapsed-mode');
           blockContent.classList.add('p-300');
           blockContent.classList.remove('p-55');
+          collapseShowMenuText();
         }
 
         hoverCloseSidebar = function() {
@@ -803,6 +807,7 @@
           menu.classList.add('collapsed-mode');
           blockContent.classList.remove('p-300');
           blockContent.classList.add('p-55');
+          collapseHideMenuText();
 
           setTimeout(() => {
             instance.close($('li.active').index());
