@@ -72,6 +72,9 @@
       .hide-menu {
         display: none!important;
       }
+      .hide-menu-text {
+        display: none;
+      }
       .show-menu {
         display: block!important;
       }
@@ -535,7 +538,7 @@
 
           <ul class="collapsible to-uppercase">
             <li id="stations-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">my_location</i><span id="hide-menu-text" class="hide-menu">STATIONS</span></div>
+              <div class="collapsible-header"><i class="material-icons">my_location</i>STATIONS</div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -548,11 +551,11 @@
             </li>
             </li>
             <li id="maintenance-group" class="hide-menu collapsible-item">
-              <a href="{% url 'coming-soon' %}" style="padding: 0px 16px;"><i class="material-icons">build</i><span id="hide-menu-text" class="hide-menu">MAINTENANCE</span></a>
+              <a href="{% url 'coming-soon' %}" style="padding: 0px 16px;"><i class="material-icons">build</i>MAINTENANCE</a>
             </li>
 
             <li id="data-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">data_usage</i><span id="hide-menu-text" class="hide-menu">DATA</span></div>
+              <div class="collapsible-header"><i class="material-icons">data_usage</i>DATA</div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -566,7 +569,7 @@
             </li>
 
             <li id="quality-control-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i><span id="hide-menu-text" class="hide-menu">Quality Control</span></div>
+              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality<span>&nbsp;</span>Control</div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -580,7 +583,7 @@
             </li>
 
             <li id="products-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">list_alt</i><span id="hide-menu-text" class="hide-menu">PRODUCTS</span></div>
+              <div class="collapsible-header"><i class="material-icons">list_alt</i>PRODUCTS</div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -597,12 +600,12 @@
             
             {% if request.user.is_staff or request.user.is_superuser %}
             <li class="collapsible-item">
-              <a href="{% url 'admin:index' %}" style="padding: 0px 16px;"><i class="material-icons">people</i><span id="hide-menu-text" class="hide-menu">ADMINISTRATIVE AREA</span></a>
+              <a href="{% url 'admin:index' %}" style="padding: 0px 16px;"><i class="material-icons">people</i>ADMINISTRATIVE AREA</a>
             </li>
             {% endif %}
 
             <li class="collapsible-item">
-              <a href="{% url 'logout' %}" style="padding: 0px 16px;"><i class="material-icons">directions</i><span id="hide-menu-text" class="hide-menu">LOGOUT</span></a>
+              <a href="{% url 'logout' %}" style="padding: 0px 16px;"><i class="material-icons">directions</i>LOGOUT</a>
             </li>
           </ul>
 
@@ -785,13 +788,25 @@
         
         // WEB
         collapseHideMenuText = function() {
-          var element = document.getElementById('hide-menu-text');
-          element.classList.add('hide-menu');
+          
+          for (let index = 1; index <= 7; index++) {
+            
+            var element = document.getElementById('hide-menu-text-' + index);
+            element.classList.add('hide-menu-text');
+            
+          }
+
         }
 
         collapseShowMenuText = function() {
-          var element = document.getElementById('hide-menu-text');
-          element.classList.remove('hide-menu');
+
+          for (let index = 1; index <= 7; index++) {
+            
+            var element = document.getElementById('hide-menu-text-' + index);
+            element.classList.remove('hide-menu-text');
+            
+          }
+
         }
 
         hoverOpenSidebar = function() {
@@ -808,6 +823,8 @@
           blockContent.classList.remove('p-300');
           blockContent.classList.add('p-55');
           collapseHideMenuText();
+
+          // setTimeout(collapseHideMenuText, 1000);
 
           setTimeout(() => {
             instance.close($('li.active').index());
