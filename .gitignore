@@ -4,6 +4,7 @@
 /api/static/import_export
 /api/static/material
 /api/static/rest_framework
+/api/static/ckeditor
 api/static/images/
 
 /data/
