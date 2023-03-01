@@ -1,0 +1,47 @@
+[
+{
+    "model": "wx.technician",
+    "pk": 1,
+    "fields": {
+        "created_at": "2023-02-28T23:39:07.514Z",
+        "updated_at": "2023-02-28T23:39:07.514Z",
+        "name": "Abner"
+    }
+},
+{
+    "model": "wx.technician",
+    "pk": 2,
+    "fields": {
+        "created_at": "2023-02-28T23:39:10.804Z",
+        "updated_at": "2023-02-28T23:39:10.804Z",
+        "name": "Dwayne"
+    }
+},
+{
+    "model": "wx.technician",
+    "pk": 3,
+    "fields": {
+        "created_at": "2023-02-28T23:39:14.133Z",
+        "updated_at": "2023-02-28T23:39:14.133Z",
+        "name": "Fabio"
+    }
+},
+{
+    "model": "wx.technician",
+    "pk": 4,
+    "fields": {
+        "created_at": "2023-02-28T23:39:18.693Z",
+        "updated_at": "2023-02-28T23:39:18.693Z",
+        "name": "Ian"
+    }
+},
+{
+    "model": "wx.technician",
+    "pk": 5,
+    "fields": {
+        "created_at": "2023-02-28T23:39:27.303Z",
+        "updated_at": "2023-02-28T23:39:27.303Z",
+        "name": "Jeremiah"
+    }
+}
+]

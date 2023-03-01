@@ -3,6 +3,8 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from rest_framework import routers
 
+from django.contrib.auth.decorators import login_required
+
 from wx import views
 
 router = routers.DefaultRouter()
@@ -98,21 +100,21 @@ urlpatterns = [
     path('wx/quality_control/persist_threshold/', views.PersistThresholdView.as_view(), name='persist-threshold'),
     path('api/persist_threshold/', views.persist_threshold_view),
 
-    path('wx/maintenance_report/', views.get_maintenance_reports, name='maintenance-reports'),
-    path('wx/maintenance_report/get_reports/', views.get_maintenance_report_list),
+    path('wx/maintenance_report/', login_required(views.get_maintenance_reports), name='maintenance-reports'),
+    path('wx/maintenance_report/get_reports/', login_required(views.get_maintenance_report_list)),
+    path('wx/maintenance_report/new_report/', login_required(views.get_maintenance_report_form), name='new-maintenance-report'),
+    path('wx/maintenance_report/create/', login_required(views.create_maintenance_report)),
+    path('wx/maintenance_report/<int:id>/get/', login_required(views.get_maintenance_report)),
+    path('wx/maintenance_report/<int:id>/update/', login_required(views.update_maintenance_report)),
+    path('wx/maintenance_report/<int:id>/update/condition/', login_required(views.update_maintenance_report_condition)),
+    path('wx/maintenance_report/<int:id>/update/component/<int:component_id>/', login_required(views.update_maintenance_report_component)),
+    path('wx/maintenance_report/<int:id>/update/contacts/', login_required(views.update_maintenance_report_contacts)),
+    path('wx/maintenance_report/<int:id>/update/summary/', login_required(views.update_maintenance_report_summary)),
+    path('wx/maintenance_report/<int:id>/update/datalogger/', login_required(views.update_maintenance_report_datalogger)),    
+    path('wx/maintenance_report/<int:id>/delete/', login_required(views.delete_maintenance_report)),
+    path('wx/maintenance_report/<int:id>/approve/', login_required(views.approve_maintenance_report)),
+    path('wx/maintenance_report/<int:id>/view/<int:source>/', login_required(views.get_maintenance_report_view), name='view-maintenance-report'),
 
-    path('wx/maintenance_report/new_report/', views.get_maintenance_report_form, name='new-maintenance-report'),
-    path('wx/maintenance_report/create/', views.create_maintenance_report),
-    path('wx/maintenance_report/<int:id>/get/', views.get_maintenance_report),
-    path('wx/maintenance_report/<int:id>/update/', views.update_maintenance_report),
-    path('wx/maintenance_report/<int:id>/update/condition/', views.update_maintenance_report_condition),
-    path('wx/maintenance_report/<int:id>/update/component/<int:component_id>/', views.update_maintenance_report_component),
-    path('wx/maintenance_report/<int:id>/update/contacts/', views.update_maintenance_report_contacts),
-    path('wx/maintenance_report/<int:id>/update/summary/', views.update_maintenance_report_summary),
-    path('wx/maintenance_report/<int:id>/update/datalogger/', views.update_maintenance_report_datalogger),    
-    path('wx/maintenance_report/<int:id>/delete/', views.delete_maintenance_report),
-    path('wx/maintenance_report/<int:id>/approve/', views.approve_maintenance_report),
-    path('wx/maintenance_report/<int:id>/view/<int:source>/', views.get_maintenance_report_view, name='view-maintenance-report'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

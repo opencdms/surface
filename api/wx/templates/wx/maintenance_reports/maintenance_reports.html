@@ -104,7 +104,7 @@
               <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
                   <v-btn icon>
-                    <v-icon v-if="item.status==='Draft'" v-on="on" small @click="dialog_apv = true; maintenance_report_id=item.maintenance_report_id">
+                    <v-icon v-if="item.status==='Published'" v-on="on" small @click="dialog_apv = true; maintenance_report_id=item.maintenance_report_id">
                       mdi-check-decagram
                     </v-icon>  
                   </v-btn>                  
@@ -124,7 +124,7 @@
               <v-tooltip v-if="item.status=='Approved'" bottom>
                 <template v-slot:activator="{ on }">
                   <v-btn icon>
-                    <v-icon v-on="on" small @click="downloadMaintenanceReport()">
+                    <v-icon v-if="item.status!='Approved'" v-on="on" small @click="downloadMaintenanceReport()">
                       download
                     </v-icon>                     
                   </v-btn>
@@ -218,7 +218,7 @@
         dialog_apv: false,
         maintenance_report_id: null,
         today: moment().format('YYYY-MM-DD'),
-        today_ny: moment().add(1, 'Y').format('YYYY-MM-DD'),
+        today_lm: moment().add(-1, 'M').format('YYYY-MM-DD'),
         start_date_menu: false,
         start_date: moment().format('YYYY-MM-DD'),
         end_date_menu: false,
@@ -242,7 +242,7 @@
               value: 'visit_date',
             },
             { 
-              text: 'Next Visist',
+              text: 'Next Visit',
               align: 'center',
               sortable: false,
               value: 'next_visit_date',
@@ -350,9 +350,9 @@
                  && value.toString().indexOf(search) !== -1
         },
         getDate (date) {
-          if (date > this.today_ny) return '#8A9A5B' // green
-          else if (date > this.today) return '#FFDB58' //yellow
-          else if (date <= this.today) return '#FF6347' //red
+          if (date > this.today) return '#3BD424' // green
+          else if (date >= this.today_lm) return '#E8D43F' //yellow
+          else if (date < this.today_lm) return '#F73E25' //red
           else return '#FFFFFF'
         },
         getStatus (status) {

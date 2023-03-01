@@ -25,6 +25,7 @@ USER surface
 
 RUN pip install -U pip setuptools wheel
 RUN pip install numpy==1.21.2
+RUN pip install --pre xhtml2pdf 
 
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt --no-warn-script-location

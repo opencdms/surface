@@ -55,7 +55,10 @@ from wx.models import Country, Unit, Station, Variable, DataSource, StationVaria
 from wx.utils import get_altitude, get_watershed, get_district, get_interpolation_image, parse_float_value, \
     parse_int_value
 from .utils import get_raw_data, get_station_raw_data
-from wx.models import VisitType, Technician
+from wx.models import MaintenanceReport, MaintenanceReportStationComponent, StationProfileComponent, StationComponent, VisitType, Technician
+from django.views.decorators.http import require_http_methods
+from base64 import b64encode
+
 
 logger = logging.getLogger('surface.urls')
 
@@ -3073,21 +3076,12 @@ def last24_summary_list(request):
 class ComingSoonView(LoginRequiredMixin, TemplateView):
     template_name = "coming-soon.html"
 
-#################################################################################
-#################################################################################
-
-from django.views.decorators.http import require_http_methods
-from wx.models import MaintenanceReport, MaintenanceReportStationComponent, StationProfileComponent, StationComponent
-from base64 import b64encode
-
-####################################
 
 @require_http_methods(["GET"])
-def get_maintenance_reports(request): # 1
+def get_maintenance_reports(request): # Maintenance report page
     template = loader.get_template('wx/maintenance_reports/maintenance_reports.html')
     context = {}
     return HttpResponse(template.render(context, request))
-
 
 
 @require_http_methods(["PUT"])
@@ -3127,277 +3121,8 @@ def get_maintenance_report_list(request):
 
     return JsonResponse(response, status=status.HTTP_200_OK)
 
-####################################
 
-@require_http_methods(["GET"])
-def get_maintenance_report_form(request):
-    template = loader.get_template('wx/maintenance_reports/new_report.html')
-
-    context = {}
-    context['station_list'] = Station.objects.select_related('profile').all()
-    context['visit_type_list'] = VisitType.objects.all()
-    context['technician_list'] = Technician.objects.all()
-
-    return HttpResponse(template.render(context, request))
-
-def get_station_contacts(station_id):
-    maintenance_report_list = MaintenanceReport.objects.filter(station_id=station_id).order_by('visit_date')
-
-    for maintenance_report in maintenance_report_list:
-        print(maintenance_report.visit_date)
-
-        if maintenance_report.contacts != '':
-            return maintenance_report.contacts
-
-    return None
-
-# https://docs.djangoproject.com/en/4.1/topics/http/decorators/
-@require_http_methods(["POST"])
-def create_maintenance_report(request):
-    now = datetime.datetime.now()
-
-    form_data = json.loads(request.body.decode())
-
-    try:
-        maintenance_report = MaintenanceReport.objects.get(station_id = form_data['station_id'], visit_date = form_data['visit_date'])
-
-        if maintenance_report.status=="-":
-            maintenance_report.delete()
-    except ObjectDoesNotExist:
-        pass
-
-    try:
-        maintenance_report = MaintenanceReport.objects.get(station_id = form_data['station_id'], visit_date = form_data['visit_date'])
-        
-        response = {"message": "Maintenance report already exist for chosen station and date."}        
-        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
-
-    except ObjectDoesNotExist:
-        maintenance_report = MaintenanceReport.objects.create(
-                                    created_at = now,
-                                    updated_at = now,
-                                    station_id = form_data['station_id'],
-                                    responsible_technician_id = form_data['responsible_technician_id'],
-                                    visit_type_id = form_data['visit_type_id'],
-                                    visit_date = form_data['visit_date'],
-                                    initial_time = form_data['initial_time'],
-                                    contacts = get_station_contacts(form_data['station_id']),
-                            )
-
-        station = Station.objects.get(pk=maintenance_report.station_id)
-        station_profile_component_list = StationProfileComponent.objects.filter(profile_id = station.profile_id)
-
-        for station_profile_component in station_profile_component_list:
-            station_component = StationComponent.objects.get(id=station_profile_component.station_component_id)
-
-            maintenance_report_station_component = MaintenanceReportStationComponent.objects.create(
-                                                        maintenance_report_id = maintenance_report.id,
-                                                        station_component_id = station_component.id,
-                                                        condition = station_component.report_template,
-                                                   )
-
-        response={"maintenance_report_id": maintenance_report.id}
-
-        return JsonResponse(response, status=status.HTTP_200_OK)
-
-def get_maintenance_report_obj(maintenance_report):
-    station = Station.objects.get(id=maintenance_report.station_id)
-    station_profile = StationProfile.objects.get(id=station.profile_id)
-    technician = Technician.objects.get(id=maintenance_report.responsible_technician_id)
-    visit_type = VisitType.objects.get(id=maintenance_report.visit_type_id)
-
-    return station, station_profile, technician, visit_type
-
-def get_component_list(maintenance_report):
-    station, station_profile, technician, visit_type = get_maintenance_report_obj(maintenance_report)
-
-    if station.profile_id is not None:
-        profile = StationProfile.objects.get(pk=station.profile_id)
-        station_profile_component_list = StationProfileComponent.objects.filter(profile_id=station.profile_id)
-
-        maintenance_report_station_component_list = []
-        
-        for station_profile_component in station_profile_component_list:
-            station_component = StationComponent.objects.get(id=station_profile_component.station_component_id)
-            maintenance_report_station_component = MaintenanceReportStationComponent.objects.get(maintenance_report_id=maintenance_report.id,
-                                                                                                 station_component_id=station_component.id)
-
-            dictionary = {'component_id': station_component.id,
-                          'presentation_order': station_profile_component.presentation_order,
-                          'component_name': station_component.name,
-                          'condition': maintenance_report_station_component.condition,
-                          'component_classification': maintenance_report_station_component.component_classification}
-
-            maintenance_report_station_component_list.append(dictionary)
-
-            maintenance_report_station_component_list = sorted(maintenance_report_station_component_list, key=lambda d: d['presentation_order']) 
-
-    return maintenance_report_station_component_list
-
-@require_http_methods(["GET"])
-def get_maintenance_report(request, id):
-    maintenance_report = MaintenanceReport.objects.get(id=id)
-
-    station, station_profile, technician, visit_type = get_maintenance_report_obj(maintenance_report)
-
-    response = {}
-    response['station_information'] = {
-        "station_name": station.name,
-        "station_host_name": "---",
-        "station_ID": station.code,
-        "wigos_ID": station.wigos,
-        "station_type": 'Automatic' if station.is_automatic else 'Manual',
-        "station_profile": station_profile.name,
-        "latitude": station.latitude,
-        "elevation": station.elevation,
-        "longitude": station.longitude,
-        "district": station.region,
-        "transmission_type": "---",
-        "transmission_ID": "---",
-        "transmission_interval": "---",
-        "measurement_interval": "---",
-        "data_of_first_operation": station.begin_date,
-        "data_of_relocation": station.relocation_date,
-    }
-
-    response["station_id"] = station.id
-    response["responsible_technician"] = technician.name
-    response["responsible_technician_id"] = maintenance_report.responsible_technician_id
-    response["visit_date"] = maintenance_report.visit_date
-    response["next_visit_date"] = maintenance_report.next_visit_date
-    response["initial_time"] = maintenance_report.initial_time
-    response["end_time"] = maintenance_report.end_time
-    response["visit_type"] = visit_type.name
-    response["visit_type_id"] = visit_type.id
-    response["station_on_arrival_conditions"] = maintenance_report.station_on_arrival_conditions
-    response["current_visit_summary"] = maintenance_report.current_visit_summary
-    response["next_visit_summary"] = maintenance_report.next_visit_summary
-    response["other_technician_1"] = maintenance_report.other_technician_1_id
-    response["other_technician_2"] = maintenance_report.other_technician_2_id
-    response["other_technician_3"] = maintenance_report.other_technician_3_id
-
-    response['contacts'] = maintenance_report.contacts  
-    response['components'] = get_component_list(maintenance_report)
-    response['steps'] = len(response['components'])
-
-    return JsonResponse(response, status=status.HTTP_200_OK)
-
-@require_http_methods(["PUT"])
-def update_maintenance_report_condition(request, id):
-    now = datetime.datetime.now()
-
-    maintenance_report = MaintenanceReport.objects.get(id=id)
-    
-    form_data = json.loads(request.body.decode())
-    
-    maintenance_report.station_on_arrival_conditions = form_data['conditions']
-
-    maintenance_report.updated_at = now
-    maintenance_report.save()
-
-    response={}
-
-    return JsonResponse(response, status=status.HTTP_200_OK)
-
-@require_http_methods(["PUT"])
-def update_maintenance_report_component(request, id, component_id):
-    now = datetime.datetime.now()
-
-    maintenance_report_station_component = MaintenanceReportStationComponent.objects.get(maintenance_report_id=id, station_component_id=component_id)
-
-    form_data = json.loads(request.body.decode())
-
-    maintenance_report_station_component.component_classification=form_data['component_classification']
-    maintenance_report_station_component.condition=form_data['component_condition']
-
-    maintenance_report_station_component.updated_at = now
-    maintenance_report_station_component.save()
-
-    response={}
-
-    return JsonResponse(response, status=status.HTTP_200_OK)
-
-@require_http_methods(["PUT"])
-def update_maintenance_report_contacts(request, id):
-    now = datetime.datetime.now()
-
-    maintenance_report = MaintenanceReport.objects.get(id=id)
-
-    form_data = json.loads(request.body.decode())
-
-    maintenance_report.contacts = form_data['contacts']
-
-    maintenance_report.updated_at = now
-    maintenance_report.save()
-
-    response={}
-
-    return JsonResponse(response, status=status.HTTP_200_OK)
-
-@require_http_methods(["POST"])
-def update_maintenance_report_datalogger(request, id):
-    # print(request.FILES)
-    if 'data_logger_file' in request.FILES:
-        print('something')
-        now = datetime.datetime.now()
-        maintenance_report = MaintenanceReport.objects.get(id=id)
-
-        data_logger_file = request.FILES['data_logger_file'].file
-        data_logger_file_content = b64encode(data_logger_file.read()).decode('utf-8')
-
-        maintenance_report.data_logger_file = data_logger_file_content
-
-        maintenance_report.updated_at = now
-        maintenance_report.save()
-
-        response={}
-
-        return JsonResponse(response, status=status.HTTP_200_OK)
-
-    # print("Data logger file not uploaded.")
-    response={'message': "Data logger file not uploaded."}
-    return JsonResponse(response, status=status.HTTP_206_PARTIAL_CONTENT)
-
-@require_http_methods(["PUT"])
-def update_maintenance_report_summary(request, id):
-    now = datetime.datetime.now()
-
-    maintenance_report = MaintenanceReport.objects.get(id=id)
-
-    form_data = json.loads(request.body.decode())
-
-    if form_data['other_technician_1']:
-        other_technician_1 = Technician.objects.get(id=form_data['other_technician_1'])
-    else:
-        other_technician_1 = None
-
-    if form_data['other_technician_2']:
-        other_technician_2 = Technician.objects.get(id=form_data['other_technician_2'])
-    else:
-        other_technician_2 = None
-
-    if form_data['other_technician_3']:
-        other_technician_3 = Technician.objects.get(id=form_data['other_technician_3'])    
-    else:
-        other_technician_3 = None
-
-    maintenance_report.other_technician_1 = other_technician_1
-    maintenance_report.other_technician_2 = other_technician_2
-    maintenance_report.other_technician_3 = other_technician_3
-    maintenance_report.next_visit_date = form_data['next_visit_date']
-    maintenance_report.end_time = form_data['end_time']
-    maintenance_report.current_visit_summary = form_data['current_visit_summary']
-    maintenance_report.next_visit_summary = form_data['next_visit_summary']
-    maintenance_report.status = form_data['status']
-
-    maintenance_report.updated_at = now
-    maintenance_report.save()
-
-    response={}
-
-    return JsonResponse(response, status=status.HTTP_200_OK)
-
-@require_http_methods(["GET"])
+@require_http_methods(["GET"]) # Update maintenance report from existing report
 def update_maintenance_report(request, id):
     maintenance_report = MaintenanceReport.objects.get(id=id)
     if maintenance_report.status == 'A':
@@ -3418,7 +3143,6 @@ def update_maintenance_report(request, id):
 
     return HttpResponse(template.render(context, request))
 
-####################################
 
 @require_http_methods(["PUT"])
 def delete_maintenance_report(request, id):
@@ -3431,6 +3155,7 @@ def delete_maintenance_report(request, id):
     response={}
     return JsonResponse(response, status=status.HTTP_200_OK)
 
+
 @require_http_methods(["PUT"])
 def approve_maintenance_report(request, id):
     now = datetime.datetime.now()
@@ -3442,10 +3167,9 @@ def approve_maintenance_report(request, id):
     response={}
     return JsonResponse(response, status=status.HTTP_200_OK)    
 
-####################################
 
 @require_http_methods(["GET"])
-def get_maintenance_report_view(request, id, source):
+def get_maintenance_report_view(request, id, source): # Maintenance report view
     template = loader.get_template('wx/maintenance_reports/view_report.html')
 
     maintenance_report = MaintenanceReport.objects.get(id=id)
@@ -3456,12 +3180,14 @@ def get_maintenance_report_view(request, id, source):
     visit_type = VisitType.objects.get(pk=maintenance_report.visit_type_id)
     maintenance_report_station_components = MaintenanceReportStationComponent.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    maintenance_report_station_component_list = []    
-    for maintenance_report_station_component in maintenance_report_station_components:
-        dictionary = {'condition': maintenance_report_station_component.condition,
-                      'component_classification': maintenance_report_station_component.component_classification,
-                     }
-        maintenance_report_station_component_list.append(dictionary)
+    # maintenance_report_station_component_list = []    
+    # for maintenance_report_station_component in maintenance_report_station_components:
+    #     dictionary = {'condition': maintenance_report_station_component.condition,
+    #                   'component_classification': maintenance_report_station_component.component_classification,
+    #                  }
+    #     maintenance_report_station_component_list.append(dictionary)
+
+    maintenance_report_station_component_list = get_component_list(maintenance_report)
 
 
     other_technicians_ids = [maintenance_report.other_technician_1_id,
@@ -3526,11 +3252,304 @@ def get_maintenance_report_view(request, id, source):
 
     return HttpResponse(template.render(context, request))
 
-# https://docs.djangoproject.com/en/4.1/topics/class-based-views/
-# https://docs.djangoproject.com/en/4.1/topics/auth/default/#django.contrib.auth.decorators.login_required
 
-#################################################################################
-#################################################################################
+def get_maintenance_report_obj(maintenance_report):
+    station = Station.objects.get(id=maintenance_report.station_id)
+    station_profile = StationProfile.objects.get(id=station.profile_id)
+    technician = Technician.objects.get(id=maintenance_report.responsible_technician_id)
+    visit_type = VisitType.objects.get(id=maintenance_report.visit_type_id)
+
+    return station, station_profile, technician, visit_type
+
+
+def get_maintenance_report_form(request): # New maintenance report form page
+    template = loader.get_template('wx/maintenance_reports/new_report.html')
+
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['visit_type_list'] = VisitType.objects.all()
+    context['technician_list'] = Technician.objects.all()
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_station_contacts(station_id):
+    maintenance_report_list = MaintenanceReport.objects.filter(station_id=station_id).order_by('visit_date')
+
+    for maintenance_report in maintenance_report_list:
+        print(maintenance_report.visit_date)
+
+        if maintenance_report.contacts != '':
+            return maintenance_report.contacts
+
+    return None
+
+
+@require_http_methods(["POST"]) # Create maintenance report from sratch
+def create_maintenance_report(request):
+    now = datetime.datetime.now()
+
+    form_data = json.loads(request.body.decode())
+
+    try:
+        maintenance_report = MaintenanceReport.objects.get(station_id = form_data['station_id'], visit_date = form_data['visit_date'])
+
+        if maintenance_report.status=="-":
+            maintenance_report.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    try:
+        maintenance_report = MaintenanceReport.objects.get(station_id = form_data['station_id'], visit_date = form_data['visit_date'])
+        
+        response = {"message": "Maintenance report already exist for chosen station and date."}        
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    except ObjectDoesNotExist:
+        maintenance_report = MaintenanceReport.objects.create(
+                                    created_at = now,
+                                    updated_at = now,
+                                    station_id = form_data['station_id'],
+                                    responsible_technician_id = form_data['responsible_technician_id'],
+                                    visit_type_id = form_data['visit_type_id'],
+                                    visit_date = form_data['visit_date'],
+                                    initial_time = form_data['initial_time'],
+                                    contacts = get_station_contacts(form_data['station_id']),
+                            )
+
+        station = Station.objects.get(pk=maintenance_report.station_id)
+        station_profile_component_list = StationProfileComponent.objects.filter(profile_id = station.profile_id)
+
+        for station_profile_component in station_profile_component_list:
+            station_component = StationComponent.objects.get(id=station_profile_component.station_component_id)
+
+            maintenance_report_station_component = MaintenanceReportStationComponent.objects.create(
+                                                        maintenance_report_id = maintenance_report.id,
+                                                        station_component_id = station_component.id,
+                                                        condition = station_component.report_template,
+                                                   )
+
+        response={"maintenance_report_id": maintenance_report.id}
+
+        return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+def get_ckeditor_config():
+    ckeditor_config = {
+        'toolbar': [
+                ['Bold', 'Italic', 'Font'],
+                ['Format', 'Styles', 'TextColor', 'BGColor', 'RemoveFormat'],
+                ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock', 'Indent', 'Outdent'],
+                ['HorizontalRule', 'BulletedList'],
+                ['Blockquote', 'Source', 'Link', 'Unlink', 'Image', 'Table', 'Print']
+            ],
+        'removeButtons': 'Image',
+        'extraAllowedContent' : 'img(*){*}[*]',              
+        'editorplaceholder': 'Description of station upon arribal:',
+        'language': 'en',            
+    }
+    return ckeditor_config
+
+def get_component_list(maintenance_report):
+    station, station_profile, technician, visit_type = get_maintenance_report_obj(maintenance_report)
+
+    if station.profile_id is not None:
+        profile = StationProfile.objects.get(pk=station.profile_id)
+        station_profile_component_list = StationProfileComponent.objects.filter(profile_id=station.profile_id)
+
+        maintenance_report_station_component_list = []
+        
+        for station_profile_component in station_profile_component_list:
+            station_component = StationComponent.objects.get(id=station_profile_component.station_component_id)
+            maintenance_report_station_component = MaintenanceReportStationComponent.objects.get(maintenance_report_id=maintenance_report.id,
+                                                                                                 station_component_id=station_component.id)
+
+            dictionary = {'component_id': station_component.id,
+                          'presentation_order': station_profile_component.presentation_order,
+                          'component_name': station_component.name,
+                          'condition': maintenance_report_station_component.condition,
+                          'component_classification': maintenance_report_station_component.component_classification,
+                          'ckeditor_config': get_ckeditor_config()}
+
+            maintenance_report_station_component_list.append(dictionary)
+
+            maintenance_report_station_component_list = sorted(maintenance_report_station_component_list, key=lambda d: d['presentation_order']) 
+
+    return maintenance_report_station_component_list
+
+
+@require_http_methods(["GET"]) 
+def get_maintenance_report(request, id):
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+
+    station, station_profile, technician, visit_type = get_maintenance_report_obj(maintenance_report)
+
+    response = {}
+    response['station_information'] = {
+        "station_name": station.name,
+        "station_host_name": "---",
+        "station_ID": station.code,
+        "wigos_ID": station.wigos,
+        "station_type": 'Automatic' if station.is_automatic else 'Manual',
+        "station_profile": station_profile.name,
+        "latitude": station.latitude,
+        "elevation": station.elevation,
+        "longitude": station.longitude,
+        "district": station.region,
+        "transmission_type": "---",
+        "transmission_ID": "---",
+        "transmission_interval": "---",
+        "measurement_interval": "---",
+        "data_of_first_operation": station.begin_date,
+        "data_of_relocation": station.relocation_date,
+    }
+
+    response["station_id"] = station.id
+    response["responsible_technician"] = technician.name
+    response["responsible_technician_id"] = maintenance_report.responsible_technician_id
+    response["visit_date"] = maintenance_report.visit_date
+    response["next_visit_date"] = maintenance_report.next_visit_date
+    response["initial_time"] = maintenance_report.initial_time
+    response["end_time"] = maintenance_report.end_time
+    response["visit_type"] = visit_type.name
+    response["visit_type_id"] = visit_type.id
+    response["station_on_arrival_conditions"] = maintenance_report.station_on_arrival_conditions
+    response["current_visit_summary"] = maintenance_report.current_visit_summary
+    response["next_visit_summary"] = maintenance_report.next_visit_summary
+    response["other_technician_1"] = maintenance_report.other_technician_1_id
+    response["other_technician_2"] = maintenance_report.other_technician_2_id
+    response["other_technician_3"] = maintenance_report.other_technician_3_id
+
+    response['contacts'] = maintenance_report.contacts  
+    response['components'] = get_component_list(maintenance_report)
+    response['steps'] = len(response['components'])
+
+    if maintenance_report.data_logger_file_name is None:
+        response['data_logger_file_name'] = "Upload latest data logger program"
+    else:
+        response['data_logger_file_name'] = maintenance_report.data_logger_file_name
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["PUT"])
+def update_maintenance_report_condition(request, id):
+    now = datetime.datetime.now()
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+    
+    form_data = json.loads(request.body.decode())
+    
+    maintenance_report.station_on_arrival_conditions = form_data['conditions']
+
+    maintenance_report.updated_at = now
+    maintenance_report.save()
+
+    response={}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["PUT"])
+def update_maintenance_report_component(request, id, component_id):
+    now = datetime.datetime.now()
+
+    maintenance_report_station_component = MaintenanceReportStationComponent.objects.get(maintenance_report_id=id, station_component_id=component_id)
+
+    form_data = json.loads(request.body.decode())
+
+    maintenance_report_station_component.component_classification=form_data['component_classification']
+    maintenance_report_station_component.condition=form_data['component_condition']
+
+    maintenance_report_station_component.updated_at = now
+    maintenance_report_station_component.save()
+
+    response={}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["PUT"])
+def update_maintenance_report_contacts(request, id):
+    now = datetime.datetime.now()
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+
+    form_data = json.loads(request.body.decode())
+
+    maintenance_report.contacts = form_data['contacts']
+
+    maintenance_report.updated_at = now
+    maintenance_report.save()
+
+    response={}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def update_maintenance_report_datalogger(request, id):
+    # print(request.FILES)
+    if 'data_logger_file' in request.FILES:
+        maintenance_report = MaintenanceReport.objects.get(id=id)
+
+        data_logger_file = request.FILES['data_logger_file'].file
+        data_logger_file_name = str(request.FILES['data_logger_file'])
+        data_logger_file_content = b64encode(data_logger_file.read()).decode('utf-8')
+
+        maintenance_report.data_logger_file = data_logger_file_content
+        maintenance_report.data_logger_file_name = data_logger_file_name
+        maintenance_report.updated_at = datetime.datetime.now()
+        maintenance_report.save()
+
+        response = {'data_logger_file_name', data_logger_file_name}
+
+        return JsonResponse(response, status=status.HTTP_200_OK)
+
+    # print("Data logger file not uploaded.")
+    response={'message': "Data logger file not uploaded."}
+    return JsonResponse(response, status=status.HTTP_206_PARTIAL_CONTENT)
+
+
+@require_http_methods(["PUT"])
+def update_maintenance_report_summary(request, id):
+    now = datetime.datetime.now()
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+
+    form_data = json.loads(request.body.decode())
+
+    if form_data['other_technician_1']:
+        other_technician_1 = Technician.objects.get(id=form_data['other_technician_1'])
+    else:
+        other_technician_1 = None
+
+    if form_data['other_technician_2']:
+        other_technician_2 = Technician.objects.get(id=form_data['other_technician_2'])
+    else:
+        other_technician_2 = None
+
+    if form_data['other_technician_3']:
+        other_technician_3 = Technician.objects.get(id=form_data['other_technician_3'])    
+    else:
+        other_technician_3 = None
+
+    maintenance_report.other_technician_1 = other_technician_1
+    maintenance_report.other_technician_2 = other_technician_2
+    maintenance_report.other_technician_3 = other_technician_3
+    maintenance_report.next_visit_date = form_data['next_visit_date']
+    maintenance_report.end_time = form_data['end_time']
+    maintenance_report.current_visit_summary = form_data['current_visit_summary']
+    maintenance_report.next_visit_summary = form_data['next_visit_summary']
+    maintenance_report.status = form_data['status']
+
+    maintenance_report.updated_at = now
+    maintenance_report.save()
+
+    response={}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
 
 class SpatialAnalysisView(LoginRequiredMixin, TemplateView):
     template_name = "wx/spatial_analysis.html"

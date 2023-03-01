@@ -50,6 +50,21 @@ INSTALLED_APPS = [
     'import_export',
 ]
 
+CKEDITOR_CONFIGS = {
+   'default': {
+       'toolbar_Full': [
+            ['Bold', 'Italic', 'Font'],
+            ['Format', 'Styles', 'TextColor', 'BGColor', 'RemoveFormat'],
+            ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock', 'Indent', 'Outdent'],
+            ['HorizontalRule', 'BulletedList', '-'],
+            ['Blockquote', 'Source', 'Link', 'Unlink', 'Table', '-', 'Print']
+        ],
+        'removeButtons': 'Image',
+        'extraAllowedContent' : 'img(*){*}[*]', 
+        'extraPlugins': 'justify,liststyle,indent',
+   },
+}
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',

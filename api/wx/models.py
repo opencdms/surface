@@ -1290,7 +1290,7 @@ class Technician(BaseModel): # Singular
 
 ################################################################################################
 # https://github.com/jazzband/django-tinymce
-from tinymce import models as tinymce_models
+# from tinymce import models as tinymce_models
 from ckeditor.fields import RichTextField
 
 # https://stackoverflow.com/questions/54802616/how-to-use-enums-as-a-choice-field-in-django-model
@@ -1336,7 +1336,7 @@ class MaintenanceReport(BaseModel):
     # https://stackoverflow.com/questions/49882526/validation-for-datefield-so-it-doesnt-take-future-dates-in-django
     visit_type = models.ForeignKey(VisitType, on_delete=models.DO_NOTHING)
     responsible_technician = models.ForeignKey(Technician, related_name='responsible_technician', on_delete=models.DO_NOTHING)
-    visit_date = models.DateField(help_text="Enter the date of the visist", validators=[no_future])
+    visit_date = models.DateField(help_text="Enter the date of the visit", validators=[no_future])
     initial_time = models.TimeField() # Sem timezone
 
     status = models.CharField(max_length=1, choices=Status.choices, default=Status.DRAFT)
@@ -1359,6 +1359,7 @@ class MaintenanceReport(BaseModel):
     next_visit_summary = RichTextField(blank=True, null=True)
 
     data_logger_file = models.TextField(blank=True, null=True)
+    data_logger_file_name = models.TextField(blank=True, null=True)
 
     class Meta:
         unique_together = ('station', 'visit_date')    

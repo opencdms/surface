@@ -1,0 +1,52 @@
+[
+{
+    "model": "wx.visittype",
+    "pk": 1,
+    "fields": {
+        "created_at": "2023-02-28T23:39:43.923Z",
+        "updated_at": "2023-02-28T23:39:43.923Z",
+        "name": "Preventive",
+        "description": "Preventive"
+    }
+},
+{
+    "model": "wx.visittype",
+    "pk": 2,
+    "fields": {
+        "created_at": "2023-02-28T23:39:52.064Z",
+        "updated_at": "2023-02-28T23:39:52.064Z",
+        "name": "Installation",
+        "description": "Installation"
+    }
+},
+{
+    "model": "wx.visittype",
+    "pk": 3,
+    "fields": {
+        "created_at": "2023-02-28T23:39:58.232Z",
+        "updated_at": "2023-02-28T23:39:58.232Z",
+        "name": "Inspection",
+        "description": "Inspection"
+    }
+},
+{
+    "model": "wx.visittype",
+    "pk": 4,
+    "fields": {
+        "created_at": "2023-02-28T23:40:49.334Z",
+        "updated_at": "2023-02-28T23:40:49.334Z",
+        "name": "Corrective",
+        "description": "Corrective"
+    }
+},
+{
+    "model": "wx.visittype",
+    "pk": 5,
+    "fields": {
+        "created_at": "2023-02-28T23:40:58.504Z",
+        "updated_at": "2023-02-28T23:40:58.504Z",
+        "name": "Replacement",
+        "description": "Replacement"
+    }
+}
+]

@@ -190,7 +190,7 @@
 
               <v-layout fluid>
                 <v-layout ml-2 mr-2 mt-2 mb-2>
-                  {{ contact_information | safe }}
+                  <span> {{ contact_information | safe }} </span>
                 </v-layout>
               </v-layout>
 
@@ -199,10 +199,23 @@
               </v-layout>
               <hr>
 
-
               <v-layout mt-5 mb-5 v-for="equipment_record in {{equipment_records}}" column>
                 <v-card outlined>
-                  <v-layout ml-5 mt-5>
+                  <v-layout style="background-color: #38444c">
+                    <v-layout justify-center mt-2 mb-2 >
+                      <span style="color: #FFF" class="srf-display-2 text-uppercase">
+                        [[equipment_record.component_name]]
+                      </span>
+                    </v-layout>
+                  </v-layout>
+
+                  <v-layout style="background-color: #CCC">
+                    <v-layout ml-5 mr-5 mt-2 mb-2> 
+                      Component Condition
+                    </v-layout>
+                  </v-layout>  
+
+                  <v-layout justify-center mt-5>
                     <span v-html="equipment_record.condition"></span>
                   </v-layout>
 
@@ -242,6 +255,7 @@
   new Vue({
     el: "#app",
     vuetify: new Vuetify(),
+    delimiters: ["[[", "]]"],    
     data: {
       maintenance_report_id: "{{visit_summary_information.report_number}}",
       maintenance_report_status: "{{visit_summary_information.maintenance_report_status}}",

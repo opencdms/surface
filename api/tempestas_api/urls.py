@@ -15,7 +15,6 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('password/', change_password, name='change_password'),
     path('admin/', admin.site.urls),
-    path('tinymce/', include('tinymce.urls')),
     path('', include('wx.urls')),
 ]
 
