@@ -30,4 +30,4 @@ redis==3.5.3
 requests==2.26.0
 gunicorn==20.1.0
 croniter==1.3.5
-django-ckeditor
+django-ckeditor==6.5.1
