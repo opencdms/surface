@@ -3363,7 +3363,8 @@ def get_component_list(maintenance_report):
             station_component = StationComponent.objects.get(id=station_profile_component.station_component_id)
             maintenance_report_station_component = MaintenanceReportStationComponent.objects.get(maintenance_report_id=maintenance_report.id,
                                                                                                  station_component_id=station_component.id)
-
+            
+            # Need one ckeditor config per text editor, otherwise it could store data in incorrect variables.
             dictionary = {'component_id': station_component.id,
                           'presentation_order': station_profile_component.presentation_order,
                           'component_name': station_component.name,
