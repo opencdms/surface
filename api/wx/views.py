@@ -2204,7 +2204,7 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  Row('wmo', 'organization'),
                  Row('wigos', 'observer'),
                  Row('begin_date', 'data_source'),
-                 Row('end_date')
+                 Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
                  Row('latitude', 'longitude'),

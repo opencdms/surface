@@ -27,6 +27,10 @@
     padding-left: 11.25px;
     padding-right: 11.25px;
   }
+  div.required label::before {
+    content: "** " !important;
+    color: red !important;
+  }
 </style>
   
   {% endblock %} {% block localjavascript %}
