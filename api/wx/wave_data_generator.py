@@ -41,7 +41,7 @@ def gen_random_wave():
     elif 0.10 <= frequency < 0.12:
         height = random.uniform(0.1, 0.2)
     else: # frequency < 0.1
-        height = random.uniform(0.2, 0.7)
+        height = random.uniform(0.2, 0.5)
 
     height = round(height, 3) # In m
         
@@ -80,6 +80,7 @@ def gen_sea_wave_data():
     sea_wave_data = sum(sinewave_list)
     
     sea_level_offset = random.uniform(90, 110)
+    sea_level_offset = 1
 
     sea_wave_data += sea_level_offset
 
