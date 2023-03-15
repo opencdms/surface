@@ -99,7 +99,6 @@ urlpatterns = [
     path('api/step_threshold/', views.step_threshold_view),
     path('wx/quality_control/persist_threshold/', views.PersistThresholdView.as_view(), name='persist-threshold'),
     path('api/persist_threshold/', views.persist_threshold_view),
-
     path('wx/maintenance_report/', login_required(views.get_maintenance_reports), name='maintenance-reports'),
     path('wx/maintenance_report/get_reports/', login_required(views.get_maintenance_report_list)),
     path('wx/maintenance_report/new_report/', login_required(views.get_maintenance_report_form), name='new-maintenance-report'),
@@ -114,7 +113,8 @@ urlpatterns = [
     path('wx/maintenance_report/<int:id>/delete/', login_required(views.delete_maintenance_report)),
     path('wx/maintenance_report/<int:id>/approve/', login_required(views.approve_maintenance_report)),
     path('wx/maintenance_report/<int:id>/view/<int:source>/', login_required(views.get_maintenance_report_view), name='view-maintenance-report'),
-
+    path('wx/products/wave_data/', login_required(views.get_wave_data_analysis), name='wave-data'),
+    path('wx/products/wave_data/get/', login_required(views.get_wave_data), name="get-wave-data"),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

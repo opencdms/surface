@@ -3077,6 +3077,358 @@ class ComingSoonView(LoginRequiredMixin, TemplateView):
     template_name = "coming-soon.html"
 
 
+from wx.models import HighFrequencyData, MeasurementVariable
+from wx.tasks import fft_decompose
+import math
+import numpy as np
+
+def get_wave_data_analysis(request):
+    template = loader.get_template('wx/products/wave_data.html')
+
+
+    variable = Variable.objects.get(name="Sea Level") # Sea Level
+    station_ids = HighFrequencyData.objects.filter(variable_id=variable.id).values('station_id').distinct()
+
+    station_list = Station.objects.filter(id__in=station_ids)
+
+    context = {'station_list': station_list}
+
+    return HttpResponse(template.render(context, request))
+
+def format_wave_data_var(variable_id, data):
+    variable = Variable.objects.get(id=variable_id)
+    measurement_variable = MeasurementVariable.objects.get(id=variable.measurement_variable_id)
+    unit = Unit.objects.get(id=variable.unit_id)
+
+    formated_data = []
+    for entry in data:
+        if type(entry) is not dict:
+            entry = entry.__dict__
+
+        formated_entry = {
+            "station": entry['station_id'],
+            "date": entry['datetime'].timestamp()*1000,
+            "measurementvariable": measurement_variable.name,
+            "value": entry['measured'],
+            "quality_flag": "Not checked",
+            "flag_color": "#FFFFFF",            
+        }
+        formated_data.append(formated_entry)
+
+    final_data = {
+        "color": variable.color,
+        "default_representation": variable.default_representation,
+        "data": formated_data,
+        "unit": unit.symbol,
+    }
+    return final_data
+
+def get_wave_components(data_slice, component_number):
+    wave_list = fft_decompose(data_slice)    
+    wave_list.sort(key=lambda W: abs(W.height), reverse=True)
+    wave_components = wave_list[:component_number]
+    return wave_components
+
+def get_wave_component_ref_variables(i):
+    SYSTEM_COMPONENT_NUMBER = 5 # Number of wave components in the system
+
+    ref_number = i % SYSTEM_COMPONENT_NUMBER
+    ref_number += 1
+
+    amp_ref_name = 'Wave Component ' + str(ref_number) + ' Amplitude'
+    amp_ref = Variable.objects.get(name=amp_ref_name)
+
+    frq_ref_name = 'Wave Component ' + str(ref_number) + ' Frequency'
+    frq_ref = Variable.objects.get(name=frq_ref_name)
+
+    pha_ref_name = 'Wave Component ' + str(ref_number) + ' Phase'
+    pha_ref = Variable.objects.get(name=pha_ref_name)
+
+    return amp_ref, frq_ref, pha_ref
+
+def get_wave_component_name_and_symbol(i, component_type):
+    if component_type=='Amplitude':
+        name = 'Wave Component ' + str(i) + ' Amplitude'
+        symbol = 'WV'+str(i)+'AMP'
+    elif component_type=='Frequency':
+        name = 'Wave Component ' + str(i) + ' Frequency'
+        symbol = 'WV'+str(i)+'FRQ'
+    elif component_type=='Phase':
+        name = 'Wave Component ' + str(i) + ' Phase'
+        symbol = 'WV'+str(i)+'PHA'
+    else:
+        name = 'Component Type Error'
+        symbol = 'Component Type Error'
+
+    return name, symbol
+
+def create_aggregated_data(component_number):
+    wv_amp_mv = MeasurementVariable.objects.get(name='Wave Amplitude')
+    wv_frq_mv = MeasurementVariable.objects.get(name='Wave Frequency')
+    wv_pha_mv = MeasurementVariable.objects.get(name='Wave Phase')
+    sl_mv = MeasurementVariable.objects.get(name='Sea Level')
+
+    sl_min = Variable.objects.get(name = 'Sea Level [MIN]')
+    sl_max = Variable.objects.get(name = 'Sea Level [MAX]')
+    sl_avg = Variable.objects.get(name = 'Sea Level [AVG]')
+    sl_std = Variable.objects.get(name = 'Sea Level [STDV]')
+    sl_swh = Variable.objects.get(name = 'Significant Wave Height')
+
+    sl_variables = [sl_min, sl_max, sl_avg, sl_std, sl_swh]
+
+
+    aggregated_data = {
+        wv_amp_mv.name: {},
+        wv_frq_mv.name: {},
+        wv_pha_mv.name: {},
+        sl_mv.name: {}
+    }
+
+    for sl_variable in sl_variables:
+        aggregated_data[sl_mv.name][sl_variable.name] = {
+            'ref_variable_id': sl_variable.id,         
+            'symbol': sl_variable.symbol,
+            'data': []    
+        }    
+
+    for i in range(component_number):
+        amp_ref, frq_ref, pha_ref = get_wave_component_ref_variables(i)
+
+        amp_name, amp_symbol = get_wave_component_name_and_symbol(i+1, 'Amplitude')
+        frq_name, frq_symbol = get_wave_component_name_and_symbol(i+1, 'Frequency')
+        pha_name, pha_symbol = get_wave_component_name_and_symbol(i+1, 'Phase')
+
+        aggregated_data[wv_amp_mv.name][amp_name] = {
+            'ref_variable_id': amp_ref.id,         
+            'symbol': amp_symbol,
+            'data': []            
+        }
+        aggregated_data[wv_frq_mv.name][frq_name] = {        
+            'ref_variable_id': frq_ref.id,         
+            'symbol': frq_symbol,
+            'data': []
+        }
+        aggregated_data[wv_pha_mv.name][pha_name] = {
+            'ref_variable_id': pha_ref.id,         
+            'symbol': pha_symbol,
+            'data': []            
+        }
+
+    return aggregated_data
+
+def append_in_aggregated_data(aggregated_data, datetime, station_id, mv_name, var_name, value):
+    entry = {
+        'measured': value,
+        'datetime': datetime,
+        'station_id': station_id,
+    }
+
+    aggregated_data[mv_name][var_name]['data'].append(entry)
+
+    return aggregated_data
+
+def get_wave_aggregated_data(station_id, data, initial_datetime, range_interval, calc_interval, component_number):
+    wv_amp_mv = MeasurementVariable.objects.get(name='Wave Amplitude')
+    wv_frq_mv = MeasurementVariable.objects.get(name='Wave Frequency')
+    wv_pha_mv = MeasurementVariable.objects.get(name='Wave Phase')
+    sl_mv = MeasurementVariable.objects.get(name='Sea Level')
+
+    sl_min = Variable.objects.get(name = 'Sea Level [MIN]')
+    sl_max = Variable.objects.get(name = 'Sea Level [MAX]')
+    sl_avg = Variable.objects.get(name = 'Sea Level [AVG]')
+    sl_std = Variable.objects.get(name = 'Sea Level [STDV]')
+    sl_swh = Variable.objects.get(name = 'Significant Wave Height')
+
+    aggregated_data = create_aggregated_data(component_number)
+
+    for i in range(math.floor(range_interval/calc_interval)):
+        ini_datetime_slc = initial_datetime+datetime.timedelta(minutes=i*calc_interval)
+        end_datetime_slc = initial_datetime+datetime.timedelta(minutes=(i+1)*calc_interval)
+
+        data_slice = [entry.measured for entry in data if ini_datetime_slc < entry.datetime <= end_datetime_slc]
+
+        if len(data_slice) > 0:
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_min.name, np.min(data_slice))
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_max.name, np.max(data_slice))
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_avg.name, np.mean(data_slice))
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_std.name, np.std(data_slice))
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_swh.name, 4*np.std(data_slice))
+
+            wave_components = get_wave_components(data_slice, component_number)
+            for j, wave_component in enumerate(wave_components):
+                amp_name, amp_symbol = get_wave_component_name_and_symbol(j+1, 'Amplitude')
+                frq_name, frq_symbol = get_wave_component_name_and_symbol(j+1, 'Frequency')
+                pha_name, pha_symbol = get_wave_component_name_and_symbol(j+1, 'Phase')
+
+                amp_value = wave_component.height
+                frq_value = wave_component.frequency
+                pha_value = math.degrees(wave_component.phase_rad) % 360
+
+                aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, wv_amp_mv.name, amp_name, amp_value)
+                aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, wv_frq_mv.name, frq_name, frq_value)
+                aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, wv_pha_mv.name, pha_name, pha_value)
+
+    return aggregated_data
+
+def add_wave_aggregated_data(dataset, aggregated_data):
+    for mv_name in aggregated_data.keys():
+        dataset['results'][mv_name] = {}
+        for var_name in aggregated_data[mv_name].keys():
+            variable_id = aggregated_data[mv_name][var_name]['ref_variable_id']
+            variable_data = aggregated_data[mv_name][var_name]['data']
+            variable_symbol = aggregated_data[mv_name][var_name]['symbol']
+
+            dataset['results'][mv_name][variable_symbol] = format_wave_data_var(variable_id, variable_data)
+
+    return dataset    
+
+def create_wave_dataset(station_id, sea_data, initial_datetime, range_interval, calc_interval, component_number):
+    sea_level = Variable.objects.get(name='Sea Level')
+    sea_level_mv = MeasurementVariable.objects.get(name='Sea Level')
+
+    dataset  = {
+        "results": {
+            sea_level_mv.name+' Raw': {
+                sea_level.symbol: format_wave_data_var(sea_level.id, sea_data),
+            }
+        },
+        "messages": [],
+    }
+
+    wave_component_data = get_wave_aggregated_data(station_id,
+                                                  sea_data,
+                                                  initial_datetime,
+                                                  range_interval,
+                                                  calc_interval,
+                                                  component_number)
+
+ 
+    dataset = add_wave_aggregated_data(dataset, wave_component_data)
+
+    return dataset
+
+def create_wave_chart(dataset):
+    charts = {}
+
+    for element_name, element_data in dataset['results'].items():
+
+        chart = {
+            'chart': {
+                'type': 'pie',
+                'zoomType': 'xy'
+            },
+            'title': {'text': element_name},
+            'xAxis': {
+                'type': 'datetime',
+                'dateTimeLabelFormats': {
+                    'month': '%e. %b',
+                    'year': '%b'
+                },
+                'title': {
+                    'text': 'Date'
+                }
+            },
+            'yAxis': [],
+            'exporting': {
+                'showTable': True
+            },
+            'series': []
+        }
+
+        opposite = False
+        y_axis_unit_dict = {}
+        for variable_name, variable_data in element_data.items():
+            current_unit = variable_data['unit']
+            if current_unit not in y_axis_unit_dict.keys():
+                chart['yAxis'].append({
+                    'labels': {
+                        'format': '{value} ' + variable_data['unit']
+                    },
+                    'title': {
+                        'text': None
+                    },
+                    'opposite': opposite
+                })
+                y_axis_unit_dict[current_unit] = len(chart['yAxis']) - 1
+                opposite = not opposite
+
+            current_y_axis_index = y_axis_unit_dict[current_unit]
+            data = []
+            for record in variable_data['data']:
+                data.append({
+                    'x': record['date'],
+                    'y': record['value'],
+                })
+
+            chart['series'].append({
+                'name': variable_name,
+                'color': variable_data['color'],
+                'type': variable_data['default_representation'],
+                'unit': variable_data['unit'],
+                'data': data,
+                'yAxis': current_y_axis_index
+            })
+            chart['chart']['type'] = variable_data['default_representation'],
+
+        charts[slugify(element_name)] = chart
+
+    return charts
+
+@require_http_methods(["GET"])
+def get_wave_data(request):
+    station_id = request.GET.get('station_id', None)
+    initial_date = request.GET.get('initial_date', None)
+    initial_time = request.GET.get('initial_time', None)
+    range_interval = request.GET.get('interval', None)
+    calc_interval = request.GET.get('calc_interval', None)
+    component_number = request.GET.get('component_number', None)
+
+    tz_client = request.GET.get('tz_client', None)
+    tz_settings = pytz.timezone(settings.TIMEZONE_NAME)
+
+    initial_datetime_str = initial_date+' '+initial_time
+    initial_datetime = datetime_constructor.strptime(initial_datetime_str, '%Y-%m-%d %H:%M')
+    initial_datetime = pytz.timezone(tz_client).localize(initial_datetime)
+    initial_datetime = initial_datetime.astimezone(tz_settings)
+
+    range_intervals = {'30min': 30, "1h": 60,}
+
+    if range_interval in range_intervals.keys():
+        range_interval = range_intervals[range_interval]
+    else:
+        response = {"message": "Not valid interval."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    calc_intervals = {'5min': 5, '10min': 10, '15min': 15,}
+
+    if calc_interval in calc_intervals.keys():
+        calc_interval = calc_intervals[calc_interval]
+    else:
+        response = {"message": "Not valid calc interval."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    station_id = int(station_id)
+    component_number = int(component_number)
+
+
+    final_datetime = initial_datetime + datetime.timedelta(minutes=range_interval)
+
+    variable = Variable.objects.get(name="Sea Level") # Sea Level
+    sea_data = HighFrequencyData.objects.filter(variable_id=variable.id,
+                                                station_id=station_id,
+                                                datetime__gt=initial_datetime,
+                                                datetime__lte=final_datetime).order_by('datetime')
+
+    dataset  = {"results": {}, "messages": []}
+
+    if len(sea_data) > 0:
+        dataset = create_wave_dataset(station_id, sea_data, initial_datetime,
+                                      range_interval, calc_interval, component_number)
+
+    charts = create_wave_chart(dataset)
+
+    return JsonResponse(charts)
+
 @require_http_methods(["GET"])
 def get_maintenance_reports(request): # Maintenance report page
     template = loader.get_template('wx/maintenance_reports/maintenance_reports.html')
@@ -3277,8 +3629,6 @@ def get_station_contacts(station_id):
     maintenance_report_list = MaintenanceReport.objects.filter(station_id=station_id).order_by('visit_date')
 
     for maintenance_report in maintenance_report_list:
-        print(maintenance_report.visit_date)
-
         if maintenance_report.contacts != '':
             return maintenance_report.contacts
 
