@@ -8,7 +8,7 @@
     <v-app>
       <form class="col l12">
         <v-row dense justify="start">
-          <v-col class="text-center" cols="4">
+          <v-col class="text-center" cols="3">
             <v-autocomplete
             :items="requestObject.stations"
             v-model="requestObject.station_id"
@@ -18,7 +18,7 @@
             ></v-autocomplete>
           </v-col>
           
-          <v-col class="text-center" cols="4">
+          <v-col class="text-center" cols="3">
             <v-menu
               :close-on-content-click="false"
               v-model="requestObject.initial_date_menu"
@@ -43,7 +43,7 @@
             </v-menu>
           </v-col>        
 
-          <v-col class="text-center" cols="4">
+          <v-col class="text-center" cols="3">
             <v-menu
               :close-on-content-click="false"
               v-model="requestObject.initial_time_menu"
@@ -65,11 +65,22 @@
               v-model="requestObject.initial_time"
               ></v-time-picker>
             </v-menu>
-          </v-col>        
+          </v-col>
+
+          <v-col class="text-center" cols="3">
+            <v-autocomplete
+            v-model="requestObject.range_interval"
+            :items="requestObject.range_intervals"
+            label="Range Interval"
+            return-object
+            autocomplete="off"
+            :rules="simpleTextFieldsRules"              
+            ></v-autocomplete>
+          </v-col>
         </v-row dense justify="start">
         
         <v-row dense justify="start">
-          <v-col class="text-center" cols="4">
+          <v-col class="text-center" cols="3">
             <v-autocomplete
             v-model="requestObject.component_number"
             :items="requestObject.component_range"
@@ -80,22 +91,11 @@
             ></v-autocomplete>
           </v-col>     
 
-          <v-col class="text-center" cols="4">
-            <v-autocomplete
-            v-model="requestObject.interval"
-            :items="requestObject.intervals"
-            label="Intaval"
-            return-object
-            autocomplete="off"
-            :rules="simpleTextFieldsRules"              
-            ></v-autocomplete>
-          </v-col>
-
-          <v-col class="text-center" cols="4">
+          <v-col class="text-center" cols="3">
             <v-autocomplete
             v-model="requestObject.calc_interval"
             :items="requestObject.calc_intervals"
-            label="Calculation Intaval"
+            label="Calculation Interval"
             return-object
             autocomplete="off"
             :rules="simpleTextFieldsRules"              
@@ -265,7 +265,7 @@
       requestObject: {
         initial_time: { required },
         initial_date: { required },
-        interval: { required },
+        range_interval: { required },
         calc_interval: { required },
         component_number: { required },
         station_id: { required },
@@ -296,10 +296,10 @@
         initial_time_menu: false,
         initial_date: moment().format('YYYY-MM-DD'),
         initial_date_menu: false,
-        interval: null,
-        intervals: ['30min', '1h'],
+        range_interval: null,
+        range_intervals: ['30min', '1h', '3h'],
         calc_interval: null,
-        calc_intervals: ['5min', '10min', '15min'],
+        calc_intervals: ['1min', '5min', '10min', '15min'],
         component_number: null,
         component_range: [5,6,7,8,9,10],
         station_id: null,
@@ -312,7 +312,7 @@
         initial_date: '2023-03-13', //
         station_id: 155,            //
         component_number: 5,        //
-        interval: '30min',          //
+        range_interval: '30min',          //
         calc_interval: '5min',      //
       },          
     },
@@ -331,7 +331,7 @@
           params: {
             'initial_time': this.requestObject.initial_time,
             'initial_date': this.requestObject.initial_date,
-            'interval': this.requestObject.interval,
+            'range_interval': this.requestObject.range_interval,
             'calc_interval': this.requestObject.calc_interval,
             'component_number': this.requestObject.component_number,
             'station_id': this.requestObject.station_id,
@@ -538,12 +538,12 @@
         let variable = this.tab.slice(4);
         let station = this.requestObject.stations.find(station => station['value'] == this.requestObject.station_id)['text'];
         let initial_datetime  = `${this.requestObject.initial_date} ${this.requestObject.initial_time}`;
-        let interval = this.requestObject.interval;
+        let range_interval = this.requestObject.range_interval;
         let calc_interval = this.requestObject.calc_interval;
         let component = this.requestObject.component_number;
         let timezone = this.timezone;
 
-        link.download = `${station} ${variable} ${initial_datetime} ${component} ${interval} ${calc_interval} ${timezone}.csv`;
+        link.download = `${station} ${variable} ${initial_datetime} ${component} ${range_interval} ${calc_interval} ${timezone}.csv`;
         link.href = csvContent;
         const event = new MouseEvent('click');
         link.dispatchEvent(event);

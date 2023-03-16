@@ -3379,7 +3379,7 @@ def get_wave_data(request):
     station_id = request.GET.get('station_id', None)
     initial_date = request.GET.get('initial_date', None)
     initial_time = request.GET.get('initial_time', None)
-    range_interval = request.GET.get('interval', None)
+    range_interval = request.GET.get('range_interval', None)
     calc_interval = request.GET.get('calc_interval', None)
     component_number = request.GET.get('component_number', None)
 
@@ -3391,7 +3391,7 @@ def get_wave_data(request):
     initial_datetime = pytz.timezone(tz_client).localize(initial_datetime)
     initial_datetime = initial_datetime.astimezone(tz_settings)
 
-    range_intervals = {'30min': 30, "1h": 60,}
+    range_intervals = {'30min': 30, "1h": 60, "3h": 180,}
 
     if range_interval in range_intervals.keys():
         range_interval = range_intervals[range_interval]
@@ -3399,7 +3399,7 @@ def get_wave_data(request):
         response = {"message": "Not valid interval."}
         return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
 
-    calc_intervals = {'5min': 5, '10min': 10, '15min': 15,}
+    calc_intervals = {'1min': 1, '5min': 5, '10min': 10, '15min': 15,}
 
     if calc_interval in calc_intervals.keys():
         calc_interval = calc_intervals[calc_interval]
@@ -3409,7 +3409,6 @@ def get_wave_data(request):
 
     station_id = int(station_id)
     component_number = int(component_number)
-
 
     final_datetime = initial_datetime + datetime.timedelta(minutes=range_interval)
 
