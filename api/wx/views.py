@@ -2192,11 +2192,13 @@ class StationDetailView(LoginRequiredMixin, DetailView):
 
 class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Station
+
     success_message = "%(name)s was created successfully"
     form_class = StationForm
 
     layout = Layout(
-        Fieldset('Registering a new station',
+        Fieldset('Editing station',
+                 Row('latitude', 'longitude'),
                  Row('name'),
                  Row('is_active', 'is_automatic'),
                  Row('alias_name'),
@@ -2207,7 +2209,6 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
-                 Row('latitude', 'longitude'),
                  Row('elevation', 'watershed'),
                  Row('country', 'region'),
                  Row('utc_offset_minutes', 'local_land_use'),
@@ -2232,6 +2233,16 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  )
     )
 
+    # passing required context for watershed and region autocomplete fields
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['watersheds'] = Watershed.objects.all()
+        context['regions'] = AdministrativeRegion.objects.all()
+
+        return context
+
+
 
 class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Station
@@ -2240,6 +2251,7 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     layout = Layout(
         Fieldset('Editing station',
+                 Row('latitude', 'longitude'),
                  Row('name', 'is_active'),
                  Row('alias_name', 'is_automatic'),
                  Row('code', 'profile'),
@@ -2249,7 +2261,6 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
-                 Row('latitude', 'longitude'),
                  Row('elevation', 'watershed'),
                  Row('country', 'region'),
                  Row('utc_offset_minutes', 'local_land_use'),

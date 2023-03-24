@@ -393,16 +393,10 @@ class Station(BaseModel):
         null=True,
         blank=True
     )
-    watershed = models.ForeignKey(
-        Watershed,
-        on_delete=models.DO_NOTHING,
+    watershed = models.CharField(
+        max_length=256,
         null=True
     )
-    # watershed = models.CharField(
-    #     max_length=256,
-    #     null=True,
-    #     blank=True
-    # )
     z = models.FloatField(
         null=True,
         blank=True
@@ -570,7 +564,8 @@ class Station(BaseModel):
     profile = models.ForeignKey(
         StationProfile,
         on_delete=models.DO_NOTHING,
-        null=True
+        null=True,
+        blank=True
     )
     hydrology_station_type = models.CharField(
         max_length=64,
@@ -592,17 +587,11 @@ class Station(BaseModel):
         Country,
         on_delete=models.DO_NOTHING,
         null=True
-    )    
-    region = models.ForeignKey(
-        AdministrativeRegion,
-        on_delete=models.DO_NOTHING,
+    )
+    region = models.CharField(
+        max_length=256,
         null=True
     )
-    # commented---region = models.CharField(
-    #     max_length=256,
-    #     null=True,
-    #     blank=True
-    # )
     data_source = models.ForeignKey(
         DataSource,
         on_delete=models.DO_NOTHING,

@@ -2,6 +2,10 @@
 {% block station_content %}
 {% load material_form %}
 
+<h6>Select station location on the map</h6>
+
+<div id="mapid" class="map-small"></div>
+
 <form method="POST">
     {% csrf_token %}
     <div style="max-width: 622.50px;">
@@ -10,11 +14,17 @@
         {% attr form.is_active 'group' class %}srf-field-checkbox{% endattr %}
         {% attr form.end_date 'widget' class %}srf-field-max-300{% endattr %}
         {% attr form.zone 'widget' class %}srf-field-max-300{% endattr %}
+        {% attr form.watershed 'widget' list %}watersheds{% endattr %}
+        {% attr form.region 'widget' list %}regions{% endattr %}
       {% endform %}
     </div>
+
     <button type="submit" class="btn-outline-default btn-small">Submit</button>
+
     <a href="{% url 'stations-list' %}">
+
       <button type="button" class="btn-outline-default btn-small">Cancel and back</button>
+
     </a>
 </form>
 
@@ -31,11 +41,49 @@
     content: "** " !important;
     color: red !important;
   }
+  .map-small {
+    max-width: 622.50px; 
+    height: 311.25px !important;
+  }
+  .map-large {
+    max-width: 1022.50px; 
+    height: 622.50px !important;
+  }
+  .mouse-coordinates-box {
+    bottom: 5px;
+    left: 5px;
+    background-color: white;
+    padding: 2px;
+    width: 185px;
+    font-size: 12px;
+    border-radius: 2px;
+    box-shadow: 0px 3px 10px -2px rgba(0, 0, 0, 0.2),
+      0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  }
+  #mapid {
+    margin-bottom: 20px;
+  }
+  .fullscreen-button-width {
+    width: 100px !important;
+  }
+  .transparent-caret {
+    caret-color: transparent !important;
+    cursor: default;
+  }
+  input::-webkit-calendar-picker-indicator {
+    display: none !important;
+  }
+  h5 {
+    margin-bottom: 25px !important;
+  }
 </style>
   
   {% endblock %} {% block localjavascript %}
   <script>
     $(document).ready(function() {
+
+      var tempLat = 17.202212;
+      var tempLng = -88.429595;
 
       $('select').formSelect();
 
@@ -48,26 +96,142 @@
           }
         ]
       });
+
+      // changing cursor to crosshair while over the map
+      document.getElementById('mapid').style.cursor = "crosshair";
+
+      // map js
       var mymap = L.map('mapid', {
         zoomControl: true
-      }).setView([51.505, -0.09], 13);
+      }).setView([tempLat, tempLng], 8);
 
       var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-      var osmAttrib =
-        'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+
+      var osmAttrib = 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+
       var osm = new L.TileLayer(osmUrl, {
-        minZoom: 8,
-        maxZoom: 12,
+        minZoom: 1,
+        maxZoom: 100,
         attribution: osmAttrib
       });
 
-      //add zoom control with bottomleft options
-      mymap.zoomControl.setPosition('bottomleft');
-
-      // start the map in South-East England
-      mymap.setView(new L.LatLng(17.202212, -88.429595), 8);
+      // add zoom control with top left options
+      mymap.zoomControl.setPosition('topleft');
+      
       mymap.addLayer(osm);
+
+      // getting map coordinates when the mouse moves and inserting it into any html element with a specific class
+      mymap.on('mousemove',function(e){
+        $('.mouse-lat').html(`${e.latlng.lat}`)
+
+        $('.mouse-lng').html(`${e.latlng.lng}`)
+      })
+
+      // creating control to show latitude and longitude values
+      var latLngInfo = L.control({position: 'bottomleft'});
+
+      latLngInfo.onAdd = function (mymap) {
+          this._div = L.DomUtil.create('div', 'mouse-coordinates-box'); // create a div with a class "latLngInfo"
+          this.update();
+          return this._div;
+      };
+
+      // method used to update the control based on feature properties passed
+      latLngInfo.update = function () {
+          this._div.innerHTML = 'Latitude:&nbsp&nbsp<span class="mouse-lat"></span></br>Longitude:&nbsp&nbsp<span class="mouse-lng"></span> ';
+      };
+
+      // adding the custom control to the map
+      latLngInfo.addTo(mymap);
+
+      // var to hold marker based on clicking action
+      var newStationMarker;
+
+      // getting map coordinates based on clicking action and passing it to the latitude and longitude feild
+      mymap.on('click',function(e){
+
+        // Adding the active class to the label of the longitude and latitude field
+        document.getElementById('id_latitude_container').querySelector("label").classList.add("active");
+        document.getElementById('id_longitude_container').querySelector("label").classList.add("active");
+
+        // Passing the latitude and longitude values into the latitude and the longitude form field.
+        document.getElementById('id_latitude').value = e.latlng.lat;
+        document.getElementById('id_longitude').value = e.latlng.lng;
+
+        // clearing existing marker
+        if (newStationMarker != undefined) {
+          mymap.removeLayer(newStationMarker);
+        }
+
+        // adding a marker to show where user clicked
+        newStationMarker = L.marker([e.latlng.lat,e.latlng.lng]).addTo(mymap).bindPopup('Location of new station').openPopup();
+      });
+
+      // adding a resize button to the map
+      var isFullScreen = false;
+
+      L.Control.resizeMap = L.Control.extend({        
+        onAdd: function(mymap) {
+          var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+
+          var button = L.DomUtil.create('a', 'leaflet-control-button fullscreen-button-width', container);
+
+          button.innerHTML = '<span class="transparent-caret"><b>RESIZE MAP</b></span>';
+
+          L.DomEvent.disableClickPropagation(button);
+          
+          L.DomEvent.on(button, 'click', function(){
+            // var mapId = document.getElementById('mapid');
+            // mapId.classList.toggle("map-large");
+            // mapId.classList.toggle("map-small");
+
+            if(isFullScreen == false){
+              document.getElementById('mapid').requestFullscreen();
+
+              isFullScreen = true;
+            }
+            else {
+              document.exitFullscreen();
+
+              isFullScreen = false;
+            }
+
+          });
+
+          return container;
+        },
+      });
+
+      L.control.mapResize = function(opts) {
+        return new L.Control.resizeMap(opts);
+      }
+
+      L.control.mapResize({ position: 'topright' }).addTo(mymap);
+
     });
+
+    // autocomple for watershed
+    var watershedParent = document.getElementById("id_watershed_container");
+
+    var watershedComplete = document.createElement("datalist");
+
+    watershedComplete.setAttribute('id', 'watersheds');
+
+    watershedParent.appendChild(watershedComplete);
+
+    document.getElementById("watersheds").innerHTML = '{% for watershed in watersheds %}<option value="{{ watershed.watershed }}"></option>{% endfor %}';
+
+    // autocomple for region
+    var regionParent = document.getElementById("id_region_container");
+
+    var regionComplete = document.createElement("datalist");
+
+    regionComplete.setAttribute('id', 'regions');
+
+    regionParent.appendChild(regionComplete);
+
+    document.getElementById("regions").innerHTML = '{% for region in regions %}<option value="{{ region.name }}"></option>{% endfor %}';
+
   </script>
 </div>
 {% endblock %}
