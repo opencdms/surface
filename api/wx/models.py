@@ -644,7 +644,7 @@ class Station(BaseModel):
         ordering = ('name',)
 
     def get_absolute_url(self):
-        """Returns the url to access a particular instance of MyModelName."""
+        """Returns the url to access a particular instance of Station."""
         return reverse('station-detail', args=[str(self.id)])
 
     def __str__(self):

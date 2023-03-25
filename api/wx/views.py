@@ -2215,22 +2215,22 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  Row('soil_type', 'station_details'),
                  Row('site_description', 'alternative_names')
                  ),
-        Fieldset('Hydrology information',
-                 Row('hydrology_station_type', 'ground_water_province'),
-                 Row('existing_gauges', 'flow_direction_at_station'),
-                 Row('flow_direction_above_station', 'flow_direction_below_station'),
-                 Row('bank_full_stage', 'bridge_level'),
-                 Row('temporary_benchmark', 'mean_sea_level'),
-                 Row('river_code', 'river_course'),
-                 Row('catchment_area_station', 'river_origin'),
-                 Row('easting', 'northing'),
-                 Row('river_outlet', 'river_length'),
-                 Row('z', 'land_surface_elevation'),
-                 Row('top_casing_land_surface', 'casing_diameter'),
-                 Row('screen_length', 'depth_midpoint'),
-                 Row('casing_type', 'datum'),
-                 Row('zone')
-                 )
+        # Fieldset('Hydrology information',
+        #          Row('hydrology_station_type', 'ground_water_province'),
+        #          Row('existing_gauges', 'flow_direction_at_station'),
+        #          Row('flow_direction_above_station', 'flow_direction_below_station'),
+        #          Row('bank_full_stage', 'bridge_level'),
+        #          Row('temporary_benchmark', 'mean_sea_level'),
+        #          Row('river_code', 'river_course'),
+        #          Row('catchment_area_station', 'river_origin'),
+        #          Row('easting', 'northing'),
+        #          Row('river_outlet', 'river_length'),
+        #          Row('z', 'land_surface_elevation'),
+        #          Row('top_casing_land_surface', 'casing_diameter'),
+        #          Row('screen_length', 'depth_midpoint'),
+        #          Row('casing_type', 'datum'),
+        #          Row('zone')
+        #          )
     )
 
     # passing required context for watershed and region autocomplete fields

@@ -22,9 +22,6 @@ class StationForm(forms.ModelForm):
         labels = {
             'utc_offset_minutes': 'UTC Offset (min)'
         }
-        help_texts = {
-            'is_active': '<span><span style="color:red;">**</span>Click \'is_active\' to display station on the map.</span>',
-        }
 
 
 class WxGroupPermissionForm(forms.ModelForm):
