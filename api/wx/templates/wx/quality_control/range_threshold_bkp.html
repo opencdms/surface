@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block content %}
 <div class="srf-container">
   <div id="app" v-cloak>
-    <v-app id="dataTableStyle">
+    <v-app>
       <v-content fluid fill-height style="background: white">
         <v-layout column>
           <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
@@ -88,7 +88,6 @@
                   label="Variables"
                   multiple
                   clearable
-                  small-chips
                   :disabled="!requestObject.station_id"
                   :rules="simpleTextFieldsRules"
                   autocomplete="off"
@@ -109,7 +108,9 @@
                   autocomplete="off"
                 ></v-autocomplete>
               </v-flex>
+            </v-layout>
 
+            <v-layout mt-3>
               <v-flex ml-3 mt-5 ml-5 class="d-flex justify-between">
                 <v-btn
                   justify-end
@@ -117,12 +118,11 @@
                   color="primary"
                   small
                   @click="getThresholdList"
-                  :disabled="$v.requestObject.$invalid"
                   >SUBMIT</v-btn
                 >
-              </v-flex>                 
+              </v-flex>              
             </v-layout>
-            
+
             <v-alert v-model="request_error" dismissible type="error">
               [[ request_error_message ]]
             </v-alert>
@@ -134,94 +134,30 @@
               ></v-progress-circular>
             </v-overlay>
 
-
-            <v-layout v-if="requested" column>
-              <v-sheet class="mx-auto" max-width="600">
-                <v-slide-group show-arrows>
-                  <v-slide-group-item v-for="tag in tags" :key="tag" :v-slot="{ isSelected, toggle }">
-                    <v-btn class="ma-2" :outlined="getVariant(tag)" :color="getColor(tag)" @click="setData(tag)">
-                      [[ tag ]]
-                    </v-btn>
-                  </v-slide-group-item>
-                </v-slide-group>
-              </v-sheet>            
-
-
-              <v-data-table
-                :headers="headers"
-                :items="selectedData"
-                hide-default-footer
-                class="transparent elevation-0 my-4"
-                hide-default-header
-                disable-pagination
-                disable-sort
-                :items-per-page="12"
-              >
-                <template #header="{ }">
-                  <thead class="v-data-table-header">
-                    <tr>
-                      <th
-                        v-for="(h,i) in headers"
-                        :key="i"
-                        class="text-center parent-header td-border-style"
-                        :rowspan="h.children?1:2"
-                        :colspan="h.children?h.children.length:1"
-                      >
-                        <v-tooltip v-if="h.text==reference_station_name" bottom>
-                          <template v-slot:activator="{ on }">
-                            <v-btn icon>
-                              <v-icon v-on="on" big>
-                                mdi-square-edit-outline
-                              </v-icon>                     
-                            </v-btn>
-                          </template>
-                          <span>Edit Custom Threshold</span>
-                        </v-tooltip> 
-                        [[ h.text ]]
-                      </th>
-                    </tr>
-                    <tr>
-                      <th
-                        v-for="(h1,i1) in getSubHeader(headers)"
-                        :key="i1"
-                        class="text-center child-header td-border-style"
-                      >
-                        [[ h1.text ]]
-                      </th>
-                    </tr>
-                  </thead>
-                </template>
-                <template #item="props">
-                  <tr class="text-center">
-                    <td v-for="(c,ci) in getRows(props.item)" :key="ci">
-                      [[ c ]]
-                    </td>
-                    <td>
-                      <v-tooltip bottom>
-                        <template v-slot:activator="{ on }">
-                          <v-btn icon>
-                            <v-icon v-on="on" small>
-                              edit
-                            </v-icon>                     
-                          </v-btn>
-                        </template>
-                        <span>Edit Custom Threshold</span>
-                      </v-tooltip>               
-                      <v-tooltip bottom>
-                        <template v-slot:activator="{ on }">
-                          <v-btn icon>                        
-                            <v-icon color="error" v-on="on" small>
-                              delete
-                            </v-icon>               
-                          </v-btn>                    
-                        </template>
-                        <span>Delete Custom Threshold</span>
-                      </v-tooltip>                
-                    </td>                  
+            <v-data-table :headers="testHeaders" :items="testInformation" hide-default-footer class="transparent elevation-0 my-4" hide-default-header disable-pagination disable-sort :items-per-page="12">
+              <template #header="{ }">
+                <thead class="v-data-table-header">
+                  <tr>
+                    <th v-for="(h,i) in testHeaders" :key="i" class="text-center parent-header td-border-style" :rowspan="h.children?1:2" :colspan="h.children?h.children.length:1">
+                      {{ h.text }}
+                    </th>
                   </tr>
-                </template>
-              </v-data-table>
-            </v-layout>
+                  <tr>
+                    <th v-for="(h1,i1) in getSubHeader(testHeaders)" :key="i1" class="text-center child-header td-border-style">
+                      {{ h1.text }}
+                    </th>
+                  </tr>
+                </thead>
+              </template>
+              <template #item="props">
+                <tr>
+                  <td v-for="(c,ci) in getRows(props.item)" :key="ci">
+                    {{ c }}
+                  </td>
+                </tr>
+              </template>
+            </v-data-table>
+
           </v-layout>
         </v-layout>
       </v-content>
@@ -247,38 +183,137 @@
       },
       data() {
         return {
-          tags: [
-            'Work',
-            'Home Improvement',
-            'Vacation',
-            'Food',
-            'Drawers',
-            'Shopping',
-            'Art',
-            'Tech',
-            'Creative Writing',
-          ],
-          selectedData: [],
-          selectedVariable: null,
-          headers: [
+          testHeaders: [
               { text: "Variable", value: "variable_name"},
               { text: "Month", value: "month_name"},
               {
                 text: "Global Threshold",
-                value: "global",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
+                value: "author",
+                divider: true,
+                children: [{ text: "Minimum"}, { text: "Maximum"}]
               },
-              {
-                text: "Reference Threshold",
-                value: "reference",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
+          ],
+          testInformation:[
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "January",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
               },
-              {
-                text: "Custom Threshold",
-                value: "custom",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
-              },                            
-              { text: "Actions", value: "action"},
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "February",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "March",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "April",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "May",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "June",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "July",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "August",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "September",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "October",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "November",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
+            {
+              variable_name: "Precipitation (mm.)",
+              month_name: "December",
+              author: {
+                children: {
+                  name: "0",
+                  l: "10"
+                }
+              },
+            },
           ],
           loading: false,
           show_dialog: false,
@@ -287,14 +322,12 @@
           ],        
           request_error: false,
           request_error_message: "",
-          reference_station_name: null,
           requestObject: {
             station_id: null,
             variable_ids: null,
             interval_id: null,
           },
           requestedData: [],
-          requested: false,
           filter: {
             isActive: true,
             isAutomatic: true,
@@ -336,7 +369,7 @@
           ],
         };
       },
-      computed: {
+      computed: {         
         stationList () {
           let filteredStations = this.stations;
 
@@ -355,48 +388,16 @@
 
           this.requestObject.station_id = null;
 
-          // this.requestObject.station_id = 155;
-          // this.getStationVariables(this.requestObject.station_id);
-          // this.requestObject.variable_ids = [0];
-          // this.requestObject.interval_id = 3;
+          this.requestObject.station_id = 155;
+          this.getStationVariables(this.requestObject.station_id);
+          this.requestObject.variable_ids = [0];
+          this.requestObject.interval_id = 3;
 
 
           return filteredStations;
         }
       },
       methods: {
-        selectVariable(variable){
-          if (this.selectedVariable == variable){
-            this.selectedVariable = null;
-          }
-          else{
-            this.selectedVariable = variable
-          }
-          
-        },
-        setData(variable){
-          if (this.selectedVariable == variable){
-            this.selectedVariable = null;
-            this.selectedData = [];
-          }
-          else{
-            this.selectedVariable = variable;
-            this.selectedData = this.requestedData[variable]['threshold_list'];
-            this.setHeaders(this.requestedData[variable]['reference_station_name']);                     
-          }
-        },
-        getColor(variable){
-          if (this.selectedVariable == variable){
-            return 'primary';
-          }
-          return 'undefined'
-        },
-        getVariant(variable){
-          if (this.selectedVariable == variable){
-            return true
-          }
-          return false
-        },        
         getSubHeader(headers) {
           let result = [];
           headers
@@ -416,7 +417,7 @@
             } else result[key] = i;
           });
           return result;
-        },        
+        },
         getAll(path, url, oldData = []) {
           return fetch(`/${path}`)
             .then((res) => {
@@ -469,10 +470,7 @@
             },
           })
           .then(res => {
-            this.tags=Object.keys(res.data['thresholds']);
-            this.requestedData = res.data['thresholds'];
-            this.requested = true;
-            this.setHeaders(this.requestedData[this.tags[0]]['reference_station_name']);
+            this.requestedData = res.data['thresholds'][0]['threshold_list'];
             this.request_error_message = "";
             this.request_error = false;            
           })
@@ -484,77 +482,6 @@
           .finally(() => {
             this.loading = false;
           });
-        },
-        resetHeaders(){
-          this.headers = [
-              { text: "Variable", value: "variable_name"},
-              { text: "Month", value: "month_name"},
-              {
-                text: "Global Threshold",
-                value: "global",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
-              },
-              {
-                text: "Reference Threshold",
-                value: "reference",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
-              },
-              {
-                text: "Custom Threshold",
-                value: "custom",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
-              },                            
-              { text: "Actions", value: "action"},
-          ]
-        },
-        setHeaders(reference_station){
-          if (reference_station){
-            this.reference_station_name = reference_station
-            this.headers = [
-                { text: "Variable", value: "variable_name"},
-                { text: "Month", value: "month_name"},
-                {
-                  text: "Global Threshold",
-                  value: "global",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },
-                {
-                  text: reference_station,
-                  value: "reference",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },
-                {
-                  text: "Custom Threshold",
-                  value: "custom",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },                            
-                { text: "Actions", value: "action"},
-            ]
-          }
-          else{
-            this.reference_station_name = 'No. Ref Station'
-            this.headers = [
-                { text: "Variable", value: "variable_name"},
-                { text: "Month", value: "month_name"},
-                {
-                  text: "Global Threshold",
-                  value: "global",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },
-                {
-                  text: 'No. Ref Station',
-                  value: "reference",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },
-                {
-                  text: "Custom Threshold",
-                  value: "custom",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },                            
-                { text: "Actions", value: "action"},
-            ]
-          }
-
         },
       },
       mounted() {
@@ -603,67 +530,12 @@
       z-index: 9999;
       width: 36px;
     }
-
-  #dataTableStyle .record-item-value {
-    font-size: 14px;
-    border-bottom: 1px solid #a1a1a1; }
-
-  #dataTableStyle .record-item-unit {
-    font-size: 14px; }
-
-  #dataTableStyle .record-item-value-border {
-    border: 1px solid #a1a1a1;
-    margin-right: 4px; }
-
-  #dataTableStyle .record-item-key {
-    font-weight: bold;
-    font-size: 14px; }
-
-  #dataTableStyle .record-content {
-    border: 1px solid #a1a1a1; }
-
-  #dataTableStyle .v-data-table td {
-    padding: 12px 8px;
-    font-size: 14px;
-    border-color: rgba(0, 0, 0, 0.12);
-    border-style: solid;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px; }
-
-  #dataTableStyle .v-data-table th {
-    border-color: rgba(0, 0, 0, 0.12);
-    border-style: solid;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px; }
-
-  #dataTableStyle .v-data-table table {
-    border: solid 1px #a1a1a1;
-    border-radius: 5px; }
-
-  #dataTableStyle .v-data-table table thead tr th {
-    font-weight: bold;
-    font-size: 14px;
-    padding: 0px 8px; }
-
-  #dataTableStyle .v-data-table table tbody tr td .v-btn {
-    margin-right: 0px !important; }
-
-  #dataTableStyle .v-data-table .v-data-table-header__sort-badge {
-    font-size: 10px; }
-
-  #dataTableStyle .v-data-table.theme--dark tr th {
-    color: #fff !important; }
-
-  #dataTableStyle .theme--light .v-data-table table thead tr th {
-    color: black; }
-
-  #dataTableStyle .theme--light .v-data-table table thead tr td {
-    color: black; }
-
+    .with-divider {
+      border-top: 1px solid grey;
+      border-bottom: 1px solid grey;
+      border-right: 1px solid grey;
+      border-left: 1px solid grey;
+    }  
   </style>
 </div>
 {% endblock %}

@@ -93,8 +93,11 @@ urlpatterns = [
     path('api/data_inventory/', views.get_data_inventory),
     path('api/station_data_inventory/', views.get_station_data_inventory),
     path('api/station_variable_data_inventory/', views.get_station_variable_data_inventory),
-    path('wx/quality_control/range_threshold/', views.RangeThresholdView.as_view(), name='range-threshold'),
     path('api/range_threshold/', views.range_threshold_view),
+
+    path('wx/quality_control/range_threshold/', views.get_range_threshold_form, name='range-threshold'),
+    path('wx/quality_control/range_threshold/get/', views.get_range_threshold),
+    
     path('wx/quality_control/step_threshold/', views.StepThresholdView.as_view(), name='step-threshold'),
     path('api/step_threshold/', views.step_threshold_view),
     path('wx/quality_control/persist_threshold/', views.PersistThresholdView.as_view(), name='persist-threshold'),

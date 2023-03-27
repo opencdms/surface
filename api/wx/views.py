@@ -4075,18 +4075,156 @@ class ExtremesMeansView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class RangeThresholdView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/quality_control/range_threshold.html'
+from wx.models import QcRangeThreshold
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['station_list'] = Station.objects.select_related('profile').all()
+def get_range_threshold_form(request):
+    template = loader.get_template('wx/quality_control/range_threshold.html')
 
-        context['station_profile_list'] = StationProfile.objects.all()
-        context['station_watershed_list'] = Watershed.objects.all()
-        context['station_district_list'] = AdministrativeRegion.objects.all()
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['station_profile_list'] = StationProfile.objects.all()
+    context['station_watershed_list'] = Watershed.objects.all()
+    context['station_district_list'] = AdministrativeRegion.objects.all()
+    context['interval_list'] = Interval.objects.filter(seconds__gt=1).order_by('seconds')    
 
-        return self.render_to_response(context)
+    return HttpResponse(template.render(context, request))    
+
+def get_range_threshold_list(station_id, variable_id, interval):
+    thresholds = QcRangeThreshold.objects.filter(station_id=station_id, variable_id=variable_id, interval=interval)
+    threshold_list = []
+    for threshold in thresholds:
+        threshold_entry = {
+            'month': threshold.month,
+            'min': threshold.range_min,
+            'max': threshold.range_max,
+        }
+        threshold_list.append(threshold_entry)
+
+    return threshold_list
+
+def get_threshold_in_list(threshold_list, month_id):
+    if threshold_list:
+        for threshold_entry in threshold_list:
+            if threshold_entry['month'] == month_id:
+                return threshold_entry
+
+    threshold_entry = {
+        'month': month_id,
+        'min': '---',
+        'max': '---',
+    }
+    return threshold_entry
+
+def format_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable_name):
+    months = {
+      1: 'January',
+      2: 'February',
+      3: 'March',
+      4: 'April',
+      5: 'May',
+      6: 'June',
+      7: 'July',
+      8: 'August',
+      9: 'September',
+      10: 'October',
+      11: 'November',
+      12: 'December',
+    }
+
+    formated_thresholds = []
+    for i in range(12):
+        month_id = i+1
+        month_name = months[month_id]
+        custom_entry = get_threshold_in_list(custom_thresholds, month_id)
+        reference_entry = get_threshold_in_list(reference_thresholds, month_id)
+
+        formated_threshold = {
+            'variable_name': variable_name,
+            'month_name': month_name,
+            'global':{
+                'children':{
+                    'g_min': global_thresholds['min'],
+                    'g_max': global_thresholds['max'],
+                }
+            },
+            'reference':{
+                'children':{
+                    'r_min': reference_entry['min'],
+                    'r_max': reference_entry['max'],
+                }
+            },
+            'custom':{
+                'children':{
+                    'c_min': custom_entry['min'],
+                    'c_max': custom_entry['max'],
+                }
+            }
+        }
+        formated_thresholds.append(formated_threshold)
+
+    return formated_thresholds
+
+@require_http_methods(["GET"])
+def get_range_threshold(request):
+    station_id = request.GET.get('station_id', None)
+    if station_id is None:
+        response = {'message': "Field Station can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    variable_ids = request.GET.get('variable_ids', None)
+    if variable_ids is None:
+        response = {'message': "Field Variables can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST) 
+
+    interval_id = request.GET.get('interval_id', None)
+    if interval_id is None:
+        response = {'message': "Field Measurement Interval can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)    
+    
+
+    station = Station.objects.get(id=int(station_id))
+    variable_ids = [int(variable_id) for variable_id in variable_ids.split(",")]
+    interval = Interval.objects.get(id=int(interval_id))
+
+    reference_station = None
+    reference_station_name = None
+    if station.reference_station_id:
+        reference_station = Station.objects.get(id=station.reference_station_id)
+        reference_station_name = reference_station.name+' - '+reference_station.code
+
+    data = {}
+    for variable_id in variable_ids:
+        variable = Variable.objects.get(id=variable_id)
+
+        custom_thresholds = get_range_threshold_list(station_id=station.id, variable_id=variable.id, interval=interval.seconds)
+
+        reference_thresholds = None
+        if reference_station:
+            reference_thresholds = get_range_threshold_list(station_id=reference_station.id, variable_id=variable.id, interval=interval.seconds)
+
+        global_thresholds = {}
+        if station.is_automatic:
+            global_thresholds['max'] = variable.range_min_hourly
+            global_thresholds['min'] = variable.range_max_hourly
+        else:
+            global_thresholds['min'] = variable.range_min
+            global_thresholds['max'] = variable.range_max
+
+        global_thresholds['min'] = '---' if global_thresholds['min'] is None else global_thresholds['min']
+        global_thresholds['max'] = '---' if global_thresholds['max'] is None else global_thresholds['max']
+
+        threshold_list = format_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable.name)
+
+        data[variable.name] = {
+            'variable_name': variable.name,
+            'reference_station_name': reference_station_name,
+            'threshold_list': threshold_list,
+        }
+
+    response = {'thresholds': data}
+    print(response)
+    return JsonResponse(response, status=status.HTTP_200_OK)
 
 
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
