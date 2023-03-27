@@ -2198,11 +2198,13 @@ class StationDetailView(LoginRequiredMixin, DetailView):
 
 class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Station
+
     success_message = "%(name)s was created successfully"
     form_class = StationForm
 
     layout = Layout(
-        Fieldset('Registering a new station',
+        Fieldset('Editing station',
+                 Row('latitude', 'longitude'),
                  Row('name'),
                  Row('is_active', 'is_automatic'),
                  Row('alias_name'),
@@ -2210,33 +2212,42 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  Row('wmo', 'organization'),
                  Row('wigos', 'observer'),
                  Row('begin_date', 'data_source'),
-                 Row('end_date')
+                 Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
-                 Row('latitude', 'longitude'),
                  Row('elevation', 'watershed'),
                  Row('country', 'region'),
                  Row('utc_offset_minutes', 'local_land_use'),
                  Row('soil_type', 'station_details'),
                  Row('site_description', 'alternative_names')
                  ),
-        Fieldset('Hydrology information',
-                 Row('hydrology_station_type', 'ground_water_province'),
-                 Row('existing_gauges', 'flow_direction_at_station'),
-                 Row('flow_direction_above_station', 'flow_direction_below_station'),
-                 Row('bank_full_stage', 'bridge_level'),
-                 Row('temporary_benchmark', 'mean_sea_level'),
-                 Row('river_code', 'river_course'),
-                 Row('catchment_area_station', 'river_origin'),
-                 Row('easting', 'northing'),
-                 Row('river_outlet', 'river_length'),
-                 Row('z', 'land_surface_elevation'),
-                 Row('top_casing_land_surface', 'casing_diameter'),
-                 Row('screen_length', 'depth_midpoint'),
-                 Row('casing_type', 'datum'),
-                 Row('zone')
-                 )
+        # Fieldset('Hydrology information',
+        #          Row('hydrology_station_type', 'ground_water_province'),
+        #          Row('existing_gauges', 'flow_direction_at_station'),
+        #          Row('flow_direction_above_station', 'flow_direction_below_station'),
+        #          Row('bank_full_stage', 'bridge_level'),
+        #          Row('temporary_benchmark', 'mean_sea_level'),
+        #          Row('river_code', 'river_course'),
+        #          Row('catchment_area_station', 'river_origin'),
+        #          Row('easting', 'northing'),
+        #          Row('river_outlet', 'river_length'),
+        #          Row('z', 'land_surface_elevation'),
+        #          Row('top_casing_land_surface', 'casing_diameter'),
+        #          Row('screen_length', 'depth_midpoint'),
+        #          Row('casing_type', 'datum'),
+        #          Row('zone')
+        #          )
     )
+
+    # passing required context for watershed and region autocomplete fields
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['watersheds'] = Watershed.objects.all()
+        context['regions'] = AdministrativeRegion.objects.all()
+
+        return context
+
 
 
 class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -2246,6 +2257,7 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     layout = Layout(
         Fieldset('Editing station',
+                 Row('latitude', 'longitude'),
                  Row('name', 'is_active'),
                  Row('alias_name', 'is_automatic'),
                  Row('code', 'profile'),
@@ -2255,7 +2267,6 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
-                 Row('latitude', 'longitude'),
                  Row('elevation', 'watershed'),
                  Row('country', 'region'),
                  Row('utc_offset_minutes', 'local_land_use'),

@@ -63,13 +63,6 @@
       type="text/css"
     />
 
-    <!-- css file for leaflet measure -->
-    <link
-      href="{% static 'gis/css/leaflet-measure.css' %}"
-      rel="stylesheet"
-      type="text/css"
-    />
-
     {% include 'material/includes/material_css.html' %}
 
     <style>
@@ -78,6 +71,9 @@
       }
       .hide-menu {
         display: none!important;
+      }
+      .hide-menu-text {
+        display: none;
       }
       .show-menu {
         display: block!important;
@@ -98,6 +94,9 @@
       }
       .user-menu > div > div.mdl-menu__container.is-upgraded {
         top: auto!important;
+      }
+      .user-options-style {
+        display: none !important;
       }
       .user-menu .collapsible-header{
         cursor: default!important;
@@ -506,39 +505,44 @@
         height: 100%;">
 
         <div id="wrap-sidenav">
-          <li class="py-4">
-            <div class="d-flex">
-              <div style="max-width: 55px;" class="w-100">
-                <img style="padding: 0px 8px" class="img-logo" src="{% static 'images/circle_logo_small.png' %}" />
+          <div onmouseleave="hideUserOptionsNavClose()">
+            <li class="py-4">
+              <div class="d-flex">
+                <div style="max-width: 55px;" class="w-100">
+                  <img style="padding: 0px 8px" class="img-logo" src="{% static 'images/circle_logo_small.png' %}" />
+                </div>
+                <div class="w-100" style="position: relative;">
+                  <img class="img-logo-surface" src="{% static 'images/surface_logo_smaller.png' %}" />
+                </div>
               </div>
-              <div class="w-100" style="position: relative;">
-                <img class="img-logo-surface" src="{% static 'images/surface_logo_smaller.png' %}" />
-              </div>
-            </div>
-          </li>
+            </li>
 
-          <li class="collapsible-item user-menu">
-            <div class="collapsible-header" style="padding: 0px 16px;"><i class="material-icons">person</i>
-              <div class="w-100" style="position: relative;">
-              <span class="to-uppercase">{{ request.user.username }}</span>
-              <button id="user-menu-button" style="
-                position: absolute;
-                right: 0px;
-                top: 12px;" class="mdl-button mdl-js-button mdl-button--icon">
-                <i class="material-icons">more_vert</i>
-              </button>
+            <li class="collapsible-item user-menu">
+              <div class="collapsible-header" style="padding: 0px 16px;"><i class="material-icons">person</i>
+                <div class="w-100" style="position: relative;">
+                <span class="to-uppercase">{{ request.user.username }}</span>
+                <button id="user-menu-button" style="
+                  position: absolute;
+                  right: 0px;
+                  top: 12px;" class="mdl-button mdl-js-button mdl-button--icon">
+                  <i class="material-icons">more_vert</i>
+                </button>
+                </div>
+                <div id="user-options">
+                  <ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="user-menu-button">
+                    <a href="{% url 'change_password' %}">
+                      <li class="mdl-menu__item">
+                        Change password
+                      </li>
+                    </a>
+                  </ul>
+                </div>
               </div>
-              <ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="user-menu-button">
-                <a href="{% url 'change_password' %}">
-                  <li class="mdl-menu__item">
-                    Change password
-                  </li>
-                </a>
-              </ul>
-            </div>
-          </li>
+            </li>
 
-          <hr>
+            <hr>
+
+          </div>
 
           <ul class="collapsible to-uppercase">
             <li id="stations-group" class="hide-menu">
@@ -573,7 +577,7 @@
             </li>
 
             <li id="quality-control-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality Control</div>
+              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality<span>&nbsp;</span>Control</div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -793,11 +797,71 @@
           });
         
         // WEB
+        // collapseHideMenuText = function() {
+          
+        //   for (let index = 1; index <= 7; index++) {
+            
+        //     var element = document.getElementById('hide-menu-text-' + index);
+        //     element.classList.add('hide-menu-text');
+            
+        //   }
+
+        // }
+
+        // collapseShowMenuText = function() {
+
+        //   for (let index = 1; index <= 7; index++) {
+            
+        //     var element = document.getElementById('hide-menu-text-' + index);
+        //     element.classList.remove('hide-menu-text');
+            
+        //   }
+
+        // }
+
+        showUserOptions = function() {
+
+          // to show user options when side nav collapses
+          var user_option = document.getElementById('user-options');
+          user_option.classList.remove('user-options-style');
+
+          // var user_option = document.querySelectorAll('div.is-upgraded');
+
+          // // Iterate through the retrieved elements and add the necessary class names.
+          // for(var i = 0; i < user_option.length; i++)
+          // {
+          //     user_option[i].classList.add('is-visible');
+          // }
+
+        }
+
+        hideUserOptions = function() {
+
+          // to show user options when side nav collapses
+          var user_option = document.getElementById('user-options');
+          user_option.classList.add('user-options-style');
+
+        }
+
+        hideUserOptionsNavClose = function() {
+
+          var user_option = document.querySelectorAll('div.is-upgraded');
+          
+          // Iterate through the retrieved elements and add the necessary class names.
+          for(var i = 0; i < user_option.length; i++)
+          {
+              user_option[i].classList.remove('is-visible');
+          }
+
+        }
+
         hoverOpenSidebar = function() {
           menu.classList.add('open-mode');
           menu.classList.remove('collapsed-mode');
           blockContent.classList.add('p-300');
           blockContent.classList.remove('p-55');
+          showUserOptions();
+          // collapseShowMenuText();
         }
 
         hoverCloseSidebar = function() {
@@ -805,6 +869,8 @@
           menu.classList.add('collapsed-mode');
           blockContent.classList.remove('p-300');
           blockContent.classList.add('p-55');
+          hideUserOptions();
+          // collapseHideMenuText();
 
           setTimeout(() => {
             instance.close($('li.active').index());
