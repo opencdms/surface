@@ -481,7 +481,6 @@
     },
     methods: {
       setStationAndRunQuery(stationId) {
-
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
         const station_id = urlParams.get('station_id')
@@ -494,6 +493,10 @@
           this.initial_date = moment.utc(start_date).format('YYYY-MM-DD')
           this.final_date = moment.utc(end_date).format('YYYY-MM-DD')
           this.measurement_variable = measurement_variable
+          this.fetchData();
+        } else if(station_id && start_date && end_date) {
+          this.initial_date = moment.utc(start_date).format('YYYY-MM-DD')
+          this.final_date = moment.utc(end_date).format('YYYY-MM-DD')
           this.fetchData();
         } else if(station_id) {
           this.fetchData();

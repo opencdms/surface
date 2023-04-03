@@ -602,11 +602,34 @@
         invertValue(bool){
           bool = !bool;
         },
+        setParamsAndRunQuery() {
+          const queryString = window.location.search;
+          const urlParams = new URLSearchParams(queryString);
+
+          const stationId = urlParams.get('station_id')
+          const variableId = urlParams.get('variable_id')
+          const startDate = urlParams.get('start_date')
+          const endDate = urlParams.get('end_date')
+
+          if(stationId != null && variableId != null && startDate != null && endDate != null ){
+            this.currentSelection.startDate = moment.utc(startDate).format('YYYY-MM-DD');
+            this.currentSelection.endDate = moment.utc(endDate).format('YYYY-MM-DD');
+            this.currentSelection.variableId = Number(variableId);
+            this.currentSelection.stationId = Number(stationId);
+
+            this.getStationVariables(this.currentSelection.stationId);
+            this.doSearch();
+          }
+      },
       },
       mounted() {
         this.getQualityFlags();
         axios.defaults.xsrfHeaderName = "X-CSRFToken";
         axios.defaults.xsrfCookieName = "csrftoken";
+
+        window.addEventListener("load", () => {
+          this.setParamsAndRunQuery();
+        });
       },
     });
   </script>
