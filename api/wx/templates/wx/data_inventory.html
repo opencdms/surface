@@ -9,30 +9,37 @@
           </v-flex>
           <v-layout column fluid>
             <v-layout mt-3 mb-5>
-              <v-flex lg2 class="d-flex justify-between">
+              <v-flex lg2 mr-10 class="d-flex justify-between">
                 <v-text-field
-                  v-model="requestObject.start_year"
-                  label="Start year"
-                  required
-                  hint="*Required"
+                    v-model="requestObject.start_year"
+                    label="Start year"
+                    required
+                    hint="*Required"
                 ></v-text-field>
               </v-flex>
-              <v-flex lg2 pl-5 class="d-flex justify-between">
+              <v-flex lg2 mr-10 class="d-flex justify-between">
                 <v-text-field
-                  v-model="requestObject.end_year"
-                  label="End date"
-                  required
-                  hint="*Required"
+                    v-model="requestObject.end_year"
+                    label="End date"
+                    required
+                    hint="*Required"
                 ></v-text-field>
               </v-flex>
-              <v-flex mt-5 lg2 pl-5 class="d-flex justify-between">
+              <v-flex lg1 mr-10 class="d-flex justify-center">
+                <v-switch
+                    label="Automatic"
+                    v-model="requestObject.is_automatic"
+                ></v-switch>
+              </v-flex>
+              <v-flex mt-5 lg2 class="d-flex justify-between">
                 <v-btn
-                  outlined
-                  color="primary"
-                  small
-                  @click="getDataInventory"
-                  :disabled="$v.requestObject.$invalid"
-                  >SUBMIT</v-btn
+                    outlined
+                    color="primary"
+                    small
+                    @click="getDataInventory"
+                    :disabled="$v.requestObject.$invalid"
+                >SUBMIT
+                </v-btn
                 >
               </v-flex>
             </v-layout>
@@ -41,13 +48,257 @@
             </v-alert>
             <v-overlay :value="loading">
               <v-progress-circular
-                indeterminate
-                size="64"
+                  indeterminate
+                  size="64"
               ></v-progress-circular>
             </v-overlay>
-            <v-layout mt-3 :hidden="!seriesData.length">
+
+
+            <v-layout mt-3 :hidden="watershedSet == null" column fluid>
+
+              <v-layout>
+                <v-flex justify-center>
+                  Search Result
+                  <v-divider style="margin-top: 5px"></v-divider>
+                </v-flex>
+              </v-layout>
+
               <v-layout ml-3 mt-3 column>
-                <highcharts :options="chartOptions"></highcharts>
+                <template v-if="pageStage == 'firstLevel'">
+
+                  <v-layout mt-3 w-100>
+                    <v-layout column fluid w-50>
+                      <div> Total Stations: [[stations.length]]</div>
+                      <div> Date: 2018 to 2024</div>
+                    </v-layout>
+                    <v-layout pl-5 column fluid align-end w-25>
+                      <v-flex>
+                        Data Filter
+                      </v-flex>
+                      <v-flex lg2 class="d-flex" w-75>
+                        <v-text-field
+                            v-model="stationNameFilter"
+                            style="padding-top: 0"
+                            label="Station name"
+                            required>
+                          <v-icon slot="append">
+                            mdi-magnify
+                          </v-icon>
+                        </v-text-field>
+                      </v-flex>
+                    </v-layout>
+                  </v-layout>
+
+                  <v-layout mt-3 w-100>
+                    <v-expansion-panels>
+                      <v-expansion-panel v-for="(stations, watershedName) in filteredWatershedSet"
+                                         :key="watershedName">
+                        <v-expansion-panel-header v-slot="{open}" style="min-height: 0;">
+
+                          <v-simple-table>
+                            <template>
+                              <thead>
+                              <tr style="border-bottom: 1px solid rgba(0, 0, 0, .3);">
+                                <th class="surface-main-cell">[[watershedName]]</th>
+                                <th class="surface-detail-cell" v-for="(availableYear, index) in availableYears">
+                                  [[availableYear]]
+                                </th>
+                              </tr>
+                              </thead>
+                            </template>
+                          </v-simple-table>
+
+                        </v-expansion-panel-header>
+                        <v-expansion-panel-content>
+
+                          <v-expansion-panels>
+                            <v-expansion-panel v-for="(station, stationIndex) in stations" :key="stationIndex"
+                                               @change="getVariableByStation(station, 5)"
+                                               style="margin-bottom: .4vh;border: none">
+                              <v-expansion-panel-header v-slot="{open}" style="background: #e6e6e6; padding-left: 0">
+                                <div>
+                                  <v-simple-table style="background: #e6e6e6;">
+                                    <template>
+                                      <tbody>
+                                      <tr style="border: none;">
+                                        <td class="surface-main-cell" style="color: rgba(0,0,0,.7) !important;">
+                                          [[station.name]] - [[station.code]]
+                                        </td>
+                                        <td class="surface-value-detail-cell"
+                                            v-for="(availableYear, index) in availableYears"
+                                            :key="index"
+                                            @click="fetchVariables(availableYear, station, station.yearSet[availableYear])">
+
+                                          <div
+                                              :style="{'background-color': getPercentageColor(station.yearSet[availableYear] || 0)}"
+                                              class="value-cell" style="height: 75%">
+                                            [[ station.yearSet[availableYear] || 0 ]]%
+                                          </div>
+                                        </td>
+                                      </tr>
+                                      </tbody>
+                                    </template>
+                                  </v-simple-table>
+                                  <div v-if="open" class="surface-station-details" style="padding-left: 2vw;">
+                                    <div>Local station ID: [[station.id]]</div>
+                                    <div>Begin date: [[station.begin_date_formatted]]</div>
+                                    <div>Automatic: [[station.is_automatic ? 'True': 'False' ]]</div>
+                                  </div>
+                                </div>
+
+                              </v-expansion-panel-header>
+                              <v-expansion-panel-content>
+
+                                <template v-if="station.variables">
+                                  <v-simple-table style="margin-right: 24px; padding-left: 1vw">
+                                    <template>
+                                      <tbody>
+                                      <tr style="border: none;" v-for="(variable, variableId) in station.variables"
+                                          :key="variableId">
+                                        <td class="surface-main-cell surface-main-variable-cell">
+                                          [[ variable.name ]]
+                                        </td>
+                                        <td class="surface-value-detail-cell"
+                                            v-for="(availableYear, index) in availableYears" :key="index">
+                                          <div
+                                              :style="{'background-color': getPercentageColor(variable.yearSet[availableYear] || 0)}"
+                                              class="value-cell">
+                                            [[ variable.yearSet[availableYear] || 0 ]]%
+                                          </div>
+                                        </td>
+                                      </tr>
+                                      </tbody>
+                                    </template>
+                                  </v-simple-table>
+
+                                </template>
+                                <template v-else>
+                                  <v-progress-circular indeterminate></v-progress-circular>
+                                </template>
+
+                              </v-expansion-panel-content>
+                            </v-expansion-panel>
+                          </v-expansion-panels>
+
+
+                        </v-expansion-panel-content>
+                      </v-expansion-panel>
+                    </v-expansion-panels>
+                  </v-layout>
+                </template>
+
+                <template v-if="pageStage == 'secondLevel'">
+
+                  <v-layout mt-3 w-100>
+                    <v-layout column fluid w-50>
+                      <div>[[this.currentData.station.name]] - [[this.currentData.station.code]]</div>
+                      <div>Date: [[this.currentData.year]]</div>
+                      <div class="surface-station-details">
+                        <div>Local station ID: [[this.currentData.station.id]]</div>
+                        <div>Begin date: [[this.currentData.station.begin_date_formatted]]</div>
+                        <div>Automatic: [[this.currentData.station.is_automatic ? 'True': 'False' ]]</div>
+                      </div>
+                    </v-layout>
+                    <v-layout pl-5 column fluid align-end w-25>
+                      <v-flex lg2 class="d-flex justify-between">
+                        <v-btn
+                            outlined
+                            color="primary"
+                            small
+                            @click="() => pageStage = 'firstLevel'"
+                        >Go Back
+                        </v-btn>
+                      </v-flex>
+                    </v-layout>
+                  </v-layout>
+
+                  <v-simple-table>
+                    <template>
+                      <thead>
+                      <tr>
+                        <th></th>
+                        <th class="month-cell" v-for="(month, monthIndex) in availableMonths" :key="monthIndex">
+                          [[month]]
+                        </th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <tr v-for="(variable, variableId) in variableSet" :key="variableId" style="border: none;">
+                        <td class="month-main-cell">[[ variable.name ]]</td>
+                        <td v-for="(availableYear, index) in availableMonths" :key="index"
+                            @click="fetchVariableDetails(index + 1, variable, variable.monthSet[index + 1])"
+                            class="month-cell month-value-detail-cell">
+
+                          <div
+                              :style="{'background-color': getPercentageColor(variable.monthSet[index + 1] || 0)}"
+                              class="value-cell">
+                            [[ variable.monthSet[index + 1] || 0 ]]%
+                          </div>
+
+                        </td>
+                      </tr>
+                      </tbody>
+                    </template>
+                  </v-simple-table>
+                </template>
+
+
+                <template v-if="pageStage == 'thirdLevel'">
+
+                  <v-layout mt-3 w-100>
+                    <v-layout column fluid w-50>
+                      <div>[[this.currentData.station.name]] - [[this.currentData.station.code]] - [[this.currentData.variable.name]]</div>
+                      <div>Date: [[ this.availableMonthNames[this.currentData.month - 1] ]] [[this.currentData.year]]</div>
+                      <div class="surface-station-details">
+                        <div>Local station ID: [[this.currentData.station.id]]</div>
+                        <div>Begin date: [[this.currentData.station.begin_date_formatted]]</div>
+                        <div>Automatic: [[this.currentData.station.is_automatic ? 'True': 'False' ]]</div>
+                      </div>
+                    </v-layout>
+                    <v-layout pl-5 column fluid align-end w-25>
+                      <v-flex lg2 class="d-flex justify-between">
+                        <v-btn
+                            outlined
+                            color="primary"
+                            small
+                            @click="() => pageStage = 'secondLevel'"
+                        >Go Back
+                        </v-btn>
+                      </v-flex>
+                    </v-layout>
+                  </v-layout>
+
+                  <v-simple-table>
+                    <template>
+                      <thead>
+                      <tr>
+                        <th class="month-cell" v-for="(day, dayIndex) in availableDays" :key="dayIndex">
+                          [[day]]
+                        </th>
+                      </tr>
+                      </thead>
+
+                      <tr v-for="week in variableDetails">
+                        <td v-for="dayData in week" style="text-align: center; vertical-align: middle; padding: 0;">
+                          <template v-if="dayData != null">
+                            <div :style="{'background-color': getPercentageColor(dayData.percentage || 0)}" class="calendar-value">
+                              <div style="font: 18px Roboto, sans-serif; padding: 8px 0px 3px 0px"><b>[[ dayData.day ]]</b></div>
+                              <div class="calendar-details">
+                                <div>[[ dayData.percentage ]]% - [[ dayData.record_count ]] of [[dayData.ideal_record_count ]]
+                                </div>
+                                <div>[[ dayData.qc_passed_percentage || 0 ]]% - QC passed</div>
+                                <div class="calendar-button" @click="goToDataValidation(dayData.day)">Data Validation</div>
+                                <div class="calendar-button" @click="goToStationReport(dayData.day)">Station Report</div>
+                              </div>
+                            </div>
+                          </template>
+
+                        </td>
+                      </tr>
+                    </template>
+                  </v-simple-table>
+                </template>
+
               </v-layout>
             </v-layout>
           </v-layout>
@@ -98,14 +349,34 @@
             },
           },
         },
+        stationNameFilter: null,
+        rawStationData: [],
+        watershedSet: null,
+        originalWatershedSet: null,
+        variableSet: null,
+        availableYears: [],
+        availableMonths: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        availableMonthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        availableDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        currentData: {
+          station: null,
+          variable: null,
+          month: null,
+        },
+        variableDetails: null,
+        pageStage: 'firstLevel',
+        watershedRevision: 0,
+        stations: [],
         requestObject: {
-          start_year: moment().format('YYYY'),
+          start_year: moment().add(-5, 'years').format('YYYY'),
           end_year: moment().add(1, 'years').format('YYYY'),
+          is_automatic: true,
         },
         simpleTextFieldsRules: [
           v => (v !== undefined && v !== "") || "This field is required"
         ],
-        drilldowns: {}
+        drilldowns: {},
+        colorGradient: new Color('#f08080').range(new Color('#90ee90'), { outputSpace: "srgb" })
       },
       watch: {
         variables (newSelectedArray, oldSelectedArray) {
@@ -113,313 +384,179 @@
         }
       },
       computed: {
-        chartOptions() {
-          return Object.assign(
-            {},
-            {
-              chart: {
-                type: 'heatmap',
-                events: {
-                  drillup: (event) => {
-                    const chart = event.target;
-                    chart.showLoading('Loading data');
-                    chart.update( {... chart.userOptions.upperLevelData} )
-                    chart.hideLoading();
-                  },
-                  drilldown: (event) => event.target.userOptions.drilldownFunction(event),
-                }
-              },
-              boost: {
-                useGPUTranslations: true
-              },
-              title: {
-                text: 'Data Inventory Graph',
-                align: 'left',
-                x: 40
-              },
-              yAxis: {
-              },
-              colorAxis: {
-                stops: [
-                  [0, '#f08080'],
-                  [0.5, '#fafad2'],
-                  [1, '#90ee90']
-                ],
-                min: 0,
-                max: 100,
-                startOnTick: false,
-                endOnTick: false,
-              },
-              tooltip: {
-                shared: true
-              },
-              legend: {
-                layout: "horizontal",
-                align: "center",
-                verticalAlign: "bottom"
-              },
-              plotOptions: {
-                series: {
-                    boostThreshold: 1,
-                    borderWidth: 0,
-                    nullColor: '#EFEFEF',
-                    dataLabels: {
-                      enabled: true,
-                      align: "center",
-                      pointFormat: '{point.value}%',
-                    }
-                }
-              },
-            },
-            this.layout
-          );
-        },
+        filteredWatershedSet() {
+          if (this.watershedRevision < 0){
+            return;
+          }
+
+          if (!this.stationNameFilter) {
+            return this.originalWatershedSet;
+          }
+
+          for(watershedName in this.originalWatershedSet) {
+            this.watershedSet[watershedName] = this.originalWatershedSet[watershedName].filter(station => station.filterName.toLowerCase().includes(this.stationNameFilter.toLowerCase()));
+            if (this.watershedSet[watershedName].length == 0) {
+              delete this.watershedSet[watershedName];
+            }
+          }
+
+          return this.watershedSet;
+        }
+
       },
       methods: {
-        getDataInventory(){
+        goToStationReport(day) {
+          const initial_datetime = `${this.currentData.year.toString().padStart(2, "0")}-${this.currentData.month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+          const final_datetime = `${this.currentData.year.toString().padStart(2, "0")}-${this.currentData.month.toString().padStart(2, "0")}-${(day + 1).toString().padStart(2, "0")}`;
+
+          const url = `/wx/products/station_report/?start_date=${initial_datetime}&end_date=${final_datetime}&station_id=${this.currentData.station.id}&measurement_variable=${this.currentData.variable.measurement_variable_name}`;
+          window.open(url, '_blank');
+        },
+        goToDataValidation(day) {
+          const initial_datetime = `${this.currentData.year.toString().padStart(2, "0")}-${this.currentData.month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+          const final_datetime = `${this.currentData.year.toString().padStart(2, "0")}-${this.currentData.month.toString().padStart(2, "0")}-${(day + 1).toString().padStart(2, "0")}`;
+
+          const url = `/wx/quality_control/validation?start_date=${initial_datetime}&end_date=${final_datetime}&station_id=${this.currentData.station.id}&variable_id=${this.currentData.variable.id}`;
+          window.open(url, '_blank');
+        },
+        getPercentageColor(percentage) {
+          return this.colorGradient(percentage/100).toString();
+        },
+        fetchVariableDetails(month, variable, percentage) {
+          if (percentage == null) {
+            return;
+          }
+
+          this.pageStage = 'thirdLevel';
           this.loading = true;
-          axios.get(`/api/data_inventory/?&start_date=${this.requestObject.start_year}&end_date=${this.requestObject.end_year}`)
-          .then(result => {
-            let stations = new Set();
-            let years = new Set();
-            let stationsDict = {}
 
-            result.data.forEach(record => {
-              stationsDict[record.station.id] = `${record.station.name} - ${record.station.code}`
-              stations.add(record.station.id);
-              years.add(record.datetime)
-            });
+          this.currentData.month = month
+          this.currentData.variable = variable
 
-            stations = [... stations]
-            years = [... years].sort((a, b) => a.localeCompare(b));
+          axios.get(`/api/station_variable_data_day_inventory/?&year=${this.currentData.year}&month=${this.currentData.month}&station_id=${this.currentData.station.id}&variable_id=${this.currentData.variable.id}`)
+            .then(result => {
+              this.loading = false;
 
-            this.seriesData = result.data.map(record => {
-              return {
-                x: years.indexOf(record.datetime),
-                y: stations.indexOf(record.station.id),
-                datetime: Date.parse(record.datetime),
-                value: record.percentage,
-                station: record.station,
-                drilldown: record.station.name
+              const rows = [];
+              for (let i=0; i < 6; i++) {
+                const columns = [];
+
+                for (let j=0; j < 7; j++) {
+                  columns[j] = null;
+                }
+                rows[i] = columns;
               }
+
+              count = 0
+              result.data.forEach(data => {
+                rows[count][data.dow] = data;
+                if(data.dow == 6) {
+                  count += 1;
+                }
+              });
+
+              this.variableDetails = rows;
+          });
+
+        },
+        fetchVariables(year, station, percentage) {
+          if (percentage == null) {
+            return;
+          }
+
+          this.pageStage = 'secondLevel';
+          this.loading = true;
+          this.currentData = {
+            year: year,
+            station: station,
+          };
+
+          axios.get(`/api/station_variable_data_month_inventory/?&year=${year}&station_id=${station.id}`)
+            .then(result => {
+              variableSet = {}
+              result.data.forEach(record => {
+                  if (variableSet[record.variable.id] == null) {
+                      variableSet[record.variable.id] = record.variable;
+                      record.variable.monthSet = {};
+                  }
+                  variableSet[record.variable.id].monthSet[record.month] = record.percentage;
+              });
+
+              this.variableSet = variableSet;
+              this.loading = false;
+          });
+
+        },
+        getDataInventory(){
+          this.pageStage = null;
+          this.loading = true;
+          axios.get(`/api/data_inventory/?&start_date=${this.requestObject.start_year}&end_date=${this.requestObject.end_year}&is_automatic=${this.requestObject.is_automatic}`)
+          .then(result => {
+            const stationSet = {};
+            const stationArray = [];
+            const watershedSet = {};
+            const yearSet = {};
+            let yearArray = [];
+
+            this.rawStationData = result.data;
+            this.rawStationData.forEach(record => {
+               this.pageStage = 'firstLevel';
+
+
+               if (stationSet[record.station.id] == null) {
+                  stationArray.push(record.station);
+                  stationSet[record.station.id] = record.station;
+                  record.station.yearSet = {};
+                  record.station.variables = null;
+                  record.station.filterName = record.station.name + ' ' + record.station.code;
+                  record.station.begin_date_formatted = moment.utc(record.station.begin_date).format('YYYY-MM-DD');
+
+                 const stationWatershed = record.station.watershed || "Others";
+                 if (watershedSet[stationWatershed] == null) {
+                    watershedSet[stationWatershed] = [];
+                 }
+                 watershedSet[stationWatershed].push(record.station);
+
+                 if (yearSet[record.year] == null) {
+                    yearSet[record.year] = true;
+                    yearArray.push(record.year);
+                 }
+              }
+              stationSet[record.station.id].yearSet[record.year] = record.percentage;
             });
 
-            stations = stations.map(station_id => stationsDict[station_id]);
-            const yearsArray = years.map(year => moment.utc(year).format('YYYY'))
+            if (yearArray.length != 0) {
+              yearArray = yearArray.sort()
+            }
+            this.watershedSet = Object.assign({}, watershedSet);
+            this.originalWatershedSet = watershedSet;
+            this.availableYears = yearArray;
+            this.stations = stationArray;
 
             this.loading = false;
-            this.layout = {
-              chart:{
-                height: (40 * stations.length) + 160
-              },
-              drilldownFunction: this.drilldownToStationLevel,
-              yAxis:{
-                categories: stations,
-                reversed: true,
-                minPadding: 0,
-                maxPadding: 0,
-              },
-              xAxis: {
-                type: 'category',
-                categories: yearsArray,
-                labels: {
-                  format: '{value:%Y}'
-                },
-              },
-              exporting: {
-                showTable: true
-              },
-              series: [
-                {
-                  type: 'heatmap',
-                  data: this.seriesData,
-                  tooltip: {
-                    headerFormat: null,
-                    pointFormat: '{point.datetime:%Y} - {point.station.name} {point.station.code}: <b>{point.value}%</b>'
-                  },
-                }
-              ],
-            };
           });
         },
-        drilldownToStationLevel(event){
-          if (!event.points) {
+        getVariableByStation(station, recordLimit) {
+          if (station.variables != null || station.loading) {
+            return;
+          }
 
-            const drilldownStation = event.point.station;
-            const drilldownDatetime = moment(event.point.datetime).utc();
-
-            const requestStartDatetime = drilldownDatetime;
-            const requestEndDatetime = moment(requestStartDatetime).add(1, 'years');
-
-            const chart = event.target;
-            chart.showLoading(`Loading data for "${drilldownStation.name}/${drilldownDatetime.format('YYYY')}"`);
-
-            axios.get(`/api/station_data_inventory/?start_date=${requestStartDatetime.format('YYYY')}&end_date=${requestEndDatetime.format('YYYY')}&station_id=${drilldownStation.id}`)
-            .then(response => {
-
-              let variableIds = new Set();
-              let variablesDict = {}
-              const yearArray = [requestStartDatetime.format("YYYY")]
-
-              response.data.forEach(record => {
-                variableIds.add(record.variable.id)
-                variablesDict[record.variable.id] = record.variable.name
-              });
-
-              variableIds = [ ...variableIds ];
-              const variableArray = variableIds.map(variableId => variablesDict[variableId])
-
-              const seriesData = response.data.map(record => {
-                return {
-                  x: 0,
-                  y: variableIds.indexOf(record.variable.id),
-                  datetime: Date.parse(record.datetime),
-                  station: drilldownStation,
-                  variable: record.variable,
-                  value: record.percentage,
-                  drilldown: drilldownStation.name
-                };
-              })
-
-              const updatedOptions = {
-                chart:{
-                  height: (40 * seriesData.length) + 160
-                },
-                subtitle: {
-                  text: `Station: ${drilldownStation.code} - ${drilldownStation.name}
-                  <br/>Year: ${drilldownDatetime.format('YYYY')}`,
-                  align: 'left',
-                  x: 50
-                },
-                yAxis: {
-                  categories: variableArray,
-                },
-                xAxis: {
-                  type: 'category',
-                  categories: yearArray,
-                  labels: {
-                    format: '{value}'
-                  },
-                },
-                drilldownFunction: this.drilldownToStationVariableLevel,
-                firstLevelData: {
-                  yAxis: Object.assign({}, chart.userOptions.yAxis),
-                  xAxis: Object.assign({}, chart.userOptions.xAxis),
-                  chart: Object.assign({}, chart.userOptions.chart),
-                  subtitle: Object.assign({}, chart.userOptions.subtitle),
-                  drilldownFunction: chart.userOptions.drilldownFunction,
-                },
-              }
-
-              chart.update({
-                ... updatedOptions,
-                upperLevelData: updatedOptions.firstLevelData
-              });
-
-              chart.hideLoading();
-              chart.addSeriesAsDrilldown(event.point, {
-                name: event.point.drilldown,
-                tooltip: {
-                  headerFormat: null,
-                  pointFormat: '{point.datetime:%Y} - {point.variable.name}: <b>{point.value}%</b>'
-                },
-                data: seriesData
-              });
+          station.loading = true;
+          axios.get(`/api/data_inventory_by_station/?&start_date=${this.requestObject.start_year}&end_date=${this.requestObject.end_year}&station_id=${station.id}&record_limit=${recordLimit}`)
+          .then(result => {
+            variableSet = {}
+            result.data.forEach(record => {
+                if (variableSet[record.variable.id] == null) {
+                    variableSet[record.variable.id] = record.variable;
+                    record.variable.yearSet = {};
+                }
+                variableSet[record.variable.id].yearSet[record.year] = record.percentage;
             });
-          }
-        },
-        drilldownToStationVariableLevel(event){
-          if (!event.points) {
+            this.watershedRevision++;
 
-            const drilldownStation = event.point.station;
-            const drilldownVariable = event.point.variable;
-
-            const drilldownDatetime = moment(event.point.datetime).utc();
-
-            const requestStartDatetime = drilldownDatetime;
-            const requestEndDatetime = moment(requestStartDatetime).add(1, 'years').add(-1, 'days');
-
-            const chart = event.target;
-            chart.showLoading(`Loading data for "${drilldownStation.name}/${drilldownDatetime.format('YYYY')} - ${drilldownVariable.name}"`);
-
-            const monthArray = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-            const dayArray = Array.from({length: 31}, (_, index) => index + 1);
-
-            axios.get(`/api/station_variable_data_inventory/?start_date=${requestStartDatetime.format('YYYY-MM-DD')}&end_date=${requestEndDatetime.format('YYYY-MM-DD')}&station_id=${drilldownStation.id}&variable_id=${drilldownVariable.id}`)
-            .then(response => {
-              const seriesData = response.data.map(record => {
-                return {
-                  x: record.day -1,
-                  y: record.month - 1,
-                  datetime: Date.parse(record.datetime),
-                  station: drilldownStation,
-                  variable: drilldownVariable,
-                  value: record.percentage,
-                  measurement_variable: record.measurement_variable,
-                  drilldown: drilldownStation.name
-                };
-              });
-
-              const updatedOptions = {
-                chart:{
-                  height: (100 * (seriesData.length / 30)) + 240
-                },
-                subtitle: {
-                  text: `${chart.userOptions.subtitle.text}
-                  <br/>Variable: ${drilldownVariable.name}`
-                },
-                yAxis: {
-                  categories: monthArray,
-                },
-                xAxis: {
-                  type: 'category',
-                  categories: dayArray,
-                  labels: {
-                    format: '{value}'
-                  },
-                },
-                drilldownFunction: this.drilldownToStationReport,
-                stationLevelData: {
-                  yAxis: Object.assign({}, chart.userOptions.yAxis),
-                  xAxis: Object.assign({}, chart.userOptions.xAxis),
-                  chart: Object.assign({}, chart.userOptions.chart),
-                  subtitle: Object.assign({}, chart.userOptions.subtitle),
-                  upperLevelData: Object.assign({}, chart.userOptions.upperLevelData),
-                  drilldownFunction: chart.userOptions.drilldownFunction,
-                },
-              };
-
-              chart.update({
-                ... updatedOptions,
-                upperLevelData: updatedOptions.stationLevelData
-              });
-
-              chart.hideLoading();
-              chart.addSeriesAsDrilldown(event.point, {
-                name: event.point.drilldown,
-                tooltip: {
-                  headerFormat: null,
-                  pointFormat: '{point.datetime:%Y-%m-%d}: <b>{point.value}%</b>'
-                },
-                data: seriesData
-              });
-            });
-          }
-        },
-        drilldownToStationReport(event){
-          if (!event.points) {
-
-            const drilldownStation = event.point.station;
-            const drilldownMeasurementVariable = event.point.measurement_variable;
-
-            const drilldownDatetime = moment(event.point.datetime).utc();
-
-            const requestStartDatetime = drilldownDatetime;
-            const requestEndDatetime = moment(requestStartDatetime).add(1, 'days');
-
-            window.open(`/wx/products/station_report/?station_id=${drilldownStation.id}&start_date=${requestStartDatetime.format('YYYY-MM-DD')}&end_date=${requestEndDatetime.format('YYYY-MM-DD')}&measurement_variable=${drilldownMeasurementVariable}`, '_blank').focus();
-          }
-          return false
+            station.variables = variableSet;
+            station.loading = false;
+          });
         },
       },
       mounted() {
@@ -428,5 +565,128 @@
       }
     });
   </script>
+
+  <style>
+        .v-expansion-panel-content__wrap {
+          padding: 0;
+        }
+
+        .v-expansion-panel-header {
+          padding: 0;
+        }
+
+        .surface-main-cell {
+          min-width: 10vw;
+          max-width: 10vw;
+          width: 10vw;
+          border: none !important;
+          font: 15px Roboto, sans-serif !important;
+          color: #000000 !important;
+        }
+
+        .surface-main-variable-cell {
+          font: 13px Roboto, sans-serif !important;
+        }
+
+        .surface-detail-cell {
+          min-width: 1vw;
+          max-width: 1vw;
+          border-bottom: none !important;
+          margin-left: 2px !important;
+          width: 1vw;
+          text-align: center !important;
+          vertical-align: middle;
+          font: 15px Roboto, sans-serif !important;
+          color: #000000 !important;
+        }
+
+        .surface-value-detail-cell {
+          min-width: 1vw;
+          max-width: 1vw;
+          border-bottom: none !important;
+          width: 1vw;
+          text-align: center !important;
+          vertical-align: middle !important;
+          font: 15px Roboto, sans-serif !important;
+          color: #000000 !important;
+          padding: 4px 2px 0 0 !important;
+        }
+
+        .surface-station-details {
+          font: 13px Roboto, sans-serif !important;
+          color: rgba(0,0,0,.5) !important;
+          padding-bottom: 1vh;
+        }
+
+        .theme--light.v-expansion-panels .v-expansion-panel:not(:first-child)::after {
+          border: none;
+        }
+
+        .value-cell {
+          width: 100%;
+          height: 100%;
+          text-align: center !important;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .month-main-cell {
+          min-width: 25vw;
+          max-width: 25vw;
+          width: 25vw;
+          border: none !important;
+          font: 14px Roboto, sans-serif !important;
+          color: #000000 !important;
+        }
+
+        .month-cell {
+          min-width: 5vw;
+          max-width: 5vw;
+          width: 5vw;
+          border: none !important;
+          text-align: center !important;
+          vertical-align: middle !important;
+          font: 15px Roboto, sans-serif !important;
+          color: #000000 !important;
+        }
+
+        .month-value-detail-cell {
+          padding: 4px 2px 0 0 !important;
+        }
+
+        .month-value-detail-cell:hover {
+          cursor: pointer !important;
+        }
+
+        tr:hover {
+          background-color: transparent !important;
+        }
+
+        .calendar-value {
+          padding-bottom: 5px;
+        }
+
+        .calendar-details {
+          background-color: rgba(220, 220, 220, .5);
+          margin: 2px 5px 0px 5px;
+          border-radius: 5px;
+          padding-bottom: 4px;
+        }
+
+        .calendar-button {
+          background-color: rgb(120, 120, 120);
+          margin: 2px 10px 2px 10px;
+          padding: 4px 0px 4px 0px;
+          border-radius: 5px;
+          font: 14px Roboto, sans-serif !important;
+          color: rgb(220, 220, 220) !important;
+        }
+
+        .calendar-button:hover {
+          background-color: rgb(140, 140, 140);
+          cursor: pointer;
+        }
+  </style>
 </div>
 {% endblock %}
