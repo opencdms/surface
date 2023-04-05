@@ -342,11 +342,19 @@ class WMOProgram(BaseModel):
     def __str__(self):
         return self.name
 
+class Watershed(models.Model):
+    watershed = models.CharField(max_length=128)
+    size = models.CharField(max_length=16)
+    acres = models.FloatField()
+    hectares = models.FloatField()
+    shape_leng = models.FloatField()
+    shape_area = models.FloatField()
+    geom = models.MultiPolygonField(srid=4326)
 
 class Station(BaseModel):    
     name = models.CharField(max_length=256)
     alias_name = models.CharField(max_length=256, null=True, blank=True)
-    begin_date = models.DateTimeField(null=True, blank=True)
+    begin_date = models.DateTimeField(null=True)
     relocation_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
     network = models.CharField(max_length=256, null=True, blank=True)
@@ -357,7 +365,7 @@ class Station(BaseModel):
         MinValueValidator(-90.),
         MaxValueValidator(90.)
     ])
-    elevation = models.FloatField(null=True, blank=True)
+    elevation = models.FloatField(null=True)
     code = models.CharField(max_length=64)
     reference_station = models.ForeignKey('self',
         on_delete=models.SET_NULL,
@@ -387,8 +395,7 @@ class Station(BaseModel):
     )
     watershed = models.CharField(
         max_length=256,
-        null=True,
-        blank=True
+        null=True
     )
     z = models.FloatField(
         null=True,
@@ -579,13 +586,11 @@ class Station(BaseModel):
     country = models.ForeignKey(
         Country,
         on_delete=models.DO_NOTHING,
-        null=True,
-        blank=True
-    )    
+        null=True
+    )
     region = models.CharField(
         max_length=256,
-        null=True,
-        blank=True
+        null=True
     )
     data_source = models.ForeignKey(
         DataSource,
@@ -596,14 +601,14 @@ class Station(BaseModel):
     communication_type = models.ForeignKey(
         StationCommunication,
         on_delete=models.DO_NOTHING,
-        null=True,
-        blank=True
+        null=True
     )
     utc_offset_minutes = models.IntegerField(
         validators=[
             MaxValueValidator(720),
             MinValueValidator(-720)
-        ])
+        ]
+    )
     alternative_names = models.CharField(
         max_length=256,
         null=True,
@@ -639,7 +644,7 @@ class Station(BaseModel):
         ordering = ('name',)
 
     def get_absolute_url(self):
-        """Returns the url to access a particular instance of MyModelName."""
+        """Returns the url to access a particular instance of Station."""
         return reverse('station-detail', args=[str(self.id)])
 
     def __str__(self):
@@ -806,15 +811,6 @@ class PeriodicJob(BaseModel):
     class Meta:
         ordering = ('station', 'periodic_job_type',)
 
-
-class Watershed(models.Model):
-    watershed = models.CharField(max_length=128)
-    size = models.CharField(max_length=16)
-    acres = models.FloatField()
-    hectares = models.FloatField()
-    shape_leng = models.FloatField()
-    shape_area = models.FloatField()
-    geom = models.MultiPolygonField(srid=4326)
 
 
 class District(models.Model):

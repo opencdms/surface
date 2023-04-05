@@ -2198,11 +2198,13 @@ class StationDetailView(LoginRequiredMixin, DetailView):
 
 class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Station
+
     success_message = "%(name)s was created successfully"
     form_class = StationForm
 
     layout = Layout(
-        Fieldset('Registering a new station',
+        Fieldset('Editing station',
+                 Row('latitude', 'longitude'),
                  Row('name'),
                  Row('is_active', 'is_automatic'),
                  Row('alias_name'),
@@ -2210,33 +2212,42 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  Row('wmo', 'organization'),
                  Row('wigos', 'observer'),
                  Row('begin_date', 'data_source'),
-                 Row('end_date')
+                 Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
-                 Row('latitude', 'longitude'),
                  Row('elevation', 'watershed'),
                  Row('country', 'region'),
                  Row('utc_offset_minutes', 'local_land_use'),
                  Row('soil_type', 'station_details'),
                  Row('site_description', 'alternative_names')
                  ),
-        Fieldset('Hydrology information',
-                 Row('hydrology_station_type', 'ground_water_province'),
-                 Row('existing_gauges', 'flow_direction_at_station'),
-                 Row('flow_direction_above_station', 'flow_direction_below_station'),
-                 Row('bank_full_stage', 'bridge_level'),
-                 Row('temporary_benchmark', 'mean_sea_level'),
-                 Row('river_code', 'river_course'),
-                 Row('catchment_area_station', 'river_origin'),
-                 Row('easting', 'northing'),
-                 Row('river_outlet', 'river_length'),
-                 Row('z', 'land_surface_elevation'),
-                 Row('top_casing_land_surface', 'casing_diameter'),
-                 Row('screen_length', 'depth_midpoint'),
-                 Row('casing_type', 'datum'),
-                 Row('zone')
-                 )
+        # Fieldset('Hydrology information',
+        #          Row('hydrology_station_type', 'ground_water_province'),
+        #          Row('existing_gauges', 'flow_direction_at_station'),
+        #          Row('flow_direction_above_station', 'flow_direction_below_station'),
+        #          Row('bank_full_stage', 'bridge_level'),
+        #          Row('temporary_benchmark', 'mean_sea_level'),
+        #          Row('river_code', 'river_course'),
+        #          Row('catchment_area_station', 'river_origin'),
+        #          Row('easting', 'northing'),
+        #          Row('river_outlet', 'river_length'),
+        #          Row('z', 'land_surface_elevation'),
+        #          Row('top_casing_land_surface', 'casing_diameter'),
+        #          Row('screen_length', 'depth_midpoint'),
+        #          Row('casing_type', 'datum'),
+        #          Row('zone')
+        #          )
     )
+
+    # passing required context for watershed and region autocomplete fields
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['watersheds'] = Watershed.objects.all()
+        context['regions'] = AdministrativeRegion.objects.all()
+
+        return context
+
 
 
 class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -2246,6 +2257,7 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     layout = Layout(
         Fieldset('Editing station',
+                 Row('latitude', 'longitude'),
                  Row('name', 'is_active'),
                  Row('alias_name', 'is_automatic'),
                  Row('code', 'profile'),
@@ -2255,7 +2267,6 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
-                 Row('latitude', 'longitude'),
                  Row('elevation', 'watershed'),
                  Row('country', 'region'),
                  Row('utc_offset_minutes', 'local_land_use'),
@@ -4977,50 +4988,46 @@ class DataInventoryView(LoginRequiredMixin, TemplateView):
 
 @api_view(['GET'])
 def get_data_inventory(request):
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
-
-    try:
-        start_date = datetime.datetime.strptime(start_date, '%Y')
-        end_date = datetime.datetime.strptime(end_date, '%Y')
-
-        if start_date >= end_date:
-            return JsonResponse({"message": "Invalid date. End date must be greater than start date"},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-    except ValueError:
-        return JsonResponse({"message": "Invalid date format. The expected date format is 'YYYY'"},
-                            status=status.HTTP_400_BAD_REQUEST)
+    start_year = request.GET.get('start_date', None)
+    end_year = request.GET.get('end_date', None)
+    is_automatic = request.GET.get('is_automatic', None)
 
     result = []
 
     query = """
-        SELECT DATE_TRUNC('YEAR', station_data.datetime)
+       SELECT EXTRACT('YEAR' from station_data.datetime)
               ,station.id
               ,station.name
               ,station.code
+              ,station.is_automatic
+              ,station.begin_date
+              ,station.watershed
               ,TRUNC(AVG(station_data.record_count_percentage)::numeric, 2)
         FROM wx_stationdataminimuminterval AS station_data
         JOIN wx_station AS station ON station.id = station_data.station_id
-        WHERE station_data.datetime >= %(start_date)s
-          AND station_data.datetime <  %(end_date)s
-        GROUP BY 1, station.id, station.name
-        ORDER BY station.name
+        WHERE EXTRACT('YEAR' from station_data.datetime) >= %(start_year)s
+          AND EXTRACT('YEAR' from station_data.datetime) <  %(end_year)s
+          AND station.is_automatic = %(is_automatic)s
+        GROUP BY 1, station.id
+        ORDER BY station.watershed, station.name
     """
 
     with connection.cursor() as cursor:
-        cursor.execute(query, {"start_date": start_date, "end_date": end_date})
+        cursor.execute(query, {"start_year": start_year, "end_year": end_year, "is_automatic": is_automatic})
         rows = cursor.fetchall()
 
         for row in rows:
             obj = {
-                'datetime': row[0],
+                'year': row[0],
                 'station': {
                     'id': row[1],
                     'name': row[2],
                     'code': row[3],
+                    'is_automatic': row[4],
+                    'begin_date': row[5],
+                    'watershed': row[6],
                 },
-                'percentage': row[4],
+                'percentage': row[7],
             }
             result.append(obj)
 
@@ -5028,130 +5035,176 @@ def get_data_inventory(request):
 
 
 @api_view(['GET'])
-def get_station_data_inventory(request):
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
-    station_id = request.GET.get('station_id', None)
+def get_data_inventory_by_station(request):
+    start_year = request.GET.get('start_date', None)
+    end_year = request.GET.get('end_date', None)
+    station_id: list = request.GET.get('station_id', None)
+    record_limit = request.GET.get('record_limit', None)
 
-    try:
-        start_date = datetime.datetime.strptime(start_date, '%Y')
-        end_date = datetime.datetime.strptime(end_date, '%Y')
+    if station_id is None or len(station_id) == 0:
+        return JsonResponse({"message": "\"station_id\" must not be null"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if start_date >= end_date:
-            return JsonResponse({"message": "Invalid date. End date must be greater than start date"},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-    except ValueError:
-        return JsonResponse({"message": "Invalid date format. The expected date format is 'YYYY'"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-    if station_id is None:
-        return JsonResponse({"message": "Invalid request. Station id must be provided"},
-                            status=status.HTTP_400_BAD_REQUEST)
+    record_limit_lexical = ""
+    if record_limit is not None:
+        record_limit_lexical = f"LIMIT {record_limit}"
 
     result = []
-    query = """
-        SELECT DATE_TRUNC('YEAR', station_data.datetime)
-              ,station.id
-              ,station.name
-              ,station.code
-              ,variable.id
-              ,variable.name
+    query = f"""
+       WITH variable AS (
+            SELECT variable.id, variable.name 
+            FROM wx_variable AS variable
+            JOIN wx_stationvariable AS station_variable ON station_variable.variable_id = variable.id
+            WHERE station_variable.station_id = %(station_id)s
+            ORDER BY variable.name
+            {record_limit_lexical}
+        )
+        SELECT EXTRACT('YEAR' from station_data.datetime)
+              ,limited_variable.id
+              ,limited_variable.name
               ,TRUNC(AVG(station_data.record_count_percentage)::numeric, 2)
         FROM wx_stationdataminimuminterval AS station_data
-        JOIN wx_station AS station ON station.id = station_data.station_id
-        JOIN wx_variable AS variable ON variable.id = station_data.variable_id
-        WHERE station_data.station_id = %(station_id)s
-          AND station_data.datetime  >= %(start_date)s
-          AND station_data.datetime  <  %(end_date)s
-        GROUP BY 1, station.id, station.name, station.code, variable.id, variable.name
-        ORDER BY variable.name
+        JOIN variable AS limited_variable ON limited_variable.id = station_data.variable_id
+        JOIN wx_station station ON station_data.station_id = station.id
+        WHERE EXTRACT('YEAR' from station_data.datetime) >= %(start_year)s
+          AND EXTRACT('YEAR' from station_data.datetime) <  %(end_year)s
+          AND station_data.station_id = %(station_id)s
+        GROUP BY 1, limited_variable.id, limited_variable.name
+        ORDER BY 1, limited_variable.name
     """
 
     with connection.cursor() as cursor:
-        cursor.execute(query, {"station_id": station_id, "start_date": start_date, "end_date": end_date})
+        cursor.execute(query, {"start_year": start_year, "end_year": end_year, "station_id": station_id})
         rows = cursor.fetchall()
 
         for row in rows:
             obj = {
-                'datetime': row[0],
-                'station': {
-                    'id': row[1],
-                    'name': row[2],
-                    'code': row[3],
-                },
+                'year': row[0],
                 'variable': {
-                    'id': row[4],
-                    'name': row[5],
+                    'id': row[1],
+                    'name': row[2],
                 },
-                'percentage': row[6],
+                'percentage': row[3],
             }
             result.append(obj)
 
     return Response(result, status=status.HTTP_200_OK)
 
-
 @api_view(['GET'])
-def get_station_variable_data_inventory(request):
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
+def get_station_variable_month_data_inventory(request):
+    year = request.GET.get('year', None)
     station_id = request.GET.get('station_id', None)
-    variable_id = request.GET.get('variable_id', None)
-
-    try:
-        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-
-        if start_date >= end_date:
-            return JsonResponse({"message": "Invalid date. End date must be greater than start date"},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-    except ValueError:
-        return JsonResponse({"message": "Invalid date format. The expected date format is 'YYYY-MM-DDTHH:MI:SS.sssZ'"},
-                            status=status.HTTP_400_BAD_REQUEST)
 
     if station_id is None:
         return JsonResponse({"message": "Invalid request. Station id must be provided"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-    if variable_id is None:
-        return JsonResponse({"message": "Invalid request. Variable id must be provided"},
                             status=status.HTTP_400_BAD_REQUEST)
 
     result = []
     query = """
         SELECT EXTRACT('MONTH' FROM station_data.datetime) AS month
-              ,EXTRACT('DAY' FROM station_data.datetime) AS day
-              ,station_data.datetime
-              ,measurement_variable.name
+              ,variable.id
+              ,variable.name
+              ,measurementvariable.name
               ,TRUNC(AVG(station_data.record_count_percentage)::numeric, 2)
         FROM wx_stationdataminimuminterval AS station_data
         JOIN wx_variable variable ON station_data.variable_id=variable.id
-        JOIN wx_measurementvariable measurement_variable ON variable.measurement_variable_id=measurement_variable.id
-        WHERE station_data.variable_id = %(variable_id)s
-          AND station_data.station_id  = %(station_id)s
-          AND station_data.datetime   >= %(start_date)s
-          AND station_data.datetime   <= %(end_date)s
-        GROUP BY 1, 2, station_data.datetime, measurement_variable.name
-
+        LEFT JOIN wx_measurementvariable measurementvariable ON measurementvariable.id = variable.measurement_variable_id
+        WHERE EXTRACT('YEAR' from station_data.datetime) = %(year)s
+          AND station_data.station_id = %(station_id)s
+        GROUP BY 1, variable.id, variable.name, measurementvariable.name
     """
 
     with connection.cursor() as cursor:
-        cursor.execute(query, {"start_date": start_date, "end_date": end_date, "variable_id": variable_id,
-                               "station_id": station_id})
+        cursor.execute(query, {"year": year, "station_id": station_id})
         rows = cursor.fetchall()
 
         for row in rows:
             obj = {
                 'month': row[0],
-                'day': row[1],
-                'datetime': row[2],
-                'measurement_variable': slugify(row[3]),
+                'variable': {
+                    'id': row[1],
+                    'name': row[2],
+                    'measurement_variable_name': row[3] if row[3] is None else row[3].lower().replace(' ', '-'),
+                },
                 'percentage': row[4],
             }
             result.append(obj)
 
     return Response(result, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_station_variable_day_data_inventory(request):
+    year = request.GET.get('year', None)
+    month = request.GET.get('month', None)
+    station_id = request.GET.get('station_id', None)
+    variable_id = request.GET.get('variable_id', None)
+
+    if station_id is None:
+        return JsonResponse({"message": "Invalid request. Station id must be provided"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    query = """
+         WITH data AS (
+	         SELECT EXTRACT('DAY' FROM station_data.datetime) AS day
+	               ,EXTRACT('DOW' FROM station_data.datetime) AS dow
+	               ,TRUNC(station_data.record_count_percentage::numeric, 2) as percentage
+	               ,station_data.record_count
+	               ,station_data.ideal_record_count
+	               ,(select COUNT(1) from raw_data rd where rd.station_id = station_data.station_id and rd.variable_id = station_data.variable_id and rd.datetime between station_data.datetime  and station_data.datetime + '1 DAY'::interval and coalesce(rd.manual_flag, rd.quality_flag) in (1, 4)) qc_passed_amount
+  	               ,(select COUNT(1) from raw_data rd where rd.station_id = station_data.station_id and rd.variable_id = station_data.variable_id and rd.datetime between station_data.datetime  and station_data.datetime + '1 DAY'::interval) qc_amount
+ 	        FROM wx_stationdataminimuminterval AS station_data
+	        WHERE EXTRACT('YEAR' from station_data.datetime) = %(year)s
+	          AND EXTRACT('MONTH' from station_data.datetime) = %(month)s 
+	          AND station_data.station_id = %(station_id)s
+	          AND station_data.variable_id = %(variable_id)s
+	        ORDER BY station_data.datetime)
+         SELECT available_days.custom_day
+         	   ,data.dow
+         	   ,COALESCE(data.percentage, 0) AS percentage
+         	   ,COALESCE(data.record_count, 0) AS record_count
+         	   ,COALESCE(data.ideal_record_count, 0) AS ideal_record_count
+         	   ,case when data.qc_amount = 0 then 0 
+         	   		 else TRUNC((data.qc_passed_amount / data.qc_amount::numeric) * 100, 2) end as qc_passed_percentage
+         FROM (SELECT custom_day FROM unnest( ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31] ) AS custom_day) AS available_days
+         LEFT JOIN data ON data.day = available_days.custom_day;
+         
+    """
+
+    days = []
+    day_with_data = None
+    with connection.cursor() as cursor:
+        cursor.execute(query, {"year": year, "station_id": station_id, "month": month, "variable_id": variable_id})
+        rows = cursor.fetchall()
+
+        for row in rows:
+            obj = {
+                'day': row[0],
+                'dow': row[1],
+                'percentage': row[2],
+                'record_count': row[3],
+                'ideal_record_count': row[4],
+                'qc_passed_percentage': row[5],
+            }
+
+            if row[1] is not None and day_with_data is None:
+                day_with_data = obj
+            days.append(obj)
+
+    if day_with_data is None:
+        return JsonResponse({"message": "No data found"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+    for day in days:
+        current_day = day.get('day', None)
+        current_dow = day.get('dow', None)
+        if current_dow is None:
+            day_with_data_day = day_with_data.get('day', None)
+            day_with_data_dow = day_with_data.get('dow', None)
+            day_difference = current_day - day_with_data_day
+            day["dow"] = (day_difference + day_with_data_dow) % 7
+
+    return Response(days, status=status.HTTP_200_OK)
+
 
 
 @api_view(['POST'])
