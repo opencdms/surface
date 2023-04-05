@@ -93,15 +93,26 @@ urlpatterns = [
     path('api/data_inventory/', views.get_data_inventory),
     path('api/station_data_inventory/', views.get_station_data_inventory),
     path('api/station_variable_data_inventory/', views.get_station_variable_data_inventory),
-    path('api/range_threshold/', views.range_threshold_view),
+
+
+    path('wx/quality_control/update_reference_station/', views.update_reference_station),    
+    path('wx/quality_control/global_threshold/update/', views.update_global_threshold),
 
     path('wx/quality_control/range_threshold/', views.get_range_threshold_form, name='range-threshold'),
     path('wx/quality_control/range_threshold/get/', views.get_range_threshold),
-    
-    path('wx/quality_control/step_threshold/', views.StepThresholdView.as_view(), name='step-threshold'),
-    path('api/step_threshold/', views.step_threshold_view),
-    path('wx/quality_control/persist_threshold/', views.PersistThresholdView.as_view(), name='persist-threshold'),
-    path('api/persist_threshold/', views.persist_threshold_view),
+    path('wx/quality_control/range_threshold/update/', views.update_range_threshold),    
+    path('wx/quality_control/range_threshold/delete/', views.delete_range_threshold),    
+
+    path('wx/quality_control/step_threshold/', views.get_step_threshold_form, name='step-threshold'),
+    path('wx/quality_control/step_threshold/get/', views.get_step_threshold),
+    path('wx/quality_control/step_threshold/update/', views.update_step_threshold),
+    path('wx/quality_control/step_threshold/delete/', views.delete_step_threshold),
+
+    path('wx/quality_control/persist_threshold/', views.get_persist_threshold_form, name='persist-threshold'),
+    path('wx/quality_control/persist_threshold/get/', views.get_persist_threshold),
+    path('wx/quality_control/persist_threshold/update/', views.update_persist_threshold),
+    path('wx/quality_control/persist_threshold/delete/', views.delete_persist_threshold),
+
     path('wx/maintenance_report/', login_required(views.get_maintenance_reports), name='maintenance-reports'),
     path('wx/maintenance_report/get_reports/', login_required(views.get_maintenance_report_list)),
     path('wx/maintenance_report/new_report/', login_required(views.get_maintenance_report_form), name='new-maintenance-report'),

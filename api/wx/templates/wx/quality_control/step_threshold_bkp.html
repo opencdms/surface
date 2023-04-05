@@ -6,47 +6,35 @@
         <v-dialog v-model="show_dialog" max-width="600px" style="z-index: 998">
           <v-card>
             <v-layout mt-5>
-              <v-card-title class="headline" v-if="!rangeThresholdObject.id"
-                >Add new Range Threshold</v-card-title
+              <v-card-title class="headline" v-if="!stepThresholdObject.id"
+                >Add new Step Threshold</v-card-title
               >
-              <v-card-title class="headline" v-if="rangeThresholdObject.id"
-                >Update Range Threshold</v-card-title
+              <v-card-title class="headline" v-if="stepThresholdObject.id"
+                >Update Step Threshold</v-card-title
               >
             </v-layout>
 
             <v-card-text>
               <v-form lazy-validation>
-                <v-autocomplete
-                  :items="variables"
-                  item-text="variable_name"
-                  item-value="variable"
-                  v-model="rangeThresholdObject.variable_id"
-                  label="Variable"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleTextFieldsRules"
-                  :disabled="!!rangeThresholdObject.id"
-                  autocomplete="off"
-                ></v-autocomplete>
                 <v-layout mt-3>
                   <v-flex lg6>
                     <v-autocomplete
-                      :items="months"
-                      item-text="name"
-                      item-value="id"
-                      v-model="rangeThresholdObject.month"
-                      label="Month"
+                      :items="variables"
+                      item-text="variable_name"
+                      item-value="variable"
+                      v-model="stepThresholdObject.variable_id"
+                      label="Variable"
                       required
                       hint="*Required"
                       persistent-hint
                       :rules="simpleTextFieldsRules"
+                      :disabled="!!stepThresholdObject.id"
                       autocomplete="off"
                     ></v-autocomplete>
                   </v-flex>
                   <v-flex lg6 ml-5>
                     <v-text-field
-                      v-model="rangeThresholdObject.interval"
+                      v-model="stepThresholdObject.interval"
                       label="Interval (seconds)"
                       required
                       hint="*Required"
@@ -60,7 +48,7 @@
                 <v-layout mt-3>
                   <v-flex lg6>
                     <v-text-field
-                      v-model="rangeThresholdObject.range_min"
+                      v-model="stepThresholdObject.step_min"
                       label="Minimum"
                       required
                       hint="*Required"
@@ -71,7 +59,7 @@
                   </v-flex>
                   <v-flex lg6 ml-5>
                     <v-text-field
-                      v-model="rangeThresholdObject.range_max"
+                      v-model="stepThresholdObject.step_max"
                       label="Maximum"
                       required
                       hint="*Required"
@@ -91,17 +79,17 @@
               <v-btn
                 color="blue darken-1"
                 text
-                v-if="!rangeThresholdObject.id"
-                @click="createThreshold(rangeThresholdObject)"
-                :disabled="$v.rangeThresholdObject.$invalid"
+                v-if="!stepThresholdObject.id"
+                @click="createThreshold(stepThresholdObject)"
+                :disabled="$v.stepThresholdObject.$invalid"
                 >Create</v-btn
               >
               <v-btn
                 color="blue darken-1"
                 text
-                v-if="rangeThresholdObject.id"
-                @click="updateThreshold(rangeThresholdObject)"
-                :disabled="$v.rangeThresholdObject.$invalid"
+                v-if="stepThresholdObject.id"
+                @click="updateThreshold(stepThresholdObject)"
+                :disabled="$v.stepThresholdObject.$invalid"
                 >Edit</v-btn
               >
             </v-card-actions>
@@ -118,7 +106,7 @@
               srf-padding
             "
           >
-            <span class="srf-display-1 text-uppercase">Range Threshold</span
+            <span class="srf-display-1 text-uppercase">Step Threshold</span
             ><br /><br />
           </div>
           <v-layout column fluid>
@@ -211,7 +199,7 @@
                   outlined
                   color="primary"
                   small
-                  @click="getRangeThresholds"
+                  @click="getStepThresholds"
                   :disabled="$v.requestObject.$invalid"
                   >SUBMIT</v-btn
                 >
@@ -293,13 +281,12 @@
         requestObject: {
           station_id: { required },
         },
-        rangeThresholdObject: {
+        stepThresholdObject: {
           station_id: { required },
           variable_id: { required },
-          month: { required },
           interval: { required },
-          range_min: { required },
-          range_max: { required },
+          step_min: { required },
+          step_max: { required },
         }
       },
       data: {
@@ -310,14 +297,13 @@
           station_id: null,
           variableIds: null,
         },
-        rangeThresholdObject: {
+        stepThresholdObject: {
           id: null,
           station_id: null,
           variable_id: null,
-          month: null,
           interval: 3600,
-          range_min: null,
-          range_max: null,
+          step_min: null,
+          step_max: null,
         },
         requestedObject:{},
         loading: false,
@@ -328,39 +314,15 @@
           (v) => (v != null && v !== "") || "This field is required",
           (v) => (v != null && v > 0) || "Should be greater than 0",
         ],
-        filter: {
-          isActive: true,
-          isAutomatic: true
-        },
         show_dialog: false,
         datasource: [],
         rowsPerPage: 12,
-        months: [
-          {id:1, name: 'January'},
-          {id:2, name: 'February'},
-          {id:3, name: 'March'},
-          {id:4, name: 'April'},
-          {id:5, name: 'May'},
-          {id:6, name: 'June'},
-          {id:7, name: 'July'},
-          {id:8, name: 'August'},
-          {id:9, name: 'September'},
-          {id:10, name: 'October'},
-          {id:11, name: 'November'},
-          {id:12, name: 'December'},
-        ],
         headers: [
           {
             text: "Variable",
             align: "left",
             sortable: true,
             value: "variable.name",
-          },
-          {
-            text: "Month",
-            align: "left",
-            sortable: true,
-            value: "month_desc",
           },
           {
             text: "Interval (seconds)",
@@ -372,13 +334,13 @@
             text: "Minimum",
             align: "left",
             sortable: true,
-            value: "range_min",
+            value: "step_min",
           },
           {
             text: "Maximum",
             align: "left",
             sortable: true,
-            value: "range_max",
+            value: "step_max",
           },
           {
             text: "Action",
@@ -387,6 +349,10 @@
             value: "action",
           },
         ],
+        filter: {
+          isActive: true,
+          isAutomatic: true
+        },
         stations: [
           {% for station in station_list %}
           { id: {{ station.id }},
@@ -439,25 +405,23 @@
       },
       methods: {
         editThreshold(threshold) {
-          this.rangeThresholdObject.station_id = threshold.station_id
-          this.rangeThresholdObject.variable_id = threshold.variable.id
-          this.rangeThresholdObject.month = threshold.month
-          this.rangeThresholdObject.interval = threshold.interval
-          this.rangeThresholdObject.range_min = threshold.range_min
-          this.rangeThresholdObject.range_max = threshold.range_max
-          this.rangeThresholdObject.id = threshold.id
+          this.stepThresholdObject.station_id = threshold.station_id
+          this.stepThresholdObject.variable_id = threshold.variable.id
+          this.stepThresholdObject.interval = threshold.interval
+          this.stepThresholdObject.step_min = threshold.step_min
+          this.stepThresholdObject.step_max = threshold.step_max
+          this.stepThresholdObject.id = threshold.id
 
           this.show_dialog = true;
         },
         openDialog(){
-          this.rangeThresholdObject = {
+          this.stepThresholdObject = {
             id: null,
             station_id: this.requestedObject.station_id,
             variable_id: null,
-            month: null,
             interval: 3600,
-            range_min: null,
-            range_max: null,
+            step_min: null,
+            step_max: null,
           };
           this.show_dialog = true;
         },
@@ -466,14 +430,14 @@
             (data) => (this.variables = data)
           );
         },
-        getRangeThresholds() {
+        getStepThresholds() {
           this.requestedObject = this.requestObject;
           this.loading = true;
           variable_parameters = "";
           if(this.requestObject.variableIds && this.requestObject.variableIds.length){
             variable_parameters = `&variable_id_list=[${this.requestObject.variableIds}]`
           }
-          axios.get(`/api/range_threshold/?station_id=${this.requestObject.station_id}${variable_parameters}`).then(
+          axios.get(`/api/step_threshold/?station_id=${this.requestObject.station_id}${variable_parameters}`).then(
             res => {
               this.datasource = res.data;
               this.loading = false;
@@ -485,17 +449,16 @@
         createThreshold(item) {
           this.loading = true;
           axios
-            .post('/api/range_threshold/',
+            .post('/api/step_threshold/',
             {
               station_id: item.station_id,
               variable_id: item.variable_id,
-              month: item.month,
               interval: item.interval,
-              range_min: item.range_min,
-              range_max: item.range_max,
+              step_min: item.step_min,
+              step_max: item.step_max,
             })
             .then(() => {
-              this.getRangeThresholds();
+              this.getStepThresholds();
             })
             .catch((error) => {
               console.log("error", error.response);
@@ -509,15 +472,14 @@
         updateThreshold(item) {
           this.loading = true;
           axios
-            .patch(`/api/range_threshold/?id=${item.id}`,
+            .patch(`/api/step_threshold/?id=${item.id}`,
             {
-              month: item.month,
               interval: item.interval,
-              range_min: item.range_min,
-              range_max: item.range_max,
+              step_min: item.step_min,
+              step_max: item.step_max,
             })
             .then(() => {
-              this.getRangeThresholds();
+              this.getStepThresholds();
             })
             .catch((error) => {
               console.log("error", error.response);
@@ -532,9 +494,9 @@
           if(confirm("Do you really want to delete?")){
             this.loading = true;
             axios
-            .delete(`/api/range_threshold?id=${item.id}`)
+            .delete(`/api/step_threshold?id=${item.id}`)
             .then(() => {
-              this.getRangeThresholds();
+              this.getStepThresholds();
             })
             .catch((error) => {
               console.log("error", error.response);

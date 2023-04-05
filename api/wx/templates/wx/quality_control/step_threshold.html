@@ -1,118 +1,17 @@
 {% extends "base.html" %} {% block content %}
 <div class="srf-container">
   <div id="app" v-cloak>
-    <v-app>
+    <v-app id="dataTableStyle">
       <v-content fluid fill-height style="background: white">
-        <v-dialog v-model="show_dialog" max-width="600px" style="z-index: 998">
-          <v-card>
-            <v-layout mt-5>
-              <v-card-title class="headline" v-if="!stepThresholdObject.id"
-                >Add new Step Threshold</v-card-title
-              >
-              <v-card-title class="headline" v-if="stepThresholdObject.id"
-                >Update Step Threshold</v-card-title
-              >
-            </v-layout>
-
-            <v-card-text>
-              <v-form lazy-validation>
-                <v-layout mt-3>
-                  <v-flex lg6>
-                    <v-autocomplete
-                      :items="variables"
-                      item-text="variable_name"
-                      item-value="variable"
-                      v-model="stepThresholdObject.variable_id"
-                      label="Variable"
-                      required
-                      hint="*Required"
-                      persistent-hint
-                      :rules="simpleTextFieldsRules"
-                      :disabled="!!stepThresholdObject.id"
-                      autocomplete="off"
-                    ></v-autocomplete>
-                  </v-flex>
-                  <v-flex lg6 ml-5>
-                    <v-text-field
-                      v-model="stepThresholdObject.interval"
-                      label="Interval (seconds)"
-                      required
-                      hint="*Required"
-                      persistent-hint
-                      :rules="intervalFieldRules"
-                    >
-                    </v-text-field>
-                  </v-flex>
-                </v-layout>
-
-                <v-layout mt-3>
-                  <v-flex lg6>
-                    <v-text-field
-                      v-model="stepThresholdObject.step_min"
-                      label="Minimum"
-                      required
-                      hint="*Required"
-                      persistent-hint
-                      :rules="simpleTextFieldsRules"
-                    >
-                    </v-text-field>
-                  </v-flex>
-                  <v-flex lg6 ml-5>
-                    <v-text-field
-                      v-model="stepThresholdObject.step_max"
-                      label="Maximum"
-                      required
-                      hint="*Required"
-                      persistent-hint
-                      :rules="simpleTextFieldsRules"
-                    >
-                    </v-text-field>
-                  </v-flex>
-                </v-layout>
-              </v-form>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer></v-spacer>
-              <v-btn mr-5 color="error" text @click="show_dialog = false"
-                >Close</v-btn
-              >
-              <v-btn
-                color="blue darken-1"
-                text
-                v-if="!stepThresholdObject.id"
-                @click="createThreshold(stepThresholdObject)"
-                :disabled="$v.stepThresholdObject.$invalid"
-                >Create</v-btn
-              >
-              <v-btn
-                color="blue darken-1"
-                text
-                v-if="stepThresholdObject.id"
-                @click="updateThreshold(stepThresholdObject)"
-                :disabled="$v.stepThresholdObject.$invalid"
-                >Edit</v-btn
-              >
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-
         <v-layout column>
-          <div
-            class="
-              srf-flex
-              flex-row
-              align-items-center
-              justify-content-between
-              srf-padding
-            "
-          >
+          <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
             <span class="srf-display-1 text-uppercase">Step Threshold</span
             ><br /><br />
           </div>
           <v-layout column fluid>
             <h6>Station Filters</h6>
             <v-layout dense justify="start" class="mb-3">
-              <v-flex lg2 class="text-center">
+              <v-flex lg3 class="text-center">
                 <v-autocomplete
                   item-text="name"
                   item-value="name"
@@ -123,7 +22,7 @@
                   clearable
                 ></v-autocomplete>
               </v-flex>
-              <v-flex lg2 ml-3>
+              <v-flex lg3 ml-3>
                 <v-autocomplete
                   item-text="name"
                   item-value="name"
@@ -134,7 +33,7 @@
                   clearable
                 ></v-autocomplete>
               </v-flex>
-              <v-flex lg2 ml-3>
+              <v-flex lg3 ml-3>
                 <v-autocomplete
                   item-text="name"
                   item-value="id"
@@ -145,6 +44,7 @@
                   clearable
                 ></v-autocomplete>
               </v-flex>
+
               <v-flex lg1 ml-3>
                 <v-switch
                   v-model="filter.isActive"
@@ -152,6 +52,7 @@
                   label="Active"
                 ></v-switch>
               </v-flex>
+
               <v-flex lg1>
                 <v-switch
                   v-model="filter.isAutomatic"
@@ -162,7 +63,7 @@
             </v-layout>
 
             <v-layout mt-3>
-              <v-flex lg2>
+              <v-flex lg3>
                 <v-autocomplete
                   :items="stationList"
                   item-text="label"
@@ -183,12 +84,26 @@
                   :items="variables"
                   item-text="variable_name"
                   item-value="variable"
-                  v-model="requestObject.variableIds"
+                  v-model="requestObject.variable_ids"
                   label="Variables"
                   multiple
                   clearable
+                  deletable-chips
+                  small-chips
                   :disabled="!requestObject.station_id"
                   :rules="simpleTextFieldsRules"
+                  autocomplete="off"
+                ></v-autocomplete>
+              </v-flex>
+
+              <v-flex lg2 ml-3>
+                <v-autocomplete
+                  :items="intervalList"
+                  item-text="label"
+                  item-value="id"
+                  v-model="requestObject.interval_id"
+                  label="Measurement Interval"
+                  clearable
                   autocomplete="off"
                 ></v-autocomplete>
               </v-flex>
@@ -199,69 +114,276 @@
                   outlined
                   color="primary"
                   small
-                  @click="getStepThresholds"
+                  @click="getData(false)"
                   :disabled="$v.requestObject.$invalid"
                   >SUBMIT</v-btn
                 >
-              </v-flex>
+              </v-flex>                 
             </v-layout>
-
+            
             <v-alert v-model="request_error" dismissible type="error">
               [[ request_error_message ]]
             </v-alert>
+
             <v-overlay :value="loading">
               <v-progress-circular
                 indeterminate
                 size="64"
               ></v-progress-circular>
             </v-overlay>
-          </v-layout>
 
-          <v-layout column fluid fill-height mt-5>
-            <v-flex mt-5>
-              <v-btn
-                justify-end
-                outlined
-                color="primary"
-                small
-                @click="openDialog()"
-                :disabled="requestedObject.station_id == null"
-                >ADD NEW THRESHOLD</v-btn
-              >
-            </v-flex>
+            <v-layout v-if="requested" column>
+              <v-sheet class="mx-auto" max-width="600">
+                <v-slide-group show-arrows="desktop">
+                  <v-slide-group-item v-for="chosen_variable in chosen_variables" :key="chosen_variable">
+                    <v-btn
+                      class="ma-2"
+                      :outlined="selectedVariable == chosen_variable"
+                      :color="selectedVariable == chosen_variable ? 'primary' : undefined"
+                      @click="selectData(chosen_variable)"
+                    >
+                      [[ chosen_variable ]]
+                    </v-btn>
+                  </v-slide-group-item>
+                </v-slide-group>
+              </v-sheet>            
 
-            <v-flex sm12 md12 lg12 mt-5>
+
               <v-data-table
-                mt-5
                 :headers="headers"
-                :items="datasource"
-                :items-per-page="rowsPerPage"
+                :items="selectedData"
+                hide-default-footer
+                class="transparent elevation-0 my-4"
+                hide-default-header
+                disable-pagination
+                disable-sort
+                :items-per-page="12"
               >
-                <template v-slot:item.action="{ item }">
-                  <v-tooltip bottom>
-                    <template v-slot:activator="{ on }">
-                      <v-icon v-on="on" small @click="editThreshold(item)"
-                        >edit</v-icon
+                <template #header="{ }">
+                  <thead class="v-data-table-header">
+                    <tr>
+                      <th
+                        v-for="(h,i) in headers"
+                        :key="i"
+                        class="text-center parent-header td-border-style"
+                        :rowspan="h.children?1:2"
+                        :colspan="h.children?h.children.length:1"
                       >
-                    </template>
-                    <span>Update threshold</span>
-                  </v-tooltip>
-                  <v-tooltip bottom>
-                    <template v-slot:activator="{ on }">
-                      <v-icon
-                        color="error"
-                        v-on="on"
-                        small
-                        @click="deleteThreshold(item)"
-                        >delete</v-icon
+                        <v-tooltip v-if="h.text=='Global Threshold'" bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn icon @click="dialog_glo = true;">
+                              <v-icon v-on="on" big>
+                                mdi-square-edit-outline
+                              </v-icon>                     
+                            </v-btn>
+                          </template>
+                          <span>Edit Global Threshold</span>                          
+                        </v-tooltip>                  
+                        <v-tooltip v-if="h.text==reference_station_name" bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn icon @click="dialog_ref = true;">
+                              <v-icon v-on="on" big>
+                                mdi-square-edit-outline
+                              </v-icon>                     
+                            </v-btn>
+                          </template>
+                          <span>Change Reference Station</span>
+                        </v-tooltip> 
+                        [[ h.text ]]
+                      </th>
+                    </tr>
+                    <tr>
+                      <th
+                        v-for="(h1,i1) in getSubHeader(headers)"
+                        :key="i1"
+                        class="text-center child-header td-border-style"
                       >
-                    </template>
-                    <span>Delete threshold</span>
-                  </v-tooltip>
+                        [[ h1.text ]]
+                      </th>
+                    </tr>
+                  </thead>
+                </template>
+                <template #item="props">
+                  <tr>
+                    <td v-for="(c,ci) in getRows(props.item)" :key="ci">
+                      <v-layout justify-center>
+                        [[ c ]]
+                      </v-layout>
+                    </td>
+                    <td>
+                      <v-layout justify-center>
+                        <v-tooltip bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn icon>
+                              <v-icon v-on="on" small @click="dialog_thr = true; current_row = props.item">
+                                edit
+                              </v-icon>                     
+                            </v-btn>
+                          </template>
+                          <span>Edit Custom Threshold</span>
+                        </v-tooltip>               
+                        <v-tooltip bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn icon>                        
+                              <v-icon color="error" v-on="on" small @click="dialog_del = true; current_row = props.item">
+                                delete
+                              </v-icon>               
+                            </v-btn>                    
+                          </template>
+                          <span>Delete Custom Threshold</span>
+                        </v-tooltip> 
+                      </v-layout>                                      
+                    </td>                  
+                  </tr>
                 </template>
               </v-data-table>
-            </v-flex>
+
+              <v-layout class="srf-display-2">
+                  Values with * were obtained using null interval.
+              </v-layout>
+            </v-layout>
           </v-layout>
+
+          <v-dialog v-model="dialog_del" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                DELETE CUSTOM THRESHOLDS
+              </v-card-title>
+              <v-layout ml-6 mr-6 mb-2 column>
+                <v-layout class="srf-display-2">
+                  <v-layout>
+                    [[requestedObject.station_name]]
+                  </v-layout>
+                  <v-layout>
+                    [[selectedVariable]]
+                  </v-layout>
+                  <v-layout>
+                    [[current_row.month_name]]
+                  </v-layout>
+                </v-layout>
+              </v-layout>                 
+              <v-card-actions>
+                <v-btn width="50%" color="grey" @click="dialog_del = false">
+                  Cancel
+                </v-btn>
+                <v-btn width="50%" color="error" @click="dialog_del = false; deleteCustomThresholds()">
+                  Delete
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-dialog v-model="dialog_glo" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                UPDATE GLOBAL THRESHOLDS
+              </v-card-title>
+              <v-layout ml-6 mr-6 column>
+                <v-layout class="srf-display-2">
+                    Variable: [[selectedVariable]]
+                </v-layout>
+                <v-layout class="srf-display-2">
+                    Automatic: [[requestedObject.is_automatic]]
+                </v-layout>                
+                <v-layout mb-5 column >
+                  <v-text-field
+                    label="Threhsold:"
+                    v-model="new_g_max"
+                    hide-details
+                    single-line
+                    type="number"
+                  ></v-text-field>
+                </v-layout>
+              </v-layout>                 
+              <v-card-actions>
+                <v-btn width="50%" color="grey" @click="dialog_glo = false; new_g_max = null;">
+                  Cancel
+                </v-btn>
+                <v-btn width="50%" color="primary" @click="dialog_glo = false; updateGlobalThresholds()">
+                  Save Changes
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>          
+          <v-dialog v-model="dialog_thr" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                UPDATE CUSTOM THRESHOLDS
+              </v-card-title>
+              <v-layout ml-6 mr-6 column>
+                <v-layout class="srf-display-2">
+                  <v-layout>
+                    [[requestedObject.station_name]]
+                  </v-layout>
+                  <v-layout>
+                    [[selectedVariable]]
+                  </v-layout>
+                  <v-layout>
+                    [[current_row.month_name]]
+                  </v-layout>
+                </v-layout>
+                <v-layout mb-5 column >
+                  <v-text-field
+                    label="Min Threhsold:"
+                    v-model="new_c_min"
+                    hide-details
+                    single-line
+                    type="number"
+                  ></v-text-field>                
+
+                  <v-text-field
+                    label="Max Threhsold:"
+                    v-model="new_c_max"
+                    hide-details
+                    single-line
+                    type="number"
+                  ></v-text-field>
+                </v-layout>
+              </v-layout>                 
+              <v-card-actions>
+                <v-btn width="50%" color="grey" @click="dialog_thr = false; new_c_min = null; new_c_max = null;">
+                  Cancel
+                </v-btn>
+                <v-btn width="50%" color="primary" @click="dialog_thr = false; updateCustomThresholds()">
+                  Save Changes
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-dialog v-model="dialog_ref" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                CHANGE THE REFERENCE STATION
+              </v-card-title>
+              <v-layout class="srf-display-2" ml-6 mr-6 column>
+               <v-layout>
+                  Station: [[ requestedObject.station_name ]]
+                </v-layout>                
+                <v-layout>
+                  Current Reference Station: [[ reference_station_name ]]
+                </v-layout>                 
+                <v-layout mt-2>
+                  <v-autocomplete
+                    :items="stations"
+                    item-text="label"
+                    item-value="id"
+                    v-model="new_reference_station_id"
+                    label="Station"
+                    required
+                    clearable
+                    autocomplete="off"
+                  ></v-autocomplete>
+                </v-layout>              
+              </v-layout>                              
+              <v-card-actions>
+                <v-btn width="50%" color='grey'  @click="dialog_ref = false; new_reference_station_id = reference_station_id">
+                  Cancel
+                </v-btn>
+                <v-btn width="50%" color="primary" @click="dialog_ref = false; updateReferenceStation()">
+                  Save Changes
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
         </v-layout>
       </v-content>
     </v-app>
@@ -280,106 +402,127 @@
       validations: {
         requestObject: {
           station_id: { required },
+          variable_ids: { required },
+          // interval_id: { required },
         },
-        stepThresholdObject: {
-          station_id: { required },
-          variable_id: { required },
-          interval: { required },
-          step_min: { required },
-          step_max: { required },
-        }
       },
-      data: {
-        request_error: false,
-        request_error_message: "",
-        variables: [],
-        requestObject: {
-          station_id: null,
-          variableIds: null,
-        },
-        stepThresholdObject: {
-          id: null,
-          station_id: null,
-          variable_id: null,
-          interval: 3600,
-          step_min: null,
-          step_max: null,
-        },
-        requestedObject:{},
-        loading: false,
-        simpleTextFieldsRules: [
-          (v) => (v != null && v !== "") || "This field is required",
-        ],
-        intervalFieldRules: [
-          (v) => (v != null && v !== "") || "This field is required",
-          (v) => (v != null && v > 0) || "Should be greater than 0",
-        ],
-        show_dialog: false,
-        datasource: [],
-        rowsPerPage: 12,
-        headers: [
-          {
-            text: "Variable",
-            align: "left",
-            sortable: true,
-            value: "variable.name",
+      data() {
+        return {
+          new_reference_station_id: null,
+          current_row: {
+              variable_name: null,
+              month_name: null,
+              global: {
+                children: {
+                 g_min: null,
+                 g_max: null 
+                }
+              },
+              reference: {
+                children: {
+                  r_min: null,
+                  r_max: null
+                }
+              },
+              custom: {
+                children: {
+                  c_min: null,
+                  c_max: null
+                }
+              }
           },
-          {
-            text: "Interval (seconds)",
-            align: "left",
-            sortable: true,
-            value: "interval",
+          new_c_min: null,
+          new_c_max: null,
+          new_g_max: null,
+          dialog_glo: false,
+          dialog_ref: false,
+          dialog_thr: false,
+          dialog_del: false,
+          chosen_variables: [],
+          selectedData: [],
+          selectedVariable: null,
+          headers: [
+              { text: "Variable", value: "variable_name"},
+              {
+                text: "Global Threshold",
+                value: "global",
+                children: [{ text: "Minimum"}, { text: "Maximum"}],
+              },
+              {
+                text: "Reference Threshold",
+                value: "reference",
+                children: [{ text: "Minimum"}, { text: "Maximum"}],
+              },
+              {
+                text: "Custom Threshold",
+                value: "custom",
+                children: [{ text: "Minimum"}, { text: "Maximum"}],
+              },                            
+              { text: "Actions", value: "action"},
+          ],
+          loading: false,
+          show_dialog: false,
+          simpleTextFieldsRules: [
+            (v) => (v != null && v !== "") || "This field is required",
+          ],        
+          request_error: false,
+          request_error_message: "",
+          reference_station_id: null,
+          reference_station_name: null,
+          requestObject: {
+            station_id: null,
+            variable_ids: null,
+            interval_id: null,
           },
-          {
-            text: "Minimum",
-            align: "left",
-            sortable: true,
-            value: "step_min",
-          },
-          {
-            text: "Maximum",
-            align: "left",
-            sortable: true,
-            value: "step_max",
-          },
-          {
-            text: "Action",
-            align: "left",
-            sortable: false,
-            value: "action",
-          },
-        ],
-        filter: {
-          isActive: true,
-          isAutomatic: true
-        },
-        stations: [
-          {% for station in station_list %}
-          { id: {{ station.id }},
-            label: "{{ station.name | safe }} - {{ station.code }}",
-            region: "{{ station.region | safe }}",
-            watershed: "{{ station.watershed | safe }}",
-            profile: "{{ station.profile.id | safe }}",
-            is_automatic: {{ station.is_automatic | lower }},
-            is_active: {{ station.is_active | lower }},
-          },
-          {% endfor %}
-        ],
-        stationProfileList: [
-          {% for station_profile in station_profile_list %}
-          {id: {{ station_profile.id }}, name: "{{ station_profile.name }}" },
-          {% endfor %}
-        ],
-        stationWatershedList: [
-          {% for station_watershed in station_watershed_list %}
-          {id: {{ station_watershed.id }}, name: "{{ station_watershed.watershed }}" },
-          {% endfor %}
-        ],
-        stationDistrictList: [
-          {% for station_district in station_district_list %}
-          {id: {{ station_district.id }}, name: "{{ station_district.name }}" },
-          {% endfor %}
-        ],
+          requestedObject: {
+            is_automatic: false,
+            station_name: null,
+            station_id: null,
+            variable_ids: null,
+            interval_id: null,
+          },          
+          requestedData: [],
+          requested: false,
+          filter: {
+            isActive: true,
+            isAutomatic: true,
+          },        
+          intervalList: [
+            {% for interval in interval_list %}
+            { id: {{ interval.id }},
+              label: "{{ interval.symbol}}",
+            },
+            {% endfor %}          
+          ],
+          variables: [],        
+          stations: [
+            {% for station in station_list %}
+            { id: {{ station.id }},
+              label: "{{ station.name | safe }} - {{ station.code }}",
+              region: "{{ station.region | safe }}",
+              watershed: "{{ station.watershed | safe }}",
+              profile: "{{ station.profile.id | safe }}",
+              is_automatic: {{ station.is_automatic | lower }},
+              is_active: {{ station.is_active | lower }},
+            },
+            {% endfor %}
+          ],
+          stationProfileList: [
+            {% for station_profile in station_profile_list %}
+            {id: {{ station_profile.id }}, name: "{{ station_profile.name }}" },
+            {% endfor %}
+          ],
+          stationWatershedList: [
+            {% for station_watershed in station_watershed_list %}
+            {id: {{ station_watershed.id }}, name: "{{ station_watershed.watershed }}" },
+            {% endfor %}
+          ],
+          stationDistrictList: [
+            {% for station_district in station_district_list %}
+            {id: {{ station_district.id }}, name: "{{ station_district.name }}" },
+            {% endfor %}
+          ],
+        };
       },
       computed: {
         stationList () {
@@ -400,117 +543,37 @@
 
           this.requestObject.station_id = null;
 
+          this.requestObject.station_id = 155;
+          this.getStationVariables(this.requestObject.station_id);
+          this.requestObject.variable_ids = [0];
+          this.requestObject.interval_id = 3;
           return filteredStations;
         }
       },
       methods: {
-        editThreshold(threshold) {
-          this.stepThresholdObject.station_id = threshold.station_id
-          this.stepThresholdObject.variable_id = threshold.variable.id
-          this.stepThresholdObject.interval = threshold.interval
-          this.stepThresholdObject.step_min = threshold.step_min
-          this.stepThresholdObject.step_max = threshold.step_max
-          this.stepThresholdObject.id = threshold.id
-
-          this.show_dialog = true;
-        },
-        openDialog(){
-          this.stepThresholdObject = {
-            id: null,
-            station_id: this.requestedObject.station_id,
-            variable_id: null,
-            interval: 3600,
-            step_min: null,
-            step_max: null,
-          };
-          this.show_dialog = true;
-        },
-        getStationVariables(station_id) {
-          this.getAll(`api/stations_variables/?station_id=${station_id}`).then(
-            (data) => (this.variables = data)
-          );
-        },
-        getStepThresholds() {
-          this.requestedObject = this.requestObject;
-          this.loading = true;
-          variable_parameters = "";
-          if(this.requestObject.variableIds && this.requestObject.variableIds.length){
-            variable_parameters = `&variable_id_list=[${this.requestObject.variableIds}]`
-          }
-          axios.get(`/api/step_threshold/?station_id=${this.requestObject.station_id}${variable_parameters}`).then(
-            res => {
-              this.datasource = res.data;
-              this.loading = false;
-              this.request_error_message = null;
-              this.request_error = false;
-            }
-          );
-        },
-        createThreshold(item) {
-          this.loading = true;
-          axios
-            .post('/api/step_threshold/',
-            {
-              station_id: item.station_id,
-              variable_id: item.variable_id,
-              interval: item.interval,
-              step_min: item.step_min,
-              step_max: item.step_max,
-            })
-            .then(() => {
-              this.getStepThresholds();
-            })
-            .catch((error) => {
-              console.log("error", error.response);
-              this.request_error_message = error.response.data.message;
-              this.request_error = true;
-            }).finally(() => {
-              this.loading = false;
-              this.show_dialog = false;
-            });
-        },
-        updateThreshold(item) {
-          this.loading = true;
-          axios
-            .patch(`/api/step_threshold/?id=${item.id}`,
-            {
-              interval: item.interval,
-              step_min: item.step_min,
-              step_max: item.step_max,
-            })
-            .then(() => {
-              this.getStepThresholds();
-            })
-            .catch((error) => {
-              console.log("error", error.response);
-              this.request_error_message = error.response.data.message;
-              this.request_error = true;
-            }).finally(() => {
-              this.loading = false;
-              this.show_dialog = false;
-            });
-        },
-        deleteThreshold(item) {
-          if(confirm("Do you really want to delete?")){
-            this.loading = true;
-            axios
-            .delete(`/api/step_threshold?id=${item.id}`)
-            .then(() => {
-              this.getStepThresholds();
-            })
-            .catch((error) => {
-              console.log("error", error.response);
-              this.request_error_message = error.response.data.message;
-              this.request_error = true;
-            }).finally(() => {
-              this.loading = false;
-              this.show_dialog = false;
-            });
-          }
-        },
         invertValue(bool){
           bool = !bool;
         },
+        getSubHeader(headers) {
+          let result = [];
+          headers
+            .filter((i) => i.children)
+            .forEach((v) => {
+              result = result.concat(v.children);
+            });
+          return result;
+        },
+        getRows(rows) {
+          const result = {};
+          _.forEach(rows, (i, key) => {
+            if (i.children) {
+              _.forEach(i.children, (i1, key1) => {
+                result["c" + key1] = i1;
+              });
+            } else result[key] = i;
+          });
+          return result;
+        },        
         getAll(path, url, oldData = []) {
           return fetch(`/${path}`)
             .then((res) => {
@@ -539,6 +602,200 @@
               }
             });
         },
+        getStationVariables(station_id) {
+          this.getAll(`api/stations_variables/?station_id=${station_id}`).then(
+            (data) => (this.variables = data)
+          );
+        },        
+        setRequestedObject(){
+            let station = this.stations.find(station => station['id'] == this.requestObject.station_id);
+            this.requestedObject.is_automatic = this.filter.isAutomatic;
+            this.requestedObject.station_name = station['label'];
+            this.requestedObject.station_id = this.requestObject.station_id;
+            this.requestedObject.variable_ids = this.requestObject.variable_ids;
+            this.requestedObject.interval_id = this.requestObject.interval_id;
+        },
+        setRequestedData(data){
+            this.requestedData = data['variable_data'];
+            this.reference_station_id = data['reference_station_id'];
+            this.reference_station_name = data['reference_station_name'];
+            this.new_reference_station_id = this.reference_station_id
+        },
+        updateGlobalThresholds(){
+          axios({
+            method: 'post',
+            url: `/wx/quality_control/global_threshold/update/`,
+            params: {
+              'step': this.new_g_max,
+              'qc_method': 'step',
+              'is_automatic': this.requestedObject.is_automatic,
+              'variable_name': this.selectedVariable,
+            },
+          })
+          .then(res => {
+            this.getData(true);            
+
+            this.new_g_max = null;
+
+            this.request_error_message = "";
+            this.request_error = false;      
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+        },
+        updateReferenceStation(){
+          axios({
+            method: 'post',
+            url: `/wx/quality_control/update_reference_station/`,
+            params: {
+              'station_id': this.requestedObject.station_id,
+              'new_reference_station_id': this.new_reference_station_id,
+            },
+          })
+          .then(res => {
+            this.getData(true);
+
+            this.request_error_message = "";
+            this.request_error = false;      
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+        },
+        updateCustomThresholds(){
+          axios({
+            method: 'post',
+            url: `/wx/quality_control/step_threshold/update/`,
+            params: {
+              'new_min': this.new_c_min,
+              'new_max': this.new_c_max,
+              'station_id': this.requestedObject.station_id,
+              'variable_name': this.selectedVariable,
+              'interval_id': this.requestedObject.interval_id,
+            },
+          })
+          .then(res => {
+            this.getData(true);
+
+            this.new_c_min = null;
+            this.new_c_max = null;
+
+
+            this.request_error_message = "";
+            this.request_error = false;      
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+        },
+        deleteCustomThresholds(){
+          axios({
+            method: 'post',
+            url: `/wx/quality_control/step_threshold/delete/`,
+            params: {
+              'station_id': this.requestedObject.station_id,
+              'month_name': this.current_row.month_name,
+              'variable_name': this.selectedVariable,
+              'interval_id': this.requestedObject.interval_id,
+            },
+          })
+          .then(res => {
+            this.getData(true);
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+        },
+        setRerenceStationInHeaders(reference_station){
+          if (reference_station){
+            this.reference_station_name = reference_station
+            this.headers[2]['text'] = reference_station
+          }
+          else{
+            this.reference_station_name = 'No. Ref Station'
+            this.headers[2]['text'] = 'No. Ref Station'
+          }
+        },        
+        selectData(variable){
+          if (this.selectedVariable == variable){
+            this.selectedVariable = null;
+            this.selectedData = [];
+          }
+          else{
+            this.selectedVariable = variable;
+            this.selectedData = this.requestedData[variable];
+          }
+        },       
+        getData(is_update){
+          if (!is_update){
+            this.requested = false;
+          };
+          this.loading = true; 
+          let requested_variables_ids = null;
+          if(this.requestObject.variable_ids && this.requestObject.variable_ids.length){
+            requested_variables_ids = `${this.requestObject.variable_ids}`
+          }          
+          axios({
+            method: 'get',
+            url: `/wx/quality_control/step_threshold/get/`,
+            params: {
+              'station_id': this.requestObject.station_id,
+              'variable_ids': requested_variables_ids,
+              'interval_id': this.requestObject.interval_id,
+            },
+          })
+          .then(res => {
+            this.setRequestedObject();
+            this.setRequestedData(res.data['data']);
+            if (is_update) {
+              if (this.selectedVariable != null) {
+                this.selectedData = this.requestedData[this.selectedVariable];
+              }
+              this.setRerenceStationInHeaders(this.reference_station_name);
+            }
+            else{
+              this.chosen_variables=Object.keys(this.requestedData);
+              this.setRerenceStationInHeaders(this.reference_station_name);
+
+              this.selectedVariable=null;
+              this.selectData(this.chosen_variables[0]);
+            }
+
+            this.request_error_message = "";
+            this.request_error = false;
+            this.requested = true;     
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+        }
+
       },
       mounted() {
         axios.defaults.xsrfHeaderName = "X-CSRFToken";
@@ -586,6 +843,67 @@
       z-index: 9999;
       width: 36px;
     }
+
+  #dataTableStyle .record-item-value {
+    font-size: 14px;
+    border-bottom: 1px solid #a1a1a1; }
+
+  #dataTableStyle .record-item-unit {
+    font-size: 14px; }
+
+  #dataTableStyle .record-item-value-border {
+    border: 1px solid #a1a1a1;
+    margin-right: 4px; }
+
+  #dataTableStyle .record-item-key {
+    font-weight: bold;
+    font-size: 14px; }
+
+  #dataTableStyle .record-content {
+    border: 1px solid #a1a1a1; }
+
+  #dataTableStyle .v-data-table td {
+    padding: 12px 8px;
+    font-size: 14px;
+    border-color: rgba(0, 0, 0, 0.12);
+    border-style: solid;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px; }
+
+  #dataTableStyle .v-data-table th {
+    border-color: rgba(0, 0, 0, 0.12);
+    border-style: solid;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px; }
+
+  #dataTableStyle .v-data-table table {
+    border: solid 1px #a1a1a1;
+    border-radius: 5px; }
+
+  #dataTableStyle .v-data-table table thead tr th {
+    font-weight: bold;
+    font-size: 14px;
+    padding: 0px 8px; }
+
+  #dataTableStyle .v-data-table table tbody tr td .v-btn {
+    margin-right: 0px !important; }
+
+  #dataTableStyle .v-data-table .v-data-table-header__sort-badge {
+    font-size: 10px; }
+
+  #dataTableStyle .v-data-table.theme--dark tr th {
+    color: #fff !important; }
+
+  #dataTableStyle .theme--light .v-data-table table thead tr th {
+    color: black; }
+
+  #dataTableStyle .theme--light .v-data-table table thead tr td {
+    color: black; }
+
   </style>
 </div>
 {% endblock %}

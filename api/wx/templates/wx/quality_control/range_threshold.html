@@ -88,6 +88,7 @@
                   label="Variables"
                   multiple
                   clearable
+                  deletable-chips
                   small-chips
                   :disabled="!requestObject.station_id"
                   :rules="simpleTextFieldsRules"
@@ -102,10 +103,7 @@
                   item-value="id"
                   v-model="requestObject.interval_id"
                   label="Measurement Interval"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleTextFieldsRules"
+                  clearable
                   autocomplete="off"
                 ></v-autocomplete>
               </v-flex>
@@ -116,7 +114,7 @@
                   outlined
                   color="primary"
                   small
-                  @click="getThresholdList"
+                  @click="getData(false)"
                   :disabled="$v.requestObject.$invalid"
                   >SUBMIT</v-btn
                 >
@@ -134,13 +132,17 @@
               ></v-progress-circular>
             </v-overlay>
 
-
             <v-layout v-if="requested" column>
               <v-sheet class="mx-auto" max-width="600">
-                <v-slide-group show-arrows>
-                  <v-slide-group-item v-for="tag in tags" :key="tag" :v-slot="{ isSelected, toggle }">
-                    <v-btn class="ma-2" :outlined="getVariant(tag)" :color="getColor(tag)" @click="setData(tag)">
-                      [[ tag ]]
+                <v-slide-group show-arrows="desktop">
+                  <v-slide-group-item v-for="chosen_variable in chosen_variables" :key="chosen_variable">
+                    <v-btn
+                      class="ma-2"
+                      :outlined="selectedVariable == chosen_variable"
+                      :color="selectedVariable == chosen_variable ? 'primary' : undefined"
+                      @click="selectData(chosen_variable)"
+                    >
+                      [[ chosen_variable ]]
                     </v-btn>
                   </v-slide-group-item>
                 </v-slide-group>
@@ -167,15 +169,25 @@
                         :rowspan="h.children?1:2"
                         :colspan="h.children?h.children.length:1"
                       >
-                        <v-tooltip v-if="h.text==reference_station_name" bottom>
+                        <v-tooltip v-if="h.text=='Global Threshold'" bottom>
                           <template v-slot:activator="{ on }">
-                            <v-btn icon>
+                            <v-btn icon @click="dialog_glo = true;">
                               <v-icon v-on="on" big>
                                 mdi-square-edit-outline
                               </v-icon>                     
                             </v-btn>
                           </template>
-                          <span>Edit Custom Threshold</span>
+                          <span>Edit Global Threshold</span>
+                        </v-tooltip>                  
+                        <v-tooltip v-if="h.text==reference_station_name" bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn icon @click="dialog_ref = true;">
+                              <v-icon v-on="on" big>
+                                mdi-square-edit-outline
+                              </v-icon>                     
+                            </v-btn>
+                          </template>
+                          <span>Change Reference Station</span>
                         </v-tooltip> 
                         [[ h.text ]]
                       </th>
@@ -192,37 +204,194 @@
                   </thead>
                 </template>
                 <template #item="props">
-                  <tr class="text-center">
+                  <tr>
                     <td v-for="(c,ci) in getRows(props.item)" :key="ci">
-                      [[ c ]]
+                      <v-layout justify-center>
+                        [[ c ]]
+                      </v-layout>
                     </td>
                     <td>
-                      <v-tooltip bottom>
-                        <template v-slot:activator="{ on }">
-                          <v-btn icon>
-                            <v-icon v-on="on" small>
-                              edit
-                            </v-icon>                     
-                          </v-btn>
-                        </template>
-                        <span>Edit Custom Threshold</span>
-                      </v-tooltip>               
-                      <v-tooltip bottom>
-                        <template v-slot:activator="{ on }">
-                          <v-btn icon>                        
-                            <v-icon color="error" v-on="on" small>
-                              delete
-                            </v-icon>               
-                          </v-btn>                    
-                        </template>
-                        <span>Delete Custom Threshold</span>
-                      </v-tooltip>                
+                      <v-layout justify-center>
+                        <v-tooltip bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn icon>
+                              <v-icon v-on="on" small @click="dialog_thr = true; current_row = props.item">
+                                edit
+                              </v-icon>                     
+                            </v-btn>
+                          </template>
+                          <span>Edit Custom Threshold</span>
+                        </v-tooltip>               
+                        <v-tooltip bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn icon>                        
+                              <v-icon color="error" v-on="on" small @click="dialog_del = true; current_row = props.item">
+                                delete
+                              </v-icon>               
+                            </v-btn>                    
+                          </template>
+                          <span>Delete Custom Threshold</span>
+                        </v-tooltip> 
+                      </v-layout>                                      
                     </td>                  
                   </tr>
                 </template>
               </v-data-table>
+
+              <v-layout class="srf-display-2">
+                  Values with * were obtained using null interval.
+              </v-layout>
             </v-layout>
           </v-layout>
+
+          <v-dialog v-model="dialog_del" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                DELETE CUSTOM THRESHOLDS
+              </v-card-title>
+              <v-layout ml-6 mr-6 mb-2 column>
+                <v-layout class="srf-display-2">
+                  <v-layout>
+                    [[requestedObject.station_name]]
+                  </v-layout>
+                  <v-layout>
+                    [[selectedVariable]]
+                  </v-layout>
+                  <v-layout>
+                    [[current_row.month_name]]
+                  </v-layout>
+                </v-layout>
+              </v-layout>                 
+              <v-card-actions>
+                <v-btn width="50%" color="grey" @click="dialog_del = false">
+                  Cancel
+                </v-btn>
+                <v-btn width="50%" color="error" @click="dialog_del = false; deleteCustomThresholds()">
+                  Delete
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-dialog v-model="dialog_glo" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                UPDATE GLOBAL THRESHOLDS
+              </v-card-title>
+              <v-layout ml-6 mr-6 column>
+                <v-layout class="srf-display-2">
+                    Variable: [[selectedVariable]]
+                </v-layout>
+                <v-layout class="srf-display-2">
+                    Automatic: [[requestedObject.is_automatic]]
+                </v-layout>                
+                <v-layout mb-5 column >
+                  <v-text-field
+                    label="Min Threhsold:"
+                    v-model="new_g_min"
+                    hide-details
+                    single-line
+                    type="number"
+                  ></v-text-field>                
+
+                  <v-text-field
+                    label="Max Threhsold:"
+                    v-model="new_g_max"
+                    hide-details
+                    single-line
+                    type="number"
+                  ></v-text-field>
+                </v-layout>
+              </v-layout>                 
+              <v-card-actions>
+                <v-btn width="50%" color="grey" @click="dialog_glo = false; new_g_min = null; new_g_max = null;">
+                  Cancel
+                </v-btn>
+                <v-btn width="50%" color="primary" @click="dialog_glo = false; updateGlobalThresholds()">
+                  Save Changes
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>          
+          <v-dialog v-model="dialog_thr" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                UPDATE CUSTOM THRESHOLDS
+              </v-card-title>
+              <v-layout ml-6 mr-6 column>
+                <v-layout class="srf-display-2">
+                  <v-layout>
+                    [[requestedObject.station_name]]
+                  </v-layout>
+                  <v-layout>
+                    [[selectedVariable]]
+                  </v-layout>
+                  <v-layout>
+                    [[current_row.month_name]]
+                  </v-layout>
+                </v-layout>
+                <v-layout mb-5 column >
+                  <v-text-field
+                    label="Min Threhsold:"
+                    v-model="new_c_min"
+                    hide-details
+                    single-line
+                    type="number"
+                  ></v-text-field>                
+
+                  <v-text-field
+                    label="Max Threhsold:"
+                    v-model="new_c_max"
+                    hide-details
+                    single-line
+                    type="number"
+                  ></v-text-field>
+                </v-layout>
+              </v-layout>                 
+              <v-card-actions>
+                <v-btn width="50%" color="grey" @click="dialog_thr = false; new_c_min = null; new_c_max = null;">
+                  Cancel
+                </v-btn>
+                <v-btn width="50%" color="primary" @click="dialog_thr = false; updateCustomThresholds()">
+                  Save Changes
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <v-dialog v-model="dialog_ref" width="35%">
+            <v-card>
+              <v-card-title class="text-h5">
+                CHANGE THE REFERENCE STATION
+              </v-card-title>
+              <v-layout class="srf-display-2" ml-6 mr-6 column>
+               <v-layout>
+                  Station: [[ requestedObject.station_name ]]
+                </v-layout>                
+                <v-layout>
+                  Current Reference Station: [[ reference_station_name ]]
+                </v-layout>                 
+                <v-layout mt-2>
+                  <v-autocomplete
+                    :items="stations"
+                    item-text="label"
+                    item-value="id"
+                    v-model="new_reference_station_id"
+                    label="Station"
+                    required
+                    clearable
+                    autocomplete="off"
+                  ></v-autocomplete>
+                </v-layout>              
+              </v-layout>                              
+              <v-card-actions>
+                <v-btn width="50%" color='grey'  @click="dialog_ref = false; new_reference_station_id = reference_station_id">
+                  Cancel
+                </v-btn>
+                <v-btn width="50%" color="primary" @click="dialog_ref = false; updateReferenceStation()">
+                  Save Changes
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
         </v-layout>
       </v-content>
     </v-app>
@@ -242,22 +411,43 @@
         requestObject: {
           station_id: { required },
           variable_ids: { required },
-          interval_id: { required },
+          // interval_id: { required },
         },
       },
       data() {
         return {
-          tags: [
-            'Work',
-            'Home Improvement',
-            'Vacation',
-            'Food',
-            'Drawers',
-            'Shopping',
-            'Art',
-            'Tech',
-            'Creative Writing',
-          ],
+          new_reference_station_id: null,
+          current_row: {
+              variable_name: null,
+              month_name: null,
+              global: {
+                children: {
+                 g_min: null,
+                 g_max: null 
+                }
+              },
+              reference: {
+                children: {
+                  r_min: null,
+                  r_max: null
+                }
+              },
+              custom: {
+                children: {
+                  c_min: null,
+                  c_max: null
+                }
+              }
+          },
+          new_c_min: null,
+          new_c_max: null,
+          new_g_min: null,
+          new_g_max: null,          
+          dialog_glo: false,
+          dialog_ref: false,
+          dialog_thr: false,
+          dialog_del: false,
+          chosen_variables: [],
           selectedData: [],
           selectedVariable: null,
           headers: [
@@ -287,12 +477,20 @@
           ],        
           request_error: false,
           request_error_message: "",
+          reference_station_id: null,
           reference_station_name: null,
           requestObject: {
             station_id: null,
             variable_ids: null,
             interval_id: null,
           },
+          requestedObject: {
+            is_automatic: false,
+            station_name: null,
+            station_id: null,
+            variable_ids: null,
+            interval_id: null,
+          },          
           requestedData: [],
           requested: false,
           filter: {
@@ -355,48 +553,17 @@
 
           this.requestObject.station_id = null;
 
-          // this.requestObject.station_id = 155;
-          // this.getStationVariables(this.requestObject.station_id);
-          // this.requestObject.variable_ids = [0];
-          // this.requestObject.interval_id = 3;
-
-
+          this.requestObject.station_id = 155;
+          this.getStationVariables(this.requestObject.station_id);
+          this.requestObject.variable_ids = [0];
+          this.requestObject.interval_id = 3;
           return filteredStations;
         }
       },
       methods: {
-        selectVariable(variable){
-          if (this.selectedVariable == variable){
-            this.selectedVariable = null;
-          }
-          else{
-            this.selectedVariable = variable
-          }
-          
+        invertValue(bool){
+          bool = !bool;
         },
-        setData(variable){
-          if (this.selectedVariable == variable){
-            this.selectedVariable = null;
-            this.selectedData = [];
-          }
-          else{
-            this.selectedVariable = variable;
-            this.selectedData = this.requestedData[variable]['threshold_list'];
-            this.setHeaders(this.requestedData[variable]['reference_station_name']);                     
-          }
-        },
-        getColor(variable){
-          if (this.selectedVariable == variable){
-            return 'primary';
-          }
-          return 'undefined'
-        },
-        getVariant(variable){
-          if (this.selectedVariable == variable){
-            return true
-          }
-          return false
-        },        
         getSubHeader(headers) {
           let result = [];
           headers
@@ -449,32 +616,41 @@
           this.getAll(`api/stations_variables/?station_id=${station_id}`).then(
             (data) => (this.variables = data)
           );
-        },
-        invertValue(bool){
-          bool = !bool;
         },        
-        getThresholdList(){
-          this.loading = true; 
-          let requested_variables_ids = null;
-          if(this.requestObject.variable_ids && this.requestObject.variable_ids.length){
-            requested_variables_ids = `${this.requestObject.variable_ids}`
-          }
+        setRequestedObject(){
+            let station = this.stations.find(station => station['id'] == this.requestObject.station_id);
+            this.requestedObject.is_automatic = this.filter.isAutomatic;
+            this.requestedObject.station_name = station['label'];
+            this.requestedObject.station_id = this.requestObject.station_id;
+            this.requestedObject.variable_ids = this.requestObject.variable_ids;
+            this.requestedObject.interval_id = this.requestObject.interval_id;
+        },
+        setRequestedData(data){
+            this.requestedData = data['variable_data'];
+            this.reference_station_id = data['reference_station_id'];
+            this.reference_station_name = data['reference_station_name'];
+            this.new_reference_station_id = this.reference_station_id
+        },
+        updateGlobalThresholds(){
           axios({
-            method: 'get',
-            url: `/wx/quality_control/range_threshold/get/`,
+            method: 'post',
+            url: `/wx/quality_control/global_threshold/update/`,
             params: {
-              'station_id': this.requestObject.station_id,
-              'variable_ids': requested_variables_ids,
-              'interval_id': this.requestObject.interval_id,
+              'range_min': this.new_g_min,
+              'range_max': this.new_g_max,
+              'qc_method': 'range',              
+              'is_automatic': this.requestedObject.is_automatic,
+              'variable_name': this.selectedVariable,
             },
           })
           .then(res => {
-            this.tags=Object.keys(res.data['thresholds']);
-            this.requestedData = res.data['thresholds'];
-            this.requested = true;
-            this.setHeaders(this.requestedData[this.tags[0]]['reference_station_name']);
+            this.getData(true);            
+
+            this.new_g_min = null;
+            this.new_g_max = null;
+
             this.request_error_message = "";
-            this.request_error = false;            
+            this.request_error = false;      
           })
           .catch((error) => {
             console.log("error", error.response);
@@ -485,77 +661,154 @@
             this.loading = false;
           });
         },
-        resetHeaders(){
-          this.headers = [
-              { text: "Variable", value: "variable_name"},
-              { text: "Month", value: "month_name"},
-              {
-                text: "Global Threshold",
-                value: "global",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
-              },
-              {
-                text: "Reference Threshold",
-                value: "reference",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
-              },
-              {
-                text: "Custom Threshold",
-                value: "custom",
-                children: [{ text: "Minimum"}, { text: "Maximum"}],
-              },                            
-              { text: "Actions", value: "action"},
-          ]
+        updateReferenceStation(){
+          axios({
+            method: 'post',
+            url: `/wx/quality_control/update_reference_station/`,
+            params: {
+              'station_id': this.requestedObject.station_id,
+              'new_reference_station_id': this.new_reference_station_id,
+            },
+          })
+          .then(res => {
+            this.getData(true);
+
+            this.request_error_message = "";
+            this.request_error = false;      
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
         },
-        setHeaders(reference_station){
+        updateCustomThresholds(){
+          axios({
+            method: 'post',
+            url: `/wx/quality_control/range_threshold/update/`,
+            params: {
+              'new_min': this.new_c_min,
+              'new_max': this.new_c_max,
+              'station_id': this.requestedObject.station_id,
+              'month_name': this.current_row.month_name,
+              'variable_name': this.selectedVariable,
+              'interval_id': this.requestedObject.interval_id,
+            },
+          })
+          .then(res => {
+            this.getData(true);
+
+            this.new_c_min = null;
+            this.new_c_max = null;
+
+
+            this.request_error_message = "";
+            this.request_error = false;      
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+        },
+        deleteCustomThresholds(){
+          axios({
+            method: 'post',
+            url: `/wx/quality_control/range_threshold/delete/`,
+            params: {
+              'station_id': this.requestedObject.station_id,
+              'month_name': this.current_row.month_name,
+              'variable_name': this.selectedVariable,
+              'interval_id': this.requestedObject.interval_id,
+            },
+          })
+          .then(res => {
+            this.getData(true);
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+        },
+        setRerenceStationInHeaders(reference_station){
           if (reference_station){
             this.reference_station_name = reference_station
-            this.headers = [
-                { text: "Variable", value: "variable_name"},
-                { text: "Month", value: "month_name"},
-                {
-                  text: "Global Threshold",
-                  value: "global",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },
-                {
-                  text: reference_station,
-                  value: "reference",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },
-                {
-                  text: "Custom Threshold",
-                  value: "custom",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },                            
-                { text: "Actions", value: "action"},
-            ]
+            this.headers[3]['text'] = reference_station
           }
           else{
             this.reference_station_name = 'No. Ref Station'
-            this.headers = [
-                { text: "Variable", value: "variable_name"},
-                { text: "Month", value: "month_name"},
-                {
-                  text: "Global Threshold",
-                  value: "global",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },
-                {
-                  text: 'No. Ref Station',
-                  value: "reference",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },
-                {
-                  text: "Custom Threshold",
-                  value: "custom",
-                  children: [{ text: "Minimum"}, { text: "Maximum"}],
-                },                            
-                { text: "Actions", value: "action"},
-            ]
+            this.headers[3]['text'] = 'No. Ref Station'
           }
+        },        
+        selectData(variable){
+          if (this.selectedVariable == variable){
+            this.selectedVariable = null;
+            this.selectedData = [];
+          }
+          else{
+            this.selectedVariable = variable;
+            this.selectedData = this.requestedData[variable];
+          }
+        },       
+        getData(is_update){
+          if (!is_update){
+            this.requested = false;
+          };
+          this.loading = true; 
+          let requested_variables_ids = null;
+          if(this.requestObject.variable_ids && this.requestObject.variable_ids.length){
+            requested_variables_ids = `${this.requestObject.variable_ids}`
+          }          
+          axios({
+            method: 'get',
+            url: `/wx/quality_control/range_threshold/get/`,
+            params: {
+              'station_id': this.requestObject.station_id,
+              'variable_ids': requested_variables_ids,
+              'interval_id': this.requestObject.interval_id,
+            },
+          })
+          .then(res => {
+            this.setRequestedObject();
+            this.setRequestedData(res.data['data']);
+            if (is_update) {
+              if (this.selectedVariable != null) {
+                this.selectedData = this.requestedData[this.selectedVariable];
+              }
+              this.setRerenceStationInHeaders(this.reference_station_name);
+            }
+            else{
+              this.chosen_variables=Object.keys(this.requestedData);
+              this.setRerenceStationInHeaders(this.reference_station_name);
 
-        },
+              this.selectedVariable=null;
+              this.selectData(this.chosen_variables[0]);
+            }
+
+            this.request_error_message = "";
+            this.request_error = false;
+            this.requested = true;     
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+        }
+
       },
       mounted() {
         axios.defaults.xsrfHeaderName = "X-CSRFToken";
