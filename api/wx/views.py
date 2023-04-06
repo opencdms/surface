@@ -4086,560 +4086,659 @@ class ExtremesMeansView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class RangeThresholdView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/quality_control/range_threshold.html'
+def get_months():
+    months = {
+      1: 'January',
+      2: 'February',
+      3: 'March',
+      4: 'April',
+      5: 'May',
+      6: 'June',
+      7: 'July',
+      8: 'August',
+      9: 'September',
+      10: 'October',
+      11: 'November',
+      12: 'December',
+    }
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['station_list'] = Station.objects.select_related('profile').all()
-
-        context['station_profile_list'] = StationProfile.objects.all()
-        context['station_watershed_list'] = Watershed.objects.all()
-        context['station_district_list'] = AdministrativeRegion.objects.all()
-
-        return self.render_to_response(context)
+    return months
 
 
-@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
-def range_threshold_view(request):
-    if request.method == 'GET':
+def get_interval_in_seconds(interval_id):
+    if interval_id is None:
+        return None
+    interval = Interval.objects.get(id=int(interval_id))
+    return interval.seconds
 
-        station_id = request.GET.get('station_id', None)
-        variable_id_list = request.GET.get('variable_id_list', None)
-        month = request.GET.get('month', None)
 
-        variable_query_statement = ""
-        month_query_statement = ""
-        query_parameters = {"station_id": station_id, }
+@require_http_methods(["POST"])
+def update_reference_station(request):
+    station_id = request.GET.get('station_id', None)
+    new_reference_station_id = request.GET.get('new_reference_station_id', None)
 
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
+    station = Station.objects.get(id=station_id)
+    station.reference_station_id = new_reference_station_id
+    station.save()
 
-        if variable_id_list is not None:
-            variable_id_list = tuple(json.loads(variable_id_list))
-            variable_query_statement = "AND variable_id IN %(variable_id_list)s"
-            query_parameters['variable_id_list'] = variable_id_list
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
 
-        if month is not None:
-            month_query_statement = "AND month = %(month)s"
-            query_parameters['month'] = month
 
-        get_range_threshold_query = f"""
-            SELECT variable.id
-                ,variable.name
-                ,range_threshold.station_id
-                ,range_threshold.range_min
-                ,range_threshold.range_max
-                ,range_threshold.interval	
-                ,range_threshold.month
-                ,TO_CHAR(TO_DATE(range_threshold.month::text, 'MM'), 'Month')
-                ,range_threshold.id
-            FROM wx_qcrangethreshold range_threshold
-            JOIN wx_variable variable on range_threshold.variable_id = variable.id 
-            WHERE station_id = %(station_id)s
-            {variable_query_statement}
-            {month_query_statement}
-            ORDER BY variable.name, range_threshold.month
-        """
+@require_http_methods(["POST"])
+def update_global_threshold(request):
+    qc_method = request.GET.get('qc_method', None)
+    is_automatic = request.GET.get('is_automatic', None)
+    variable_name = request.GET.get('variable_name', None)
+    variable = Variable.objects.get(name=variable_name)
 
-        result = []
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(get_range_threshold_query, query_parameters)
+    if qc_method=='range':
+        range_min = request.GET.get('range_min', None)    
+        range_max = request.GET.get('range_max', None)
 
-                rows = cursor.fetchall()
-                for row in rows:
-                    obj = {
-                        'variable': {
-                            'id': row[0],
-                            'name': row[1]
-                        },
-                        'station_id': row[2],
-                        'range_min': row[3],
-                        'range_max': row[4],
-                        'interval': row[5],
-                        'month': row[6],
-                        'month_desc': row[7],
-                        'id': row[8],
+        if is_automatic:
+            variable.range_min_hourly = range_min
+            variable.range_max_hourly = range_max
+        else:
+            variable.range_min = range_min
+            variable.range_max = range_max
 
+    elif qc_method=='step':
+        step = request.GET.get('step', None)
+
+        if is_automatic:
+            variable.step_hourly = step
+        else:
+            variable.step = step
+
+    elif qc_method=='persist':
+        minimum_variance = request.GET.get('minimum_variance', None)    
+        window = request.GET.get('window', None)
+
+        if is_automatic:
+            variable.persistence_hourly = minimum_variance
+            variable.persistence_window_hourly = window
+        else:
+            variable.persistence = minimum_variance
+            variable.persistence_window = window
+
+    variable.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+from wx.models import QcRangeThreshold
+
+
+def get_range_threshold_form(request):
+    template = loader.get_template('wx/quality_control/range_threshold.html')
+
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['station_profile_list'] = StationProfile.objects.all()
+    context['station_watershed_list'] = Watershed.objects.all()
+    context['station_district_list'] = AdministrativeRegion.objects.all()
+    context['interval_list'] = Interval.objects.filter(seconds__gt=1).order_by('seconds')    
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_range_threshold_list(station_id, variable_id, interval, is_reference=False):
+    threshold_list = []
+    months = get_months()
+    for month_id in sorted(months.keys()):
+        month = months[month_id]
+        try:
+            threshold = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval, month=month_id)
+            threshold_entry = {
+                'month': month_id,
+                'min': str(threshold.range_min) if threshold.range_min is not None else '---',
+                'max': str(threshold.range_max) if threshold.range_max is not None else '---',
+            }
+        except ObjectDoesNotExist:
+            if is_reference:
+                try:
+                    threshold = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=None, month=month_id)
+                    threshold_entry = {
+                        'month': month_id,
+                        'min': str(threshold.range_min)+'*' if threshold.range_min is not None else '---',
+                        'max': str(threshold.range_max)+'*' if threshold.range_max is not None else '---',
                     }
-                    result.append(obj)
-
-        return Response(result, status=status.HTTP_200_OK)
-
-
-    elif request.method == 'POST':
-
-        station_id = request.data['station_id']
-        variable_id = request.data['variable_id']
-        month = request.data['month']
-        interval = request.data['interval']
-        range_min = request.data['range_min']
-        range_max = request.data['range_max']
-
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if variable_id is None:
-            JsonResponse(data={"message": "'variable_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        if month is None:
-            JsonResponse(data={"message": "'month' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if range_min is None:
-            JsonResponse(data={"message": "'range_min' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if range_max is None:
-            JsonResponse(data={"message": "'range_max' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        post_range_threshold_query = f"""
-            INSERT INTO wx_qcrangethreshold (created_at, updated_at, range_min, range_max, station_id, variable_id, interval, month) 
-            VALUES (now(), now(), %(range_min)s, %(range_max)s , %(station_id)s, %(variable_id)s, %(interval)s, %(month)s)
-        """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(post_range_threshold_query,
-                                   {'station_id': station_id, 'variable_id': variable_id, 'month': month,
-                                    'interval': interval, 'range_min': range_min, 'range_max': range_max, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-
-    elif request.method == 'PATCH':
-        range_threshold_id = request.GET.get('id', None)
-        month = request.data['month']
-        interval = request.data['interval']
-        range_min = request.data['range_min']
-        range_max = request.data['range_max']
-
-        if range_threshold_id is None:
-            JsonResponse(data={"message": "'id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if month is None:
-            JsonResponse(data={"message": "'month' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if range_min is None:
-            JsonResponse(data={"message": "'range_min' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if range_max is None:
-            JsonResponse(data={"message": "'range_max' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        patch_range_threshold_query = f"""
-            UPDATE wx_qcrangethreshold
-            SET month = %(month)s
-               ,interval = %(interval)s
-               ,range_min = %(range_min)s
-               ,range_max = %(range_max)s
-            WHERE id = %(range_threshold_id)s
-        """
-
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(patch_range_threshold_query,
-                                   {'range_threshold_id': range_threshold_id, 'month': month, 'interval': interval,
-                                    'range_min': range_min, 'range_max': range_max, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-
-    elif request.method == 'DELETE':
-        range_threshold_id = request.GET.get('id', None)
-
-        if range_threshold_id is None:
-            JsonResponse(data={"message": "'range_threshold_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        delete_range_threshold_query = f""" DELETE FROM wx_qcrangethreshold WHERE id = %(range_threshold_id)s """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(delete_range_threshold_query, {'range_threshold_id': range_threshold_id})
-                except:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Error on delete threshold"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-    return Response([], status=status.HTTP_200_OK)
-
-
-class StepThresholdView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/quality_control/step_threshold.html'
-
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['station_list'] = Station.objects.select_related('profile').all()
-
-        context['station_profile_list'] = StationProfile.objects.all()
-        context['station_watershed_list'] = Watershed.objects.all()
-        context['station_district_list'] = AdministrativeRegion.objects.all()
-
-        return self.render_to_response(context)
-
-
-@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
-def step_threshold_view(request):
-    if request.method == 'GET':
-
-        station_id = request.GET.get('station_id', None)
-        variable_id_list = request.GET.get('variable_id_list', None)
-
-        variable_query_statement = ""
-        query_parameters = {"station_id": station_id, }
-
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if variable_id_list is not None:
-            variable_id_list = tuple(json.loads(variable_id_list))
-            variable_query_statement = "AND variable_id IN %(variable_id_list)s"
-            query_parameters['variable_id_list'] = variable_id_list
-
-        get_step_threshold_query = f"""
-            SELECT variable.id
-                ,variable.name
-                ,step_threshold.station_id
-                ,step_threshold.step_min
-                ,step_threshold.step_max
-                ,step_threshold.interval	
-                ,step_threshold.id
-            FROM wx_qcstepthreshold step_threshold
-            JOIN wx_variable variable on step_threshold.variable_id = variable.id 
-            WHERE station_id = %(station_id)s
-            {variable_query_statement}
-            ORDER BY variable.name
-        """
-
-        result = []
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(get_step_threshold_query, query_parameters)
-
-                rows = cursor.fetchall()
-                for row in rows:
-                    obj = {
-                        'variable': {
-                            'id': row[0],
-                            'name': row[1]
-                        },
-                        'station_id': row[2],
-                        'step_min': row[3],
-                        'step_max': row[4],
-                        'interval': row[5],
-                        'id': row[6],
-
+                except ObjectDoesNotExist:
+                    threshold_entry = {
+                        'month': month_id,
+                        'min': '---',
+                        'max': '---',
                     }
-                    result.append(obj)
-
-        return Response(result, status=status.HTTP_200_OK)
-
-
-    elif request.method == 'POST':
-
-        station_id = request.data['station_id']
-        variable_id = request.data['variable_id']
-        interval = request.data['interval']
-        step_min = request.data['step_min']
-        step_max = request.data['step_max']
+            else:
+                threshold_entry = {
+                    'month': month_id,
+                    'min': '---',
+                    'max': '---',
+                }
+        threshold_list.append(threshold_entry)
+    return threshold_list
+
+
+def get_range_threshold_in_list(threshold_list, month_id):
+    if threshold_list:
+        for threshold_entry in threshold_list:
+            if threshold_entry['month'] == month_id:
+                return threshold_entry
+
+    threshold_entry = {'month': month_id, 'min': '---', 'max': '---'}
+    return threshold_entry
+
+
+def format_range_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable_name):
+    months = get_months()
+
+    formated_thresholds = []
+    for month_id in sorted(months.keys()):
+        month_name = months[month_id]
+
+        custom_entry = get_range_threshold_in_list(custom_thresholds, month_id)
+        reference_entry = get_range_threshold_in_list(reference_thresholds, month_id)
+
+        formated_threshold = {
+            'variable_name': variable_name,
+            'month_name': month_name,
+            'global':{
+                'children':{
+                    'g_min': global_thresholds['min'],
+                    'g_max': global_thresholds['max'],
+                }
+            },
+            'reference':{
+                'children':{
+                    'r_min': reference_entry['min'],
+                    'r_max': reference_entry['max'],
+                }
+            },
+            'custom':{
+                'children':{
+                    'c_min': custom_entry['min'],
+                    'c_max': custom_entry['max'],
+                }
+            }
+        }
+        formated_thresholds.append(formated_threshold)
+
+    return formated_thresholds
+
+
+@require_http_methods(["GET"])
+def get_range_threshold(request):
+    station_id = request.GET.get('station_id', None)
+    if station_id is None:
+        response = {'message': "Field Station can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    variable_ids = request.GET.get('variable_ids', None)
+    if variable_ids is None:
+        response = {'message': "Field Variables can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST) 
+
+    interval_id = request.GET.get('interval_id', None)
+    # if interval_id is None:
+    #     response = {'message': "Field Measurement Interval can not be empty."}
+    #     return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)    
+
+    station = Station.objects.get(id=int(station_id))
+    variable_ids = [int(variable_id) for variable_id in variable_ids.split(",")]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    reference_station_id = station.reference_station_id
+    if reference_station_id:
+        reference_station = Station.objects.get(id=station.reference_station_id)
+        reference_station_name = reference_station.name+' - '+reference_station.code
+    else:
+        reference_station = None
+        reference_station_name = None
+
+    data = {
+        'reference_station_id': reference_station_id,
+        'reference_station_name': reference_station_name,
+        'variable_data': {},
+    }
+
+    for variable_id in variable_ids:
+        variable = Variable.objects.get(id=variable_id)
+
+        custom_thresholds = get_range_threshold_list(station.id, variable.id, interval_seconds, is_reference=False)
+
+        if reference_station:
+            reference_thresholds = get_range_threshold_list(reference_station.id, variable.id, interval_seconds, is_reference=True)
+        else:
+            reference_thresholds = None
 
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
+        global_thresholds = {}
+        if station.is_automatic:
+            global_thresholds['min'] = variable.range_min_hourly
+            global_thresholds['max'] = variable.range_max_hourly
+        else:
+            global_thresholds['min'] = variable.range_min
+            global_thresholds['max'] = variable.range_max
 
-        if variable_id is None:
-            JsonResponse(data={"message": "'variable_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
+        global_thresholds['min'] = '---' if global_thresholds['min'] is None else str(global_thresholds['min'])
+        global_thresholds['max'] = '---' if global_thresholds['max'] is None else str(global_thresholds['max'])
+
+        formated_thresholds = format_range_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable.name)
+
+        data['variable_data'][variable.name] = formated_thresholds;
+
+    response = {'data': data}
+    return JsonResponse(response, status=status.HTTP_200_OK)
 
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if step_min is None:
-            JsonResponse(data={"message": "'step_min' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if step_max is None:
-            JsonResponse(data={"message": "'step_max' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        post_step_threshold_query = f"""
-            INSERT INTO wx_qcstepthreshold (created_at, updated_at, step_min, step_max, station_id, variable_id, interval) 
-            VALUES (now(), now(), %(step_min)s, %(step_max)s , %(station_id)s, %(variable_id)s, %(interval)s)
-        """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(post_step_threshold_query,
-                                   {'station_id': station_id, 'variable_id': variable_id, 'interval': interval,
-                                    'step_min': step_min, 'step_max': step_max, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-
-    elif request.method == 'PATCH':
-        step_threshold_id = request.GET.get('id', None)
-        interval = request.data['interval']
-        step_min = request.data['step_min']
-        step_max = request.data['step_max']
-
-        if step_threshold_id is None:
-            JsonResponse(data={"message": "'id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if step_min is None:
-            JsonResponse(data={"message": "'step_min' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if step_max is None:
-            JsonResponse(data={"message": "'step_max' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        patch_step_threshold_query = f"""
-            UPDATE wx_qcstepthreshold
-            SET interval = %(interval)s
-               ,step_min = %(step_min)s
-               ,step_max = %(step_max)s
-            WHERE id = %(step_threshold_id)s
-        """
-
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(patch_step_threshold_query,
-                                   {'step_threshold_id': step_threshold_id, 'interval': interval, 'step_min': step_min,
-                                    'step_max': step_max, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-
-    elif request.method == 'DELETE':
-        step_threshold_id = request.GET.get('id', None)
-
-        if step_threshold_id is None:
-            JsonResponse(data={"message": "'step_threshold_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        delete_step_threshold_query = f""" DELETE FROM wx_qcstepthreshold WHERE id = %(step_threshold_id)s """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(delete_step_threshold_query, {'step_threshold_id': step_threshold_id})
-                except:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Error on delete threshold"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-    return Response([], status=status.HTTP_200_OK)
-
-
-class PersistThresholdView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/quality_control/persist_threshold.html'
-
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['station_list'] = Station.objects.select_related('profile').all()
-
-        context['station_profile_list'] = StationProfile.objects.all()
-        context['station_watershed_list'] = Watershed.objects.all()
-        context['station_district_list'] = AdministrativeRegion.objects.all()
-
-        return self.render_to_response(context)
-
-
-@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
-def persist_threshold_view(request):
-    if request.method == 'GET':
-
-        station_id = request.GET.get('station_id', None)
-        variable_id_list = request.GET.get('variable_id_list', None)
-
-        variable_query_statement = ""
-        query_parameters = {"station_id": station_id, }
-
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if variable_id_list is not None:
-            variable_id_list = tuple(json.loads(variable_id_list))
-            variable_query_statement = "AND variable_id IN %(variable_id_list)s"
-            query_parameters['variable_id_list'] = variable_id_list
-
-        get_persist_threshold_query = f"""
-            SELECT variable.id
-                ,variable.name
-                ,persist_threshold.station_id
-                ,persist_threshold.window
-                ,persist_threshold.minimum_variance
-                ,persist_threshold.interval	
-                ,persist_threshold.id
-            FROM wx_qcpersistthreshold persist_threshold
-            JOIN wx_variable variable on persist_threshold.variable_id = variable.id 
-            WHERE station_id = %(station_id)s
-            {variable_query_statement}
-            ORDER BY variable.name
-        """
-
-        result = []
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(get_persist_threshold_query, query_parameters)
-
-                rows = cursor.fetchall()
-                for row in rows:
-                    obj = {
-                        'variable': {
-                            'id': row[0],
-                            'name': row[1]
-                        },
-                        'station_id': row[2],
-                        'window': row[3],
-                        'minimum_variance': row[4],
-                        'interval': row[5],
-                        'id': row[6],
-
-                    }
-                    result.append(obj)
-
-        return Response(result, status=status.HTTP_200_OK)
-
-
-    elif request.method == 'POST':
-
-        station_id = request.data['station_id']
-        variable_id = request.data['variable_id']
-        interval = request.data['interval']
-        window = request.data['window']
-        minimum_variance = request.data['minimum_variance']
-
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if variable_id is None:
-            JsonResponse(data={"message": "'variable_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if window is None:
-            JsonResponse(data={"message": "'window' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if minimum_variance is None:
-            JsonResponse(data={"message": "'minimum_variance' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        post_persist_threshold_query = f"""
-            INSERT INTO wx_qcpersistthreshold (created_at, updated_at, "window", minimum_variance, station_id, variable_id, interval) 
-            VALUES (now(), now(), %(window)s, %(minimum_variance)s , %(station_id)s, %(variable_id)s, %(interval)s)
-        """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(post_persist_threshold_query,
-                                   {'station_id': station_id, 'variable_id': variable_id, 'interval': interval,
-                                    'window': window, 'minimum_variance': minimum_variance, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-
-    elif request.method == 'PATCH':
-        persist_threshold_id = request.GET.get('id', None)
-        interval = request.data['interval']
-        window = request.data['window']
-        minimum_variance = request.data['minimum_variance']
-
-        if persist_threshold_id is None:
-            JsonResponse(data={"message": "'id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if window is None:
-            JsonResponse(data={"message": "'window' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if minimum_variance is None:
-            JsonResponse(data={"message": "'minimum_variance' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        patch_persist_threshold_query = f"""
-            UPDATE wx_qcpersistthreshold
-            SET interval = %(interval)s
-               ,"window" = %(window)s
-               ,minimum_variance = %(minimum_variance)s
-            WHERE id = %(persist_threshold_id)s
-        """
-
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(patch_persist_threshold_query,
-                                   {'persist_threshold_id': persist_threshold_id, 'interval': interval,
-                                    'window': window, 'minimum_variance': minimum_variance, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-
-    elif request.method == 'DELETE':
-        persist_threshold_id = request.GET.get('id', None)
-
-        if persist_threshold_id is None:
-            JsonResponse(data={"message": "'persist_threshold_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        delete_persist_threshold_query = f""" DELETE FROM wx_qcpersistthreshold WHERE id = %(persist_threshold_id)s """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(delete_persist_threshold_query, {'persist_threshold_id': persist_threshold_id})
-                except:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Error on delete threshold"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-    return Response([], status=status.HTTP_200_OK)
+@require_http_methods(["POST"])
+def update_range_threshold(request):
+    months = get_months()
+    months_ids = {v: k for k, v in months.items()}
+
+    new_min = request.GET.get('new_min', None)    
+    new_max = request.GET.get('new_max', None)
+    interval_id = request.GET.get('interval_id', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+    month_name = request.GET.get('month_name', None)
+
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    month_id = months_ids[month_name]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    qcrangethreshold, created = QcRangeThreshold.objects.get_or_create(station_id=station.id, variable_id=variable.id, month=month_id, interval=interval_seconds)
+
+    qcrangethreshold.range_min = new_min
+    qcrangethreshold.range_max = new_max
+
+    qcrangethreshold.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def delete_range_threshold(request):
+    months = get_months()
+    months_ids = {v: k for k, v in months.items()}
+
+    interval_id = request.GET.get('interval_id', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+    month_name = request.GET.get('month_name', None)
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    month_id = months_ids[month_name]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    try:
+        qcrangethreshold = QcRangeThreshold.objects.get(station_id=station.id, variable_id=variable.id, month=month_id, interval=interval_seconds)
+        qcrangethreshold.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+from wx.models import QcStepThreshold
+
+
+def get_step_threshold_form(request):
+    template = loader.get_template('wx/quality_control/step_threshold.html')
+
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['station_profile_list'] = StationProfile.objects.all()
+    context['station_watershed_list'] = Watershed.objects.all()
+    context['station_district_list'] = AdministrativeRegion.objects.all()
+    context['interval_list'] = Interval.objects.filter(seconds__gt=1).order_by('seconds')    
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_step_threshold_entry(station_id, variable_id, interval, is_reference=False):
+    try:
+        threshold = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval)
+        threshold_entry = {
+            'min': str(threshold.step_min) if threshold.step_min is not None else '---',
+            'max': str(threshold.step_max) if threshold.step_max is not None else '---',
+        }        
+    except ObjectDoesNotExist:
+        if is_reference:
+            try:
+                threshold = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=None)
+                threshold_entry = {
+                    'min': str(threshold.step_min)+'*' if threshold.step_min is not None else '---',
+                    'max': str(threshold.step_max)+'*' if threshold.step_max is not None else '---',
+                }
+            except ObjectDoesNotExist:
+                threshold_entry = {
+                    'min': '---',
+                    'max': '---',
+                }
+        else:
+            threshold_entry = {
+                'min': '---',
+                'max': '---',
+            }        
+
+    return threshold_entry
+
+
+def format_step_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable_name):
+    formated_threshold = {
+        'variable_name': variable_name,
+        'global':{
+            'children':{
+                'g_min': global_thresholds['min'],
+                'g_max': global_thresholds['max'],
+            }
+        },
+        'reference':{
+            'children':{
+                'r_min': reference_thresholds['min'],
+                'r_max': reference_thresholds['max'],
+            }
+        },
+        'custom':{
+            'children':{
+                'c_min': custom_thresholds['min'],
+                'c_max': custom_thresholds['max'],
+            }
+        }
+    }
+    return [formated_threshold]
+
+
+@require_http_methods(["GET"])
+def get_step_threshold(request):
+    station_id = request.GET.get('station_id', None)
+    if station_id is None:
+        response = {'message': "Field Station can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    
+    variable_ids = request.GET.get('variable_ids', None)
+    if variable_ids is None:
+        response = {'message': "Field Variables can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST) 
+
+    interval_id = request.GET.get('interval_id', None)
+    # if interval_id is None:
+    #     response = {'message': "Field Measurement Interval can not be empty."}
+    #     return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)    
+
+    station = Station.objects.get(id=int(station_id))
+    variable_ids = [int(variable_id) for variable_id in variable_ids.split(",")]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    reference_station_id = station.reference_station_id
+    if reference_station_id:
+        reference_station = Station.objects.get(id=station.reference_station_id)
+        reference_station_name = reference_station.name+' - '+reference_station.code
+    else:
+        reference_station = None
+        reference_station_name = None
+
+    data = {
+        'reference_station_id': reference_station_id,
+        'reference_station_name': reference_station_name,
+        'variable_data': {},
+    }
+
+    for variable_id in variable_ids:
+        variable = Variable.objects.get(id=variable_id)
+
+        custom_thresholds = get_step_threshold_entry(station.id, variable.id, interval_seconds, is_reference=False)
+        
+        if reference_station:
+            reference_thresholds = get_step_threshold_entry(reference_station.id, variable.id, interval_seconds, is_reference=True)
+        else:
+            reference_thresholds = None
+
+        global_thresholds = {}
+        if station.is_automatic:
+            global_thresholds['min'] = -variable.step_hourly if variable.step_hourly else variable.step_hourly
+            global_thresholds['max'] = variable.step_hourly
+        else:
+            global_thresholds['min'] = -variable.step if variable.step else variable.step
+            global_thresholds['max'] = variable.step
+
+        global_thresholds['min'] = '---' if global_thresholds['min'] is None else str(global_thresholds['min'])
+        global_thresholds['max'] = '---' if global_thresholds['max'] is None else str(global_thresholds['max'])
+
+        formated_thresholds = format_step_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable.name)
+
+        data['variable_data'][variable.name] = formated_thresholds;
+
+    response = {'data': data}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def update_step_threshold(request):
+    new_min = request.GET.get('new_min', None)    
+    new_max = request.GET.get('new_max', None)
+    interval_id = request.GET.get('interval_id', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    qcstepthreshold, created = QcStepThreshold.objects.get_or_create(station_id=station.id, variable_id=variable.id, interval=interval_seconds)
+
+    qcstepthreshold.step_min = new_min
+    qcstepthreshold.step_max = new_max
+
+    qcstepthreshold.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def delete_step_threshold(request):
+    interval_id = request.GET.get('interval_id', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    try:
+        qcstepthreshold = QcStepThreshold.objects.get(station_id=station.id, variable_id=variable.id, interval=interval_seconds)        
+        qcstepthreshold.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+from wx.models import QcPersistThreshold
+
+
+def get_persist_threshold_form(request):
+    template = loader.get_template('wx/quality_control/persist_threshold.html')
+
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['station_profile_list'] = StationProfile.objects.all()
+    context['station_watershed_list'] = Watershed.objects.all()
+    context['station_district_list'] = AdministrativeRegion.objects.all()
+    context['interval_list'] = Interval.objects.filter(seconds__gt=1).order_by('seconds')    
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_persist_threshold_entry(station_id, variable_id, interval, is_reference=False):
+    try:
+        threshold = QcPersistThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval)
+        threshold_entry = {
+            'var': str(threshold.minimum_variance) if threshold.minimum_variance is not None else '---',
+            'win': str(threshold.window) if threshold.window is not None else '---',
+        }        
+    except ObjectDoesNotExist:
+        if is_reference:
+            try:
+                threshold = QcPersistThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=None)
+                threshold_entry = {
+                    'var': str(threshold.minimum_variance)+'*' if threshold.minimum_variance is not None else '---',
+                    'win': str(threshold.window)+'*' if threshold.window is not None else '---',
+                }
+            except ObjectDoesNotExist:
+                threshold_entry = {
+                    'var': '---',
+                    'win': '---',
+                }
+        else:
+            threshold_entry = {
+                'var': '---',
+                'win': '---',
+            }        
+
+    return threshold_entry
+
+
+def format_persist_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable_name):
+    formated_threshold = {
+        'variable_name': variable_name,
+        'global':{
+            'children':{
+                'g_var': global_thresholds['var'],
+                'g_win': global_thresholds['win'],
+            }
+        },
+        'reference':{
+            'children':{
+                'r_var': reference_thresholds['var'],
+                'r_win': reference_thresholds['win'],
+            }
+        },
+        'custom':{
+            'children':{
+                'c_var': custom_thresholds['var'],
+                'c_win': custom_thresholds['win'],
+            }
+        }
+    }
+    return [formated_threshold]
+
+
+@require_http_methods(["GET"])
+def get_persist_threshold(request):
+    station_id = request.GET.get('station_id', None)
+    if station_id is None:
+        response = {'message': "Field Station can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    
+    variable_ids = request.GET.get('variable_ids', None)
+    if variable_ids is None:
+        response = {'message': "Field Variables can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST) 
+
+    interval_id = request.GET.get('interval_id', None)
+    # if interval_id is None:
+    #     response = {'message': "Field Measurement Interval can not be empty."}
+    #     return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)    
+
+    station = Station.objects.get(id=int(station_id))
+    variable_ids = [int(variable_id) for variable_id in variable_ids.split(",")]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    reference_station_id = station.reference_station_id
+    if reference_station_id:
+        reference_station = Station.objects.get(id=station.reference_station_id)
+        reference_station_name = reference_station.name+' - '+reference_station.code
+    else:
+        reference_station = None
+        reference_station_name = None
+
+    data = {
+        'reference_station_id': reference_station_id,
+        'reference_station_name': reference_station_name,
+        'variable_data': {},
+    }
+
+    for variable_id in variable_ids:
+        variable = Variable.objects.get(id=variable_id)
+
+        custom_thresholds = get_persist_threshold_entry(station.id, variable.id, interval_seconds, is_reference=False)
+        
+        if reference_station:
+            reference_thresholds = get_persist_threshold_entry(reference_station.id, variable.id, interval_seconds, is_reference=True)
+        else:
+            reference_thresholds = None
+
+        global_thresholds = {}
+        if station.is_automatic:
+            global_thresholds['var'] = variable.persistence_hourly
+            global_thresholds['win'] = variable.persistence_window_hourly
+        else:
+            global_thresholds['var'] = variable.persistence
+            global_thresholds['win'] = variable.persistence_window
+
+        global_thresholds['var'] = '---' if global_thresholds['var'] is None else str(global_thresholds['var'])
+        global_thresholds['win'] = '---' if global_thresholds['win'] is None else str(global_thresholds['win'])
+
+        formated_thresholds = format_persist_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable.name)
+
+        data['variable_data'][variable.name] = formated_thresholds;
+
+    response = {'data': data}
+    return JsonResponse(response, status=status.HTTP_200_OK)    
+
+
+@require_http_methods(["POST"])
+def update_persist_threshold(request):
+    new_var = request.GET.get('new_var', None)    
+    new_win = request.GET.get('new_win', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+    interval_id = request.GET.get('interval_id', None)
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    try:
+        qcpersistthreshold = QcPersistThreshold.objects.get(station_id=station.id, variable_id=variable.id, interval=interval_seconds)
+    except ObjectDoesNotExist:
+        qcpersistthreshold = QcPersistThreshold.objects.create(station_id=station.id, variable_id=variable.id, interval=interval_seconds, minimum_variance=new_var, window=new_win)
+
+    qcpersistthreshold.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def delete_persist_threshold(request):
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+    interval_id = request.GET.get('interval_id', None)
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    try:
+        qcpersistthreshold = QcPersistThreshold.objects.get(station_id=station.id, variable_id=variable.id, interval=interval_seconds)        
+        qcpersistthreshold.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
