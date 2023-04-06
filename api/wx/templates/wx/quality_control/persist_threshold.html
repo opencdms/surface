@@ -551,11 +551,7 @@
           filteredStations = filteredStations.filter(station => this.filter.isActive == station.is_active);
 
           this.requestObject.station_id = null;
-
-          this.requestObject.station_id = 155;
-          this.getStationVariables(this.requestObject.station_id);
-          this.requestObject.variable_ids = [0];
-          this.requestObject.interval_id = 3;
+          
           return filteredStations;
         }
       },
