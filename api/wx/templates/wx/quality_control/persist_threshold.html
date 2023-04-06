@@ -79,7 +79,7 @@
                 ></v-autocomplete>
               </v-flex>
 
-              <v-flex lg6 mt-3 ml-3>
+              <v-flex lg6 ml-3>
                 <v-autocomplete
                   :items="variables"
                   item-text="variable_name"
@@ -551,7 +551,7 @@
           filteredStations = filteredStations.filter(station => this.filter.isActive == station.is_active);
 
           this.requestObject.station_id = null;
-
+          
           return filteredStations;
         }
       },
