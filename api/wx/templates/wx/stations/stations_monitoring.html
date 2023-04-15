@@ -1,0 +1,312 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<div id="app">
+  <v-app v-cloak>
+    <v-dialog v-model="dialog" max-width="600" style="z-index:9999;">
+      <v-card>
+        <v-card-title>History Chart</v-card-title>
+        <v-card-text> The chart will apear here...</v-card-text>
+        <v-card-actions>
+          <v-btn color="primary" @click="dialog = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-layout column>
+      <v-flex ml-5 mb-2 lg1>
+        <h4> STATIONS MONITORING</h4>
+      </v-flex>
+
+      <v-layout>
+        <v-flex lg8>
+          <l-map ref="myMap" :zoom="zoom" :center="center" :options="options">           
+            <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
+            <l-control
+              position="bottomright"
+            >
+              <template>
+                <v-card >
+                  <v-card-title class="pa-2"  style="font-size: 12px; line-height: 1.2; color: #444;">Observations from <br/>the pass 24 hours</v-card-title>
+                  <v-card-text class="pa-2">
+                    <div class="legend-item">
+                      <span class="legend-color circle-lg green"> </span>
+                      <span> 20 or more </span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color circle-lg orange"> </span>
+                      <span> 8 - 19 </span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color circle-lg red"> </span>
+                      <span> 1 - 7 </span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color circle-lg grey"> </span>
+                      <span> None </span>
+                    </div>                                                    
+                  </v-card-text>
+                </v-card>
+              </template>
+            </l-control>            
+            <l-control-zoom position="topleft"></l-control-zoom>
+            <l-control position="topright">
+              <template>
+                <v-card class="px-10">
+                  <v-card-title class="py-2" style="font-size: 18px; line-height: 1.2; color: #444;">
+                    <div class="text-center"> comunication </div>
+                  </v-card-title>
+                  <v-card-subtitle>
+                    <div class="text-center" style="display: flex; justify-content: space-between">
+                      <span>Last 24h</span>
+                      <span> | </span>
+                      <span>2023-02-17</span>
+                  </v-card-subtitle>
+                </v-card>
+              </template>
+            </l-control>            
+            <l-circle-marker
+              v-for="station in markers"
+              :lat-lng="station.position"
+              radius="7"
+              color="white"
+              :fill-color="getColor(station.last24h_ammount)"
+              fill-opacity=1
+              weight=2.5
+              @click="selectStation(station)"
+            >
+               <l-popup > [[station.name]]</l-popup>
+            </l-circle-marker>             
+          </l-map> 
+        </v-flex>
+
+        <v-flex style="border-left: 2px solid #BBB;" lg4>
+          <div style="background-color: #CCC; display: flex; justify-content: space-between; align-items: center;">
+            <h5 style="margin-left: 5%;">  [[selected_station.name]] Station </h5>
+            <v-btn icon>
+              <v-icon color="blue">
+                mdi-open-in-new
+              </v-icon>
+            </v-btn>                    
+          </div>
+
+          <div> 
+            <v-tabs fixed-tabs >
+              <v-tab :key="1">
+                Data Delays
+              </v-tab>
+              <v-tab :key="2">
+                Latest Values
+              </v-tab>
+
+              <!--Station information-->
+              <v-tab-item :key="1">
+                <v-layout column ma-2>
+                  <v-layout ma-2>
+                    <span v-if="selected_station.lastupdate">
+                      Last update date: [[selected_station.lastupdate]]
+                    </span>
+                  </v-layout>
+                  <v-layout ma-2 >
+                    <v-data-table
+                      :headers="headers"
+                      :items="data_delays"
+                      item-key="name"
+                      :items-per-page="5"
+                      class="elevation-1"
+
+                    >
+                      <template v-slot:item.amount="{ item }">
+                        <v-chip
+                          class="px-5"
+                          :color="getColor(item.amount)"
+                        >
+                          [[item.amount]]
+                        </v-chip>
+                      </template>                               
+                      <template v-slot:item.chart="{ item }">
+                        <v-tooltip bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn @click="dialog = true" icon>
+                              <v-icon color="blue"> mdi-chart-bar </v-icon>  
+                            </v-btn>                  
+                          </template>
+                          <span>Open bar chart</span>
+                        </v-tooltip>
+                      </template>
+
+                    </v-data-table>
+                  </v-layout>
+                </v-layout>
+              </v-tab-item>
+
+              <v-tab-item :key="2">                
+                <v-layout column ma-2>
+                  <v-layout ma-2>                
+                    <span v-if="selected_station.lastupdate"> Last update date: [[selected_station.lastupdate]] </span>
+                  </v-layout>                 
+                  <v-layout ma-2>                
+                    <span> Coming soon...</span>
+                  </v-layout>                  
+                </v-layout>                  
+              </v-tab-item >
+            </v-tabs>
+          </div>          
+      
+        </v-flex> 
+      </v-layout>
+    </v-layout>
+  </v-app>
+</div>
+
+{% endblock %} {% block localjavascript %}
+<script>  
+  var {
+    LMap,
+    LTileLayer,
+    LCircleMarker,
+    LControl,
+    LControlZoom,
+    LMarker,
+    LTooltip,
+    LControlLayers,
+    LPopup,
+    LGeoJson,
+    LIcon
+  } = Vue2Leaflet;
+
+  new Vue({
+    el: "#app",
+    vuetify: new Vuetify(),
+    delimiters: ["[[", "]]"],
+    components: {
+      LMap,
+      LTileLayer,
+      LCircleMarker,
+      LControl,
+      LControlZoom,
+      LMarker,
+      LTooltip,
+      LControlLayers,
+      LPopup,
+      LGeoJson,
+      LIcon
+    },
+    data () {
+      return{
+        dialog: false,
+        headers: [
+          { text: 'Variable', align: 'start', sortable: false, value: 'variable_name'},
+          { text: 'Amout', align: 'center', sortable: false, value: 'amount'},
+          { text: 'Chart', align: 'center', sortable: false, value: 'chart'}
+        ],
+        selected_station: {
+          name: null,
+          lastupdate: null,
+        },
+        data_delays: [], 
+        timezone: "{{ TIMEZONE_NAME|escapejs }}",
+        zoom: "{{ MAP_ZOOM|safe }}",
+        center: L.latLng("{{ MAP_LATITUDE|safe }}", "{{ MAP_LONGITUDE|safe }}"),
+        url: "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
+        attribution: '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+        options: { zoomControl: false },
+        zoomPosition: "topleft",
+        method: 'last24h',
+        station_list: [],
+      };
+    },
+    mounted(){
+      axios.get('/wx/stations/stations_monitoring/get/')
+        .then(response => {
+          this.station_list = response.data['stations'];
+        })
+        .catch(error => {
+          console.log(error);
+        });      
+    },
+    computed: {
+      markers(){
+        let filteredMarkers = this.station_list;
+        if (this.method == 'last24h')
+          filteredMarkers = filteredMarkers.filter(marker => marker.is_active==true);
+        return filteredMarkers
+      },
+    },
+    methods: {
+      selectStation(station){
+        this.selected_station.name=station.name;
+        this.selected_station.lastupdate=station.lastupdate;
+        this.data_delays = station.variables.map(variable => {
+          return {
+            variable_name: variable.variable_name,
+            amount: variable.last24h_ammount,
+            lastvalue: variable.last24h_latestvalue,
+            chart: 0
+          };
+        });
+      },
+      getColor(amount){
+        if (amount >= 20){
+          return 'green'
+        }
+        else if (amount >= 8){
+          return 'orange'
+        }
+        else if (amount >= 1){
+          return 'red'
+        }
+        else{
+          return 'grey'
+        }
+        
+      }
+    },
+  });
+</script>
+
+<style>
+  .v-data-table .v-data-table-header tr th {
+    font-size: 16px !important;
+  }
+
+  /* Legend Style */
+  .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1px;
+  }  
+
+  .legend-color {
+    display: inline-block;
+    width: 20px;
+    height: 10px;
+    margin-right: 5px;
+  }
+
+  .circle-lg {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    margin-right: 5px;
+    border: 2px solid white;
+  }
+
+  .grey {
+    background-color: grey;
+  }
+
+  .red {
+    background-color: red;
+  }
+
+  .orange {
+    background-color: orange;
+  }
+
+  .green {
+    background-color: green;
+  }  
+</style>
+
+{% endblock %}

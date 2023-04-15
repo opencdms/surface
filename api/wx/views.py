@@ -3003,7 +3003,6 @@ class StationVariableStationViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-
 def last24_summary_list(request):
     search_type = request.GET.get('search_type', None)
     search_value = request.GET.get('search_value', None)
@@ -3083,6 +3082,166 @@ def last24_summary_list(request):
 
     return JsonResponse(data={"message": "No data found."}, status=status.HTTP_404_NOT_FOUND)
 
+###################################################################################################
+###################################################################################################
+
+def last24h_query():
+    query = """
+        with station_variable_hours AS (
+            select
+                station_id
+                ,variable_id
+                ,count(distinct extract(hour from datetime)) AS number_hours
+            from
+                hourly_summary
+            where
+                datetime::DATE = now()::DATE
+            group by 1, 2
+            order by 1, 2
+        )
+        select
+            station_id
+            ,max(number_hours) as number_hours
+        from
+            station_variable_hours
+        group by 1
+        order by 1;
+    """
+
+    query = """
+        SELECT
+            station_id
+            ,variable_id
+            ,latest_value
+        FROM
+            last24h_summary
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        df_lv = pd.DataFrame(cursor.fetchall(), columns = ['station_id', 'variable_id', 'latest_value'])
+
+    query = """
+        SELECT
+            station_id
+            ,variable_id
+            ,COUNT(distinct extract(hour FROM datetime)) AS number_hours
+        FROM
+            hourly_summary
+        WHERE
+            datetime >= now() - '24 hour'::INTERVAL
+        GROUP BY 1, 2
+        ORDER BY 1, 2
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        df_last24h = pd.DataFrame(cursor.fetchall(), columns = ['station_id', 'variable_id', 'number_hours'])
+    
+    query = """
+        SELECT
+            datetime::DATE  AS date
+            ,station_id
+            ,variable_id
+            ,COUNT(distinct extract(hour FROM datetime)) AS number_hours
+        FROM
+            hourly_summary
+        WHERE
+            datetime >= now()::DATE - '7 day'::INTERVAL
+        GROUP BY 1, 2, 3
+        ORDER BY 1, 2, 3
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        df_last7d = pd.DataFrame(cursor.fetchall(), columns = ['date', 'station_id', 'variable_id', 'number_hours'])
+
+    return df_lv, df_last24h, df_last7d
+
+def get_lastestvalue(station, variable, df):
+    df_slice = df[(df['station_id']==station.id) & (df['variable_id']==variable.id)]
+    latest_value = df_slice['latest_value'].values.tolist()
+    if latest_value:
+        return latest_value[0]
+    return None
+
+def get_numberhours(station, variable, df): 
+    df_slice = df[(df['station_id']==station.id) & (df['variable_id']==variable.id)]
+    number_hours = df_slice['number_hours'].values.tolist()
+    if number_hours:
+        return number_hours[0]
+    return 0
+
+def get_chartdata(station, variable, df):
+    df_slice = df[(df['station_id']==station.id) & (df['variable_id']==variable.id)]
+    return df_slice['date']['number_hours']
+
+def get_variable_data(station, variable, dfs):
+    df_lv, df_last24h, df_last7d = dfs
+    
+    data = {
+        'variable_name': variable.name,
+        'last24h_latestvalue': get_lastestvalue(station, variable, df_lv),
+        'last24h_ammount': get_numberhours(station, variable, df_last24h)
+        # 'last24h_chartdata': get_chartdata(station, variable, df_last7d)
+    }
+    return data
+
+import time
+
+@require_http_methods(["GET"])
+def get_stationsmonitoring_data(request):
+    dfs = last24h_query()
+    stations = Station.objects.all()
+    response = {}
+
+    print('----- Data -----')
+    start_time = time.time()    
+    response['stations'] = [get_station_data(station, dfs) for station in stations]
+
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+def get_station_data(station, dfs):
+    stationvariables = StationVariable.objects.filter(station_id=station.id)
+    variable_ids = [stationvariable.variable_id for stationvariable in stationvariables]
+    variables = Variable.objects.filter(id__in=variable_ids)
+
+    variable_data = [get_variable_data(station, variable, dfs) for variable in variables]
+
+    last_data_datetimes = [sv.last_data_datetime for sv in stationvariables if sv.last_data_datetime is not None]
+
+    if last_data_datetimes:
+        last_update = max(last_data_datetimes)
+        last_update = last_update.strftime("%Y-%m-%d %H:%M")
+    else:
+        last_update = None
+
+    if variable_data:
+        last24h_ammount = max([v['last24h_ammount'] for v in variable_data])
+    else:
+        last24h_ammount = 0
+
+    data = {
+        'name': station.name,
+        'position': [station.latitude, station.longitude],
+        'is_active': station.is_active,
+        'variables': variable_data,
+        'last24h_ammount': last24h_ammount,
+        'lastupdate': last_update,
+    }
+
+    return data
+
+
+def get_stations_monitoring_form(request):
+    template = loader.get_template('wx/stations/stations_monitoring.html')
+    context={}
+
+    return HttpResponse(template.render(context, request))
+
+###################################################################################################
+###################################################################################################
 
 class ComingSoonView(LoginRequiredMixin, TemplateView):
     template_name = "coming-soon.html"
