@@ -71,12 +71,12 @@ urlpatterns = [
     path('get_yearly_average/', views.get_yearly_average),
     path('wx/reports/yearly_average/', views.YearlyAverageReport.as_view(), name='yearly-average'),
     path('wx/reports/synop_capture/', views.SynopCaptureView.as_view(), name='synop-capture'),
-    path('wx/reports/pgia/load/', views.pgia_load, name='load-pgia-report'),
-    path('wx/reports/pgia/update/', views.pgia_update, name='update-pgia-report'),
-    path('wx/reports/pgia/delete/', views.delete_pgia_hourly_capture_row, name='delete-pgia-report-row'),
+    path('wx/reports/synop_capture/load/', views.pgia_load, name='load-pgia-report'),
+    path('wx/reports/synop_capture/update/', views.pgia_update, name='update-pgia-report'),
+    path('wx/reports/synop_capture/delete/', views.delete_pgia_hourly_capture_row, name='delete-pgia-report-row'),
     path('wx/data/capture/daily/', views.DailyFormView, name='daily-form'),
-    path('wx/data/capture/monthly/load/', views.MonthlyFormLoad, name='load-monthly-form'),
-    path('wx/data/capture/monthly/update/', views.MonthlyFormUpdate, name='update-monthly-form'),
+    path('wx/data/capture/daily/load/', views.MonthlyFormLoad, name='load-monthly-form'),
+    path('wx/data/capture/daily/update/', views.MonthlyFormUpdate, name='update-monthly-form'),
     path('wx/spatial_analysis/', views.SpatialAnalysisView.as_view(), name='spatial-analysis'),
     path('wx/spatial_analysis/image', views.GetInterpolationImage, name='spatial-analysis-image'),
     path('wx/spatial_analysis/data', views.GetInterpolationData, name='spatial-analysis-data'),
@@ -94,6 +94,7 @@ urlpatterns = [
     path('api/data_inventory_by_station/', views.get_data_inventory_by_station),
     path('api/station_variable_data_month_inventory/', views.get_station_variable_month_data_inventory),
     path('api/station_variable_data_day_inventory/', views.get_station_variable_day_data_inventory),
+    path('api/range_threshold/', views.range_threshold_view), # For synop and daily data capture
     path('wx/quality_control/update_reference_station/', views.update_reference_station),    
     path('wx/quality_control/global_threshold/update/', views.update_global_threshold),
     path('wx/quality_control/range_threshold/', views.get_range_threshold_form, name='range-threshold'),
@@ -124,6 +125,9 @@ urlpatterns = [
     path('wx/maintenance_report/<int:id>/view/<int:source>/', login_required(views.get_maintenance_report_view), name='view-maintenance-report'),
     path('wx/products/wave_data/', login_required(views.get_wave_data_analysis), name='wave-data'),
     path('wx/products/wave_data/get/', login_required(views.get_wave_data), name="get-wave-data"),
+    path('wx/stations/stations_monitoring/', views.get_stations_monitoring_form, name="stations-monitoring"),
+    path('wx/stations/stations_monitoring/get/', views.get_stationsmonitoring_data),
+
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
