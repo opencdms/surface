@@ -25,7 +25,7 @@
               position="bottomright"
             >
               <template>
-                <v-card >
+                <v-card v-if="selected_method=='Comunication'">
                   <v-card-title class="pa-2"  style="font-size: 12px; line-height: 1.2; color: #444;">Observations from <br/>the pass 24 hours</v-card-title>
                   <v-card-text class="pa-2">
                     <div class="legend-item">
@@ -33,7 +33,7 @@
                       <span> 20 or more </span>
                     </div>
                     <div class="legend-item">
-                      <span class="legend-color circle-lg orange"> </span>
+                      <span class="legend-color circle-lg yellow"> </span>
                       <span> 8 - 19 </span>
                     </div>
                     <div class="legend-item">
@@ -46,21 +46,55 @@
                     </div>                                                    
                   </v-card-text>
                 </v-card>
+                <v-card v-if="selected_method=='Quality Control'">
+                  <v-card-title class="pa-2"  style="font-size: 12px; line-height: 1.2; color: #444;">Observations from <br/>the pass 24 hours</v-card-title>
+                  <v-card-text class="pa-2">
+                    <div class="legend-item">
+                      <span class="legend-color circle-lg green"> </span>
+                      <span> Good </span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color circle-lg yellow"> </span>
+                      <span> Suspicious </span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color circle-lg red"> </span>
+                      <span> Bad </span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color circle-lg grey"> </span>
+                      <span> Not Checked </span>
+                    </div>                                                    
+                  </v-card-text>
+                </v-card>                
               </template>
             </l-control>            
-            <l-control-zoom position="topleft"></l-control-zoom>
-            <l-control position="topright">
+            <l-control-zoom position="topright"></l-control-zoom>
+            <l-control position="topleft">
               <template>
-                <v-card class="px-10">
-                  <v-card-title class="py-2" style="font-size: 18px; line-height: 1.2; color: #444;">
-                    <div class="text-center"> comunication </div>
+                <v-card class="mx-auto" max-width="400">
+                  <v-card-title>
+                    <span> [[selected_method ]]
+                    <v-btn icon @click="reveal = !reveal">
+                      <v-icon v-if="reveal">
+                        mdi-arrow-up
+                      </v-icon>
+                      <v-icon v-if="!reveal">
+                        mdi-arrow-down
+                      </v-icon>                      
+                    </v-btn>   
                   </v-card-title>
-                  <v-card-subtitle>
-                    <div class="text-center" style="display: flex; justify-content: space-between">
-                      <span>Last 24h</span>
-                      <span> | </span>
-                      <span>2023-02-17</span>
-                  </v-card-subtitle>
+
+                  <v-expand-transition>
+                    <v-card v-if="reveal" class="mx-auto" style="height: 100%;">
+                      <v-card-actions>
+                        <v-radio-group v-model="selected_method">
+                          <v-radio label="Comunication" value="Comunication"></v-radio>
+                          <v-radio label="Quality Control" value="Quality Control"></v-radio>
+                        </v-radio-group>
+                      </v-card-actions>
+                    </v-card>
+                  </v-expand-transition>
                 </v-card>
               </template>
             </l-control>            
@@ -69,7 +103,7 @@
               :lat-lng="station.position"
               radius="7"
               color="white"
-              :fill-color="getColor(station.last24h_ammount)"
+              :fill-color="getMarkerColor(station)"
               fill-opacity=1
               weight=2.5
               @click="selectStation(station)"
@@ -90,7 +124,7 @@
           </div>
 
           <div> 
-            <v-tabs fixed-tabs >
+            <v-tabs v-if="selected_method=='Comunication'" fixed-tabs >
               <v-tab :key="1">
                 Data Delays
               </v-tab>
@@ -118,7 +152,7 @@
                       <template v-slot:item.amount="{ item }">
                         <v-chip
                           class="px-5"
-                          :color="getColor(item.amount)"
+                          :color="getItemColor(item.amount)"
                         >
                           [[item.amount]]
                         </v-chip>
@@ -149,9 +183,55 @@
                   </v-layout>                  
                 </v-layout>                  
               </v-tab-item >
+
             </v-tabs>
+            <v-tabs v-if="selected_method=='Quality Control'" fixed-tabs >
+              <v-tab :key="1">
+                Flag Amount
+              </v-tab>
+
+              <!--Station information-->
+              <v-tab-item :key="1">
+                <v-layout column ma-2>
+                  <v-layout ma-2>
+                    <span v-if="selected_station.lastupdate">
+                      Last update date: [[selected_station.lastupdate]]
+                    </span>
+                  </v-layout>
+                  <v-layout ma-2 >
+                    <v-data-table
+                      :headers="headers"
+                      :items="data_delays"
+                      item-key="name"
+                      :items-per-page="5"
+                      class="elevation-1"
+
+                    >
+                      <template v-slot:item.amount="{ item }">
+                        <v-chip
+                          class="px-5"
+                          :color="getItemColor(item.flags)"
+                        >
+                          [[item.amount]]
+                        </v-chip>
+                      </template>                               
+                      <template v-slot:item.chart="{ item }">
+                        <v-tooltip bottom>
+                          <template v-slot:activator="{ on }">
+                            <v-btn @click="dialog = true" icon>
+                              <v-icon color="blue"> mdi-chart-bar </v-icon>  
+                            </v-btn>                  
+                          </template>
+                          <span>Open bar chart</span>
+                        </v-tooltip>
+                      </template>
+
+                    </v-data-table>
+                  </v-layout>
+                </v-layout>
+              </v-tab-item>
+            </v-tabs>            
           </div>          
-      
         </v-flex> 
       </v-layout>
     </v-layout>
@@ -193,6 +273,8 @@
     },
     data () {
       return{
+        selected_method: 'Comunication',
+        reveal: false,
         dialog: false,
         headers: [
           { text: 'Variable', align: 'start', sortable: false, value: 'variable_name'},
@@ -210,7 +292,6 @@
         url: "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
         attribution: '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         options: { zoomControl: false },
-        zoomPosition: "topleft",
         method: 'last24h',
         station_list: [],
       };
@@ -235,31 +316,71 @@
     methods: {
       selectStation(station){
         this.selected_station.name=station.name;
-        this.selected_station.lastupdate=station.lastupdate;
-        this.data_delays = station.variables.map(variable => {
-          return {
-            variable_name: variable.variable_name,
-            amount: variable.last24h_ammount,
-            lastvalue: variable.last24h_latestvalue,
-            chart: 0
-          };
-        });
+        this.selected_station.lastupdate=station.comunication.lastupdate;
+        if (this.selected_method=='Comunication'){
+          this.data_delays = station.comunication.variables.map(variable => {
+            return {
+              variable_name: variable.variable_name,
+              amount: variable.last24h_ammount,
+              lastvalue: variable.last24h_latestvalue,
+            };
+          });
+        }
+        else if (this.selected_method=='Quality Control'){
+          this.data_delays = station.quality_control.variables.map(variable => {
+            return {
+              variable_name: variable.variable_name,
+              amount: variable.last24h_amount,
+              flags: variable.last24h_flags,
+            };
+          });
+        }
       },
-      getColor(amount){
-        if (amount >= 20){
-          return 'green'
+      getItemColor(item){
+        if (this.selected_method=='Comunication'){
+          return this.getColorComunication(item)
         }
-        else if (amount >= 8){
-          return 'orange'
+        else if (this.selected_method=='Quality Control'){
+          return this.getColorQualityControl(item)         
         }
-        else if (amount >= 1){
-          return 'red'
+      },
+      getMarkerColor(station){
+        if (this.selected_method=='Comunication'){
+          return this.getColorComunication(station.comunication)
+        }
+        else if (this.selected_method=='Quality Control'){
+          return this.getColorQualityControl(station.quality_control.last24h_flags)
+       
+        }
+      },
+      getColorComunication(item){
+        if (item.last24h_ammount >= 20){
+          return '#3bd424' // Green
+        }
+        else if (item.last24h_ammount >= 8){
+          return '#e8d43f' // Yellow
+        }
+        else if (item.last24h_ammount >= 1){
+          return '#f73e25' // Red
         }
         else{
           return 'grey'
         }
-        
-      }
+      },
+      getColorQualityControl(item){
+          if (item.bad > 0){
+            return '#f73e25' // Red
+          }
+          else if (item.suspicious > 0){
+            return '#e8d43f' // Yellow
+          }
+          else if (item.good > 0){
+            return '#3bd424' // Green
+          }
+          else{
+            return 'grey'
+          }   
+      },
     },
   });
 </script>
@@ -291,22 +412,6 @@
     margin-right: 5px;
     border: 2px solid white;
   }
-
-  .grey {
-    background-color: grey;
-  }
-
-  .red {
-    background-color: red;
-  }
-
-  .orange {
-    background-color: orange;
-  }
-
-  .green {
-    background-color: green;
-  }  
 </style>
 
 {% endblock %}
