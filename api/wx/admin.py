@@ -4,6 +4,10 @@ from import_export.admin import ExportMixin, ImportMixin
 
 from wx import models, forms
 
+@admin.register(models.synopticStations)
+class synopticStations(admin.ModelAdmin):
+    list_display = ("name",)
+
 
 @admin.register(models.AdministrativeRegion)
 class AdministrativeRegionAdmin(admin.ModelAdmin):

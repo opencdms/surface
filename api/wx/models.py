@@ -1375,3 +1375,10 @@ class MaintenanceReportStationComponent(BaseModel):
     class Meta:
         unique_together = ('maintenance_report', 'station_component')
 
+class synopticStations(BaseModel):
+    name = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    code = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+
+    def __str__(self):
+        return self.name
+

@@ -120,7 +120,7 @@
     },
     data: {
       current_username: "{{ user.username }}",
-      MISSING_VALUE: {{ MISSING_VALUE }},
+      MISSING_VALUE: "{{ MISSING_VALUE }}",
       dirty: false,
       loading: false,
       hotData: [],
@@ -501,7 +501,7 @@
     },
     mounted() {
 
-      const userPermissions = {{USER_PERMISSIONS|safe}};
+      const userPermissions = "{{USER_PERMISSIONS|safe}}";
       const dataInventoryPermissions = userPermissions['data-inventory'];
       if(dataInventoryPermissions && !dataInventoryPermissions.includes("delete"))
         this.hotSettings.columns.pop()

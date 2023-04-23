@@ -12,19 +12,12 @@
         <v-layout>
           <v-col cols="6">
                 <v-btn
-                  class="ml-2"
-                  outlined
-                  justify-end
-                  color="red"
-                  @click="toggleEditing"
-                >Edit</v-btn> 
-                <v-btn
                   v-if="isEditing"
                   class="ml-2"
                   outlined
                   justify-end
                   color="primary"
-                  @click="onSaveEdit"
+                  @click="onSaveEdit();reloadPage();"
                 >SAVE</v-btn>  
                 <v-btn
                   v-if="isEditing"
@@ -1768,7 +1761,7 @@
     Vue.use(window.vuelidate.default);
     const { required, minLength } = window.validators;
 
-    new Vue({
+    vmtest = new Vue({
       el: "#app",
       vuetify: new Vuetify(),
       delimiters: ["[[", "]]"],
@@ -1864,14 +1857,8 @@
         markerPosition(){
           if(this.selectedStation){
             this.center = L.latLng(this.selectedStation.latitude, this.selectedStation.longitude)
-            
-            console.log(this.selectedStation.latitude);
-            return {lat: this.selectedStation.latitude, lng: this.selectedStation.longitude}
+            return {lat: "{{station.latitude}}", lng: "{{station.longitude}}"}
           }
-
-          // console.log(this.selectedStation.latitude);
-          // this.center = L.latLng(this.selectedStation.latitude, this.selectedStation.longitude)
-          // return {lat: "{{station.latitude}}", lng: "{{station.longitude}}"}
         },
 
       
@@ -2044,6 +2031,12 @@
           });
         },
 
+        reloadPage() {
+          $( "#stationDetailHeader" ).load(window.location.href + " #stationDetailHeader" );
+          
+          location.reload(true);
+        },
+
         finishEditing(){
           this.isEditing = false;
           this.backupStationObject = {... this.selectedStation};
@@ -2065,6 +2058,7 @@
         },
 
         onChangeStation() {
+
           if(this.stationId != null){
               // console.log(this.selectedStation.latitude);
               this.selectedStation = this.stationList.find(station => station.id == this.stationId);
@@ -2097,6 +2091,9 @@
       }
     })
     
+    function consolePrint() {
+      console.log("it might work");
+    }
   </script>
 
   <style>

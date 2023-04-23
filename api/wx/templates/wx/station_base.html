@@ -2,15 +2,20 @@
 <!-- <div class="jumbotron w-100" style="position: fixed; z-index: 99999"> -->
 {% if station %}
 <div class="jumbotron w-100">
-  <span class="srf-display-1 text-uppercase">Station: {{ station.name }}</span>
+  <span id="stationDetailHeader" class="srf-display-1 text-uppercase">{{ station.name }}</span>
   <div class="d-flex flex-row align-items-center mt-2 separate-items">
     <a href="{% url 'station-detail' station.id %}" class="btn-outline-default btn-small">Metadata</a>
+
+    {% if user.is_superuser %}
+      {% url 'station-detail' station.id as metadataView %}
+      {% if request.path == metadataView %}
+        <button onclick="vmtest.toggleEditing()" class="btn-outline-default btn-small">Edit</button>
+      {% endif %}
+      <a href="{% url 'station-delete' station.id %}" class="btn-outline-default btn-small">Delete</a>
+    {% endif %}
+
     <a href="{% url 'stationfiles-list' station.id %}" class="btn-outline-default btn-small">Files</a>
     <a href="{% url 'stationvariable-list' station.id %}" class="btn-outline-default btn-small">Variables</a>
-    {% if user.is_superuser %}
-    <a href="{% url 'station-update' station.id %}" class="btn-outline-default btn-small">Edit</a>
-    <a href="{% url 'station-delete' station.id %}" class="btn-outline-default btn-small">Delete</a>
-    {% endif %}
     <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small">Return to list</a>
   </div>
 </div>
