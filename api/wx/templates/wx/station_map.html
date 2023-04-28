@@ -659,10 +659,10 @@
       selectedLayers: null,
 
       getGeoJson: {
-        watershed: () => {return axios.get("{% static 'Belize_Watersheds_4326.geojson' %}")},
-        districts: () => {return axios.get("{% static 'Belize_Basemap.geojson' %}")},
-        nationalWaters: () => {return axios.get("{% static 'Belize_NationalWaters.geojson' %}")},
-        river: () => {return axios.get("{% static 'Belize_Rivers.geojson' %}")},
+        watershed: () => {return axios.get("{% static 'Watersheds_4326.geojson' %}")},
+        districts: () => {return axios.get("{% static 'Basemap.geojson' %}")},
+        nationalWaters: () => {return axios.get("{% static 'NationalWaters.geojson' %}")},
+        river: () => {return axios.get("{% static 'Rivers.geojson' %}")},
         groundwater: () => {return axios.get("{% static 'GWP_Campur.geojson' %}")},
       },
 
@@ -1000,7 +1000,9 @@
           this.getGeoJson.watershed().then(data => {
             this.Watersheds_geojson = data.data;
           });
+
         }
+
         this.showWatershed = !this.showWatershed;
       },
       
@@ -1697,7 +1699,9 @@
     }
 
     .leaflet-measure-resultpopup a.deletemarkup:hover{
-        opacity:.5;text-decoration:none;
+        opacity:.5;
+        text-decoration:none;
+        z-index: 1000 !important;
     }
   /* leaflet measure end */
   [v-cloak] {
@@ -1707,8 +1711,11 @@
   .leaflet-interactive svg {
     margin-top: -14px !important;
   }
+  /* .leaflet-marker-pane{
+    z-index: 600 !important;
+  } */
   .leaflet-popup-pane {
-    z-index: 1000;
+    z-index: 500 !important;
   }
   .leaflet-popup-close-button {
     color: red !important;
