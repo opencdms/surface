@@ -659,10 +659,10 @@
       selectedLayers: null,
 
       getGeoJson: {
-        watershed: () => {return axios.get("{% static 'Belize_Watersheds_4326.geojson' %}")},
-        districts: () => {return axios.get("{% static 'Belize_Basemap.geojson' %}")},
-        nationalWaters: () => {return axios.get("{% static 'Belize_NationalWaters.geojson' %}")},
-        river: () => {return axios.get("{% static 'Belize_Rivers.geojson' %}")},
+        watershed: () => {return axios.get("{% static 'Watersheds_4326.geojson' %}")},
+        districts: () => {return axios.get("{% static 'Basemap.geojson' %}")},
+        nationalWaters: () => {return axios.get("{% static 'NationalWaters.geojson' %}")},
+        river: () => {return axios.get("{% static 'Rivers.geojson' %}")},
         groundwater: () => {return axios.get("{% static 'GWP_Campur.geojson' %}")},
       },
 
