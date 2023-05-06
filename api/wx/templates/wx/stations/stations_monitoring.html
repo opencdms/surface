@@ -1,11 +1,12 @@
 {% extends "base.html" %} {% block content %} {% load static %}
-
 <div id="app">
   <v-app v-cloak>
     <v-dialog v-model="dialog_chart" max-width="600" style="z-index:9999;">
       <v-card>
         <v-card-title>History Chart</v-card-title>
-        <v-card-text> The chart will apear here...</v-card-text>
+        <v-card-text>
+          <highcharts :options="chartOptions"></highcharts>
+        </v-card-text>
         <v-card-actions>
           <v-btn color="primary" @click="dialog_chart = false">Close</v-btn>
         </v-card-actions>
@@ -24,255 +25,168 @@
 
     <v-layout column>
       <v-flex ml-5 mb-2 lg1>
-        <h4> STATIONS MONITORING</h4>
+        <h4> STATIONS MONITORING - !WORK IN PROGRESS!</h4>
       </v-flex>
 
-      <v-layout>
-        <v-flex lg8>
-            <l-map ref="myMap" :zoom="zoom" :center="center" :options="options" :double-click-zoom = "false">
+      <v-layout> 
+        <v-flex lg8>    
+            <div v-if="loading_map">
+              <span class="headline font-weight-thin" v-if="loading">Loading...</span><br>
+              <span class="headline font-weight-thin" v-if="rendering">Rendering...</span><br>
+              <v-progress-linear
+              indeterminate
+              ></v-progress-linear>
+            </div>
+            <l-map v-if="!loading_map" ref="myMap" :zoom="zoom" :center="center" :options="options" :double-click-zoom = "false">
               <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
               <l-control position="bottomright">
-              <template>
-                <v-card v-if="date_type=='Comunication'">
-                  <v-card-title class="px-2 pt-1 pb-1" style="font-size: 12px; line-height: 1.2; color: #444;">
-                    <v-btn class="mr-1" x-small icon @click="dialog_info=true">
-                        <v-icon>mdi-information</v-icon>
-                    </v-btn>
-                    <span class="mr-2 "> Observations from <br/>the pass 24 hours </span>
-                  </v-card-title>
-                  <v-card-text class="px-2 pb-2">
-                    <hr class="my-0 mb-1">
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.good }}; border-color: {{ flags.good }}">
-                      </span>
-                      <span> 20 or more </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.suspicious }}; border-color: {{ flags.suspicious }}">
-                      </span>
-                      <span> 8 - 19 </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.bad }}; border-color: {{ flags.bad }}">
-                      </span>
-                      <span> 1 - 7 </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.not_checked }}; border-color: {{ flags.not_checked }}">
-                      </span>
-                      <span> None </span>
-                    </div>                                                    
-                  </v-card-text>
-                </v-card>
-                <v-card v-if="date_type=='Quality Control'">
-                  <v-card-title class="px-2 pt-1 pb-1"  style="font-size: 12px; line-height: 1.2; color: #444;">
-                    <v-btn class="mr-1" x-small icon @click="dialog_info=true">
-                        <v-icon>mdi-information</v-icon>
-                    </v-btn>
-                    <span class="mr-2 "> Observations from <br/>the pass 24 hours </span>
-                  </v-card-title>
-                  <v-card-text class="px-2 pb-2">
-                    <hr class="my-0 mb-1">
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.good }}; border-color: {{ flags.good }}">
-                      </span>
-                      <span> Good </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.suspicious }}; border-color: {{ flags.suspicious }}">
-                      </span>
-                      <span> Suspicious </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.bad }}; border-color: {{ flags.bad }}">
-                      </span>
-                      <span> Bad </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.not_checked }}; border-color: {{ flags.not_checked }}">
-                      </span>
-                      <span> Not Checked </span>
-                    </div>                                                     
-                  </v-card-text>
-                </v-card>
-                <v-card v-if="date_type=='Visits'">
-                  <v-card-title class="px-2 pt-1 pb-1" style="font-size: 12px; line-height: 1.2; color: #444;">
-                    <v-btn class="mr-1" x-small icon @click="dialog_info=true">
-                        <v-icon>mdi-information</v-icon>
-                    </v-btn>
-                    <span class="mr-2"> Next visit </span>
-                  </v-card-title>
-                  <v-card-text class="px-2 pb-2">
-                    <hr class="my-0 mb-1">                    
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.good }}; border-color: {{ flags.good }}">
-                      </span>
-                      <span> Days over due: 0 </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.suspicious }}; border-color: {{ flags.suspicious }}">
-                      </span>
-                      <span> Days over due: 1-30 </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.bad }}; border-color: {{ flags.bad }}">
-                      </span>
-                      <span> Days over due: > 30 </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.not_checked }}; border-color: {{ flags.not_checked }}">
-                      </span>
-                      <span> No data / No report </span>
-                    </div>                                                     
-                  </v-card-text>
-                </v-card>
-                <v-card v-if="date_type=='Components'">
-                  <v-card-title class="px-2 pt-1 pb-1" style="font-size: 12px; line-height: 1.2; color: #444;">
-                    <v-btn class="mr-1" x-small icon @click="dialog_info=true">
-                        <v-icon>mdi-information</v-icon>
-                    </v-btn>
-                    <span class="mr-2"> Component classification </span>
-                  </v-card-title>
-                  <v-card-text class="px-2 pb-2">
-                    <hr class="my-0 mb-1">                    
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.good }}; border-color: {{ flags.good }}">
-                      </span>
-                      <span> Functional </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.suspicious }}; border-color: {{ flags.suspicious }}">
-                      </span>
-                      <span> Partial </span>
-                    </div>
-                    <div class="legend-item">
-                      <span
-                        class="legend-color circle-lg"
-                        style="background-color: {{ flags.bad }}; border-color: {{ flags.bad }}">
-                      </span>
-                      <span> Not Functional </span>
-                    </div>                                                   
-                  </v-card-text>
-                </v-card>                        
-              </template>
-            </l-control>            
-            <l-control-zoom position="topleft"></l-control-zoom>
-            <l-control position="top">
-            <div class="variables-box">
-              <template>
-                <v-layout column>
-                  <v-btn class="variables-btn" color="white" @click="reveal = !reveal">
-                    <div class="d-flex flex-column">
-                      <v-icon right class="arrow-icon" v-if="!reveal">keyboard_arrow_down</v-icon>
-                      <v-icon right class="arrow-icon" v-if="reveal">keyboard_arrow_up</v-icon>
-                      <strong class="pb-1 truncate-text-230">
-                        <span>
-                          [[ date_type ]]
-                        </span>
-                      </strong>
-                      <small class="d-flex justify-center">
-                        <span v-if="time_type==='Last 24h'"> [[time_type]]</span>
-                        <span v-if="time_type==='Pick a day'"> [[date]]</span>
-                      </small>
-                    </div>
-                  </v-btn>
-                  <v-expand-transition v-if="reveal">
-                    <v-card>
-                      <div  class="d-flex justify-center align-center">
-                        <v-btn-toggle v-if="!isMaintenance(date_type)" mandatory v-model="time_type">
-                          <v-btn class="px-6 mt-2" small value="Last 24h">Last 24h</v-btn>
-                          <v-btn class="px-6 mt-2" small value="Pick a day">Pick a day</v-btn>
-                        </v-btn-toggle>
-                      </div>
-                      <v-card-actions class="pa-0 ">
-                        <v-layout class="mt-2 ml-5 mr-6" column>
-                          <v-menu
-                            v-if="time_type === 'Pick a day'"
-                            v-model="date_menu"
-                            :close-on-content-click="false"
-                            :nudge-right="40"
-                            transition="scale-transition"
-                            offset-y
-                            min-width="290px"
-                            style="z-index: 999;"
-                          >
-                            <template class="mb-0" v-slot:activator="{ on }">
-                              <v-text-field
-                                v-model="date"
-                                label="Select date"
-                                prepend-icon="event"
-                                readonly
-                                v-on="on"
-                              ></v-text-field>
-                            </template>
-                            <v-date-picker
-                              class="mb-0"
-                              v-model="date"
-                              @input="date_menu = false"
-                            ></v-date-picker>
-                          </v-menu>
+                <template>
+                  <v-card>
+                    <v-card-title class="px-2 pt-1 pb-1" style="font-size: 12px; line-height: 1.2; color: #444;">
+                      <v-btn class="mr-1" x-small icon @click="dialog_info=true">
+                          <v-icon>mdi-information</v-icon>
+                      </v-btn>
+                      <span v-if="['Communication', 'Quality Control'].includes(data_type)" class="mr-2 "> Observations from <br/>the pass 24 hours </span>
+                      <span v-if="data_type=='Visits'" class="mr-2"> Next visit </span>
+                      <span v-if="data_type=='Components'" class="mr-2"> Component classification </span>
 
-                          <v-radio-group class="mt-0" v-model="date_type" @change="changeRadio()">
-                            <v-radio label="Comunication" value="Comunication"></v-radio>
-                            <v-radio label="Quality Control" value="Quality Control"></v-radio>
-                            <span class="mb-1"> Maintenance </span>
-                            <v-radio class="ml-5" label="Visits" value="Visits"></v-radio>
-                            <v-radio class="ml-5" label="Components" value="Components"></v-radio>
-                          </v-radio-group>
-                        </v-layout>
-                      </v-card-actions>
-                    </v-card> 
-                  </v-expand-transition>   
-                </v-layout>          
-              </template>
-            </div>            
-            </l-control>            
-            <l-circle-marker
-              v-for="station in filteredStations"
-              :lat-lng="station.position"
-              :radius="7"
-              color="white"
-              :fill-color="getStationColor(station)"
-              :fill-opacity="1"
-              :weight="2.5"
-              @click="selectStation(station)"
-            >
-               <l-popup > [[station.name]]</l-popup>
-            </l-circle-marker>             
-          </l-map> 
+                    </v-card-title>
+                    <v-card-text class="px-2 pb-2">
+                      <hr class="my-0 mb-1">
+                      <div class="legend-item" style="display: flex; justify-content: space-between;">
+                        <span style="display: flex; align-items: center;">
+                        <span
+                          class="legend-color circle-lg"
+                          :style="{ 'background-color': flags.good, 'border-color': flags.good }">
+                        </span>
+                        <span> [[legend_data.flags.good]] </span>
+                        </span>
+                        <span style="padding-left: 10px"> [[getPercentageColor(flags.good)]]% </span>
+                      </div>
+                      <div class="legend-item" style="display: flex; justify-content: space-between;">
+                        <span style="display: flex; align-items: center;">
+                        <span
+                          class="legend-color circle-lg"
+                          :style="{ 'background-color': flags.suspicious, 'border-color': flags.suspicious }">
+                        </span>
+                        <span> [[legend_data.flags.suspicious]] </span>
+                        </span>
+                        <span style="padding-left: 10px"> [[getPercentageColor(flags.suspicious)]]% </span>
+                      </div>
+                      <div class="legend-item" style="display: flex; justify-content: space-between;">
+                        <span style="display: flex; align-items: center;">
+                        <span
+                          class="legend-color circle-lg"
+                          :style="{ 'background-color': flags.bad, 'border-color': flags.bad }">
+                        </span>
+                        <span> [[legend_data.flags.bad]]</span>
+                        </span>
+                        <span style="padding-left: 10px"> [[getPercentageColor(flags.bad)]]%</span>
+                      </div>
+                      <div class="legend-item" style="display: flex; justify-content: space-between;" v-if="data_type!='Components'">
+                        <span style="display: flex; align-items: center;">
+                        <span
+                          class="legend-color circle-lg"
+                          :style="{ 'background-color': flags.not_checked, 'border-color': flags.not_checked }">
+                        </span>
+                        <span> [[legend_data.flags.not_checked]] </span>
+                        </span>
+                        <span style="padding-left: 10px"> [[getPercentageColor(flags.not_checked)]]% </span>
+                      </div>                                                    
+                    </v-card-text>
+                  </v-card>
+                </template>
+              </l-control>            
+              <l-control-zoom position="topleft"></l-control-zoom>
+              <l-control position="top">
+                <div class="data-type-box">
+                  <template>
+                    <v-layout column>
+                      <v-btn class="data-type-btn" color="white" @click="reveal = !reveal">
+                        <div class="d-flex flex-column">
+                          <v-icon right class="arrow-icon" v-if="!reveal">keyboard_arrow_down</v-icon>
+                          <v-icon right class="arrow-icon" v-if="reveal">keyboard_arrow_up</v-icon>
+                          <strong class="pb-1 truncate-text-230">
+                            <span>
+                              [[ data_type ]]
+                            </span>
+                          </strong>
+                          <small class="d-flex justify-center">
+                            <span v-if="time_type==='Last 24h'"> [[time_type]]</span>
+                            <span v-if="time_type==='Pick a day'"> [[date]]</span>
+                          </small>
+                        </div>
+                      </v-btn>
+                      <v-expand-transition v-if="reveal">
+                        <v-card>
+                          <div  class="d-flex justify-center align-center">
+                            <v-btn-toggle v-if="!isMaintenance(data_type)" mandatory v-model="time_type" @change="changeTimeType()">
+                              <v-btn class="px-6 mt-2" small value="Last 24h">Last 24h</v-btn>
+                              <v-btn class="px-6 mt-2" small value="Pick a day">Pick a day</v-btn>
+                            </v-btn-toggle>
+                          </div>
+                          <v-card-actions class="pa-0 ">
+                            <v-layout class="mt-2 ml-5 mr-6" column>
+                              <v-menu
+                                v-if="time_type === 'Pick a day'"
+                                v-model="date_menu"
+                                :close-on-content-click="false"
+                                :nudge-right="40"
+                                transition="scale-transition"
+                                offset-y
+                                min-width="290px"
+                                style="z-index: 999;"
+                              >
+                                <template class="mb-0" v-slot:activator="{ on }">
+                                  <v-text-field
+                                    v-model="date"
+                                    label="Select date"
+                                    prepend-icon="event"
+                                    readonly
+                                    v-on="on"
+                                  ></v-text-field>
+                                </template>
+                                <v-date-picker
+                                  class="mb-0"
+                                  v-model="date"
+                                  @input="date_menu = false"
+                                  @change="changeTimeType()"
+                                ></v-date-picker>
+                              </v-menu>
+
+                              <v-radio-group class="mt-0" v-model="data_type" @change="changeRadio()">
+                                <v-radio label="Communication" value="Communication"></v-radio>
+                                <v-radio label="Quality Control" value="Quality Control"></v-radio>
+                                <span class="mb-1"> Maintenance </span>
+                                <v-radio class="ml-5" label="Visits" value="Visits"></v-radio>
+                                <v-radio class="ml-5" label="Components" value="Components"></v-radio>
+                              </v-radio-group>
+                            </v-layout>
+                          </v-card-actions>
+                        </v-card> 
+                      </v-expand-transition>   
+                    </v-layout>          
+                  </template>
+                </div>            
+              </l-control>            
+              <l-circle-marker
+                v-for="station in station_list"
+                :lat-lng="station.position"
+                :radius="7"
+                color="white"
+                :fill-color="station.color"
+                :fill-opacity="1"
+                :weight="2.5"
+                @click="selectStation(station)"               
+              > 
+                <l-tooltip> [[station.name]] </l-tooltip>
+              </l-circle-marker>             
+            </l-map>
         </v-flex>
 
         <v-flex style="border-left: 2px solid #BBB;" lg4>
           <div style="background-color: #CCC; display: flex; justify-content: space-between; align-items: center;">
-            <h5 style="margin-left: 5%;">  [[selected_station.name]] Station </h5>
+            <h5 style="margin-left: 5%;">  [[selected.station.name]] Station </h5>
             <v-btn icon>
               <v-icon color="blue">
                 mdi-open-in-new
@@ -280,30 +194,37 @@
             </v-btn>                    
           </div>
 
-          <div> 
-            <v-tabs v-if="date_type=='Comunication'" fixed-tabs >
-              <v-tab :key="1">
+          <div v-if="loading_station">
+            <span class="headline font-weight-thin" v-if="loading">Loading...</span><br>
+            <span class="headline font-weight-thin" v-if="rendering">Rendering...</span><br>
+            <v-progress-linear
+            indeterminate
+            ></v-progress-linear>
+          </div>
+
+          <div v-if="!loading_station"> 
+            <v-tabs v-if="data_type=='Communication'" v-model="selectedTab" fixed-tabs >
+              <v-tab>
                 Data Delays
               </v-tab>
-              <v-tab :key="2">
+              <v-tab>
                 Latest Values
               </v-tab>
 
-              <v-tab-item :key="1">
+              <v-tab-item>
                 <v-layout column ma-2>
                   <v-layout ma-2>
-                    <span v-if="selected_station.lastupdate">
-                      Last update date: [[selected_station.lastupdate]]
+                    <span v-if="selected.station.lastupdate">
+                      Last update date: [[selected.station.lastupdate]]
                     </span>
                   </v-layout>
                   <v-layout ma-2 >
                     <v-data-table
-                      :headers="headers"
-                      :items="data_delays"
+                      :headers="headers()"
+                      :items="selected.data"
                       item-key="name"
                       :items-per-page="5"
                       class="elevation-1"
-
                     >
                       <template v-slot:item.amount="{ item }">
                         <v-chip class="px-5" :color="item.color">
@@ -320,40 +241,65 @@
                           <span>Open bar chart</span>
                         </v-tooltip>
                       </template>
-
                     </v-data-table>
                   </v-layout>
                 </v-layout>
               </v-tab-item>
 
-              <v-tab-item :key="2">                
+              <v-tab-item>                
                 <v-layout column ma-2>
-                  <v-layout ma-2>                
-                    <span v-if="selected_station.lastupdate"> Last update date: [[selected_station.lastupdate]] </span>
+                  <v-layout ma-2>              
+                    <span v-if="selected.station.lastupdate">
+                      Last update date: [[selected.station.lastupdate]]
+                    </span>
                   </v-layout>                 
                   <v-layout ma-2>                
-                    <span> Coming soon...</span>
-                  </v-layout>                  
-                </v-layout>                  
-              </v-tab-item >
-
+                    <v-layout ma-2 >
+                      <v-data-table
+                        :headers="headers()"
+                        :items="selected.data"
+                        item-key="name"
+                        :items-per-page="5"
+                        class="elevation-1"
+                      >
+                        <template v-slot:item.amount="{ item }">
+                          <v-chip class="px-5" :color="item.color">
+                            [[item.amount]]
+                          </v-chip>
+                        </template>                               
+                        <template v-slot:item.chart="{ item }">
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-btn @click="dialog_chart = true" icon>
+                                <v-icon color="blue"> mdi-chart-bar </v-icon>  
+                              </v-btn>                  
+                            </template>
+                            <span>Open bar chart</span>
+                          </v-tooltip>
+                        </template>
+                      </v-data-table>
+                    </v-layout>
+                  </v-layout>
+                </v-layout>
+              </v-tab-item>
             </v-tabs>
-            <v-tabs v-if="date_type=='Quality Control'" fixed-tabs >
-              <v-tab :key="1">
+
+            <v-tabs v-if="data_type=='Quality Control'" fixed-tabs >
+              <v-tab>
                 Flag Amount
               </v-tab>
 
-              <v-tab-item :key="1">
+              <v-tab-item>
                 <v-layout column ma-2>
                   <v-layout ma-2>
-                    <span v-if="selected_station.lastupdate">
-                      Last update date: [[selected_station.lastupdate]]
+                    <span v-if="selected.station.lastupdate">
+                      Last update date: [[selected.station.lastupdate]]
                     </span>
                   </v-layout>
                   <v-layout ma-2 >
                     <v-data-table
-                      :headers="headers"
-                      :items="data_delays"
+                      :headers="headers()"
+                      :items="selected.data"
                       item-key="name"
                       :items-per-page="5"
                       class="elevation-1"
@@ -361,17 +307,17 @@
                     >
                       <template v-slot:item.amount="{ item }">
                         <v-chip class="px-5" color="{{flags.good}}">
-                          [[item.flags.good]]
+                          [[item.good]]
                         </v-chip>
                         <v-chip class="px-5" color="{{flags.suspicious}}">
-                          [[item.flags.suspicious]]
+                          [[item.suspicious]]
                         </v-chip>
                         <v-chip class="px-5" color="{{flags.bad}}">
 
-                          [[item.flags.good]]
+                          [[item.bad]]
                         </v-chip>
                         <v-chip class="px-5" color="{{flags.not_checked}}">
-                          [[item.flags.not_checked]]
+                          [[item.not_checked]]
                         </v-chip>                                                                        
                       </template>                               
                       <template v-slot:item.chart="{ item }">
@@ -389,8 +335,9 @@
                   </v-layout>
                 </v-layout>
               </v-tab-item>
-            </v-tabs>            
-          </div>          
+            </v-tabs>                
+          </div>  
+
         </v-flex> 
       </v-layout>
     </v-layout>
@@ -398,7 +345,9 @@
 </div>
 
 {% endblock %} {% block localjavascript %}
-<script>  
+<script>
+  Vue.use(HighchartsVue.default);
+
   var {
     LMap,
     LTileLayer,
@@ -431,105 +380,199 @@
       LIcon
     },
     data () {
-      return{
-        date_menu: false,
+      return{    
+        loading_station: false,
+        loading_map: false,
+        chartOptions: {
+          chart: {
+            type: 'column'
+          },
+          title: {
+            text: 'My Chart'
+          },
+          xAxis: {
+            categories: ['Category 1', 'Category 2', 'Category 3']
+          },
+          yAxis: {
+            title: {
+              text: 'Y-Axis Label'
+            }
+          },
+          series: [{
+            name: 'Series 1',
+            data: [1, 2, 3]
+          }, {
+            name: 'Series 2',
+            data: [4, 5, 6]
+          }]
+        },        
         date: moment().format('YYYY-MM-DD'),
-        timeToggle: null,
-        date_type: 'Comunication',
+        date_menu: false,
+        data_type: 'Communication',
+        time_type: "Last 24h",
+        selectedTab: 0,
         reveal: false,
         dialog_chart: false,
         dialog_info: false,
-        headers: [
-          { text: 'Variable', align: 'start', sortable: false, value: 'variable_name'},
-          { text: 'Amout', align: 'center', sortable: false, value: 'amount'},
-          { text: 'Chart', align: 'center', sortable: false, value: 'chart'}
-        ],
-        selected_station: {
-          name: null,
-          lastupdate: null,
+        selected: {
+          station: {name: null, lastupdate: null},
+          data: [],
         },
-        data_delays: [], 
+        station_list: [],
         timezone: "{{ TIMEZONE_NAME|escapejs }}",
         zoom: {{ MAP_ZOOM|safe }},
         center: L.latLng("{{ MAP_LATITUDE|safe }}", "{{ MAP_LONGITUDE|safe }}"),
         url: "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
         attribution: '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         options: { zoomControl: false, doubleClickZoom: false },      
-        time_type: "Last 24h",
-        station_list: [],
+        flags: {{flags | safe}},
+        legend_data: {
+          flags: {
+            good: '20 or more',
+            suspicious: '8 - 19',
+            bad: '1 - 7',
+            not_checked: 'None',
+          },
+          information: 'Information of communication',
+        },
       };
     },
     mounted(){
-      axios.get('/wx/stations/stations_monitoring/get/')
+        axios.defaults.xsrfHeaderName = "X-CSRFToken";
+        axios.defaults.xsrfCookieName = "csrftoken";      
+
+        this.getGlobalData();
+    },
+    methods: {
+      changeTimeType(){
+        this.getGlobalData()
+      },
+      updateLegendData(){
+        console.log('Data Type', this.data_type)
+        if (this.data_type === 'Communication'){
+          this.legend_data.information = 'Information of communication'
+          this.legend_data.flags = {
+            good: '20 or more',
+            suspicious: '8 - 19',
+            bad: '1 - 7',
+            not_checked: 'None',
+          }
+        }
+        else if (this.data_type === 'Quality Control'){
+          this.legend_data.information = 'Information of quality control'
+          this.legend_data.flags = {
+            good: 'Good',
+            suspicious: 'Suspicious',
+            bad: 'Bad',
+            not_checked: 'Not Checked',
+          }
+        }        
+        else if (this.data_type === 'Visits'){
+          this.legend_data.information = 'Information of visits'
+          this.legend_data.flags = {
+            good: 'Days over due: 0',
+            suspicious: 'Days over due: 1-30',
+            bad: 'Days over due: > 30',
+            not_checked: 'No date / No report',
+          }
+        } 
+        else if (this.data_type === 'Components'){
+          this.legend_data.information = 'Information of components'
+          this.legend_data.flags = {
+            good: 'Funcional',
+            suspicious: 'Partial',
+            bad: 'Not Funcional',
+            not_checked: '---',
+          }
+        } 
+      },
+      headers(){
+        if (this.isMaintenance(this.data_type)){
+          return []
+        }
+        else{
+          if (this.selectedTab==1){
+            return [
+              { text: 'Variable', align: 'start', sortable: false, value: 'name'},
+              { text: 'Value', align: 'center', sortable: false, value: 'latestvalue'},
+            ]           
+          }
+          else{
+            return [
+              { text: 'Variable', align: 'start', sortable: false, value: 'name'},
+              { text: 'Amout', align: 'center', sortable: false, value: 'amount'},
+              { text: 'Chart', align: 'center', sortable: false, value: 'chart'}
+            ]  
+          }
+        }
+      },
+      getPercentageColor(color){
+        if (this.station_list.length == 0){
+          return 0
+        }
+
+        let d = this.station_list.length;
+        let n = this.station_list.filter(station => station.color==color).length;
+        let p = 100*n/d
+
+        return p.toFixed(2)
+      },
+      getGlobalData(){
+        this.loading_map = true
+        axios({
+          method: 'get',
+          url: '/wx/stations/stations_monitoring/get/',
+          params: {
+            'data_type': this.data_type,
+            'time_type': this.time_type,
+            'date_picked': this.date
+          },
+        }) 
         .then(response => {
+          this.loading_map = false;
           this.station_list = response.data['stations'];
         })
         .catch(error => {
           console.log(error);
-        });
-    },
-    computed: {
-      filteredStations(){
-        let filteredStations = this.station_list;
-        if (this.time_type == 'Last 24h')
-          filteredStations = filteredStations.filter(station => station.is_active==true);
-        return filteredStations
+        });        
       },
-    },
-    methods: {
+      getStationData(station){
+        this.loading_station = true        
+        axios({
+          method: 'get',
+          url: `/wx/stations/stations_monitoring/${station.id}/get/`,
+          params: {
+            'data_type': this.data_type,
+            'time_type': this.time_type,
+            'date_picked': this.date            
+          },
+        }) 
+        .then(response => {
+          this.loading_station = false;          
+          this.selected.station.lastupdate = response.data['lastupdate'];
+          this.selected.data = response.data['station_data'];
+        })
+        .catch(error => {
+          console.log(error);
+        });           
+      },
       isMaintenance(data_type){
         return ['Visits', 'Components'].includes(data_type)
       },
       changeRadio(){
-        if (this.isMaintenance(this.date_type)){
+        console.log('Debug:', this.legend_data)
+        if (this.isMaintenance(this.data_type)){
           this.time_type = 'Last 24h';
         }
-        updateDataDelays();
-      },
-      updateDataDelays(){
-        if (this.date_type=='Comunication'){
-          this.data_delays = this.selected_station.variables.map(variable => {
-            return {
-              variable_name: variable.variable_name,
-              amount: variable.comunication.last24h.amount,
-              lastvalue: variable.comunication.last24h.latestvalue,
-              color: variable.comunication.last24h.color,
-            };
-          });
+        this.updateLegendData();
+        this.getGlobalData();
+        if (this.selected.station.name !== null){
+          this.getStationData(this.selected.station);
         }
-        else if (this.date_type=='Quality Control'){
-          this.data_delays = this.selected_station.variables.map(variable => {
-            return {
-              variable_name: variable.variable_name,
-              flags: variable.quality_control.last24h.flags,
-              color: variable.quality_control.last24h.color,
-            };
-          });
-        }        
       },
       selectStation(station){
-        this.selected_station = station;
-        this.updateDataDelays();
-      },
-      getItemColor(item){
-        if (this.date_type=='Comunication'){
-          return item.comunication.last24h.color
-        }
-        else if (this.date_type=='Quality Control'){
-          return '#000'
-          return item.comunication.last24h.color         
-        }
-      },
-      getStationColor(station){
-        if (this.date_type=='Comunication'){
-          console.log(station.global.comunication.last24h.color)
-          return station.global.comunication.last24h.color;
-        }
-        else if (this.date_type=='Quality Control'){
-          return station.global.quality_control.last24h.color;
-       
-        }
-        return 'purple'
+        this.selected.station = station;
+        this.getStationData(station);
       },
     },
   });
@@ -539,8 +582,7 @@
   .v-data-table .v-data-table-header tr th {
     font-size: 16px !important;
   }
-
-  .variables-box {
+  .data-type-box {
     position: absolute;
     top: 16px;
     left: 56px;
@@ -549,36 +591,30 @@
     width: 250px;
     z-index: 995;
   }
-
-
-  .variables-btn {
+  .data-type-btn {
     padding: 8px 16px !important;
     height: auto !important;
   }
-  .variables-btn .arrow-icon {
+  .data-type-btn .arrow-icon {
     position: absolute;
     right: 0px;
     top: 30%;
   }
-
   .current-date-list {
     min-height: auto;
   }
-
   /* Legend Style */
   .legend-item {
     display: flex;
     align-items: center;
     margin-bottom: 1px;
   }  
-
   .legend-color {
     display: inline-block;
     width: 20px;
     height: 10px;
     margin-right: 5px;
   }
-
   .circle-lg {
     display: inline-block;
     width: 13px;

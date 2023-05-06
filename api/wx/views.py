@@ -3088,199 +3088,9 @@ def last24_summary_list(request):
 from wx.models import QualityFlag
 import time
 
-################################### Comunication ###################################
-
-def last24h_com_query():
-    query = """
-            SELECT
-                hs.station_id
-                ,hs.variable_id
-                ,ls.latest_value
-                ,COUNT(DISTINCT EXTRACT(hour FROM hs.datetime)) AS number_hours
-            FROM
-                hourly_summary AS hs
-            INNER JOIN
-                last24h_summary AS ls
-            ON hs.station_id=ls.station_id AND hs.variable_id=ls.variable_id
-            WHERE
-                hs.datetime >= now() - '24 hour'::INTERVAL
-            GROUP BY 1, 2, 3
-            ORDER BY 1, 2, 3
-    """
-
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        df = pd.DataFrame(cursor.fetchall(), columns = ['station_id', 'variable_id', 'latest_value', 'number_hours'])
-
-    return df
-
-def get_com_color(data):
-    GOOD = QualityFlag.objects.get(name='Good')
-    SUSPICIOUS = QualityFlag.objects.get(name='Suspicious')
-    BAD = QualityFlag.objects.get(name='Bad')
-    NOT_CHECKED = QualityFlag.objects.get(name='Not checked')
-
-    if data >= 20:
-        color = GOOD.color  
-    elif data >= 8:
-        color = SUSPICIOUS.color 
-    elif data >= 1:
-        color = BAD.color 
-    else:
-        color = NOT_CHECKED.color
-
-    return color
-
-def get_com_sv_data(df):
-    if  len(df.index) == 1: 
-        data = {
-            'latestvalue': df['latest_value'].values[0],
-            'amount': df['number_hours'].values[0],
-            'color': get_com_color(df['number_hours'].values[0]),
-        }
-    else:
-        print('----------------') 
-        print(len(df. index)) 
-        print('----------------') 
-
-    return data
-
-def get_com_data():
-    df = last24h_qc_query()
-
-    data = {}
-    for station_id in df['station_id'].unique():
-        df_s = df[df['station_id']==station_id]
-        for variable_id in df_s['variable_id'].unique():
-            df_sv = df_s[df_s['variable_id']==variable_id]
-            data[station_id][variable_id]['last24h'] = get_com_sv_data(df_sv)
-        max_last24h_amount =  max([d['last24h']['ammount'] for d in data[station_id][variable_id]])
-        data[station_id]['global'] = {}
-        data[station_id]['global']['last24h'] = {
-            'amount': max_last24h_amount,
-            'color': get_com_color(max_last24h_amount)
-        }
-
-    return data
-
-################################### Quality Control ###################################
-
-def last24h_qc_query():
-    query = """
-        SELECT station_id, variable_id, datetime, quality_flag
-        FROM raw_data
-        WHERE datetime >= now() - '24 hour'::INTERVAL
-    """
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        df = pd.DataFrame(cursor.fetchall(), columns = ['station_id', 'variable_id', 'datetime', 'quality_flag'])
-        if not df.empty:
-            df['datetime'] = df['datetime'].dt.floor("H")
-
-    return df
-
-def get_qc_sv_data(df):
-    GOOD = QualityFlag.objects.get(name='Good')
-    SUSPICIOUS = QualityFlag.objects.get(name='Suspicious')
-    BAD = QualityFlag.objects.get(name='Bad')
-    NOT_CHECKED = QualityFlag.objects.get(name='Not checked')
-
-    qf_list = df['quality_flag'].values.tolist()
-
-    if BAD.id in qf_list:
-        color = BAD.color
-    elif SUSPICIOUS.id in quality_flags:
-        color = SUSPICIOUS.color
-    elif GOOD.id in quality_flags:
-        color = GOOD.color
-    else:
-        color = NOT_CHECKED.color
-
-    qf_count = {
-        'good': qf_list.count(GOOD.id),
-        'suspicious': qf_list.count(SUSPICIOUS.id),
-        'bad': qf_list.count(BAD.id),
-        'not_checked': qf_list.count(NOT_CHECKED.id),
-    }
-
-    data = {'color': color, 'flags': qf_count}
-
-    return data
-
-def get_qc_data():
-    df = last24h_qc_query()
-
-    data = {}
-    for station_id in df['station_id'].unique():
-        if not station_id in data.keys():
-            data[station_id] = {'global': {}}
-        df_s = df[df['station_id']==station_id]
-
-        for variable_id in df_s['variable_id'].unique():
-            if not variable_id in data[station_id].keys():
-                data[station_id][variable_id] = {}
-            df_sv = df_s[df_s['variable_id']==variable_id]
-            data[station_id][variable_id]['last24h'] = get_qc_sv_data(df_sv)
-        data[station_id]['global']['last24h'] = get_qc_sv_data(df_s)
-
-    return data
-
-################################### Main ###################################
-
-def get_variable_data(station, variable, com_data, qc_data):
-    NOT_CHECKED = QualityFlag.objects.get(name='Not checked')
-
-    try:
-        v_com_data = com_data[station.id][variable.id]
-    except:
-        v_com_data = {}
-        v_com_data['last24h'] = {}
-        v_com_data['last24h']['latestvalue'] = None
-        v_com_data['last24h']['amount'] = 0
-        v_com_data['last24h']['color'] = NOT_CHECKED.color
-    try:
-        v_qc_data = qc_data[station.id][variable.id]
-    except:
-        v_qc_data = {}
-        v_qc_data['last24h'] = {}
-        v_qc_data['last24h']['flags'] = {'good': 0, 'suspicious': 0, 'bad': 0, 'not_checked': 0}
-        v_qc_data['last24h']['color'] = NOT_CHECKED.color
-
-    data = {
-        'variable_name': variable.name,
-        'comunication': v_com_data,
-        'quality_control': v_qc_data,
-    }
-
-    return data
-
-def get_global_data(station, com_data, qc_data):
-    NOT_CHECKED = QualityFlag.objects.get(name='Not checked')
-
-    if station.id in com_data.keys():
-        g_com_data = com_data[station.id]['global']
-    else:
-        g_com_data = {}
-        g_com_data['last24h'] = {}
-        g_com_data['last24h']['amount'] = 0
-        g_com_data['last24h']['color'] = NOT_CHECKED.color
-
-    if station.id in qc_data.keys():
-        g_qc_data = qc_data[station.id]['global']
-    else:
-        g_qc_data = {}
-        g_qc_data['last24h'] = {}
-        g_qc_data['last24h']['flags'] = {'good': 0, 'suspicious': 0, 'bad': 0, 'not_checked': 0}
-        g_qc_data['last24h']['color'] = NOT_CHECKED.color
-
-    data = {
-        'comunication': g_com_data,
-        'quality_control': g_qc_data,
-    }
-
-    return data    
-
-def get_lastupdate(stationvariables):
+def get_station_lastupdate(station_id):
+    stationvariables = StationVariable.objects.filter(station_id=station_id)
+    
     last_data_datetimes = [sv.last_data_datetime for sv in stationvariables if sv.last_data_datetime is not None]
 
     if last_data_datetimes:
@@ -3291,40 +3101,240 @@ def get_lastupdate(stationvariables):
 
     return lastupdate
 
-def get_station_data(station, com_data, qc_data):
-    stationvariables = StationVariable.objects.filter(station_id=station.id)
-    variable_ids = [stationvariable.variable_id for stationvariable in stationvariables]
-    variables = Variable.objects.filter(id__in=variable_ids)
+def query_stationsmonitoring_station(data_type, time_type, date_picked, station_id):
+    if time_type=='Last 24h':
+        datetime_picked = datetime.datetime.now()
+    else:
+        datetime_picked = datetime.datetime.strptime(date_picked, '%Y-%m-%d')
 
-    variable_data = [get_variable_data(station, variable, com_data, qc_data) for variable in variables]
 
-    data = {
-        'name': station.name,
-        'position': [station.latitude, station.longitude],
-        'is_active': station.is_active,
-        'lastupdate': get_lastupdate(stationvariables),
-        'variables': variable_data,
-        'global': get_global_data(station, com_data, qc_data)
-    }
+    station_data = []
 
-    return data
+    if data_type=='Communication':
+        query = """
+            WITH hs AS (
+                SELECT
+                    station_id,
+                    variable_id,
+                    COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS number_hours
+                FROM
+                    hourly_summary
+                WHERE
+                    datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL AND station_id = %s
+                GROUP BY 1, 2
+            )
+            SELECT
+                v.id,
+                v.name,
+                hs.number_hours,
+                ls.latest_value,
+                u.symbol,                    
+                CASE
+                    WHEN hs.number_hours >= 20 THEN (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                    )
+                    WHEN hs.number_hours >= 8 AND hs.number_hours <= 19 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                    )
+                    WHEN hs.number_hours >= 1 AND hs.number_hours <= 7 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                    )
+                    ELSE (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                    )
+                END AS color                     
+            FROM
+                wx_stationvariable sv
+                LEFT JOIN hs ON sv.station_id = hs.station_id AND sv.variable_id = hs.variable_id
+                LEFT JOIN last24h_summary ls ON sv.station_id = ls.station_id AND sv.variable_id = ls.variable_id
+                LEFT JOIN wx_variable v ON sv.variable_id = v.id
+                LEFT JOIN wx_unit u ON v.unit_id = u.id
+            WHERE
+                sv.station_id = %s
+            ORDER BY 1;
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, station_id, station_id))
+            results = cursor.fetchall()
+
+        station_data = [{'id': r[0], 
+                         'name': r[1], 
+                         'amount': r[2] if r[2] is not None else 0, 
+                         'latestvalue': str(r[3])+r[4] if r[3] is not None else '---', 
+                         'color': r[5]} for r in results]
+
+    elif data_type=='Quality Control':
+        query = """
+            WITH h AS(
+                SELECT 
+                    rd.station_id
+                    ,rd.variable_id
+                    ,EXTRACT(hour FROM rd.datetime) AS hour
+                    ,CASE
+                      WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN('Bad')
+                      WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN('Suspicious')
+                      WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN('Good')
+                      ELSE ('Not checked')
+                    END AS quality_flag
+                FROM raw_data AS rd
+                    LEFT JOIN wx_qualityflag qf ON rd.quality_flag = qf.id
+                WHERE 
+                    datetime <= %s
+                    AND datetime >= %s - '24 hour'::INTERVAL
+                    AND rd.station_id = %s
+                GROUP BY 1,2,3
+                ORDER BY 1,2,3
+            )
+            SELECT
+                v.id
+                ,v.name
+                ,COUNT(CASE WHEN h.quality_flag='Good' THEN 1 END) AS good
+                ,COUNT(CASE WHEN h.quality_flag='Suspicious' THEN 1 END) AS suspicious
+                ,COUNT(CASE WHEN h.quality_flag='Bad' THEN 1 END) AS bad
+                ,COUNT(CASE WHEN h.quality_flag='Not checked' THEN 1 END) AS not_checked
+            FROM wx_stationvariable AS sv
+                LEFT JOIN wx_variable AS v ON sv.variable_id = v.id
+                LEFT JOIN h ON sv.station_id = h.station_id AND sv.variable_id = h.variable_id
+            WHERE sv.station_id = %s
+            GROUP BY 1,2
+            ORDER BY 1,2
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, station_id, station_id))
+            results = cursor.fetchall()
+
+        station_data = [{'id': r[0], 
+                         'name': r[1], 
+                         'good': r[2],
+                         'suspicious': r[3],
+                         'bad': r[4],
+                         'not_checked': r[5]} for r in results]
+    
+    return station_data
 
 @require_http_methods(["GET"])
-def get_stationsmonitoring_data(request):
-    com_data = get_com_data()
-    qc_data = get_qc_data()
+def get_stationsmonitoring_station_data(request, id):
+    data_type = request.GET.get('data_type', 'Communication')
+    time_type = request.GET.get('time_type', 'Last 24h')
+    date_picked = request.GET.get('date_picked', None)
 
-    stations = Station.objects.all()
-    response = {}
-
-    print('----- Loading Data -----')
-    start_time = time.time()   
-    response['stations'] = [get_station_data(station, com_data, qc_data) for station in stations]
-    print("--- %s seconds ---" % (time.time() - start_time))
+    response = {
+        'lastupdate': get_station_lastupdate(id),
+        'station_data': query_stationsmonitoring_station(data_type, time_type, date_picked, id),
+    }
 
     return JsonResponse(response, status=status.HTTP_200_OK)
 
-def get_stations_monitoring_form(request):
+def get_stationsmonitoring_map_query(data_type):
+    if data_type=='Communication':
+        query = """
+            WITH hs AS (
+                SELECT
+                    station_id
+                    ,variable_id
+                    ,COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS number_hours
+                FROM
+                    hourly_summary
+                WHERE
+                    datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL
+                GROUP BY 1, 2
+            )
+            SELECT
+                s.id
+                ,s.name
+                ,s.code
+                ,s.latitude
+                ,s.longitude
+                ,CASE
+                    WHEN MAX(number_hours) >= 20 THEN (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                    )
+                    WHEN MAX(number_hours) >= 8 AND MAX(number_hours) <= 19 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                    )
+                    WHEN MAX(number_hours) >= 1 AND MAX(number_hours) <= 7 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                    )
+                    ELSE (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                    )
+                END AS color    
+            FROM wx_station AS s
+                LEFT JOIN wx_stationvariable AS sv ON s.id = sv.station_id
+                LEFT JOIN hs ON sv.station_id = hs.station_id AND sv.variable_id = hs.variable_id
+            WHERE s.is_active
+            GROUP BY 1, 2, 3, 4, 5;
+        """
+    elif data_type=='Quality Control':
+        query = """
+            WITH qf AS (
+              SELECT
+                station_id
+                ,CASE
+                  WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN(
+                      SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                  )
+                  WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN(
+                      SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                  )   
+                  WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN(
+                      SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                  )
+                  ELSE (
+                      SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                  )
+                END AS color
+              FROM
+                raw_data AS rd
+                LEFT JOIN wx_qualityflag AS qf ON rd.quality_flag = qf.id
+              WHERE
+                    datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL                
+              GROUP BY 1
+            )
+            SELECT
+              s.id
+              ,s.name
+              ,s.code
+              ,s.latitude
+              ,s.longitude
+              ,COALESCE(qf.color, (SELECT color FROM wx_qualityflag WHERE name = 'Not checked')) AS color
+            FROM wx_station AS s
+            LEFT JOIN qf ON s.id = qf.station_id
+            WHERE s.is_active
+        """
+
+    return query
+
+@require_http_methods(["GET"])
+def get_stationsmonitoring_map_data(request):
+    time_type = request.GET.get('time_type', 'Last 24h')
+    data_type = request.GET.get('data_type', 'Communication')
+    date_picked = request.GET.get('date_picked', None)
+
+    if time_type=='Last 24h':
+        datetime_picked = datetime.datetime.now()
+    else:
+        datetime_picked = datetime.datetime.strptime(date_picked, '%Y-%m-%d')
+
+    query = get_stationsmonitoring_map_query(data_type)
+
+    with connection.cursor() as cursor:
+        cursor.execute(query, (datetime_picked, datetime_picked, ))
+        results = cursor.fetchall()
+
+    response = {
+        'stations': [{'id': r[0],
+                      'name': r[1],
+                      'code': r[2],
+                      'position': [r[3], r[4]],
+                      'color': r[5]} for r in results ],
+    }
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+def stationsmonitoring_form(request):
     template = loader.get_template('wx/stations/stations_monitoring.html')
 
     flags = {
@@ -3333,10 +3343,10 @@ def get_stations_monitoring_form(request):
       'bad': QualityFlag.objects.get(name='Bad').color,
       'not_checked': QualityFlag.objects.get(name='Not checked').color,
     }
+
     context = {'flags': flags}
 
     return HttpResponse(template.render(context, request))
-
 
 ###################################################################################################
 ###################################################################################################
