@@ -3085,257 +3085,266 @@ def last24_summary_list(request):
 ###################################################################################################
 ###################################################################################################
 
-def last24h_query():
-    query = """
-        with station_variable_hours AS (
-            select
-                station_id
-                ,variable_id
-                ,count(distinct extract(hour from datetime)) AS number_hours
-            from
-                hourly_summary
-            where
-                datetime::DATE = now()::DATE
-            group by 1, 2
-            order by 1, 2
-        )
-        select
-            station_id
-            ,max(number_hours) as number_hours
-        from
-            station_variable_hours
-        group by 1
-        order by 1;
-    """
-
-    query = """
-        SELECT
-            station_id
-            ,variable_id
-            ,latest_value
-        FROM
-            last24h_summary
-    """
-
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        df_lv = pd.DataFrame(cursor.fetchall(), columns = ['station_id', 'variable_id', 'latest_value'])
-
-    query = """
-        SELECT
-            station_id
-            ,variable_id
-            ,COUNT(distinct extract(hour FROM datetime)) AS number_hours
-        FROM
-            hourly_summary
-        WHERE
-            datetime >= now() - '24 hour'::INTERVAL
-        GROUP BY 1, 2
-        ORDER BY 1, 2
-    """
-
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        df_last24h = pd.DataFrame(cursor.fetchall(), columns = ['station_id', 'variable_id', 'number_hours'])
-    
-    query = """
-        SELECT
-            datetime::DATE  AS date
-            ,station_id
-            ,variable_id
-            ,COUNT(distinct extract(hour FROM datetime)) AS number_hours
-        FROM
-            hourly_summary
-        WHERE
-            datetime >= now()::DATE - '7 day'::INTERVAL
-        GROUP BY 1, 2, 3
-        ORDER BY 1, 2, 3
-    """
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        df_last7d = pd.DataFrame(cursor.fetchall(), columns = ['date', 'station_id', 'variable_id', 'number_hours'])
-
-    return df_lv, df_last24h, df_last7d
-
-def get_lastestvalue(station, variable, df):
-    df_slice = df[(df['station_id']==station.id) & (df['variable_id']==variable.id)]
-    latest_value = df_slice['latest_value'].values.tolist()
-    if latest_value:
-        return latest_value[0]
-    return None
-
-def get_numberhours(station, variable, df): 
-    df_slice = df[(df['station_id']==station.id) & (df['variable_id']==variable.id)]
-    number_hours = df_slice['number_hours'].values.tolist()
-    if number_hours:
-        return number_hours[0]
-    return 0
-
-def get_chartdata(station, variable, df):
-    df_slice = df[(df['station_id']==station.id) & (df['variable_id']==variable.id)]
-    return df_slice['date']['number_hours']
-
-def get_variable_data(station, variable, dfs):
-    df_lv, df_last24h, df_last7d = dfs
-    
-    data = {
-        'variable_name': variable.name,
-        'last24h_latestvalue': get_lastestvalue(station, variable, df_lv),
-        'last24h_ammount': get_numberhours(station, variable, df_last24h)
-        # 'last24h_chartdata': get_chartdata(station, variable, df_last7d)
-    }
-    return data
-
-import time
-
-@require_http_methods(["GET"])
-def get_stationsmonitoring_data(request):
-    dfs = last24h_query()
-    last24h_qc = last24h_qc_query()
-
-    stations = Station.objects.all()
-    response = {}
-
-    print('----- Data -----')
-    start_time = time.time()    
-    response['stations'] = [get_station_data(station, dfs, last24h_qc) for station in stations]
-
-    print("--- %s seconds ---" % (time.time() - start_time))
-
-    return JsonResponse(response, status=status.HTTP_200_OK) 
-
-######################################## Quality Control ##########################################
-
 from wx.models import QualityFlag
-
-def get_qc_variable_data(station, variable, last24h_qc):
-    last24h_flags = {'good': 0, 'suspicious': 0, 'bad': 0, 'not_checked': 0}
-    if station.id in last24h_qc.keys():
-        if variable.id in last24h_qc[station.id].keys():
-            last24h_flags = last24h_qc[station.id][variable.id]
-
-    data = {
-        'variable_name': variable.name,
-        'last24h_amount': last24h_flags['bad']+last24h_flags['suspicious'],
-        'last24h_flags': last24h_flags,
-    }
-    return data
-
 import time
 
-
-def get_worst_qf(quality_flags):
-    GOOD = QualityFlag.objects.get(name='Good')
-    SUSPICIOUS = QualityFlag.objects.get(name='Suspicious')
-    BAD = QualityFlag.objects.get(name='Bad')
-    NOT_CHECKED = QualityFlag.objects.get(name='Not checked')
-
-    if BAD.id in quality_flags:
-        return BAD.id
-    elif SUSPICIOUS.id in quality_flags:
-        return SUSPICIOUS.id
-    elif GOOD.id in quality_flags:
-        return GOOD.id
-    return NOT_CHECKED.id
-
-
-def cound_qf(station_qfs):
-    GOOD = QualityFlag.objects.get(name='Good')
-    SUSPICIOUS = QualityFlag.objects.get(name='Suspicious')
-    BAD = QualityFlag.objects.get(name='Bad')
-    NOT_CHECKED = QualityFlag.objects.get(name='Not checked')
-
-    data = {
-        'good': station_qfs.count(GOOD.id),
-        'suspicious': station_qfs.count(SUSPICIOUS.id),
-        'bad': station_qfs.count(BAD.id),
-        'not_checked': station_qfs.count(NOT_CHECKED.id),
-    }
-
-    return data
-
-
-def get_qc_data(df):
-    station_qfs = []
-    for date_hour in df['datetime'].unique():
-        df_slice = df[df['datetime']==date_hour]
-        quality_flags = df_slice['quality_flag'].values
-        if len(quality_flags) > 0:
-            station_qfs.append(get_worst_qf(quality_flags))
-
-    return cound_qf(station_qfs)   
-
-
-def last24h_qc_query():
-    query = """
-        SELECT station_id, variable_id, datetime, quality_flag
-        FROM raw_data
-        WHERE datetime >= now() - '24 hour'::INTERVAL
-    """
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        df = pd.DataFrame(cursor.fetchall(), columns = ['station_id', 'variable_id', 'datetime', 'quality_flag'])
-        df['datetime'] = df['datetime'].dt.floor("H")
-
-    data = {}
-    for station_id in df['station_id'].unique():
-        df_s = df[df['station_id']==station_id]
-        data[station_id] = {'last24_flags': get_qc_data(df_s)}
-        for variable_id in df_s['variable_id'].unique():
-            df_sv = df_s[df_s['variable_id']==variable_id]
-            data[station_id][variable_id] = get_qc_data(df_sv)
-
-    return data
-
-
-def get_station_data(station, dfs, last24h_qc):
-    stationvariables = StationVariable.objects.filter(station_id=station.id)
-    variable_ids = [stationvariable.variable_id for stationvariable in stationvariables]
-    variables = Variable.objects.filter(id__in=variable_ids)
-
-    variable_data = [get_variable_data(station, variable, dfs) for variable in variables]
-
+def get_station_lastupdate(station_id):
+    stationvariables = StationVariable.objects.filter(station_id=station_id)
+    
     last_data_datetimes = [sv.last_data_datetime for sv in stationvariables if sv.last_data_datetime is not None]
 
     if last_data_datetimes:
-        last_update = max(last_data_datetimes)
-        last_update = last_update.strftime("%Y-%m-%d %H:%M")
+        lastupdate = max(last_data_datetimes)
+        lastupdate = lastupdate.strftime("%Y-%m-%d %H:%M")
     else:
-        last_update = None
+        lastupdate = None
 
-    if variable_data:
-        last24h_ammount = max([v['last24h_ammount'] for v in variable_data])
+    return lastupdate
+
+def query_stationsmonitoring_station(data_type, time_type, date_picked, station_id):
+    if time_type=='Last 24h':
+        datetime_picked = datetime.datetime.now()
     else:
-        last24h_ammount = 0
+        datetime_picked = datetime.datetime.strptime(date_picked, '%Y-%m-%d')
 
 
+    station_data = []
 
-    qc_variable_data = [get_qc_variable_data(station, variable, last24h_qc) for variable in variables]
-    if station.id in last24h_qc.keys():
-        last24_flags = last24h_qc[station.id]['last24_flags']
-    else:
-        last24_flags = {'good': 0, 'suspicious': 0, 'bad': 0, 'not_checked': 0}
+    if data_type=='Communication':
+        query = """
+            WITH hs AS (
+                SELECT
+                    station_id,
+                    variable_id,
+                    COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS number_hours
+                FROM
+                    hourly_summary
+                WHERE
+                    datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL AND station_id = %s
+                GROUP BY 1, 2
+            )
+            SELECT
+                v.id,
+                v.name,
+                hs.number_hours,
+                ls.latest_value,
+                u.symbol,                    
+                CASE
+                    WHEN hs.number_hours >= 20 THEN (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                    )
+                    WHEN hs.number_hours >= 8 AND hs.number_hours <= 19 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                    )
+                    WHEN hs.number_hours >= 1 AND hs.number_hours <= 7 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                    )
+                    ELSE (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                    )
+                END AS color                     
+            FROM
+                wx_stationvariable sv
+                LEFT JOIN hs ON sv.station_id = hs.station_id AND sv.variable_id = hs.variable_id
+                LEFT JOIN last24h_summary ls ON sv.station_id = ls.station_id AND sv.variable_id = ls.variable_id
+                LEFT JOIN wx_variable v ON sv.variable_id = v.id
+                LEFT JOIN wx_unit u ON v.unit_id = u.id
+            WHERE
+                sv.station_id = %s
+            ORDER BY 1;
+        """
 
-    data = {
-        'name': station.name,
-        'position': [station.latitude, station.longitude],
-        'is_active': station.is_active,
-        'comunication': {
-            'variables': variable_data,
-            'last24h_ammount': last24h_ammount,
-            'lastupdate': last_update,        
-        },
-        'quality_control': {
-            'variables': qc_variable_data,
-            'last24h_flags': last24_flags,
-        }
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, station_id, station_id))
+            results = cursor.fetchall()
+
+        station_data = [{'id': r[0], 
+                         'name': r[1], 
+                         'amount': r[2] if r[2] is not None else 0, 
+                         'latestvalue': str(r[3])+r[4] if r[3] is not None else '---', 
+                         'color': r[5]} for r in results]
+
+    elif data_type=='Quality Control':
+        query = """
+            WITH h AS(
+                SELECT 
+                    rd.station_id
+                    ,rd.variable_id
+                    ,EXTRACT(hour FROM rd.datetime) AS hour
+                    ,CASE
+                      WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN('Bad')
+                      WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN('Suspicious')
+                      WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN('Good')
+                      ELSE ('Not checked')
+                    END AS quality_flag
+                FROM raw_data AS rd
+                    LEFT JOIN wx_qualityflag qf ON rd.quality_flag = qf.id
+                WHERE 
+                    datetime <= %s
+                    AND datetime >= %s - '24 hour'::INTERVAL
+                    AND rd.station_id = %s
+                GROUP BY 1,2,3
+                ORDER BY 1,2,3
+            )
+            SELECT
+                v.id
+                ,v.name
+                ,COUNT(CASE WHEN h.quality_flag='Good' THEN 1 END) AS good
+                ,COUNT(CASE WHEN h.quality_flag='Suspicious' THEN 1 END) AS suspicious
+                ,COUNT(CASE WHEN h.quality_flag='Bad' THEN 1 END) AS bad
+                ,COUNT(CASE WHEN h.quality_flag='Not checked' THEN 1 END) AS not_checked
+            FROM wx_stationvariable AS sv
+                LEFT JOIN wx_variable AS v ON sv.variable_id = v.id
+                LEFT JOIN h ON sv.station_id = h.station_id AND sv.variable_id = h.variable_id
+            WHERE sv.station_id = %s
+            GROUP BY 1,2
+            ORDER BY 1,2
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, station_id, station_id))
+            results = cursor.fetchall()
+
+        station_data = [{'id': r[0], 
+                         'name': r[1], 
+                         'good': r[2],
+                         'suspicious': r[3],
+                         'bad': r[4],
+                         'not_checked': r[5]} for r in results]
+    
+    return station_data
+
+@require_http_methods(["GET"])
+def get_stationsmonitoring_station_data(request, id):
+    data_type = request.GET.get('data_type', 'Communication')
+    time_type = request.GET.get('time_type', 'Last 24h')
+    date_picked = request.GET.get('date_picked', None)
+
+    response = {
+        'lastupdate': get_station_lastupdate(id),
+        'station_data': query_stationsmonitoring_station(data_type, time_type, date_picked, id),
     }
 
-    return data
+    return JsonResponse(response, status=status.HTTP_200_OK)
 
-def get_stations_monitoring_form(request):
+def get_stationsmonitoring_map_query(data_type):
+    if data_type=='Communication':
+        query = """
+            WITH hs AS (
+                SELECT
+                    station_id
+                    ,variable_id
+                    ,COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS number_hours
+                FROM
+                    hourly_summary
+                WHERE
+                    datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL
+                GROUP BY 1, 2
+            )
+            SELECT
+                s.id
+                ,s.name
+                ,s.code
+                ,s.latitude
+                ,s.longitude
+                ,CASE
+                    WHEN MAX(number_hours) >= 20 THEN (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                    )
+                    WHEN MAX(number_hours) >= 8 AND MAX(number_hours) <= 19 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                    )
+                    WHEN MAX(number_hours) >= 1 AND MAX(number_hours) <= 7 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                    )
+                    ELSE (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                    )
+                END AS color    
+            FROM wx_station AS s
+                LEFT JOIN wx_stationvariable AS sv ON s.id = sv.station_id
+                LEFT JOIN hs ON sv.station_id = hs.station_id AND sv.variable_id = hs.variable_id
+            WHERE s.is_active
+            GROUP BY 1, 2, 3, 4, 5;
+        """
+    elif data_type=='Quality Control':
+        query = """
+            WITH qf AS (
+              SELECT
+                station_id
+                ,CASE
+                  WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN(
+                      SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                  )
+                  WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN(
+                      SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                  )   
+                  WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN(
+                      SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                  )
+                  ELSE (
+                      SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                  )
+                END AS color
+              FROM
+                raw_data AS rd
+                LEFT JOIN wx_qualityflag AS qf ON rd.quality_flag = qf.id
+              WHERE
+                    datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL                
+              GROUP BY 1
+            )
+            SELECT
+              s.id
+              ,s.name
+              ,s.code
+              ,s.latitude
+              ,s.longitude
+              ,COALESCE(qf.color, (SELECT color FROM wx_qualityflag WHERE name = 'Not checked')) AS color
+            FROM wx_station AS s
+            LEFT JOIN qf ON s.id = qf.station_id
+            WHERE s.is_active
+        """
+
+    return query
+
+@require_http_methods(["GET"])
+def get_stationsmonitoring_map_data(request):
+    time_type = request.GET.get('time_type', 'Last 24h')
+    data_type = request.GET.get('data_type', 'Communication')
+    date_picked = request.GET.get('date_picked', None)
+
+    if time_type=='Last 24h':
+        datetime_picked = datetime.datetime.now()
+    else:
+        datetime_picked = datetime.datetime.strptime(date_picked, '%Y-%m-%d')
+
+    query = get_stationsmonitoring_map_query(data_type)
+
+    with connection.cursor() as cursor:
+        cursor.execute(query, (datetime_picked, datetime_picked, ))
+        results = cursor.fetchall()
+
+    response = {
+        'stations': [{'id': r[0],
+                      'name': r[1],
+                      'code': r[2],
+                      'position': [r[3], r[4]],
+                      'color': r[5]} for r in results ],
+    }
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+def stationsmonitoring_form(request):
     template = loader.get_template('wx/stations/stations_monitoring.html')
-    context={}
+
+    flags = {
+      'good': QualityFlag.objects.get(name='Good').color,
+      'suspicious': QualityFlag.objects.get(name='Suspicious').color,
+      'bad': QualityFlag.objects.get(name='Bad').color,
+      'not_checked': QualityFlag.objects.get(name='Not checked').color,
+    }
+
+    context = {'flags': flags}
 
     return HttpResponse(template.render(context, request))
 
@@ -5586,26 +5595,26 @@ def get_station_variable_day_data_inventory(request):
 
     query = """
          WITH data AS (
-	         SELECT EXTRACT('DAY' FROM station_data.datetime) AS day
-	               ,EXTRACT('DOW' FROM station_data.datetime) AS dow
-	               ,TRUNC(station_data.record_count_percentage::numeric, 2) as percentage
-	               ,station_data.record_count
-	               ,station_data.ideal_record_count
-	               ,(select COUNT(1) from raw_data rd where rd.station_id = station_data.station_id and rd.variable_id = station_data.variable_id and rd.datetime between station_data.datetime  and station_data.datetime + '1 DAY'::interval and coalesce(rd.manual_flag, rd.quality_flag) in (1, 4)) qc_passed_amount
-  	               ,(select COUNT(1) from raw_data rd where rd.station_id = station_data.station_id and rd.variable_id = station_data.variable_id and rd.datetime between station_data.datetime  and station_data.datetime + '1 DAY'::interval) qc_amount
- 	        FROM wx_stationdataminimuminterval AS station_data
-	        WHERE EXTRACT('YEAR' from station_data.datetime) = %(year)s
-	          AND EXTRACT('MONTH' from station_data.datetime) = %(month)s 
-	          AND station_data.station_id = %(station_id)s
-	          AND station_data.variable_id = %(variable_id)s
-	        ORDER BY station_data.datetime)
+             SELECT EXTRACT('DAY' FROM station_data.datetime) AS day
+                   ,EXTRACT('DOW' FROM station_data.datetime) AS dow
+                   ,TRUNC(station_data.record_count_percentage::numeric, 2) as percentage
+                   ,station_data.record_count
+                   ,station_data.ideal_record_count
+                   ,(select COUNT(1) from raw_data rd where rd.station_id = station_data.station_id and rd.variable_id = station_data.variable_id and rd.datetime between station_data.datetime  and station_data.datetime + '1 DAY'::interval and coalesce(rd.manual_flag, rd.quality_flag) in (1, 4)) qc_passed_amount
+                   ,(select COUNT(1) from raw_data rd where rd.station_id = station_data.station_id and rd.variable_id = station_data.variable_id and rd.datetime between station_data.datetime  and station_data.datetime + '1 DAY'::interval) qc_amount
+            FROM wx_stationdataminimuminterval AS station_data
+            WHERE EXTRACT('YEAR' from station_data.datetime) = %(year)s
+              AND EXTRACT('MONTH' from station_data.datetime) = %(month)s 
+              AND station_data.station_id = %(station_id)s
+              AND station_data.variable_id = %(variable_id)s
+            ORDER BY station_data.datetime)
          SELECT available_days.custom_day
-         	   ,data.dow
-         	   ,COALESCE(data.percentage, 0) AS percentage
-         	   ,COALESCE(data.record_count, 0) AS record_count
-         	   ,COALESCE(data.ideal_record_count, 0) AS ideal_record_count
-         	   ,case when data.qc_amount = 0 then 0 
-         	   		 else TRUNC((data.qc_passed_amount / data.qc_amount::numeric) * 100, 2) end as qc_passed_percentage
+               ,data.dow
+               ,COALESCE(data.percentage, 0) AS percentage
+               ,COALESCE(data.record_count, 0) AS record_count
+               ,COALESCE(data.ideal_record_count, 0) AS ideal_record_count
+               ,case when data.qc_amount = 0 then 0 
+                     else TRUNC((data.qc_passed_amount / data.qc_amount::numeric) * 100, 2) end as qc_passed_percentage
          FROM (SELECT custom_day FROM unnest( ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31] ) AS custom_day) AS available_days
          LEFT JOIN data ON data.day = available_days.custom_day;
          

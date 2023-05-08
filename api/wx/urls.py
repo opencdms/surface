@@ -125,9 +125,9 @@ urlpatterns = [
     path('wx/maintenance_report/<int:id>/view/<int:source>/', login_required(views.get_maintenance_report_view), name='view-maintenance-report'),
     path('wx/products/wave_data/', login_required(views.get_wave_data_analysis), name='wave-data'),
     path('wx/products/wave_data/get/', login_required(views.get_wave_data), name="get-wave-data"),
-    path('wx/stations/stations_monitoring/', views.get_stations_monitoring_form, name="stations-monitoring"),
-    path('wx/stations/stations_monitoring/get/', views.get_stationsmonitoring_data),
-
+    path('wx/stations/stations_monitoring/', views.stationsmonitoring_form, name="stations-monitoring"),
+    path('wx/stations/stations_monitoring/get/', views.get_stationsmonitoring_map_data),
+    path('wx/stations/stations_monitoring/<int:id>/get/', views.get_stationsmonitoring_station_data),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
