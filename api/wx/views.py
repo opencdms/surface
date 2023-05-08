@@ -2304,17 +2304,17 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
 
 @api_view(['POST'])
-def pgia_update(request):
+def synoptic_station_update(request):
     try:
         hours_dict = request.data['table']
         now_utc = datetime.datetime.now().astimezone(pytz.UTC) + datetime.timedelta(
             hours=settings.PGIA_REPORT_HOURS_AHEAD_TIME)
 
-        pgia = Station.objects.get(id=4)
-        datetime_offset = pytz.FixedOffset(pgia.utc_offset_minutes)
+        synoptic_station = Station.objects.get(int(request.GET['station']))
+        datetime_offset = pytz.FixedOffset(synoptic_station.utc_offset_minutes)
 
         day = datetime.datetime.strptime(request.data['date'], '%Y-%m-%d')
-        station_id = pgia.id
+        station_id = synoptic_station.id
         seconds = 3600
 
         records_list = []
@@ -2362,7 +2362,7 @@ def pgia_update(request):
 
 
 @api_view(['GET'])
-def pgia_load(request):
+def synoptic_station_load(request):
     try:
         date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
     except ValueError as e:
@@ -2372,8 +2372,8 @@ def pgia_load(request):
         logger.error(repr(e))
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    pgia = Station.objects.get(id=4)
-    datetime_offset = pytz.FixedOffset(pgia.utc_offset_minutes)
+    synoptic_station = Station.objects.get(int(request.GET['station']))
+    datetime_offset = pytz.FixedOffset(synoptic_station.utc_offset_minutes)
     request_datetime = datetime_offset.localize(date)
 
     start_datetime = request_datetime
@@ -2383,7 +2383,7 @@ def pgia_load(request):
         with conn.cursor() as cursor:
             cursor.execute(
                 f"""
-                    SELECT (datetime + interval '{pgia.utc_offset_minutes} minutes') at time zone 'utc',
+                    SELECT (datetime + interval '{synoptic_station.utc_offset_minutes} minutes') at time zone 'utc',
                         variable_id,
                         CASE WHEN var.variable_type ilike 'code' THEN code ELSE measured::varchar END as value,
                         remarks,
@@ -2397,7 +2397,7 @@ def pgia_load(request):
                 {
                     'start_date': start_datetime,
                     'end_date': end_datetime,
-                    'station_id': pgia.id
+                    'station_id': synoptic_station.id
                 })
 
             response = cursor.fetchall()
