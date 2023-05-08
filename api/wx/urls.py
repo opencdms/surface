@@ -12,6 +12,7 @@ router.register(r'station_images', views.StationImageViewSet)
 router.register(r'station_files', views.StationFileViewSet)
 router.register(r'quality_flags', views.QualityFlagList)
 router.register(r'stations_metadata', views.StationMetadataViewSet)
+router.register(r'synoptic_station', views.SynopticCaptureViewSet)
 
 urlpatterns = [
     path('api/stations/metadata', include(router.urls)),

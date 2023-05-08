@@ -15,89 +15,110 @@
       >Synop Capture</span
     >
   </div>
+
   <div class="srf-flex justify-content-between srf-padding" id="app">
     <v-app>
-      <form enctype="multipart/form-data" method="POST" class="mb-10">
-        {% csrf_token %}
-        <div>
-          <div class="fieldWrapper">
-            <v-flex sm1 md3 lg3 class="d-flex justify-between">
-              <v-menu
-                :close-on-content-click="false"
-                :disabled="dirty"
-                v-model="menu1"
-                :nudge-right="40"
-                transition="scale-transition"
-                offset-y
-                class="max-50"
-              >
-                <template v-slot:activator="{ on }">
-                  <v-text-field
-                    :disabled="dirty"
+      <v-layout mb-3 ml-3 mb-3 >
+        <v-flex sm3 md3 lg3>
+          <v-autocomplete
+            :items="stationList"
+            :item-text="(item) => `${item.name} ${item.code}`"
+            item-value="id"
+            v-model="stationId"
+            label="Station"
+            @change="onChangeStation()"
+            required
+            hint="*Required"
+            persistent-hint
+            autocomplete="off"
+          ></v-autocomplete>
+        </v-flex>
+      </v-layout>
+
+      <synopCaptureTable v-if="selectedStation">
+        <form enctype="multipart/form-data" method="POST" class="mb-10">
+          {% csrf_token %}
+          <div>
+            <div class="fieldWrapper">
+              <v-flex sm1 md3 lg3 class="d-flex justify-between">
+                <v-menu
+                  :close-on-content-click="false"
+                  :disabled="dirty"
+                  v-model="menu1"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                      :disabled="dirty"
+                      v-model="requestData.date"
+                      label="Date"
+                      prepend-icon="event"
+                      v-on="on"
+                      required
+                      hint="*Required"
+                      persistent-hint
+                      :rules="TextFieldsRules"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    name="date"
                     v-model="requestData.date"
-                    label="Date"
-                    prepend-icon="event"
-                    v-on="on"
-                    required
-                    hint="*Required"
-                    persistent-hint
-                    :rules="TextFieldsRules"
-                  ></v-text-field>
-                </template>
-                <v-date-picker
-                  name="date"
-                  v-model="requestData.date"
-                  @input="menu1 = false"
-                  :allowed-dates="allowedDates"
-                ></v-date-picker>
-              </v-menu>
-            </v-flex>
+                    @input="menu1 = false"
+                    :allowed-dates="allowedDates"
+                  ></v-date-picker>
+                </v-menu>
+              </v-flex>
+            </div>
           </div>
+          <button
+            :disabled="dirty"
+            type="button"
+            class="btn-outline-default btn-small"
+            @click="fetchData()"
+          >
+            Load
+          </button>
+          <button
+            :disabled="!dirty"
+            type="button"
+            class="btn-outline-default btn-small"
+            @click="fetchData()"
+          >
+            Cancel
+          </button>
+          <button
+            :disabled="!(dirty && valid)"
+            type="button"
+            class="btn-outline-default btn-small"
+            @click="updateData()"
+          >
+            Save
+          </button>
+        </form>
+        <div id="hotTableErrors"></div>
+        <div>
+          <hot-table
+            v-if="synopTable"
+            :settings="hotSettings"
+            :data="hotData"
+            style="z-index: 0"
+            ref="synopTable"
+          >
+          </hot-table>
+          <v-overlay absolute :value="loading">
+            <span>LOADING</span>
+            <v-progress-circular
+              indeterminate
+              color="primary"
+            ></v-progress-circular>
+          </v-overlay>
         </div>
-        <button
-          :disabled="dirty"
-          type="button"
-          class="btn-outline-default btn-small"
-          @click="fetchData()"
-        >
-          Load
-        </button>
-        <button
-          :disabled="!dirty"
-          type="button"
-          class="btn-outline-default btn-small"
-          @click="fetchData()"
-        >
-          Cancel
-        </button>
-        <button
-          :disabled="!(dirty && valid)"
-          type="button"
-          class="btn-outline-default btn-small"
-          @click="updateData()"
-        >
-          Save
-        </button>
-      </form>
-      <div id="hotTableErrors"></div>
-      <div>
-        <hot-table
-          v-if="pgiaTable"
-          :settings="hotSettings"
-          :data="hotData"
-          style="z-index: 0"
-          ref="pgiaTable"
-        >
-        </hot-table>
-        <v-overlay absolute :value="loading">
-          <span>LOADING</span>
-          <v-progress-circular
-            indeterminate
-            color="primary"
-          ></v-progress-circular>
-        </v-overlay>
-      </div>
-      <div class="mb-10"></div>
+        <div class="mb-10"></div>
+      </synopCaptureTable>
+      
     </v-app>
   </div>
 </div>
@@ -120,7 +141,7 @@
     },
     data: {
       current_username: "{{ user.username }}",
-      MISSING_VALUE: {{ MISSING_VALUE }},
+      MISSING_VALUE: "{{ MISSING_VALUE }}",
       dirty: false,
       loading: false,
       hotData: [],
@@ -200,7 +221,7 @@
       menu1: false,
       requestData: {
         date: moment().format('YYYY-MM-DD'),
-        stationId: 4,
+        stationId: 0,
         interval: 3600
       },
       requestedData: {},
@@ -208,14 +229,34 @@
         v => (v !== undefined && v !== "") || "This field is required"
       ],
       valid: true,
-      pgiaTable: true,
+      synopTable: true,
       errors: [],
       errorMessageStart: "<spam style='color: red;'>",
       errorMessageEnd: "</spam><br>",
       validatingColumn: null,
       validatingRow: null,
       now: moment().format('YYYY-MM-DD'),
-      updatedHours: new Set()
+      updatedHours: new Set(),
+
+      stationId: "{{ station_id|safe }}",
+      selectedStation: {},
+      backupStationObject: null,
+      stationList: [],
+    },
+    computed: {
+      baseURL() {
+        return "/";
+      },
+      
+      markerPosition(){
+        if(this.selectedStation){
+          this.center = L.latLng(this.selectedStation.latitude, this.selectedStation.longitude)
+          return {lat: this.selectedStation.latitude, lng: this.selectedStation.longitude}
+        }
+        return {}
+      },
+
+    
     },
     methods: {
       afterChange(changes, source) {
@@ -228,7 +269,7 @@
             if(exists != null)
               this.calculateColumnStatistics(c[1]);
           })
-          this.$refs.pgiaTable.hotInstance.render()
+          this.$refs.synopTable.hotInstance.render()
         }
       },
       beforeValidate(value, row, prop, source) {
@@ -291,7 +332,7 @@
           this.requestedData = Object.assign({}, this.requestData);
           this.fetchStepThresholds();
           raw_data = data.data
-          hotInstance = this.$refs.pgiaTable.hotInstance
+          hotInstance = this.$refs.synopTable.hotInstance
           this.hotData = [];
           hotInstance.loadData(this.hotData);
           for(i=0; i<raw_data.length; i++){
@@ -343,7 +384,7 @@
         this.column_map.forEach(col => {
           this.calculateColumnStatistics(col);
         });
-        this.$refs.pgiaTable.hotInstance.render()
+        this.$refs.synopTable.hotInstance.render()
       },
       calculateColumnStatistics(col) {
         sum = 0;
@@ -351,7 +392,7 @@
         min = null;
         max = null;
         for(row=0; row<24; row++) {
-          value = parseFloat(this.$refs.pgiaTable.hotInstance.getDataAtRowProp(row, col));
+          value = parseFloat(this.$refs.synopTable.hotInstance.getDataAtRowProp(row, col));
           if(value != null && !isNaN(value) && value !== this.MISSING_VALUE) {
             valid_cells += 1;
             sum += value;
@@ -368,7 +409,7 @@
           if(valid_cells > 1) {
             stddev = 0;
             for(row=0; row<24; row++) {
-              value = parseFloat(this.$refs.pgiaTable.hotInstance.getDataAtRowProp(row, col));
+              value = parseFloat(this.$refs.synopTable.hotInstance.getDataAtRowProp(row, col));
               if(value != null && !isNaN(value) && value !== this.MISSING_VALUE) {
                 stddev += Math.pow((value - avg), 2);
               }
@@ -497,11 +538,55 @@
           Handsontable.dom.empty(td);
           td.appendChild(button);
         }
-      }
+      },
+      
+      getStations(){
+        this.getAll("api/synoptic_station/").then(data => {
+          this.stationList = data;
+          this.onChangeStation();
+        });
+      },
+
+      getAll(path, url, oldData = []) {
+        return fetch(`${this.baseURL}${path}`)
+          .then(res => {
+            if (!res.body) {
+              return { next: null, results: [] };
+            }
+
+            return res.json();
+          })
+          .then(async data => {
+            const values = [...oldData, ...data.results];
+            if (!!data.next) {
+              return await getAll(
+                context,
+                path,
+                `${this.baseURL}/${path}/${data.next.substr(
+                  data.next.indexOf(`/${path}`)
+                )}`,
+                values
+              );
+            }
+            return values;
+          });
+      },
+      
+      onChangeStation() {
+        // changing the request data station id when a new station is selected.
+        this.requestData.stationId = Number(this.stationId);
+
+        if(this.stationId != null){
+            this.selectedStation = this.stationList.find(station => station.id === this.stationId);
+    
+            this.backupStationObject = {... this.selectedStation};
+          }
+      },
     },
     mounted() {
+      this.getStations();
 
-      const userPermissions = {{USER_PERMISSIONS|safe}};
+      const userPermissions = "{{USER_PERMISSIONS|safe}}";
       const dataInventoryPermissions = userPermissions['data-inventory'];
       if(dataInventoryPermissions && !dataInventoryPermissions.includes("delete"))
         this.hotSettings.columns.pop()
@@ -509,19 +594,19 @@
       Handsontable.hooks.add(
         'beforeValidate',
         this.beforeValidate,
-        this.$refs.pgiaTable.hotInstance
+        this.$refs.synopTable.hotInstance
       );
       Handsontable.hooks.add(
         'afterChange',
         this.afterChange,
-        this.$refs.pgiaTable.hotInstance
+        this.$refs.synopTable.hotInstance
       );
       this.fetchCodedValues();
       this.fetchData();
       Handsontable.validators.registerValidator('fieldValidator', this.fieldValidator);
       Handsontable.validators.registerValidator('textFieldValidator', this.textFieldValidator);
       Handsontable.renderers.registerRenderer('deleteButtonRenderer', this.deleteButtonRenderer);
-      this.$refs.pgiaTable.hotInstance.updateSettings({
+      this.$refs.synopTable.hotInstance.updateSettings({
         cells: function (row, col) {
           cellProperties = {};
 

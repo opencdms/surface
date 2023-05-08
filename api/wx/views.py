@@ -637,7 +637,16 @@ class StationMetadataViewSet(viewsets.ModelViewSet):
         if self.request.method in ['GET']:
             return serializers.StationSerializerRead
         return serializers.StationMetadataSerializer
+    
+class SynopticCaptureViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Station.objects.filter(is_synoptic_station=True)
+    serializer_class = serializers.StationMetadataSerializer
 
+    def get_serializer_class(self):
+        if self.request.method in ['GET']:
+            return serializers.StationSerializerRead
+        return serializers.StationMetadataSerializer
 
 class StationViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -2206,7 +2215,7 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         Fieldset('Editing station',
                  Row('latitude', 'longitude'),
                  Row('name'),
-                 Row('is_active', 'is_automatic'),
+                 Row('is_active', 'is_automatic', 'is_synoptic_station'),
                  Row('alias_name'),
                  Row('code', 'profile'),
                  Row('wmo', 'organization'),
@@ -2258,8 +2267,9 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     layout = Layout(
         Fieldset('Editing station',
                  Row('latitude', 'longitude'),
-                 Row('name', 'is_active'),
-                 Row('alias_name', 'is_automatic'),
+                 Row('name'),
+                 Row('is_active', 'is_automatic', 'is_synoptic_station'),
+                 Row('alias_name'),
                  Row('code', 'profile'),
                  Row('wmo', 'organization'),
                  Row('wigos', 'observer'),
@@ -2273,22 +2283,22 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('soil_type', 'station_details'),
                  Row('site_description', 'alternative_names')
                  ),
-        Fieldset('Hydrology information',
-                 Row('hydrology_station_type', 'ground_water_province'),
-                 Row('existing_gauges', 'flow_direction_at_station'),
-                 Row('flow_direction_above_station', 'flow_direction_below_station'),
-                 Row('bank_full_stage', 'bridge_level'),
-                 Row('temporary_benchmark', 'mean_sea_level'),
-                 Row('river_code', 'river_course'),
-                 Row('catchment_area_station', 'river_origin'),
-                 Row('easting', 'northing'),
-                 Row('river_outlet', 'river_length'),
-                 Row('z', 'land_surface_elevation'),
-                 Row('top_casing_land_surface', 'casing_diameter'),
-                 Row('screen_length', 'depth_midpoint'),
-                 Row('casing_type', 'datum'),
-                 Row('zone')
-                 )
+        # Fieldset('Hydrology information',
+        #          Row('hydrology_station_type', 'ground_water_province'),
+        #          Row('existing_gauges', 'flow_direction_at_station'),
+        #          Row('flow_direction_above_station', 'flow_direction_below_station'),
+        #          Row('bank_full_stage', 'bridge_level'),
+        #          Row('temporary_benchmark', 'mean_sea_level'),
+        #          Row('river_code', 'river_course'),
+        #          Row('catchment_area_station', 'river_origin'),
+        #          Row('easting', 'northing'),
+        #          Row('river_outlet', 'river_length'),
+        #          Row('z', 'land_surface_elevation'),
+        #          Row('top_casing_land_surface', 'casing_diameter'),
+        #          Row('screen_length', 'depth_midpoint'),
+        #          Row('casing_type', 'datum'),
+        #          Row('zone')
+        #          )
 
     )
 
