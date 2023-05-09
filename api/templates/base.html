@@ -72,6 +72,9 @@
       .hide-menu {
         display: none!important;
       }
+      .hide-menu-text {
+        display: none;
+      }
       .show-menu {
         display: block!important;
       }
@@ -91,6 +94,9 @@
       }
       .user-menu > div > div.mdl-menu__container.is-upgraded {
         top: auto!important;
+      }
+      .user-options-style {
+        display: none !important;
       }
       .user-menu .collapsible-header{
         cursor: default!important;
@@ -492,46 +498,51 @@
     {% block extrastyle %} {% endblock %}
   </head>
   <body>
-    <ul id="slide-out" class="sidenav sidenav-fixed open-mode">
+    <ul id="slide-out" class="sidenav sidenav-fixed collapsed-mode" onmouseover="hoverOpenSidebar()" onmouseout="hoverCloseSidebar()" onmouseleave="closeSidebarSubMenu()">
       <div style="display: flex;
         flex-direction: column;
         justify-content: space-between;
         height: 100%;">
 
         <div id="wrap-sidenav">
-          <li class="py-4">
-            <div class="d-flex">
-              <div style="max-width: 55px;" class="w-100">
-                <img style="padding: 0px 8px" class="img-logo" src="{% static 'images/circle_logo_small.png' %}" />
+          <div onmouseleave="hideUserOptionsNavClose()">
+            <li class="py-4">
+              <div class="d-flex">
+                <div style="max-width: 55px;" class="w-100">
+                  <img style="padding: 0px 8px" class="img-logo" src="{% static 'images/circle_logo_small.png' %}" />
+                </div>
+                <div class="w-100" style="position: relative;">
+                  <img class="img-logo-surface" src="{% static 'images/surface_logo_smaller.png' %}" />
+                </div>
               </div>
-              <div class="w-100" style="position: relative;">
-                <img class="img-logo-surface" src="{% static 'images/surface_logo_smaller.png' %}" />
-              </div>
-            </div>
-          </li>
+            </li>
 
-          <li class="collapsible-item user-menu">
-            <div class="collapsible-header" style="padding: 0px 16px;"><i class="material-icons">person</i>
-              <div class="w-100" style="position: relative;">
-              <span class="to-uppercase">{{ request.user.username }}</span>
-              <button id="user-menu-button" style="
-                position: absolute;
-                right: 0px;
-                top: 12px;" class="mdl-button mdl-js-button mdl-button--icon">
-                <i class="material-icons">more_vert</i>
-              </button>
+            <li class="collapsible-item user-menu">
+              <div class="collapsible-header" style="padding: 0px 16px;"><i class="material-icons">person</i>
+                <div class="w-100" style="position: relative;">
+                <span class="to-uppercase">{{ request.user.username }}</span>
+                <button id="user-menu-button" style="
+                  position: absolute;
+                  right: 0px;
+                  top: 12px;" class="mdl-button mdl-js-button mdl-button--icon">
+                  <i class="material-icons">more_vert</i>
+                </button>
+                </div>
+                <div id="user-options">
+                  <ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="user-menu-button">
+                    <a href="{% url 'change_password' %}">
+                      <li class="mdl-menu__item">
+                        Change password
+                      </li>
+                    </a>
+                  </ul>
+                </div>
               </div>
-              <ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="user-menu-button">
-                <a href="{% url 'change_password' %}">
-                  <li class="mdl-menu__item">
-                    Change password
-                  </li>
-                </a>
-              </ul>
-            </div>
-          </li>
+            </li>
 
-          <hr>
+            <hr>
+
+          </div>
 
           <ul class="collapsible to-uppercase">
             <li id="stations-group" class="hide-menu">
@@ -542,13 +553,14 @@
                     <a id="stations-map" href="{% url 'stations-map' %}" class="hide-menu collection-item left-space ">MAP<i class="material-icons secondary-content">map</i></a>
                     <a id="stations-list" href="{% url 'stations-list' %}" class="hide-menu collection-item left-space ">LIST<i class="material-icons secondary-content">donut_small</i></a>
                     <a id="station-metadata" href="{% url 'station-metadata' %}" class="hide-menu collection-item left-space ">METADATA<i class="material-icons secondary-content">donut_small</i></a>
+                    <!-- <a id="stations-monitoring" href="{% url 'stations-monitoring' %}" class="hide-menu collection-item left-space ">STATIONS MONITORING<i class="material-icons secondary-content">monitor</i></a>                     -->
                   </ul>
                 </div>
               </div>
             </li>
             </li>
             <li id="maintenance-group" class="hide-menu collapsible-item">
-              <a href="{% url 'coming-soon' %}" style="padding: 0px 16px;"><i class="material-icons">build</i>MAINTENANCE</a>
+              <a href="{% url 'maintenance-reports' %}" style="padding: 0px 16px;"><i class="material-icons">build</i>MAINTENANCE</a>
             </li>
 
             <li id="data-group" class="hide-menu">
@@ -556,8 +568,8 @@
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
-                    <a id="monthly-form" href="{% url 'monthly-form' %}" class="hide-menu collection-item left-space">Monthly Capture<i class="material-icons secondary-content">keyboard</i></a>
-                    <a id="pgia-report" href="{% url 'pgia-report' %}" class="hide-menu collection-item left-space">PGIA Hourly Capture<i class="material-icons secondary-content">keyboard</i></a>
+                    <a id="daily-form" href="{% url 'daily-form' %}" class="hide-menu collection-item left-space">Daily Capture Form<i class="material-icons secondary-content">keyboard</i></a>
+                    <a id="synop-capture" href="{% url 'synop-capture' %}" class="hide-menu collection-item left-space">SYNOP Capture Form<i class="material-icons secondary-content">keyboard</i></a>
                     <a id="data-export" href="{% url 'data-export' %}" class="hide-menu collection-item left-space">Export<i class="material-icons secondary-content">cloud_download</i></a>
                     <a id="data-inventory" href="{% url 'data-inventory' %}" class="hide-menu collection-item left-space">Data Inventory<i class="material-icons secondary-content">web</i></a>
                   </ul>
@@ -566,7 +578,7 @@
             </li>
 
             <li id="quality-control-group" class="hide-menu">
-              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality Control</div>
+              <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality<span>&nbsp;</span>Control</div>
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
@@ -589,7 +601,8 @@
                     <a id="product-compare" href="{% url 'product-compare' %}" class="hide-menu collection-item left-space">Station Compare<i class="material-icons secondary-content">compare_arrows</i></a>
                     <!-- <a id="yearly-average" href="{% url 'yearly-average' %}" class="collection-item left-space">Yearly Average<i class="material-icons secondary-content">timeline</i></a> -->
                     <a id="spatial-analysis" href="{% url 'spatial-analysis' %}" class="hide-menu collection-item left-space">Spatial analysis<i class="material-icons secondary-content">dashboard</i></a>
-                    <a id="daily-means" href="{% url 'daily-means' %}" class="hide-menu collection-item left-space">Daily Means<i class="material-icons secondary-content">equalizer</i></a>
+                    <a id="extremes-means" href="{% url 'extremes-means' %}" class="hide-menu collection-item left-space">Extremes and Means<i class="material-icons secondary-content">equalizer</i></a>
+                    <a id="wave-data" href="{% url 'wave-data' %}" class="hide-menu collection-item left-space">Wave data analysis<i class="material-icons secondary-content">water</i></a>
                   </ul>
                 </div>
             </div>
@@ -604,21 +617,24 @@
             <li class="collapsible-item">
               <a href="{% url 'logout' %}" style="padding: 0px 16px;"><i class="material-icons">directions</i>LOGOUT</a>
             </li>
-          </div>
+          </ul>
 
-          <div id="toggle-sidebar">
+          <!-- <div id="toggle-sidebar">
             <li class="collapsible-item toggle-collapse" onclick="toggleSidebar()">
               <a href="javascript:void(0)" style="padding: 0px 16px;"><i id="collapse-icon" class="material-icons">chevron_left</i>COLLAPSE</a>
             </li>
-          </div>
+          </div> -->
 
         </div>
-      </ul>
+      </div>
     </ul>
+
     <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+    
     <a id="menu-closer" href="javascript:void(0)">
       <i class="material-icons">close</i>
     </a>
+
     <header class="mobile-menu">
       <nav>
         <a id="menu-toggler" href="javascript:void(0)">
@@ -627,25 +643,39 @@
         <h1>SURFACE</h1>
       </nav>
     </header>
+
     <main style="height: 100vh; width: 100%">
+
       <div class="page-content">
+
         <!-- BODY -->
-        <div id="block-content" class="srf-layout flex-column p-300">
+        <div id="block-content" class="srf-layout flex-column p-55">
           {% if messages %}
+          
           <div id="hideMe" class="box-message">
+
             <div class="srf-message">
+
               {% for message in messages %}
+
               <span {% if message.tags %} class="{{ message.tags }}" {% endif %}>
                 {{ message }}
               </span>
+
               {% endfor %}
+
             </div>
+
           </div>
+
           {% endif %}
           {% block content %}
           {% endblock %}
+
         </div>
+
       </div>
+
     </main>
 
     <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
@@ -680,7 +710,7 @@
     <script src="https://unpkg.com/vuelidate@0.7.4/dist/validators.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.58/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.58/vfs_fonts.js"></script>
-
+    <script src="https://colorjs.io/dist/color.global.js"></script>
     {% include 'material/includes/material_js.html' %}
 
     <script src="https://cdn.jsdelivr.net/npm/handsontable@7.1.1/dist/handsontable.full.min.js"></script>
@@ -709,16 +739,18 @@
           'stations-map',
           'stations-list',
           'station-metadata',
-          'monthly-form',
-          'pgia-report',
+          'stations-monitoring',
+          'daily-form',
+          'synop-capture',
           'data-export',
           'instrumentlogs-list',
           'station-report',
+          'wave-data',
           'product-compare',
           'yearly-average',
           'maintenance-group',
           'spatial-analysis',
-          'daily-means',
+          'extremes-means',
           'quality-control',
           'variable-report',
           'data-inventory',
@@ -727,8 +759,8 @@
           'persist-threshold'
         ]
 
-        const menuList = {{USER_PERMISSIONS|safe}};
-        const userIsAdmin = {{USER_IS_ADMIN|safe}};
+        const menuList = "{{USER_PERMISSIONS|safe}}";
+        const userIsAdmin = "{{USER_IS_ADMIN|safe}}";
 
         localMenus.forEach(menu => {
           if ($(`#${menu}`).length > 0) {
@@ -753,8 +785,6 @@
           }
         })
 
-        var menuInitialState = true;
-
         //MOBILE
         document.getElementById('menu-toggler')
           .addEventListener('click', function(evt) {
@@ -769,68 +799,115 @@
           });
         
         // WEB
-        toggleSidebar = function() {
-          if (menuInitialState === true) {
-            closeSidebar();
-          } else {
-            openSidebar();
+        // collapseHideMenuText = function() {
+          
+        //   for (let index = 1; index <= 7; index++) {
+            
+        //     var element = document.getElementById('hide-menu-text-' + index);
+        //     element.classList.add('hide-menu-text');
+            
+        //   }
+
+        // }
+
+        // collapseShowMenuText = function() {
+
+        //   for (let index = 1; index <= 7; index++) {
+            
+        //     var element = document.getElementById('hide-menu-text-' + index);
+        //     element.classList.remove('hide-menu-text');
+            
+        //   }
+
+        // }
+
+        showUserOptions = function() {
+
+          // to show user options when side nav collapses
+          var user_option = document.getElementById('user-options');
+          user_option.classList.remove('user-options-style');
+
+          // var user_option = document.querySelectorAll('div.is-upgraded');
+
+          // // Iterate through the retrieved elements and add the necessary class names.
+          // for(var i = 0; i < user_option.length; i++)
+          // {
+          //     user_option[i].classList.add('is-visible');
+          // }
+
+        }
+
+        hideUserOptions = function() {
+
+          // to show user options when side nav collapses
+          var user_option = document.getElementById('user-options');
+          user_option.classList.add('user-options-style');
+
+        }
+
+        hideUserOptionsNavClose = function() {
+
+          var user_option = document.querySelectorAll('div.is-upgraded');
+          
+          // Iterate through the retrieved elements and add the necessary class names.
+          for(var i = 0; i < user_option.length; i++)
+          {
+              user_option[i].classList.remove('is-visible');
           }
-        };
-        
-        wrapSidenav.addEventListener('click', function(evt) {
-          if (menuInitialState === false) {
-            openSidebar();
-          }
-        });
-       
-        function openSidebar() {
+
+        }
+
+        hoverOpenSidebar = function() {
           menu.classList.add('open-mode');
           menu.classList.remove('collapsed-mode');
           blockContent.classList.add('p-300');
           blockContent.classList.remove('p-55');
-          collapseIcon.innerText = 'chevron_left';
-          removeWrapOnSidebar();
-          menuInitialState = true;
+          showUserOptions();
+          // collapseShowMenuText();
         }
 
-        function closeSidebar() {
+        hoverCloseSidebar = function() {
           menu.classList.remove('open-mode');
           menu.classList.add('collapsed-mode');
           blockContent.classList.remove('p-300');
           blockContent.classList.add('p-55');
-          collapseIcon.innerText = 'chevron_right';
-          instance.close($('li.active').index());
+          hideUserOptions();
+          // collapseHideMenuText();
 
           setTimeout(() => {
-            window.mapReference.invalidateSize();
-          }, 200); // Wait until close animation finish to execute function
-
-          addWrapOnSidebar();
-          menuInitialState = false;
+            instance.close($('li.active').index());
+          }, 1000000); // Wait until close animation finish to execute function
         }
 
-        function addWrapOnSidebar() {
-          wrapSidenav.classList.add('wrap-menu');
+        closeSidebarSubMenu = function() {
+          instance.close($('li.active').index());
         }
+
+
+
+
+        // function addWrapOnSidebar() {
+        //   wrapSidenav.classList.add('wrap-menu');
+        // }
         
-        function removeWrapOnSidebar() {
-          wrapSidenav.classList.remove('wrap-menu');
-        }
+        // function removeWrapOnSidebar() {
+        //   wrapSidenav.classList.remove('wrap-menu');
+        // }
 
-        [].slice.call(document.querySelectorAll('.active.collection-item'))
-          .forEach(el => {
-            el.classList.remove('active', 'text-white');
-          });
-        [].slice.call(document.querySelectorAll(`.collection-item[href="${window.location.pathname}"]`))
-          .forEach(el => { 
-            el.classList.add('active', 'text-white');
-          });
+        // [].slice.call(document.querySelectorAll('.active.collection-item'))
+        //   .forEach(el => {
+        //     el.classList.remove('active', 'text-white');
+        //   });
+        // [].slice.call(document.querySelectorAll(`.collection-item[href="${window.location.pathname}"]`))
+        //   .forEach(el => { 
+        //     el.classList.add('active', 'text-white');
+        //   });
         
-          let query = document.querySelector(`.collection-item[href="${window.location.pathname}"]`)
-          if (query) {
-            const li = query.parentElement.parentElement.parentElement.parentElement;
-            instance.open([].slice.call(document.querySelector('.collapsible').children).indexOf(li));
-          }
+        //   let query = document.querySelector(`.collection-item[href="${window.location.pathname}"]`)
+        //   if (query) {
+        //     const li = query.parentElement.parentElement.parentElement.parentElement;
+        //     instance.open([].slice.call(document.querySelector('.collapsible').children).indexOf(li));
+        //   }
       });
     </script>
     {% endblock %}

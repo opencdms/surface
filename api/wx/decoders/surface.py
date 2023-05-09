@@ -8,6 +8,7 @@ import pytz
 from celery import shared_task
 
 from wx.decoders.insert_raw_data import insert
+from wx.decoders.insert_hf_data import insert as insert_hf
 from wx.models import Station
 from wx.models import Variable
 from wx.utils import update_station_variables
@@ -38,7 +39,7 @@ def naive_to_aware(dt, fixed_tz):
 
 
 @shared_task
-def read_file(filename, station_object=None, utc_offset=-360, override_data_on_conflict=False):
+def read_file(filename, highfrequency_data=False, station_object=None, utc_offset=-360, override_data_on_conflict=False):
     """Read a Surface file and return a seq of records or nil in case of error"""
 
     logger.info('processing %s' % filename)
@@ -118,7 +119,10 @@ def read_file(filename, station_object=None, utc_offset=-360, override_data_on_c
             ]
             reads.append(columns)
 
-        insert(reads, override_data_on_conflict)
+        if highfrequency_data:
+            insert_hf(reads, override_data_on_conflict)
+        else:
+            insert(reads, override_data_on_conflict)
 
         total_reads = total_reads + len(reads)
 

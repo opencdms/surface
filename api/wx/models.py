@@ -9,8 +9,14 @@ from django.contrib.gis.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django.utils.timezone import now
+from croniter import croniter
+from django.core.exceptions import ValidationError
 
 from wx.enums import FlashTypeEnum
+
+from timescale.db.models.models import TimescaleModel
+from timescale.db.models.fields import TimescaleDateTimeField
+from timescale.db.models.managers import TimescaleManager
 
 
 class BaseModel(models.Model):
@@ -336,11 +342,19 @@ class WMOProgram(BaseModel):
     def __str__(self):
         return self.name
 
+class Watershed(models.Model):
+    watershed = models.CharField(max_length=128)
+    size = models.CharField(max_length=16)
+    acres = models.FloatField()
+    hectares = models.FloatField()
+    shape_leng = models.FloatField()
+    shape_area = models.FloatField()
+    geom = models.MultiPolygonField(srid=4326)
 
 class Station(BaseModel):    
     name = models.CharField(max_length=256)
     alias_name = models.CharField(max_length=256, null=True, blank=True)
-    begin_date = models.DateTimeField(null=True, blank=True)
+    begin_date = models.DateTimeField(null=True)
     relocation_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
     network = models.CharField(max_length=256, null=True, blank=True)
@@ -351,7 +365,7 @@ class Station(BaseModel):
         MinValueValidator(-90.),
         MaxValueValidator(90.)
     ])
-    elevation = models.FloatField(null=True, blank=True)
+    elevation = models.FloatField(null=True)
     code = models.CharField(max_length=64)
     reference_station = models.ForeignKey('self',
         on_delete=models.SET_NULL,
@@ -381,8 +395,7 @@ class Station(BaseModel):
     )
     watershed = models.CharField(
         max_length=256,
-        null=True,
-        blank=True
+        null=True
     )
     z = models.FloatField(
         null=True,
@@ -573,13 +586,11 @@ class Station(BaseModel):
     country = models.ForeignKey(
         Country,
         on_delete=models.DO_NOTHING,
-        null=True,
-        blank=True
-    )    
+        null=True
+    )
     region = models.CharField(
         max_length=256,
-        null=True,
-        blank=True
+        null=True
     )
     data_source = models.ForeignKey(
         DataSource,
@@ -590,14 +601,14 @@ class Station(BaseModel):
     communication_type = models.ForeignKey(
         StationCommunication,
         on_delete=models.DO_NOTHING,
-        null=True,
-        blank=True
+        null=True
     )
     utc_offset_minutes = models.IntegerField(
         validators=[
             MaxValueValidator(720),
             MinValueValidator(-720)
-        ])
+        ]
+    )
     alternative_names = models.CharField(
         max_length=256,
         null=True,
@@ -633,7 +644,7 @@ class Station(BaseModel):
         ordering = ('name',)
 
     def get_absolute_url(self):
-        """Returns the url to access a particular instance of MyModelName."""
+        """Returns the url to access a particular instance of Station."""
         return reverse('station-detail', args=[str(self.id)])
 
     def __str__(self):
@@ -801,15 +812,6 @@ class PeriodicJob(BaseModel):
         ordering = ('station', 'periodic_job_type',)
 
 
-class Watershed(models.Model):
-    watershed = models.CharField(max_length=128)
-    size = models.CharField(max_length=16)
-    acres = models.FloatField()
-    hectares = models.FloatField()
-    shape_leng = models.FloatField()
-    shape_area = models.FloatField()
-    geom = models.MultiPolygonField(srid=4326)
-
 
 class District(models.Model):
     id_field = models.IntegerField()
@@ -845,6 +847,15 @@ class NoaaDcp(BaseModel):
     transmission_window = models.TimeField()
     transmission_period = models.TimeField()
     last_datetime = models.DateTimeField(null=True, blank=True)
+    config_file = models.FileField(upload_to='', null=True, blank=True)
+    config_data = models.TextField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.config_file.name is not None:
+            if self.config_file.name.endswith('.ssf'):
+                self.config_data = self.config_file.open("r").read()
+                self.config_file.delete()
+        super().save(*args, **kwargs)         
 
     def __str__(self):
         return self.dcp_address
@@ -955,6 +966,7 @@ class StationFileIngestion(BaseModel):
     is_active = models.BooleanField(default=True)
     is_binary_transfer = models.BooleanField(default=False)
     is_historical_data = models.BooleanField(default=False)
+    is_highfrequency_data = models.BooleanField(default=False)
     override_data_on_conflict = models.BooleanField(default=False)
 
     class Meta:
@@ -985,6 +997,7 @@ class StationDataFile(BaseModel):
     file_size = models.IntegerField()
     observation = models.TextField(max_length=1024, null=True, blank=True)
     is_historical_data = models.BooleanField(default=False)
+    is_highfrequency_data = models.BooleanField(default=False)
     override_data_on_conflict = models.BooleanField(default=False)
 
     def __str__(self):
@@ -1200,8 +1213,6 @@ class StationDataMinimumInterval(BaseModel):
     def __str__(self):
         return f'{self.datetime}: {self.station} - {self.variable}'
 
-from croniter import croniter
-from django.core.exceptions import ValidationError
 
 class BackupTask(BaseModel):
     def cron_validator(cron_exp):
@@ -1220,6 +1231,7 @@ class BackupTask(BaseModel):
     def __str__(self):
         return self.name  
 
+
 class BackupLog(BaseModel):
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -1228,3 +1240,138 @@ class BackupLog(BaseModel):
     backup_task = models.ForeignKey(BackupTask, on_delete=models.CASCADE)
     file_path = models.CharField(max_length=1024)
     file_size = models.FloatField(null=True, blank=True, verbose_name="File Size (MB)")
+
+
+class ElementDecoder(BaseModel):
+    element_name = models.CharField(max_length=64)
+    variable = models.ForeignKey(Variable, on_delete=models.DO_NOTHING, null=True, blank=True)
+    decoder = models.ForeignKey(Decoder, on_delete=models.DO_NOTHING, null=True, blank=True)
+
+
+class HighFrequencyData(BaseModel):
+    datetime = TimescaleDateTimeField(interval="1 day")
+    measured = models.FloatField()
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    variable = models.ForeignKey(Variable, on_delete=models.DO_NOTHING)
+
+    objects = models.Manager()
+    timescale = TimescaleManager()
+
+    class Meta:
+        constraints =[models.UniqueConstraint(
+                fields=['datetime', 'station', 'variable'],
+                name="unique_datetime_station_id_variable_id"
+             ),
+        ]
+
+
+class HFSummaryTask(BaseModel):
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    variable = models.ForeignKey(Variable, on_delete=models.DO_NOTHING)
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('station', 'variable', 'start_datetime', 'end_datetime')
+
+class VisitType(BaseModel):
+    name = models.CharField(max_length=64, unique=True, blank=False, null=False)
+    description = models.CharField(max_length=256, blank=True, null=True)
+
+
+class Technician(BaseModel): # Singular
+    name = models.CharField(max_length=64, unique=True, blank=False, null=False)
+
+################################################################################################
+# https://github.com/jazzband/django-tinymce
+# from tinymce import models as tinymce_models
+from ckeditor.fields import RichTextField
+
+# https://stackoverflow.com/questions/54802616/how-to-use-enums-as-a-choice-field-in-django-model
+from django.utils.translation import gettext_lazy # Enumaretor
+from datetime import date
+
+def no_future(value):
+    today = date.today()
+    if value > today:
+        raise ValidationError('Visit date cannot be in the future.')
+
+class StationComponent(BaseModel):
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=256)
+    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
+    report_template = RichTextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "station component"
+        verbose_name_plural = "station components"
+
+    def __str__(self):
+        return self.name    
+
+class StationProfileComponent(BaseModel):
+    profile = models.ForeignKey(StationProfile, on_delete=models.DO_NOTHING)
+    presentation_order = models.IntegerField()
+    station_component = models.ForeignKey(StationComponent, on_delete=models.DO_NOTHING)
+
+    class Meta:
+        unique_together = ('profile', 'station_component')
+        unique_together = ('profile', 'presentation_order')
+
+class MaintenanceReport(BaseModel):
+    class Status(models.TextChoices):
+        APPROVED = 'A', gettext_lazy('Approved')
+        DRAFT = 'D', gettext_lazy('Draft')
+        PUBLISHED = 'P', gettext_lazy('Published')
+        DELETED = '-', gettext_lazy('Deleted')
+
+    # New Maintenace Report
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    # https://stackoverflow.com/questions/49882526/validation-for-datefield-so-it-doesnt-take-future-dates-in-django
+    visit_type = models.ForeignKey(VisitType, on_delete=models.DO_NOTHING)
+    responsible_technician = models.ForeignKey(Technician, related_name='responsible_technician', on_delete=models.DO_NOTHING)
+    visit_date = models.DateField(help_text="Enter the date of the visit", validators=[no_future])
+    initial_time = models.TimeField() # Sem timezone
+
+    status = models.CharField(max_length=1, choices=Status.choices, default=Status.DRAFT)
+    
+    # First Snippet
+    station_on_arrival_conditions = RichTextField(blank=True, null=True)
+
+    # Penultimate Snippet
+    contacts = RichTextField(blank=True, null=True)
+
+    # Last Snippet
+    other_technician_1 = models.ForeignKey(Technician, related_name='other_technician_1', on_delete=models.DO_NOTHING, blank=True, null=True)
+    other_technician_2 = models.ForeignKey(Technician, related_name='other_technician_2', on_delete=models.DO_NOTHING, blank=True, null=True)
+    other_technician_3 = models.ForeignKey(Technician, related_name='other_technician_3', on_delete=models.DO_NOTHING, blank=True, null=True)
+
+    next_visit_date = models.DateField(blank=True, null=True)
+    end_time = models.TimeField(blank=True, null=True) # Sem timezone
+
+    current_visit_summary = RichTextField(blank=True, null=True)
+    next_visit_summary = RichTextField(blank=True, null=True)
+
+    data_logger_file = models.TextField(blank=True, null=True)
+    data_logger_file_name = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('station', 'visit_date')    
+
+class MaintenanceReportStationComponent(BaseModel):
+    class ComponentClassification(models.TextChoices):
+        FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
+        PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
+        NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
+
+    maintenance_report = models.ForeignKey(MaintenanceReport, on_delete=models.CASCADE)
+    station_component = models.ForeignKey(StationComponent, on_delete=models.DO_NOTHING)
+    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
+    condition = RichTextField()
+    component_classification = models.CharField(max_length=1, choices=ComponentClassification.choices, default=ComponentClassification.FULLY_FUNCTIONAL)
+
+    class Meta:
+        unique_together = ('maintenance_report', 'station_component')
+

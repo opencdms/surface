@@ -10,6 +10,7 @@ from celery import shared_task
 
 from tempestas_api import settings
 from wx.decoders.insert_raw_data import insert
+from wx.decoders.insert_hf_data import insert as insert_hf
 from wx.models import RatingCurve, RatingCurveTable
 
 logger = logging.getLogger('surface.manual_data')
@@ -101,7 +102,7 @@ def parse_sheet_date(sheet_name, sheet_raw_data):
 
 
 @shared_task
-def read_file(filename, station_object, utc_offset=-360, override_data_on_conflict=False):
+def read_file(filename, highfrequency_data=False, station_object=None, utc_offset=-360, override_data_on_conflict=False):
     """Read a hydro data file and return a seq of records or nil in case of error"""
 
     logger.info(f'processing {filename}')
@@ -135,9 +136,12 @@ def read_file(filename, station_object, utc_offset=-360, override_data_on_confli
         logger.error(repr(e))
         raise
 
-    end = time.time()
+    if highfrequency_data:
+        insert_hf(reads, override_data_on_conflict)
+    else:
+        insert(reads, override_data_on_conflict)
 
-    insert(reads, override_data_on_conflict)
+    end = time.time()
 
     logger.info(f'Processing file {filename} in {end - start} seconds, '
                 f'returning #reads={len(reads)}.')

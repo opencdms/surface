@@ -154,7 +154,7 @@ class NoaaDcpAdmin(admin.ModelAdmin):
     search_fields = ("dcp_address",)
     list_display = ("dcp_address", "first_channel", "first_channel_type", "second_channel", "second_channel_type",
                     "first_transmission_time", "transmission_window", "transmission_period", "last_datetime")
-
+    exclude = ('config_data',)
 
 @admin.register(models.NoaaDcpsStation)
 class NoaaDcpsStationAdmin(admin.ModelAdmin):
@@ -314,3 +314,25 @@ class BackupLogAdmin(admin.ModelAdmin):
         if obj.finished_at is not None:
             return obj.finished_at - obj.started_at
         return None
+
+
+@admin.register(models.ElementDecoder)
+class ElementDecoder(admin.ModelAdmin):
+    search_fields = ("element_name", "variable__name", "decoder__name")
+    list_display = ("element_name", "variable_id", "decoder")
+
+admin.site.register(models.StationComponent)
+class StationProfileComponentAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description')
+
+@admin.register(models.StationProfileComponent)
+class StationProfileComponentAdmin(admin.ModelAdmin):
+    list_display = ('profile', 'presentation_order', 'station_component')
+
+@admin.register(models.VisitType)
+class VisitTypeAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+@admin.register(models.Technician)
+class TechnicianAdmin(admin.ModelAdmin):
+    list_display = ("name",)

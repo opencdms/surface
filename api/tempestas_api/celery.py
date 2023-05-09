@@ -26,7 +26,7 @@ app.conf.beat_schedule = {
     },
     'dcp_tasks_scheduler': {
         'task': 'wx.tasks.dcp_tasks_scheduler',
-        'schedule': 900,
+        'schedule': 60,
     },
     'process_hourly_summary_tasks': {
         'task': 'wx.tasks.process_hourly_summary_tasks',
@@ -51,6 +51,19 @@ app.conf.beat_schedule = {
     'backup_postgres': {
         'task': 'wx.tasks.backup_postgres',
         'schedule': 60
+    },
+    'ftp_ingest_highfrequency_station_files': {
+        'task': 'wx.tasks.ftp_ingest_highfrequency_station_files',
+        'schedule': 60
+    },        
+    'process_hfdata_summary_tasks': {
+        'task': 'wx.tasks.process_hfdata_summary_tasks',
+        'schedule': 60
+    },
+    ## Wava data simulator
+    'gen_hf_data': {
+        'task': 'wx.tasks.gen_toa5_file',
+        'schedule': 900
     },    
 }
 
