@@ -3,28 +3,28 @@
     "model": "wx.visittype",
     "pk": 1,
     "fields": {
-        "created_at": "2023-02-28T23:39:43.923Z",
-        "updated_at": "2023-02-28T23:39:43.923Z",
-        "name": "Preventive",
-        "description": "Preventive"
+        "created_at": "2023-05-09T02:53:48.404Z",
+        "updated_at": "2023-05-09T02:53:48.404Z",
+        "name": "Replacement",
+        "description": "Replacement"
     }
 },
 {
     "model": "wx.visittype",
     "pk": 2,
     "fields": {
-        "created_at": "2023-02-28T23:39:52.064Z",
-        "updated_at": "2023-02-28T23:39:52.064Z",
-        "name": "Installation",
-        "description": "Installation"
+        "created_at": "2023-05-09T02:53:53.956Z",
+        "updated_at": "2023-05-09T02:53:53.956Z",
+        "name": "Corrective",
+        "description": "Corrective"
     }
 },
 {
     "model": "wx.visittype",
     "pk": 3,
     "fields": {
-        "created_at": "2023-02-28T23:39:58.232Z",
-        "updated_at": "2023-02-28T23:39:58.232Z",
+        "created_at": "2023-05-09T02:53:58.814Z",
+        "updated_at": "2023-05-09T02:53:58.814Z",
         "name": "Inspection",
         "description": "Inspection"
     }
@@ -33,20 +33,20 @@
     "model": "wx.visittype",
     "pk": 4,
     "fields": {
-        "created_at": "2023-02-28T23:40:49.334Z",
-        "updated_at": "2023-02-28T23:40:49.334Z",
-        "name": "Corrective",
-        "description": "Corrective"
+        "created_at": "2023-05-09T02:54:04.096Z",
+        "updated_at": "2023-05-09T02:54:04.096Z",
+        "name": "Installation",
+        "description": "Installation"
     }
 },
 {
     "model": "wx.visittype",
     "pk": 5,
     "fields": {
-        "created_at": "2023-02-28T23:40:58.504Z",
-        "updated_at": "2023-02-28T23:40:58.504Z",
-        "name": "Replacement",
-        "description": "Replacement"
+        "created_at": "2023-05-09T02:54:13.476Z",
+        "updated_at": "2023-05-09T02:54:13.476Z",
+        "name": "Preventive",
+        "description": "Preventive"
     }
 }
 ]

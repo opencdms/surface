@@ -1,4 +1,4 @@
-FROM python:3.9.8-slim-bullseye
+FROM python:3.9-bullseye
 LABEL authors="Roberto Santos, Tadashi Igarashi"
 
 ENV PYTHONUNBUFFERED 1
