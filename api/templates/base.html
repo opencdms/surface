@@ -569,8 +569,10 @@
             <li id="maintenance-group" class="hide-menu collapsible-item">
               <a href="{% url 'maintenance-reports' %}" style="padding: 0px 16px;"><i class="material-icons">build</i>MAINTENANCE</a>
             </li>
+            {% endif %}
 
 
+            {% if request.user.is_staff or request.user.is_superuser %}
             <li id="data-group" class="hide-menu">
               <div class="collapsible-header"><i class="material-icons">data_usage</i>DATA</div>
               <div class="collapsible-body">
@@ -584,7 +586,10 @@
                 </div>
               </div>
             </li>
+            {% endif %}
 
+
+            {% if request.user.is_staff or request.user.is_superuser %}
             <li id="quality-control-group" class="hide-menu">
               <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality<span>&nbsp;</span>Control</div>
               <div class="collapsible-body">
@@ -598,6 +603,7 @@
                 </div>
               </div>
             </li>
+            {% endif %}
 
             <li id="products-group" class="hide-menu">
               <div class="collapsible-header"><i class="material-icons">list_alt</i>PRODUCTS</div>
@@ -609,14 +615,14 @@
                     <a id="product-compare" href="{% url 'product-compare' %}" class="hide-menu collection-item left-space">Station Compare<i class="material-icons secondary-content">compare_arrows</i></a>
                     <!-- <a id="yearly-average" href="{% url 'yearly-average' %}" class="collection-item left-space">Yearly Average<i class="material-icons secondary-content">timeline</i></a> -->
                     <a id="spatial-analysis" href="{% url 'spatial-analysis' %}" class="hide-menu collection-item left-space">Spatial analysis<i class="material-icons secondary-content">dashboard</i></a>
+                    {% if request.user.is_staff or request.user.is_superuser %}
                     <a id="extremes-means" href="{% url 'extremes-means' %}" class="hide-menu collection-item left-space">Extremes and Means<i class="material-icons secondary-content">equalizer</i></a>
                     <a id="wave-data" href="{% url 'wave-data' %}" class="hide-menu collection-item left-space">Wave data analysis<i class="material-icons secondary-content">water</i></a>
+                    {% endif %}
                   </ul>
                 </div>
             </div>
             </li>
-            {% endif %}
-
 
             {% if request.user.is_staff or request.user.is_superuser %}
             <li class="collapsible-item">
