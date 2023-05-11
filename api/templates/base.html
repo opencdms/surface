@@ -551,17 +551,25 @@
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
                     <a id="stations-map" href="{% url 'stations-map' %}" class="hide-menu collection-item left-space ">MAP<i class="material-icons secondary-content">map</i></a>
+
+                    {% if request.user.is_staff or request.user.is_superuser %}
+
                     <a id="stations-list" href="{% url 'stations-list' %}" class="hide-menu collection-item left-space ">LIST<i class="material-icons secondary-content">donut_small</i></a>
                     <a id="station-metadata" href="{% url 'station-metadata' %}" class="hide-menu collection-item left-space ">METADATA<i class="material-icons secondary-content">donut_small</i></a>
                     <!-- <a id="stations-monitoring" href="{% url 'stations-monitoring' %}" class="hide-menu collection-item left-space ">STATIONS MONITORING<i class="material-icons secondary-content">monitor</i></a>                     -->
+
+                    {% endif %}
                   </ul>
                 </div>
               </div>
             </li>
             </li>
+
+            {% if request.user.is_staff or request.user.is_superuser %}
             <li id="maintenance-group" class="hide-menu collapsible-item">
               <a href="{% url 'maintenance-reports' %}" style="padding: 0px 16px;"><i class="material-icons">build</i>MAINTENANCE</a>
             </li>
+
 
             <li id="data-group" class="hide-menu">
               <div class="collapsible-header"><i class="material-icons">data_usage</i>DATA</div>
@@ -607,7 +615,9 @@
                 </div>
             </div>
             </li>
-            
+            {% endif %}
+
+
             {% if request.user.is_staff or request.user.is_superuser %}
             <li class="collapsible-item">
               <a href="{% url 'admin:index' %}" style="padding: 0px 16px;"><i class="material-icons">people</i>ADMINISTRATIVE AREA</a>
