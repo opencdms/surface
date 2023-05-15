@@ -2,13 +2,16 @@
 {% block station_content %}
 {% load static %}
 
+<span id="stationNameChanger" class="srf-display-1 text-uppercase hide"><span id="stationNameChangerText"></span> Metadata</span>
+
 <div id="app" v-cloak>
 
   <div style="display: flex; justify-content: space-between; margin-bottom: 16px">
-    <span class="srf-display-1 text-uppercase">Station Metadata</span>
-  </div>
+    <span v-if="!selectedStation" class="srf-display-1 text-uppercase">Station Metadata</span>
+  </div>  
   
   <v-app>
+
     <v-container style="width: 100%; padding-left: 0 !important; margin-left: 0 !important;">
     <v-layout mt-3 ml-3 mb-3 >
       <v-flex sm3 md3 lg3>
@@ -18,7 +21,7 @@
           item-value="id"
           v-model="stationId"
           label="Station"
-          @change="onChangeStation()"
+          @change="onChangeStation();changeStationHeader();"
           required
           hint="*Required"
           persistent-hint
@@ -1804,6 +1807,7 @@
         LIcon
       },
       data: {
+        ghty: "looolz",
         iconSizeTest: [32, 32],
         zoom: "{{ MAP_ZOOM|safe }}",
         center: L.latLng("{{ MAP_LATITUDE|safe }}", "{{ MAP_LONGITUDE|safe }}"),
@@ -1816,6 +1820,7 @@
         stationId: "{{ station_id|safe }}",
         iconAnchor: [16, 32],
         selectedStation: {},
+        testing: {},
         backupStationObject: null,
         stationList: [],
         stationImagesList: [],
@@ -2027,7 +2032,7 @@
         },
 
         cancelEditing(){
-          // this.isEditing = false;
+          this.isEditing = false;
           this.selectedStation = {... this.backupStationObject};
         },
 
@@ -2080,6 +2085,7 @@
         },
 
         onChangeStation() {
+
           if(this.stationId != null){
               this.selectedStation = this.stationList.find(station => station.id === this.stationId);
               this.selectedStation.begin_date = moment.utc(this.selectedStation.begin_date).format('YYYY-MM-DD');
@@ -2094,6 +2100,11 @@
               this.getStationImages(this.stationId);
               this.getStationDocuments(this.stationId);
             }
+        },
+
+        changeStationHeader() {
+          document.getElementById("stationNameChanger").classList.remove("hide");
+          document.getElementById("stationNameChangerText").innerHTML = this.selectedStation.name;
         },
 
         formatDate(datetime){
@@ -2125,4 +2136,3 @@
     }
   </style>
 {% endblock %}
-
