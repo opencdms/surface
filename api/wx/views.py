@@ -3088,6 +3088,193 @@ def last24_summary_list(request):
 from wx.models import QualityFlag
 import time
 
+
+def get_stationsmonintoring_chartdata(station_id, variable_id, data_type, datetime_picked):
+    date_start = str((datetime_picked - datetime.timedelta(days=6)).date())
+    date_end = str(datetime_picked.date())
+
+    if data_type=='Communication':
+        query = """
+            WITH
+                date_range AS (
+                    SELECT GENERATE_SERIES(%s::DATE - '6 day'::INTERVAL, %s::DATE, '1 day')::DATE AS date
+                ),
+                hs AS (
+                    SELECT
+                        datetime::date AS date,
+                        COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS amount
+                    FROM
+                        hourly_summary
+                    WHERE
+                        datetime >= %s::DATE - '7 day'::INTERVAL AND datetime < %s::DATE + '1 day'::INTERVAL
+                        AND station_id = %s
+                        AND variable_id = %s
+                    GROUP BY 1
+                )
+            SELECT
+                date_range.date,
+                COALESCE(hs.amount, 0) AS amount,
+                COALESCE((
+                    SELECT color FROM wx_qualityflag
+                    WHERE 
+                        CASE 
+                            WHEN COALESCE(hs.amount, 0) >= 20 THEN name = 'Good'
+                            WHEN COALESCE(hs.amount, 0) >= 8 AND COALESCE(hs.amount, 0) <= 19 THEN name = 'Suspicious'
+                            WHEN COALESCE(hs.amount, 0) >= 1 AND COALESCE(hs.amount, 0) <= 7 THEN name = 'Bad'
+                            ELSE name = 'Not checked'
+                        END
+                ), '') AS color
+            FROM
+                date_range
+                LEFT JOIN hs ON date_range.date = hs.date
+            ORDER BY date_range.date;
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, datetime_picked, datetime_picked, station_id, variable_id,))
+            results = cursor.fetchall()
+
+        chart_options = {
+            'chart': {
+                'type': 'column'
+            },
+            'title': {
+                'text': 'DELAY DATA TRACK - ' + date_start + ' to ' + date_end
+            },
+            'xAxis': {
+                'categories': [r[0] for r in results]
+            },
+            'yAxis': {
+                'title': None,
+                'categories': [str(i)+'h' for i in range(25)],      
+                'tickInterval': 2,
+                'min': 0,
+                'max': 24,
+            },
+            'series': [
+                {
+                    'name': 'Max comunication',
+                    'data': [{'y': r[1], 'color': r[2]} for r in results],
+                    'showInLegend': False
+                }
+            ],
+            'plotOptions': {
+                'column': {
+                    'minPointLength': 10,
+                    'pointPadding': 0.01,
+                    'groupPadding': 0.05
+                }
+            }            
+        }
+
+    elif data_type=='Quality Control':
+        flags = {
+          'good': QualityFlag.objects.get(name='Good').color,
+          'suspicious': QualityFlag.objects.get(name='Suspicious').color,
+          'bad': QualityFlag.objects.get(name='Bad').color,
+          'not_checked': QualityFlag.objects.get(name='Not checked').color,
+        }        
+
+        query = """
+            WITH
+              date_range AS (
+                SELECT GENERATE_SERIES(%s::DATE - '6 day'::INTERVAL, %s::DATE, '1 day')::DATE AS date
+              ),
+              hs AS(              
+                SELECT 
+                    rd.datetime::DATE AS date
+                    ,EXTRACT(hour FROM rd.datetime) AS hour
+                    ,CASE
+                      WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN('Bad')
+                      WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN('Suspicious')
+                      WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN('Good')
+                      ELSE ('Not checked')
+                    END AS quality_flag
+                FROM raw_data AS rd
+                    LEFT JOIN wx_qualityflag qf ON rd.quality_flag = qf.id
+                WHERE 
+                    datetime >= %s::DATE - '7 day'::INTERVAL AND datetime < %s::DATE + '1 day'::INTERVAL
+                    AND rd.station_id = %s
+                    AND rd.variable_id = %s
+                GROUP BY 1,2
+                ORDER BY 1,2
+              )
+            SELECT
+                date_range.date
+                ,COUNT(CASE WHEN hs.quality_flag='Good' THEN 1 END) AS good
+                ,COUNT(CASE WHEN hs.quality_flag='Suspicious' THEN 1 END) AS suspicious
+                ,COUNT(CASE WHEN hs.quality_flag='Bad' THEN 1 END) AS bad
+                ,COUNT(CASE WHEN hs.quality_flag='Not checked' THEN 1 END) AS not_checked
+            FROM date_range
+                LEFT JOIN hs ON date_range.date = hs.date
+            GROUP BY 1
+            ORDER BY 1;
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, datetime_picked, datetime_picked, station_id, variable_id,))
+            results = cursor.fetchall()
+
+        series = [] 
+        for i, flag in enumerate(flags):
+            data = [r[i+1] for r in results]
+            series.append({'name': flag.capitalize(), 'data': data, 'color': flags[flag]})
+
+        chart_options = {
+            'chart': {
+                'type': 'column'
+            },
+            'title': {
+                'text': 'Amount of flags During ' + date_start + ' to ' + date_end
+            },
+            'xAxis': {
+                'categories': [r[0] for r in results]
+            },
+            'yAxis': {
+                'title': None,
+                'categories': [str(i)+'h' for i in range(25)],      
+                'tickInterval': 2,
+                'min': 0,
+                'max': 24,
+            },
+            'series': series,
+            'plotOptions': {
+                'column': {
+                    'minPointLength': 10, 
+                    'pointPadding': 0.01,
+                    'groupPadding': 0.05
+                }
+            }            
+        }            
+
+    return chart_options
+
+@require_http_methods(["GET"])    
+def get_stationsmonitoring_chart_data(request, station_id, variable_id):
+    print(station_id, variable_id)
+
+    time_type = request.GET.get('time_type', 'Last 24h')
+    data_type = request.GET.get('data_type', 'Communication')
+    date_picked = request.GET.get('date_picked', None)
+
+    if time_type=='Last 24h':
+        datetime_picked = datetime.datetime.now()
+    else:
+        datetime_picked = datetime.datetime.strptime(date_picked, '%Y-%m-%d')    
+
+    # Fix a date to test
+    # datetime_picked = datetime.datetime.strptime('2023-01-01', '%Y-%m-%d')    
+
+    chart_data = get_stationsmonintoring_chartdata(station_id, variable_id, data_type, datetime_picked)
+
+    response = {
+        "chartOptions": chart_data
+    }
+
+    print(response)
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
 def get_station_lastupdate(station_id):
     stationvariables = StationVariable.objects.filter(station_id=station_id)
     
@@ -3161,7 +3348,7 @@ def query_stationsmonitoring_station(data_type, time_type, date_picked, station_
         station_data = [{'id': r[0], 
                          'name': r[1], 
                          'amount': r[2] if r[2] is not None else 0, 
-                         'latestvalue': str(r[3])+r[4] if r[3] is not None else '---', 
+                         'latestvalue': " ".join([str(r[3]), r[4]]) if r[3] is not None else '---', 
                          'color': r[5]} for r in results]
 
     elif data_type=='Quality Control':

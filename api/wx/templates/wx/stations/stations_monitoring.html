@@ -1,11 +1,18 @@
 {% extends "base.html" %} {% block content %} {% load static %}
 <div id="app">
   <v-app v-cloak>
-    <v-dialog v-model="dialog_chart" max-width="600" style="z-index:9999;">
+    <v-dialog v-model="dialog_chart" max-width="1000" style="z-index:9999;">
       <v-card>
         <v-card-title>History Chart</v-card-title>
         <v-card-text>
-          <highcharts :options="chartOptions"></highcharts>
+          <div v-if="loading_chart">
+            <span class="headline font-weight-thin" v-if="loading">Loading...</span><br>
+            <span class="headline font-weight-thin" v-if="rendering">Rendering...</span><br>
+            <v-progress-linear
+            indeterminate
+            ></v-progress-linear>
+          </div>
+          <highcharts v-if="!loading_chart" :options="chartOptions"></highcharts>
         </v-card-text>
         <v-card-actions>
           <v-btn color="primary" @click="dialog_chart = false">Close</v-btn>
@@ -234,7 +241,7 @@
                       <template v-slot:item.chart="{ item }">
                         <v-tooltip bottom>
                           <template v-slot:activator="{ on }">
-                            <v-btn @click="dialog_chart = true" icon>
+                            <v-btn @click="dialog_chart = true; getChartData(selected.station, item);" icon>
                               <v-icon color="blue"> mdi-chart-bar </v-icon>  
                             </v-btn>                  
                           </template>
@@ -323,7 +330,7 @@
                       <template v-slot:item.chart="{ item }">
                         <v-tooltip bottom>
                           <template v-slot:activator="{ on }">
-                            <v-btn @click="dialog_chart = true" icon>
+                            <v-btn @click="dialog_chart = true; getChartData(selected.station, item)" icon>
                               <v-icon color="blue"> mdi-chart-bar </v-icon>  
                             </v-btn>                  
                           </template>
@@ -380,7 +387,8 @@
       LIcon
     },
     data () {
-      return{    
+      return{
+        loading_chart: false,
         loading_station: false,
         loading_map: false,
         chartOptions: {
@@ -540,7 +548,7 @@
         this.loading_station = true        
         axios({
           method: 'get',
-          url: `/wx/stations/stations_monitoring/${station.id}/get/`,
+          url: `/wx/stations/stations_monitoring/get/${station.id}/`,
           params: {
             'data_type': this.data_type,
             'time_type': this.time_type,
@@ -556,6 +564,33 @@
           console.log(error);
         });           
       },
+      getChartData(station, variable){
+        this.loading_chart = true;
+        axios({
+          method: 'get',
+          url: `/wx/stations/stations_monitoring/get/${station.id}/${variable.id}/`,
+          params: {
+            'data_type': this.data_type,
+            'time_type': this.time_type,
+            'date_picked': this.date            
+          },
+        }) 
+        .then(response => {
+          this.loading_chart = false;          
+          console.log(this.chartOptions)
+          this.chartOptions = response.data['chartOptions']
+          // this.chartOptions.chart = response.data['chartOptions']['chart']
+          // this.chartOptions.title = response.data['chartOptions']['title']
+          // this.chartOptions.xAxis = response.data['chartOptions']['xAxis']
+          // this.chartOptions.yAxis = response.data['chartOptions']['yAxis']
+          // this.chartOptions.title = response.data['chartOptions']['title']
+          // this.chartOptions.series = response.data['chartOptions']['series']
+          console.log(response.data['chartOptions'])
+        })
+        .catch(error => {
+          console.log(error);
+        });           
+      },      
       isMaintenance(data_type){
         return ['Visits', 'Components'].includes(data_type)
       },
