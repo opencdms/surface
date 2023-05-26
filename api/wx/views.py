@@ -4399,6 +4399,8 @@ def update_global_threshold(request):
     variable_name = request.GET.get('variable_name', None)
     variable = Variable.objects.get(name=variable_name)
 
+    is_automatic = is_automatic == "true"
+
     if qc_method=='range':
         range_min = request.GET.get('range_min', None)    
         range_max = request.GET.get('range_max', None)
