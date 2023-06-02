@@ -1,1 +1,252 @@
-[{"model": "wx.measurementvariable", "pk": 1, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Air Temperature", "physical_quantity": 1}}, {"model": "wx.measurementvariable", "pk": 2, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Soil Temperature", "physical_quantity": 1}}, {"model": "wx.measurementvariable", "pk": 3, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Rainfall", "physical_quantity": 2}}, {"model": "wx.measurementvariable", "pk": 4, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Evaporation", "physical_quantity": 2}}, {"model": "wx.measurementvariable", "pk": 5, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Wind Mileage", "physical_quantity": 2}}, {"model": "wx.measurementvariable", "pk": 6, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Hydro Level", "physical_quantity": 2}}, {"model": "wx.measurementvariable", "pk": 7, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Relative Humidity", "physical_quantity": 0}}, {"model": "wx.measurementvariable", "pk": 8, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Weather Phenomena Occurences", "physical_quantity": 0}}, {"model": "wx.measurementvariable", "pk": 9, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Wind Velocity", "physical_quantity": 3}}, {"model": "wx.measurementvariable", "pk": 10, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Wind Direction", "physical_quantity": 6}}, {"model": "wx.measurementvariable", "pk": 11, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Atmospheric Pressure", "physical_quantity": 4}}, {"model": "wx.measurementvariable", "pk": 12, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Solar Radiation", "physical_quantity": 7}}, {"model": "wx.measurementvariable", "pk": 13, "fields": {"created_at": "2015-03-09T20:08:57Z", "updated_at": "2015-03-09T20:08:57Z", "name": "Sunshine Duration", "physical_quantity": 5}}, {"model": "wx.measurementvariable", "pk": 14, "fields": {"created_at": "2015-04-16T00:26:17Z", "updated_at": "2015-04-16T00:26:17Z", "name": "Station Voltages", "physical_quantity": 8}}, {"model": "wx.measurementvariable", "pk": 16, "fields": {"created_at": "2015-07-21T01:50:17Z", "updated_at": "2015-07-21T01:50:17Z", "name": "Atmospheric Pressure Stats", "physical_quantity": 0}}, {"model": "wx.measurementvariable", "pk": 17, "fields": {"created_at": "2015-07-21T01:51:09Z", "updated_at": "2015-07-21T01:51:09Z", "name": "Wind Direction Stats", "physical_quantity": 0}}, {"model": "wx.measurementvariable", "pk": 18, "fields": {"created_at": "2015-07-29T02:53:57Z", "updated_at": "2015-07-29T02:53:57Z", "name": "Water Vapor Pressure", "physical_quantity": 4}}, {"model": "wx.measurementvariable", "pk": 19, "fields": {"created_at": "2015-07-29T02:53:57Z", "updated_at": "2015-07-29T02:53:57Z", "name": "Apparent Temperature", "physical_quantity": 1}}, {"model": "wx.measurementvariable", "pk": 20, "fields": {"created_at": "2015-08-15T12:30:21Z", "updated_at": "2015-08-15T12:30:21Z", "name": "Barometric Tendency", "physical_quantity": 4}}, {"model": "wx.measurementvariable", "pk": 21, "fields": {"created_at": "2018-11-18T15:17:00Z", "updated_at": "2018-11-18T15:17:00Z", "name": "Water Level", "physical_quantity": 2}}, {"model": "wx.measurementvariable", "pk": 22, "fields": {"created_at": "2020-06-19T14:57:03.955Z", "updated_at": "2020-06-19T14:57:03.955Z", "name": "Stream Flow", "physical_quantity": 9}}, {"model": "wx.measurementvariable", "pk": 23, "fields": {"created_at": "2022-10-19T18:46:26.306Z", "updated_at": "2022-10-19T18:46:26.306Z", "name": "Sea Level", "physical_quantity": 2}}, {"model": "wx.measurementvariable", "pk": 24, "fields": {"created_at": "2022-10-25T13:55:14.370Z", "updated_at": "2022-10-25T13:55:14.370Z", "name": "Wave Frequency", "physical_quantity": 10}}, {"model": "wx.measurementvariable", "pk": 25, "fields": {"created_at": "2022-10-25T13:55:33.218Z", "updated_at": "2022-10-25T13:55:33.219Z", "name": "Wave Amplitude", "physical_quantity": 2}}, {"model": "wx.measurementvariable", "pk": 26, "fields": {"created_at": "2022-10-25T13:55:42.890Z", "updated_at": "2022-10-25T13:55:42.891Z", "name": "Wave Phase", "physical_quantity": 6}}]
+[
+{
+    "model": "wx.measurementvariable",
+    "pk": 1,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Air Temperature",
+        "physical_quantity": 1
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 2,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Soil Temperature",
+        "physical_quantity": 1
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 3,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Rainfall",
+        "physical_quantity": 2
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 4,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Evaporation",
+        "physical_quantity": 2
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 5,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Wind Mileage",
+        "physical_quantity": 2
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 6,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Hydro Level",
+        "physical_quantity": 2
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 7,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Relative Humidity",
+        "physical_quantity": 0
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 8,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Weather Phenomena Occurences",
+        "physical_quantity": 0
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 9,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Wind Velocity",
+        "physical_quantity": 3
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 10,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Wind Direction",
+        "physical_quantity": 6
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 11,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Atmospheric Pressure",
+        "physical_quantity": 4
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 12,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Solar Radiation",
+        "physical_quantity": 7
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 13,
+    "fields": {
+        "created_at": "2015-03-09T20:08:57Z",
+        "updated_at": "2015-03-09T20:08:57Z",
+        "name": "Sunshine Duration",
+        "physical_quantity": 5
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 14,
+    "fields": {
+        "created_at": "2015-04-16T00:26:17Z",
+        "updated_at": "2015-04-16T00:26:17Z",
+        "name": "Station Voltages",
+        "physical_quantity": 8
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 16,
+    "fields": {
+        "created_at": "2015-07-21T01:50:17Z",
+        "updated_at": "2015-07-21T01:50:17Z",
+        "name": "Atmospheric Pressure Stats",
+        "physical_quantity": 0
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 17,
+    "fields": {
+        "created_at": "2015-07-21T01:51:09Z",
+        "updated_at": "2015-07-21T01:51:09Z",
+        "name": "Wind Direction Stats",
+        "physical_quantity": 0
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 18,
+    "fields": {
+        "created_at": "2015-07-29T02:53:57Z",
+        "updated_at": "2015-07-29T02:53:57Z",
+        "name": "Water Vapor Pressure",
+        "physical_quantity": 4
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 19,
+    "fields": {
+        "created_at": "2015-07-29T02:53:57Z",
+        "updated_at": "2015-07-29T02:53:57Z",
+        "name": "Apparent Temperature",
+        "physical_quantity": 1
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 20,
+    "fields": {
+        "created_at": "2015-08-15T12:30:21Z",
+        "updated_at": "2015-08-15T12:30:21Z",
+        "name": "Barometric Tendency",
+        "physical_quantity": 4
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 21,
+    "fields": {
+        "created_at": "2018-11-18T15:17:00Z",
+        "updated_at": "2018-11-18T15:17:00Z",
+        "name": "Water Level",
+        "physical_quantity": 2
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 22,
+    "fields": {
+        "created_at": "2020-06-19T14:57:03.955Z",
+        "updated_at": "2020-06-19T14:57:03.955Z",
+        "name": "Stream Flow",
+        "physical_quantity": 9
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 23,
+    "fields": {
+        "created_at": "2023-05-09T01:47:01.424Z",
+        "updated_at": "2023-05-09T01:47:01.424Z",
+        "name": "Sea Level",
+        "physical_quantity": 2
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 24,
+    "fields": {
+        "created_at": "2023-05-09T01:47:27.482Z",
+        "updated_at": "2023-05-09T01:47:27.482Z",
+        "name": "Wave Amplitude",
+        "physical_quantity": 2
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 25,
+    "fields": {
+        "created_at": "2023-05-09T01:47:55.033Z",
+        "updated_at": "2023-05-09T01:47:55.033Z",
+        "name": "Wave Frequency",
+        "physical_quantity": 10
+    }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 26,
+    "fields": {
+        "created_at": "2023-05-09T01:48:11.428Z",
+        "updated_at": "2023-05-09T01:48:11.428Z",
+        "name": "Wave Phase",
+        "physical_quantity": 6
+    }
+}
+]
