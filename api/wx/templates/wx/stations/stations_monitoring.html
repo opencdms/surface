@@ -1,11 +1,18 @@
 {% extends "base.html" %} {% block content %} {% load static %}
 <div id="app">
   <v-app v-cloak>
-    <v-dialog v-model="dialog_chart" max-width="600" style="z-index:9999;">
+    <v-dialog v-model="dialog_chart" max-width="1000" style="z-index:9999;">
       <v-card>
         <v-card-title>History Chart</v-card-title>
         <v-card-text>
-          <highcharts :options="chartOptions"></highcharts>
+          <div v-if="loading_chart">
+            <span class="headline font-weight-thin" v-if="loading">Loading...</span><br>
+            <span class="headline font-weight-thin" v-if="rendering">Rendering...</span><br>
+            <v-progress-linear
+            indeterminate
+            ></v-progress-linear>
+          </div>
+          <highcharts v-if="!loading_chart" :options="chartOptions"></highcharts>
         </v-card-text>
         <v-card-actions>
           <v-btn color="primary" @click="dialog_chart = false">Close</v-btn>
@@ -25,7 +32,7 @@
 
     <v-layout column>
       <v-flex ml-5 mb-2 lg1>
-        <h4> STATIONS MONITORING - !WORK IN PROGRESS!</h4>
+        <h4> STATIONS MONITORING</h4>
       </v-flex>
 
       <v-layout> 
@@ -39,11 +46,20 @@
             </div>
             <l-map v-if="!loading_map" ref="myMap" :zoom="zoom" :center="center" :options="options" :double-click-zoom = "false">
               <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
+              <l-control position="bottomleft">
+                  <v-text-field
+                    v-model="input_search"
+                    label="Search station by name"
+                    single-line
+                    solo
+                    append-icon="search"
+                  ></v-text-field>
+              </l-control>               
               <l-control position="bottomright">
                 <template>
                   <v-card>
                     <v-card-title class="px-2 pt-1 pb-1" style="font-size: 12px; line-height: 1.2; color: #444;">
-                      <v-btn class="mr-1" x-small icon @click="dialog_info=true">
+                      <v-btn class="mr-1" x-small icon @click="dialog_info=true" disabled=true>
                           <v-icon>mdi-information</v-icon>
                       </v-btn>
                       <span v-if="['Communication', 'Quality Control'].includes(data_type)" class="mr-2 "> Observations from <br/>the pass 24 hours </span>
@@ -170,7 +186,7 @@
                 </div>            
               </l-control>            
               <l-circle-marker
-                v-for="station in station_list"
+                v-for="station in filteredStations"
                 :lat-lng="station.position"
                 :radius="7"
                 color="white"
@@ -187,7 +203,7 @@
         <v-flex style="border-left: 2px solid #BBB;" lg4>
           <div style="background-color: #CCC; display: flex; justify-content: space-between; align-items: center;">
             <h5 style="margin-left: 5%;">  [[selected.station.name]] Station </h5>
-            <v-btn icon>
+            <v-btn icon @click="goTo()">
               <v-icon color="blue">
                 mdi-open-in-new
               </v-icon>
@@ -234,7 +250,7 @@
                       <template v-slot:item.chart="{ item }">
                         <v-tooltip bottom>
                           <template v-slot:activator="{ on }">
-                            <v-btn @click="dialog_chart = true" icon>
+                            <v-btn @click="dialog_chart = true; getChartData(selected.station, item);" icon>
                               <v-icon color="blue"> mdi-chart-bar </v-icon>  
                             </v-btn>                  
                           </template>
@@ -323,7 +339,7 @@
                       <template v-slot:item.chart="{ item }">
                         <v-tooltip bottom>
                           <template v-slot:activator="{ on }">
-                            <v-btn @click="dialog_chart = true" icon>
+                            <v-btn @click="dialog_chart = true; getChartData(selected.station, item)" icon>
                               <v-icon color="blue"> mdi-chart-bar </v-icon>  
                             </v-btn>                  
                           </template>
@@ -347,6 +363,9 @@
 {% endblock %} {% block localjavascript %}
 <script>
   Vue.use(HighchartsVue.default);
+  Vue.use(window.vuelidate.default);
+
+  const { required, minLength } = window.validators;
 
   var {
     LMap,
@@ -380,7 +399,9 @@
       LIcon
     },
     data () {
-      return{    
+      return{
+        input_search: "",
+        loading_chart: false,
         loading_station: false,
         loading_map: false,
         chartOptions: {
@@ -443,7 +464,30 @@
 
         this.getGlobalData();
     },
+    computed: {
+      filteredStations() {
+        return this.station_list.filter(station =>
+          this.input_search === "" || station.name.toUpperCase().includes(this.input_search.toUpperCase())
+        )
+      },    
+    },
     methods: {
+      goTo(){
+        if (this.data_type=="Communication"){
+          this.goToDataInventory();
+        }
+        else if (this.data_type=="Quality Control"){
+          this.goToDataValidation();
+        }
+      },
+      goToDataValidation() {
+        const url = `/wx/quality_control/validation`;
+        window.open(url, '_blank');
+      },      
+      goToDataInventory(){
+        const url = `/wx/data/inventory/`;
+        window.open(url, '_blank');
+      },
       changeTimeType(){
         this.getGlobalData()
       },
@@ -540,7 +584,7 @@
         this.loading_station = true        
         axios({
           method: 'get',
-          url: `/wx/stations/stations_monitoring/${station.id}/get/`,
+          url: `/wx/stations/stations_monitoring/get/${station.id}/`,
           params: {
             'data_type': this.data_type,
             'time_type': this.time_type,
@@ -556,6 +600,33 @@
           console.log(error);
         });           
       },
+      getChartData(station, variable){
+        this.loading_chart = true;
+        axios({
+          method: 'get',
+          url: `/wx/stations/stations_monitoring/get/${station.id}/${variable.id}/`,
+          params: {
+            'data_type': this.data_type,
+            'time_type': this.time_type,
+            'date_picked': this.date            
+          },
+        }) 
+        .then(response => {
+          this.loading_chart = false;          
+          console.log(this.chartOptions)
+          this.chartOptions = response.data['chartOptions']
+          // this.chartOptions.chart = response.data['chartOptions']['chart']
+          // this.chartOptions.title = response.data['chartOptions']['title']
+          // this.chartOptions.xAxis = response.data['chartOptions']['xAxis']
+          // this.chartOptions.yAxis = response.data['chartOptions']['yAxis']
+          // this.chartOptions.title = response.data['chartOptions']['title']
+          // this.chartOptions.series = response.data['chartOptions']['series']
+          console.log(response.data['chartOptions'])
+        })
+        .catch(error => {
+          console.log(error);
+        });           
+      },      
       isMaintenance(data_type){
         return ['Visits', 'Components'].includes(data_type)
       },
@@ -579,6 +650,16 @@
 </script>
 
 <style>
+  .search-content {
+    position: absolute;
+    bottom: 16px;
+    left: 14px;
+    display: flex;
+    width: 100%;
+    max-width: 300px;
+    z-index: 995;
+  }
+
   .v-data-table .v-data-table-header tr th {
     font-size: 16px !important;
   }
