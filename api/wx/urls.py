@@ -129,6 +129,11 @@ urlpatterns = [
     path('wx/stations/stations_monitoring/get/', views.get_stationsmonitoring_map_data),
     path('wx/stations/stations_monitoring/get/<int:id>/', views.get_stationsmonitoring_station_data),
     path('wx/stations/stations_monitoring/get/<int:station_id>/<int:variable_id>/', views.get_stationsmonitoring_chart_data),
+    path('wx/maintenance_reports/equipment_inventory/', views.get_equipment_inventory, name="equipment-inventory"),
+    path('wx/maintenance_reports/equipment_inventory/get/', views.get_equipment_inventory_data),
+    path('wx/maintenance_reports/equipment_inventory/create/', views.create_equipment),
+    path('wx/maintenance_reports/equipment_inventory/delete/', views.delete_equipment),
+    path('wx/maintenance_reports/equipment_inventory/update/', views.update_equipment),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

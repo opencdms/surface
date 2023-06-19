@@ -315,19 +315,18 @@ class BackupLogAdmin(admin.ModelAdmin):
             return obj.finished_at - obj.started_at
         return None
 
-
 @admin.register(models.ElementDecoder)
 class ElementDecoder(admin.ModelAdmin):
     search_fields = ("element_name", "variable__name", "decoder__name")
     list_display = ("element_name", "variable_id", "decoder")
 
-admin.site.register(models.StationComponent)
-class StationProfileComponentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description')
+# admin.site.register(models.StationComponent)
+# class StationComponentAdmin(admin.ModelAdmin):
+#     list_display = ('name', 'description')
 
-@admin.register(models.StationProfileComponent)
-class StationProfileComponentAdmin(admin.ModelAdmin):
-    list_display = ('profile', 'presentation_order', 'station_component')
+# @admin.register(models.StationProfileComponent)
+# class StationProfileComponentAdmin(admin.ModelAdmin):
+#     list_display = ('profile', 'presentation_order', 'station_component')
 
 @admin.register(models.VisitType)
 class VisitTypeAdmin(admin.ModelAdmin):
@@ -336,3 +335,18 @@ class VisitTypeAdmin(admin.ModelAdmin):
 @admin.register(models.Technician)
 class TechnicianAdmin(admin.ModelAdmin):
     list_display = ("name",)
+
+
+@admin.register(models.Manufacturer)
+class ManufacturerAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+@admin.register(models.EquipmentType)
+class EquipmentTypeAdmin(admin.ModelAdmin):
+    list_display = ("name",) 
+
+@admin.register(models.Equipment)
+class EquipmentAdmin(admin.ModelAdmin):
+    list_display = ("equipment_type", "manufacturer", "model", "serial_number", "acquired", "first_deployed")
+
+    

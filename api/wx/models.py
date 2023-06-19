@@ -1375,3 +1375,35 @@ class MaintenanceReportStationComponent(BaseModel):
     class Meta:
         unique_together = ('maintenance_report', 'station_component')
 
+class Manufacturer(BaseModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+class EquipmentType(BaseModel):
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=256)
+    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
+    report_template = RichTextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "equipment type"
+        verbose_name_plural = "equipment types"
+
+    def __str__(self):
+        return self.name        
+    
+
+class Equipment(BaseModel):
+    equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
+    manufacturer = models.ForeignKey(Manufacturer, on_delete=models.DO_NOTHING)
+    model = models.CharField(max_length=64)
+    serial_number = models.CharField(max_length=64)
+    acquired = models.DateField()
+    first_deployed = models.DateField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ("equipment_type", "serial_number")        
+        verbose_name = "equipment"
+        verbose_name_plural = "equipments"
