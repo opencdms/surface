@@ -3984,6 +3984,160 @@ def get_wave_data(request):
 
     return JsonResponse(charts)
 
+
+from wx.models import Equipment, EquipmentType, Manufacturer
+from django.core.serializers import serialize
+
+@require_http_methods(["GET"])
+def get_equipment_inventory(request):
+    template = loader.get_template('wx/maintenance_reports/equipment_inventory.html')
+    context = {}
+
+    return HttpResponse(template.render(context, request))
+
+@require_http_methods(["GET"])
+def get_equipment_inventory_data(request):
+    equipment_types = EquipmentType.objects.all()
+    manufacturers = Manufacturer.objects.all()
+    equipments = Equipment.objects.all()
+
+    equipment_list = []
+    for equipment in equipments:
+        equipment_dict = {
+            'equipment_id': equipment.id,
+            'equipment_type': equipment_types.get(id=equipment.equipment_type_id).name,
+            'equipment_type_id': equipment.equipment_type_id,
+            'manufacturer': manufacturers.get(id=equipment.manufacturer_id).name,
+            'manufacturer_id': equipment.manufacturer_id,
+            'model': equipment.model,
+            'serial_number': equipment.serial_number,
+            'acquired': equipment.acquired,
+            'first_deployed': equipment.first_deployed,
+            'last_deployed': '---',
+            'location': 'Office',
+            'condition': '---',
+        }
+        equipment_list.append(equipment_dict)
+
+    response = {
+        'equipments': equipment_list,
+        'equipment_types': list(equipment_types.values()),
+        'manufacturers': list(manufacturers.values())
+    }
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+@require_http_methods(["POST"])
+def create_equipment(request):
+    equipment_type_id = request.GET.get('equipment_type', None)
+    manufacturer_id = request.GET.get('manufacturer', None)
+    model = request.GET.get('model', None)
+    serial_number = request.GET.get('serial_number', None)
+    acquired = request.GET.get('acquired', None)
+    first_deployed = request.GET.get('first_deployed', None)
+
+    equipment_type = EquipmentType.objects.get(id=equipment_type_id)
+    manufacturer = Manufacturer.objects.get(id=manufacturer_id)
+
+    try:
+        equipment = Equipment.objects.get(
+            equipment_type=equipment_type,
+            serial_number = serial_number,
+        )
+
+        message = 'Already exist an equipment of equipment type '
+        message += equipment_type.name
+        message += ' and serial number '
+        message += equipment.serial_number
+
+        response = {'message': message}
+
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)   
+
+    except ObjectDoesNotExist:
+        now = datetime.datetime.now()
+
+        equipment = Equipment.objects.create(
+                created_at = now,
+                updated_at = now,
+                equipment_type = equipment_type,
+                manufacturer = manufacturer,
+                model = model,
+                serial_number = serial_number,
+                acquired = acquired,
+                first_deployed = first_deployed,
+            )
+
+        response = {'equipment_id': equipment.id}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)   
+
+@require_http_methods(["POST"])
+def update_equipment(request):
+    equipment_id = request.GET.get('equipment_id', None)
+    equipment_type_id = request.GET.get('equipment_type', None)
+    manufacturer_id = request.GET.get('manufacturer', None)
+    model = request.GET.get('model', None)
+    serial_number = request.GET.get('serial_number', None)
+    acquired = request.GET.get('acquired', None)
+    first_deployed = request.GET.get('first_deployed', None)
+
+    print(equipment_id)
+
+    equipment_type = EquipmentType.objects.get(id=equipment_type_id)
+    manufacturer = Manufacturer.objects.get(id=manufacturer_id)   
+
+    try:
+        equipment = Equipment.objects.get(
+            equipment_type=equipment_type,
+            serial_number = serial_number,
+        )
+
+        message = 'Already exist an equipment of equipment type '
+        message += equipment_type.name
+        message += ' and serial number '
+        message += equipment.serial_number
+
+        response = {'message': message}
+
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)   
+
+    except ObjectDoesNotExist:
+        try:
+            equipment = Equipment.objects.get(id=equipment_id)
+
+            now = datetime.datetime.now()
+
+            equipment.updated_at = now
+            equipment.equipment_type = equipment_type
+            equipment.manufacturer = manufacturer
+            equipment.model = model
+            equipment.serial_number = serial_number
+            equipment.acquired = acquired
+            equipment.first_deployed = first_deployed
+            equipment.save()
+
+        except ObjectDoesNotExist:
+            message =  "Object not found"
+            response = {'message': message}
+            return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)   
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK) 
+
+
+@require_http_methods(["POST"])
+def delete_equipment(request):
+    equipment_id = request.GET.get('equipment_id', None)
+    try:
+        equipment = Equipment.objects.get(id=equipment_id)
+        equipment.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
 @require_http_methods(["GET"])
 def get_maintenance_reports(request): # Maintenance report page
     template = loader.get_template('wx/maintenance_reports/maintenance_reports.html')
