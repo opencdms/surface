@@ -4113,31 +4113,36 @@ def update_equipment(request):
         equipment = Equipment.objects.get(equipment_type=equipment_type, serial_number=serial_number)
 
         if int(equipment_id) != equipment.id:
-            message = f'''Could not update. Already exist an equipment of \
+            message = f"Could not update. Already exist an equipment of \
                         equipment type {equipment_type.name} and serial \
-                        number {equipment.serial_number}'''
+                        number {equipment.serial_number}"
 
             response = {'message': message}
 
             return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            now = datetime.datetime.now()
+    except ObjectDoesNotExist
+        pass
 
-            equipment.updated_at = now
-            equipment.equipment_type = equipment_type
-            equipment.manufacturer = manufacturer
-            equipment.founding_source = founding_source         
-            equipment.model = model
-            equipment.serial_number = serial_number
-            equipment.acquisition_date = acquisition_date
-            equipment.first_deploy_date = first_deploy_date
-            equipment.last_calibration_date = last_calibration_date
-            equipment.next_calibration_date = next_calibration_date
-            equipment.decommission_date = decommission_date
-            equipment.save()
+    try:
+        equipment = Equipment.objects.get(id=equipment_id)
 
-            response = {}
-            return JsonResponse(response, status=status.HTTP_200_OK)             
+        now = datetime.datetime.now()
+
+        equipment.updated_at = now
+        equipment.equipment_type = equipment_type
+        equipment.manufacturer = manufacturer
+        equipment.founding_source = founding_source         
+        equipment.model = model
+        equipment.serial_number = serial_number
+        equipment.acquisition_date = acquisition_date
+        equipment.first_deploy_date = first_deploy_date
+        equipment.last_calibration_date = last_calibration_date
+        equipment.next_calibration_date = next_calibration_date
+        equipment.decommission_date = decommission_date
+        equipment.save()
+
+        response = {}
+        return JsonResponse(response, status=status.HTTP_200_OK)             
 
     except ObjectDoesNotExist:
         message =  "Object not found"
