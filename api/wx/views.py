@@ -4120,7 +4120,7 @@ def update_equipment(request):
             response = {'message': message}
 
             return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
-    except ObjectDoesNotExist
+    except ObjectDoesNotExist:
         pass
 
     try:

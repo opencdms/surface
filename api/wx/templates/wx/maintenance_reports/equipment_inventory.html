@@ -222,10 +222,22 @@
 
           </v-layout>
           <v-card-actions>
-            <v-btn v-if="is_new_equipment" width="50%" color="primary" @click="dialog_new = false; createEquipment()">
+            <v-btn
+              v-if="is_new_equipment"
+              width="50%"
+              color="primary"
+              @click="dialog_new = false; createEquipment()"
+              :disabled="$v.equipment.$invalid"
+            >
               Create Equipment
             </v-btn>
-            <v-btn v-if="!is_new_equipment" width="50%" color="primary" @click="dialog_new = false; updateEquipment()">
+            <v-btn
+              v-if="!is_new_equipment"
+              width="50%"
+              color="primary"
+              @click="dialog_new = false; updateEquipment()"
+              :disabled="$v.equipment.$invalid"
+            >
               Update Equipment
             </v-btn>            
             <v-btn width="50%" @click="dialog_new = false">
@@ -336,6 +348,16 @@
       el: "#app",
       vuetify: new Vuetify(),
       delimiters: ["[[", "]]"],
+      validations: {
+        equipment: {
+          equipment_type_id: { required },
+          founding_source_id: { required },
+          manufacturer_id: { required },
+          model: { required },
+          serial_number: { required },          
+          acquisition_date: { required },          
+        },
+      },      
       data:{
         search: '',
         loading: false,
