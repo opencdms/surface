@@ -343,10 +343,14 @@ class ManufacturerAdmin(admin.ModelAdmin):
 
 @admin.register(models.EquipmentType)
 class EquipmentTypeAdmin(admin.ModelAdmin):
-    list_display = ("name",) 
+    list_display = ("name",)
+
+@admin.register(models.FoundingSource)
+class FoundingSourceAdmin(admin.ModelAdmin):
+    list_display = ("name",)
 
 @admin.register(models.Equipment)
 class EquipmentAdmin(admin.ModelAdmin):
-    list_display = ("equipment_type", "manufacturer", "model", "serial_number", "acquired", "first_deployed")
+    list_display = ("equipment_type", "manufacturer", "model", "serial_number", "acquisition_date", "first_deploy_date", "last_calibration_date")
 
     

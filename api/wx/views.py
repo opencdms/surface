@@ -3985,8 +3985,9 @@ def get_wave_data(request):
     return JsonResponse(charts)
 
 
-from wx.models import Equipment, EquipmentType, Manufacturer
+from wx.models import Equipment, EquipmentType, Manufacturer, FoundingSource
 from django.core.serializers import serialize
+
 
 @require_http_methods(["GET"])
 def get_equipment_inventory(request):
@@ -3995,11 +3996,13 @@ def get_equipment_inventory(request):
 
     return HttpResponse(template.render(context, request))
 
+
 @require_http_methods(["GET"])
 def get_equipment_inventory_data(request):
     equipment_types = EquipmentType.objects.all()
     manufacturers = Manufacturer.objects.all()
     equipments = Equipment.objects.all()
+    founding_sources = FoundingSource.objects.all()
 
     equipment_list = []
     for equipment in equipments:
@@ -4007,12 +4010,17 @@ def get_equipment_inventory_data(request):
             'equipment_id': equipment.id,
             'equipment_type': equipment_types.get(id=equipment.equipment_type_id).name,
             'equipment_type_id': equipment.equipment_type_id,
+            'founding_source': founding_sources.get(id=equipment.founding_source_id).name,
+            'founding_source_id': equipment.founding_source_id,            
             'manufacturer': manufacturers.get(id=equipment.manufacturer_id).name,
             'manufacturer_id': equipment.manufacturer_id,
             'model': equipment.model,
             'serial_number': equipment.serial_number,
-            'acquired': equipment.acquired,
-            'first_deployed': equipment.first_deployed,
+            'acquisition_date': equipment.acquisition_date,
+            'first_deploy_date': equipment.first_deploy_date,
+            'last_calibration_date': equipment.last_calibration_date,
+            'next_calibration_date': equipment.next_calibration_date,
+            'decomission_date': equipment.decomission_date,
             'last_deployed': '---',
             'location': 'Office',
             'condition': '---',
@@ -4022,21 +4030,28 @@ def get_equipment_inventory_data(request):
     response = {
         'equipments': equipment_list,
         'equipment_types': list(equipment_types.values()),
-        'manufacturers': list(manufacturers.values())
+        'manufacturers': list(manufacturers.values()),
+        'founding_sources': list(founding_sources.values())
     }
     return JsonResponse(response, status=status.HTTP_200_OK)
+
 
 @require_http_methods(["POST"])
 def create_equipment(request):
     equipment_type_id = request.GET.get('equipment_type', None)
     manufacturer_id = request.GET.get('manufacturer', None)
+    founding_source_id = request.GET.get('founding_source', None)
     model = request.GET.get('model', None)
     serial_number = request.GET.get('serial_number', None)
-    acquired = request.GET.get('acquired', None)
-    first_deployed = request.GET.get('first_deployed', None)
+    acquisition_date = request.GET.get('acquisition_date', None)
+    first_deploy_date = request.GET.get('first_deploy_date', None)
+    last_calibration_date = request.GET.get('last_calibration_date', None)
+    next_calibration_date = request.GET.get('next_calibration_date', None)
+    decomission_date = request.GET.get('decomission_date', None)
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
     manufacturer = Manufacturer.objects.get(id=manufacturer_id)
+    founding_source = FoundingSource.objects.get(id=founding_source_id)
 
     try:
         equipment = Equipment.objects.get(
@@ -4061,65 +4076,73 @@ def create_equipment(request):
                 updated_at = now,
                 equipment_type = equipment_type,
                 manufacturer = manufacturer,
+                founding_source = founding_source,
                 model = model,
                 serial_number = serial_number,
-                acquired = acquired,
-                first_deployed = first_deployed,
+                acquisition_date = acquisition_date,
+                first_deploy_date = first_deploy_date,
+                last_calibration_date = last_calibration_date,
+                next_calibration_date = next_calibration_date,
+                decomission_date = decomission_date,
             )
 
         response = {'equipment_id': equipment.id}
 
     return JsonResponse(response, status=status.HTTP_200_OK)   
 
+
 @require_http_methods(["POST"])
 def update_equipment(request):
     equipment_id = request.GET.get('equipment_id', None)
     equipment_type_id = request.GET.get('equipment_type', None)
     manufacturer_id = request.GET.get('manufacturer', None)
+    founding_source_id = request.GET.get('founding_source', None)
     model = request.GET.get('model', None)
     serial_number = request.GET.get('serial_number', None)
-    acquired = request.GET.get('acquired', None)
-    first_deployed = request.GET.get('first_deployed', None)
-
-    print(equipment_id)
+    acquisition_date = request.GET.get('acquisition_date', None)
+    first_deploy_date = request.GET.get('first_deploy_date', None)
+    last_calibration_date = request.GET.get('last_calibration_date', None)
+    next_calibration_date = request.GET.get('next_calibration_date', None)
+    decomission_date = request.GET.get('decomission_date', None)
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
     manufacturer = Manufacturer.objects.get(id=manufacturer_id)   
+    founding_source = FoundingSource.objects.get(id=founding_source_id)
 
     try:
-        equipment = Equipment.objects.get(
-            equipment_type=equipment_type,
-            serial_number = serial_number,
-        )
+        equipment = Equipment.objects.get(equipment_type=equipment_type, serial_number=serial_number)
 
-        message = 'Already exist an equipment of equipment type '
-        message += equipment_type.name
-        message += ' and serial number '
-        message += equipment.serial_number
+        if int(equipment_id) != equipment.id:
+            message = f'''Could not update. Already exist an equipment of \
+                        equipment type {equipment_type.name} and serial \
+                        number {equipment.serial_number}'''
 
-        response = {'message': message}
+            response = {'message': message}
 
-        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)   
-
-    except ObjectDoesNotExist:
-        try:
-            equipment = Equipment.objects.get(id=equipment_id)
-
+            return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+        else:
             now = datetime.datetime.now()
 
             equipment.updated_at = now
             equipment.equipment_type = equipment_type
             equipment.manufacturer = manufacturer
+            equipment.founding_source = founding_source         
             equipment.model = model
             equipment.serial_number = serial_number
-            equipment.acquired = acquired
-            equipment.first_deployed = first_deployed
+            equipment.acquisition_date = acquisition_date
+            equipment.first_deploy_date = first_deploy_date
+            equipment.last_calibration_date = last_calibration_date
+            equipment.next_calibration_date = next_calibration_date
+            equipment.decomission_date = decomission_date
             equipment.save()
 
-        except ObjectDoesNotExist:
-            message =  "Object not found"
-            response = {'message': message}
-            return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)   
+            response = {}
+            return JsonResponse(response, status=status.HTTP_200_OK)             
+
+    except ObjectDoesNotExist:
+        message =  "Object not found"
+        response = {'message': message}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)   
 
     response = {}
     return JsonResponse(response, status=status.HTTP_200_OK) 
