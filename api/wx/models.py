@@ -1407,7 +1407,7 @@ class Equipment(BaseModel):
     first_deploy_date = models.DateField(blank=True, null=True)
     last_calibration_date = models.DateField(blank=True, null=True)
     next_calibration_date = models.DateField(blank=True, null=True)
-    decomission_date = models.DateField(blank=True, null=True)
+    decommission_date = models.DateField(blank=True, null=True)
 
     class Meta:
         unique_together = ("equipment_type", "serial_number")        

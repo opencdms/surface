@@ -4020,7 +4020,7 @@ def get_equipment_inventory_data(request):
             'first_deploy_date': equipment.first_deploy_date,
             'last_calibration_date': equipment.last_calibration_date,
             'next_calibration_date': equipment.next_calibration_date,
-            'decomission_date': equipment.decomission_date,
+            'decommission_date': equipment.decommission_date,
             'last_deployed': '---',
             'location': 'Office',
             'condition': '---',
@@ -4047,7 +4047,7 @@ def create_equipment(request):
     first_deploy_date = request.GET.get('first_deploy_date', None)
     last_calibration_date = request.GET.get('last_calibration_date', None)
     next_calibration_date = request.GET.get('next_calibration_date', None)
-    decomission_date = request.GET.get('decomission_date', None)
+    decommission_date = request.GET.get('decommission_date', None)
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
     manufacturer = Manufacturer.objects.get(id=manufacturer_id)
@@ -4083,7 +4083,7 @@ def create_equipment(request):
                 first_deploy_date = first_deploy_date,
                 last_calibration_date = last_calibration_date,
                 next_calibration_date = next_calibration_date,
-                decomission_date = decomission_date,
+                decommission_date = decommission_date,
             )
 
         response = {'equipment_id': equipment.id}
@@ -4103,7 +4103,7 @@ def update_equipment(request):
     first_deploy_date = request.GET.get('first_deploy_date', None)
     last_calibration_date = request.GET.get('last_calibration_date', None)
     next_calibration_date = request.GET.get('next_calibration_date', None)
-    decomission_date = request.GET.get('decomission_date', None)
+    decommission_date = request.GET.get('decommission_date', None)
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
     manufacturer = Manufacturer.objects.get(id=manufacturer_id)   
@@ -4133,7 +4133,7 @@ def update_equipment(request):
             equipment.first_deploy_date = first_deploy_date
             equipment.last_calibration_date = last_calibration_date
             equipment.next_calibration_date = next_calibration_date
-            equipment.decomission_date = decomission_date
+            equipment.decommission_date = decommission_date
             equipment.save()
 
             response = {}

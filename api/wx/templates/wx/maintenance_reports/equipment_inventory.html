@@ -149,14 +149,14 @@
               <v-flex>
                 <v-menu
                   :close-on-content-click="false"
-                  v-model="equipment.decomission_date_menu"
+                  v-model="equipment.decommission_date_menu"
                   transition="scale-transition"
                   offset-y
                   class="max-50"
                 >
                   <template v-slot:activator="{ on }">
                     <v-text-field
-                    v-model="equipment.decomission_date"
+                    v-model="equipment.decommission_date"
                     label="Date of Decomission"
                     v-on="on"
                     clearable
@@ -164,8 +164,8 @@
                     ></v-text-field>
                   </template>
                   <v-date-picker
-                    v-model="equipment.decomission_date"
-                    @input="equipment.decomission_date_menu = false"
+                    v-model="equipment.decommission_date"
+                    @input="equipment.decommission_date_menu = false"
                   ></v-date-picker>
                 </v-menu>
               </v-flex>
@@ -366,8 +366,8 @@
           last_calibration_date_menu: false,
           next_calibration_date: moment().format('YYYY-MM-DD'),
           next_calibration_date_menu: false,
-          decomission_date: moment().format('YYYY-MM-DD'),
-          decomission_date_menu: false,
+          decommission_date: moment().format('YYYY-MM-DD'),
+          decommission_date_menu: false,
         },
         headers: [
           { text: 'Equipment Type', align: 'left', value: 'equipment_type' },
@@ -409,8 +409,8 @@
               last_calibration_date_menu: false,
               next_calibration_date: moment().format('YYYY-MM-DD'),
               next_calibration_date_menu: false,
-              decomission_date: moment().format('YYYY-MM-DD'),
-              decomission_date_menu: false,
+              decommission_date: moment().format('YYYY-MM-DD'),
+              decommission_date_menu: false,
             };            
           }
         }
@@ -444,7 +444,7 @@
               'first_deploy_date': this.equipment.first_deploy_date,
               'last_calibration_date': this.equipment.last_calibration_date,
               'next_calibration_date': this.equipment.next_calibration_date,
-              'decomission_date': this.equipment.decomission_date,
+              'decommission_date': this.equipment.decommission_date,
             },
           }) 
           .then(
@@ -476,7 +476,7 @@
               'first_deploy_date': this.equipment.first_deploy_date,
               'last_calibration_date': this.equipment.last_calibration_date,
               'next_calibration_date': this.equipment.next_calibration_date,
-              'decomission_date': this.decomission_date
+              'decommission_date': this.decommission_date
             },
           })
           .then(
