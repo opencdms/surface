@@ -14,11 +14,15 @@
         ></v-progress-circular>
       </v-overlay>
 
-      <v-dialog v-model="dialog_update" width="50%">
+      <v-dialog v-model="dialog_new" width="50%">
         <v-card>
-          <v-card-title class="text-h5">
+          <v-card-title v-if="is_new_equipment" class="text-h5">
             Creating a new equipment
           </v-card-title>
+          <v-card-title v-if="!is_new_equipment" class="text-h5">
+            Updating equipment
+          </v-card-title>  
+
           <v-layout column>
             <v-layout ma-2>
               <v-flex mr-2>
@@ -49,7 +53,8 @@
                   autocomplete="off"
                 ></v-autocomplete>    
               </v-flex>
-            </v-layout>            
+            </v-layout>
+
             <v-layout mx-2 mb-2>
               <v-flex mr-2>
                   <v-text-field
@@ -74,83 +79,15 @@
                 ></v-text-field>
               </v-flex>
             </v-layout>
-            <v-layout mx-2 mb-2>
-              <v-flex mr-2>            
-                <v-menu
-                  :close-on-content-click="false"
-                  v-model="equipment.acquired_menu"
-                  transition="scale-transition"
-                  offset-y
-                  class="max-50"
-                >
-                  <template v-slot:activator="{ on }">
-                    <v-text-field
-                    v-model="equipment.acquired"
-                    label="Date of Acquirement"
-                    v-on="on"
-                    required
-                    hint="*Required"
-                    persistent-hint
-                    prepend-icon="event"
-                    ></v-text-field>
-                  </template>
-                  <v-date-picker
-                    v-model="equipment.acquired"
-                    @input="equipment.acquired_menu = false"
-                  ></v-date-picker>
-                </v-menu>
-              </v-flex>
-              <v-flex>            
-                <v-menu
-                  :close-on-content-click="false"
-                  v-model="equipment.first_deployed_menu"
-                  transition="scale-transition"
-                  offset-y
-                  class="max-50"
-                >
-                  <template v-slot:activator="{ on }">
-                    <v-text-field
-                    v-model="equipment.first_deployed"
-                    label="Date of First Deployment"
-                    v-on="on"
-                    required
-                    persistent-hint
-                    prepend-icon="event"
-                    ></v-text-field>
-                  </template>
-                  <v-date-picker
-                    v-model="equipment.first_deployed"
-                    @input="equipment.first_deployed_menu = false"
-                  ></v-date-picker>
-                </v-menu>
-              </v-flex>              
-            </v-layout>              
-          </v-layout>                   
-          <v-card-actions>
-            <v-btn width="50%" color="primary" @click="dialog_update = false; updateEquipment()">
-              Create Equipment
-            </v-btn>
-            <v-btn width="50%" @click="dialog_update = false">
-              Cancel
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
 
-      <v-dialog v-model="dialog_new" width="50%">
-        <v-card>
-          <v-card-title class="text-h5">
-            Creating a new equipment
-          </v-card-title>
-          <v-layout column>
-            <v-layout ma-2>
+            <v-layout ma-2 mb-2>
               <v-flex mr-2>
                 <v-autocomplete
-                  :items="equipment_types"
+                  :items="founding_sources"
                   item-text="name"
                   item-value="id"
-                  v-model="equipment.equipment_type"
-                  label="Type of the equipment"
+                  v-model="equipment.founding_source_id"
+                  label="Founding Source"
                   required
                   hint="*Required"
                   persistent-hint
@@ -159,56 +96,16 @@
                 ></v-autocomplete>                
               </v-flex>
               <v-flex>
-                <v-autocomplete
-                  :items="manufacturers"
-                  item-text="name"
-                  item-value="id"
-                  v-model="equipment.manufacturer"
-                  label="Manufacturer"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleTextFieldsRules"
-                  autocomplete="off"
-                ></v-autocomplete>    
-              </v-flex>
-            </v-layout>            
-            <v-layout mx-2 mb-2>
-              <v-flex mr-2>
-                  <v-text-field
-                    label="Model"
-                    v-model="equipment.model"
-                    required
-                    hint="*Required"
-                    persistent-hint                      
-                    single-line
-                    type="text"
-                  ></v-text-field>                
-                </v-flex>
-              <v-flex>
-                <v-text-field
-                  label="Serial Number"
-                  v-model="equipment.serial_number"
-                  required
-                  hint="*Required"
-                  persistent-hint   
-                  single-line
-                  type="text"
-                ></v-text-field>
-              </v-flex>
-            </v-layout>
-            <v-layout mx-2 mb-2>
-              <v-flex mr-2>            
                 <v-menu
                   :close-on-content-click="false"
-                  v-model="equipment.acquired_menu"
+                  v-model="equipment.acquisition_date_menu"
                   transition="scale-transition"
                   offset-y
                   class="max-50"
                 >
                   <template v-slot:activator="{ on }">
                     <v-text-field
-                    v-model="equipment.acquired"
+                    v-model="equipment.acquisition_date"
                     label="Date of Acquirement"
                     v-on="on"
                     required
@@ -218,41 +115,119 @@
                     ></v-text-field>
                   </template>
                   <v-date-picker
-                    v-model="equipment.acquired"
-                    @input="equipment.acquired_menu = false"
+                    v-model="equipment.acquisition_date"
+                    @input="equipment.acquisition_date_menu = false"
                   ></v-date-picker>
                 </v-menu>
               </v-flex>
-              <v-flex>            
+            </v-layout>
+
+            <v-layout mx-2 mb-2>
+              <v-flex mr-2>
                 <v-menu
                   :close-on-content-click="false"
-                  v-model="equipment.first_deployed_menu"
+                  v-model="equipment.first_deploy_date_menu"
                   transition="scale-transition"
                   offset-y
                   class="max-50"
                 >
                   <template v-slot:activator="{ on }">
                     <v-text-field
-                    v-model="equipment.first_deployed"
+                    v-model="equipment.first_deploy_date"
                     label="Date of First Deployment"
                     v-on="on"
-                    required
-                    persistent-hint
+                    clearable
                     prepend-icon="event"
                     ></v-text-field>
                   </template>
                   <v-date-picker
-                    v-model="equipment.first_deployed"
-                    @input="equipment.first_deployed_menu = false"
+                    v-model="equipment.first_deploy_date"
+                    @input="equipment.first_deploy_date_menu = false"
                   ></v-date-picker>
                 </v-menu>
-              </v-flex>              
-            </v-layout>              
-          </v-layout>                   
+              </v-flex>
+              <v-flex>
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="equipment.decomission_date_menu"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                    v-model="equipment.decomission_date"
+                    label="Date of Decomission"
+                    v-on="on"
+                    clearable
+                    prepend-icon="event"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    v-model="equipment.decomission_date"
+                    @input="equipment.decomission_date_menu = false"
+                  ></v-date-picker>
+                </v-menu>
+              </v-flex>
+            </v-layout>
+
+            <v-layout mx-2 mb-2>
+              <v-flex mr-2>
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="equipment.last_calibration_date_menu"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                    v-model="equipment.last_calibration_date"
+                    label="Date of Last Calibration"
+                    v-on="on"
+                    clearable
+                    prepend-icon="event"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    v-model="equipment.last_calibration_date"
+                    @input="equipment.last_calibration_date_menu = false"
+                  ></v-date-picker>
+                </v-menu>
+              </v-flex>
+              <v-flex>
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="equipment.next_calibration_date_menu"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                    v-model="equipment.next_calibration_date"
+                    label="Date of Next Calibration"
+                    v-on="on"
+                    clearable
+                    prepend-icon="event"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    v-model="equipment.next_calibration_date"
+                    @input="equipment.next_calibration_date_menu = false"
+                  ></v-date-picker>
+                </v-menu>
+              </v-flex>
+            </v-layout>
+
+          </v-layout>
           <v-card-actions>
-            <v-btn width="50%" color="primary" @click="dialog_new = false; createEquipment()">
+            <v-btn v-if="is_new_equipment" width="50%" color="primary" @click="dialog_new = false; createEquipment()">
               Create Equipment
             </v-btn>
+            <v-btn v-if="!is_new_equipment" width="50%" color="primary" @click="dialog_new = false; updateEquipment()">
+              Update Equipment
+            </v-btn>            
             <v-btn width="50%" @click="dialog_new = false">
               Cancel
             </v-btn>
@@ -312,7 +287,7 @@
           </v-flex>
           <v-flex lg1 mt-5>
             {% if perms.wx.add_equipment %}
-            <v-btn small label color="primary" @click="getEquipmentData(); dialog_new = true">
+            <v-btn small label color="primary" @click="getEquipmentData(); is_new_equipment=true; dialog_new = true">
               New Equipment
             </v-btn>
             {% endif %}            
@@ -331,7 +306,7 @@
                 {% if perms.wx.change_equipment %}
                 <v-tooltip bottom>
                   <template v-slot:activator="{ on }">
-                    <v-btn icon> <v-icon v-on="on" small @click="dialog_update=true; equipment=item"> edit</v-icon></v-btn>
+                    <v-btn icon> <v-icon v-on="on" small @click="dialog_new=true; is_new_equipment=false; equipment=item"> edit</v-icon></v-btn>
                   </template>
                   <span>Update Equipment</span>
                 </v-tooltip>
@@ -368,28 +343,39 @@
         request_error: false,
         dialog_new: false,
         dialog_del: false,
-        dialog_update: false,
+        equipments: [],
         equipment_types: [],
+        manufacturers: [],
+        founding_sources: [],
+        is_new_equipment: true,
         equipment: {
           equipment_id: null,
           equipment_type: null,
           equipment_type_id: null,
+          founding_source: null,
+          founding_source_id: null,          
           manufacturer: null,
           manufacturer_id: null,
           model: null,
           serial_number: null,
-          acquired: moment().format('YYYY-MM-DD'),
-          acquired_menu: false,
-          first_deployed: moment().format('YYYY-MM-DD'),
-          first_deployed_menu: false,
+          acquisition_date: moment().format('YYYY-MM-DD'),
+          acquisition_date_menu: false,
+          first_deploy_date: moment().format('YYYY-MM-DD'),
+          first_deploy_date_menu: false,
+          last_calibration_date: moment().format('YYYY-MM-DD'),
+          last_calibration_date_menu: false,
+          next_calibration_date: moment().format('YYYY-MM-DD'),
+          next_calibration_date_menu: false,
+          decomission_date: moment().format('YYYY-MM-DD'),
+          decomission_date_menu: false,
         },
         headers: [
           { text: 'Equipment Type', align: 'left', value: 'equipment_type' },
           { text: 'Manufacturer', align: 'center',value: 'manufacturer' },
           { text: 'Model', align: 'center', value: 'model' },
           { text: 'Serial Number', align: 'center', value: 'serial_number' },
-          { text: 'Acquired', align: 'center', value: 'acquired' },
-          { text: 'First Deployed', align: 'center', value: 'first_deployed' },
+          { text: 'Acquired', align: 'center', value: 'acquisition_date' },
+          { text: 'First Deployed', align: 'center', value: 'first_deploy_date' },
           { text: 'Last Deployed', align: 'center', value: 'last_deployed' },
           { text: 'Location', align: 'center', value: 'location' },
           { text: 'Condition', align: 'center', value: 'condition' },
@@ -399,7 +385,7 @@
       },
       computed: {
         shouldClearEquipment() {
-          return !(this.dialog_new || this.dialog_del || this.dialog_update);
+          return !(this.dialog_new || this.dialog_del);
         }
       },
       watch: {
@@ -409,14 +395,22 @@
               equipment_id: null,
               equipment_type: null,
               equipment_type_id: null,
+              founding_source: null,
+              founding_source_id: null,
               manufacturer: null,
               manufacturer_id: null,
               model: null,
               serial_number: null,
-              acquired: moment().format('YYYY-MM-DD'),
-              acquired_menu: false,
-              first_deployed: moment().format('YYYY-MM-DD'),
-              first_deployed_menu: false,
+              acquisition_date: moment().format('YYYY-MM-DD'),
+              acquisition_date_menu: false,
+              first_deploy_date: moment().format('YYYY-MM-DD'),
+              first_deploy_date_menu: false,
+              last_calibration_date: moment().format('YYYY-MM-DD'),
+              last_calibration_date_menu: false,
+              next_calibration_date: moment().format('YYYY-MM-DD'),
+              next_calibration_date_menu: false,
+              decomission_date: moment().format('YYYY-MM-DD'),
+              decomission_date_menu: false,
             };            
           }
         }
@@ -432,6 +426,7 @@
               this.equipments = res.data['equipments'];
               this.equipment_types = res.data['equipment_types'];
               this.manufacturers = res.data['manufacturers'];
+              this.founding_sources = res.data['founding_sources']
           });
         },
         createEquipment(){
@@ -440,17 +435,20 @@
             method: 'post',
             url: `/wx/maintenance_reports/equipment_inventory/create/`,
             params: {
-              'equipment_type': this.equipment.equipment_type,
-              'manufacturer': this.equipment.manufacturer,
-              'model': this.equipment.model,              
+              'equipment_type': this.equipment.equipment_type_id,
+              'manufacturer': this.equipment.manufacturer_id,
+              'founding_source': this.equipment.founding_source_id,
+              'model': this.equipment.model,
               'serial_number': this.equipment.serial_number,
-              'acquired': this.equipment.acquired,
-              'first_deployed': this.equipment.first_deployed
+              'acquisition_date': this.equipment.acquisition_date,
+              'first_deploy_date': this.equipment.first_deploy_date,
+              'last_calibration_date': this.equipment.last_calibration_date,
+              'next_calibration_date': this.equipment.next_calibration_date,
+              'decomission_date': this.equipment.decomission_date,
             },
           }) 
           .then(
-            res => {
-              this.getEquipmentData();
+            res => {              
           })  
           .catch((error) => {
             console.log("error", error.response);
@@ -459,6 +457,39 @@
           })
           .finally(() => {
             this.loading = false;
+            this.getEquipmentData();
+          });
+        },
+        updateEquipment(){
+          this.loading = true;
+          axios({
+            method: 'post',
+            url: `/wx/maintenance_reports/equipment_inventory/update/`,
+            params: {
+              'equipment_id': this.equipment.equipment_id,
+              'equipment_type': this.equipment.equipment_type_id,
+              'manufacturer': this.equipment.manufacturer_id,
+              'founding_source': this.equipment.founding_source_id,
+              'model': this.equipment.model,
+              'serial_number': this.equipment.serial_number,
+              'acquisition_date': this.equipment.acquisition_date,
+              'first_deploy_date': this.equipment.first_deploy_date,
+              'last_calibration_date': this.equipment.last_calibration_date,
+              'next_calibration_date': this.equipment.next_calibration_date,
+              'decomission_date': this.decomission_date
+            },
+          })
+          .then(
+            res => {             
+          })
+          .catch((error) => {
+            console.log("error", error.response);
+            this.request_error_message = error.response.data.message;
+            this.request_error = true;
+          })
+          .finally(() => {
+            this.loading = false;
+            this.getEquipmentData();
           });
         },
         deleteEquipment(equipment_id){
@@ -482,36 +513,7 @@
           .finally(() => {
             this.loading = false;
           });
-        },        
-        updateEquipment(){
-          this.loading = true;
-          axios({
-            method: 'post',
-            url: `/wx/maintenance_reports/equipment_inventory/update/`,
-            params: {
-              'equipment_id': this.equipment.equipment_id,
-              'equipment_type': this.equipment.equipment_type_id,
-              'manufacturer': this.equipment.manufacturer_id,
-              'model': this.equipment.model,              
-              'serial_number': this.equipment.serial_number,
-              'acquired': this.equipment.acquired,
-              'first_deployed': this.equipment.first_deployed
-            },
-          }) 
-          .then(
-            res => {
-              this.getEquipmentData();
-          })  
-          .catch((error) => {
-            console.log("error", error.response);
-            this.request_error_message = error.response.data.message;
-            this.request_error = true;
-          })
-          .finally(() => {
-            this.loading = false;
-          });
-
-        },        
+        },
       },
       created() {
         axios.defaults.xsrfHeaderName = "X-CSRFToken";
