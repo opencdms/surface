@@ -3985,7 +3985,7 @@ def get_wave_data(request):
     return JsonResponse(charts)
 
 
-from wx.models import Equipment, EquipmentType, Manufacturer, FoundingSource
+from wx.models import Equipment, EquipmentType, Manufacturer, FundingSource
 from django.core.serializers import serialize
 
 
@@ -3997,41 +3997,80 @@ def get_equipment_inventory(request):
     return HttpResponse(template.render(context, request))
 
 
+def get_value(variable):
+    if variable is None:
+        return '---'
+    return variable
+
+def equipment_condition(condition):
+    if condition == 'F':
+        return 'Fully Functional'
+    elif condition == 'P':
+        return 'Partially Functional'
+    elif condition == 'N':
+        return 'Not Functional'
+    return None    
+
 @require_http_methods(["GET"])
 def get_equipment_inventory_data(request):
     equipment_types = EquipmentType.objects.all()
     manufacturers = Manufacturer.objects.all()
     equipments = Equipment.objects.all()
-    founding_sources = FoundingSource.objects.all()
+    funding_sources = FundingSource.objects.all()
+    stations = Station.objects.all()
 
     equipment_list = []
     for equipment in equipments:
-        equipment_dict = {
-            'equipment_id': equipment.id,
-            'equipment_type': equipment_types.get(id=equipment.equipment_type_id).name,
-            'equipment_type_id': equipment.equipment_type_id,
-            'founding_source': founding_sources.get(id=equipment.founding_source_id).name,
-            'founding_source_id': equipment.founding_source_id,            
-            'manufacturer': manufacturers.get(id=equipment.manufacturer_id).name,
-            'manufacturer_id': equipment.manufacturer_id,
-            'model': equipment.model,
-            'serial_number': equipment.serial_number,
-            'acquisition_date': equipment.acquisition_date,
-            'first_deploy_date': equipment.first_deploy_date,
-            'last_calibration_date': equipment.last_calibration_date,
-            'next_calibration_date': equipment.next_calibration_date,
-            'decommission_date': equipment.decommission_date,
-            'last_deployed': '---',
-            'location': 'Office',
-            'condition': '---',
-        }
-        equipment_list.append(equipment_dict)
+        try:
+            equipment_type = equipment_types.get(id=equipment.equipment_type_id)
+            funding_source = funding_sources.get(id=equipment.funding_source_id)
+            manufacturer = manufacturers.get(id=equipment.manufacturer_id)
+
+            station = None
+            if equipment.location_id:
+                station = stations.get(id=equipment.location_id)
+
+            equipment_dict = {
+                'equipment_id': equipment.id,
+                'equipment_type': equipment_type.name,
+                'equipment_type_id': equipment_type.id,
+                'funding_source': funding_source.name,
+                'funding_source_id': funding_source.id,            
+                'manufacturer': manufacturer.name,
+                'manufacturer_id': manufacturer.id,
+                'model': equipment.model,
+                'serial_number': equipment.serial_number,
+                'acquisition_date': equipment.acquisition_date,
+                'first_deploy_date': equipment.first_deploy_date,
+                'last_calibration_date': equipment.last_calibration_date,
+                'next_calibration_date': equipment.next_calibration_date,
+                'decommission_date': equipment.decommission_date,
+                'last_deploy_date': equipment.last_deploy_date,
+                'location': f"{station.name} - {station.code}" if station else 'Office',
+                'location_id': station.id if station else None,
+                'condition': equipment_condition(equipment.condition),
+                'condition_id': equipment.condition,
+            }
+            equipment_list.append(equipment_dict)            
+        except ObjectDoesNotExist:
+            pass
+
+    equipment_conditions = [
+        {'name': 'Fully Functional', 'id': 'F'},
+        {'name': 'Partially Functional', 'id': 'P'},
+        {'name': 'Not Functional', 'id': 'N'},
+    ]
+
+    station_list = [{'name': f"{station.name} - {station.code}",
+                     'id': station.id} for station in stations]
 
     response = {
         'equipments': equipment_list,
         'equipment_types': list(equipment_types.values()),
         'manufacturers': list(manufacturers.values()),
-        'founding_sources': list(founding_sources.values())
+        'funding_sources': list(funding_sources.values()),
+        'stations': station_list,
+        'equipment_conditions': equipment_conditions,
     }
     return JsonResponse(response, status=status.HTTP_200_OK)
 
@@ -4040,7 +4079,7 @@ def get_equipment_inventory_data(request):
 def create_equipment(request):
     equipment_type_id = request.GET.get('equipment_type', None)
     manufacturer_id = request.GET.get('manufacturer', None)
-    founding_source_id = request.GET.get('founding_source', None)
+    funding_source_id = request.GET.get('funding_source', None)
     model = request.GET.get('model', None)
     serial_number = request.GET.get('serial_number', None)
     acquisition_date = request.GET.get('acquisition_date', None)
@@ -4048,10 +4087,17 @@ def create_equipment(request):
     last_calibration_date = request.GET.get('last_calibration_date', None)
     next_calibration_date = request.GET.get('next_calibration_date', None)
     decommission_date = request.GET.get('decommission_date', None)
+    location_id = request.GET.get('location', None)
+    condition_id = request.GET.get('condition', None)
+    last_deploy_date = request.GET.get('last_deploy_date', None)  
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
-    manufacturer = Manufacturer.objects.get(id=manufacturer_id)
-    founding_source = FoundingSource.objects.get(id=founding_source_id)
+    manufacturer = Manufacturer.objects.get(id=manufacturer_id)   
+    funding_source = FundingSource.objects.get(id=funding_source_id)
+
+    location = None
+    if location_id:
+        location = Station.objects.get(id=location_id)
 
     try:
         equipment = Equipment.objects.get(
@@ -4076,7 +4122,7 @@ def create_equipment(request):
                 updated_at = now,
                 equipment_type = equipment_type,
                 manufacturer = manufacturer,
-                founding_source = founding_source,
+                funding_source = funding_source,
                 model = model,
                 serial_number = serial_number,
                 acquisition_date = acquisition_date,
@@ -4084,19 +4130,21 @@ def create_equipment(request):
                 last_calibration_date = last_calibration_date,
                 next_calibration_date = next_calibration_date,
                 decommission_date = decommission_date,
+                location = location,
+                condition = condition,
+                last_deploy_date = last_deploy_date,
             )
 
         response = {'equipment_id': equipment.id}
 
     return JsonResponse(response, status=status.HTTP_200_OK)   
 
-
 @require_http_methods(["POST"])
 def update_equipment(request):
     equipment_id = request.GET.get('equipment_id', None)
     equipment_type_id = request.GET.get('equipment_type', None)
     manufacturer_id = request.GET.get('manufacturer', None)
-    founding_source_id = request.GET.get('founding_source', None)
+    funding_source_id = request.GET.get('funding_source', None)
     model = request.GET.get('model', None)
     serial_number = request.GET.get('serial_number', None)
     acquisition_date = request.GET.get('acquisition_date', None)
@@ -4104,10 +4152,17 @@ def update_equipment(request):
     last_calibration_date = request.GET.get('last_calibration_date', None)
     next_calibration_date = request.GET.get('next_calibration_date', None)
     decommission_date = request.GET.get('decommission_date', None)
+    location_id = request.GET.get('location', None)
+    condition = request.GET.get('condition', None)
+    last_deploy_date = request.GET.get('last_deploy_date', None)  
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
     manufacturer = Manufacturer.objects.get(id=manufacturer_id)   
-    founding_source = FoundingSource.objects.get(id=founding_source_id)
+    funding_source = FundingSource.objects.get(id=funding_source_id)
+
+    location = None
+    if location_id:
+        location = Station.objects.get(id=location_id)
 
     try:
         equipment = Equipment.objects.get(equipment_type=equipment_type, serial_number=serial_number)
@@ -4131,7 +4186,7 @@ def update_equipment(request):
         equipment.updated_at = now
         equipment.equipment_type = equipment_type
         equipment.manufacturer = manufacturer
-        equipment.founding_source = founding_source         
+        equipment.funding_source = funding_source         
         equipment.model = model
         equipment.serial_number = serial_number
         equipment.acquisition_date = acquisition_date
@@ -4139,6 +4194,9 @@ def update_equipment(request):
         equipment.last_calibration_date = last_calibration_date
         equipment.next_calibration_date = next_calibration_date
         equipment.decommission_date = decommission_date
+        equipment.location = location
+        equipment.condition = condition
+        equipment.last_deploy_date = last_deploy_date
         equipment.save()
 
         response = {}

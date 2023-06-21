@@ -83,11 +83,11 @@
             <v-layout ma-2 mb-2>
               <v-flex mr-2>
                 <v-autocomplete
-                  :items="founding_sources"
+                  :items="funding_sources"
                   item-text="name"
                   item-value="id"
-                  v-model="equipment.founding_source_id"
-                  label="Founding Source"
+                  v-model="equipment.funding_source_id"
+                  label="Funding Source"
                   required
                   hint="*Required"
                   persistent-hint
@@ -220,7 +220,59 @@
               </v-flex>
             </v-layout>
 
+            <v-layout mx-2 mb-2>
+              <v-flex mr-2>
+                <v-menu
+                  :close-on-content-click="false"
+                  v-model="equipment.last_deploy_date_menu"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+                >
+                  <template v-slot:activator="{ on }">
+                    <v-text-field
+                    v-model="equipment.last_deploy_date"
+                    label="Date of Last Calibration"
+                    v-on="on"
+                    clearable
+                    prepend-icon="event"
+                    ></v-text-field>
+                  </template>
+                  <v-date-picker
+                    v-model="equipment.last_deploy_date"
+                    @input="equipment.last_deploy_date_menu = false"
+                  ></v-date-picker>
+                </v-menu>
+              </v-flex>
+              <v-flex>
+                <v-autocomplete
+                  :items="equipment_conditions"
+                  item-text="name"
+                  item-value="id"
+                  v-model="equipment.condition_id"
+                  label="Condition of the equipment"
+                  autocomplete="off"
+                  clearable
+                ></v-autocomplete>                           
+              </v-flex>
+            </v-layout>
+          </v-layout>            
+
+            <v-layout mx-2 mb-2>
+              <v-flex >
+                <v-autocomplete
+                  :items="stations"
+                  item-text="name"
+                  item-value="id"
+                  v-model="equipment.location_id"
+                  label="Location of the equipment"
+                  autocomplete="off"
+                  clearable
+                ></v-autocomplete>
+              </v-flex>
+            </v-layout>
           </v-layout>
+
           <v-card-actions>
             <v-btn
               v-if="is_new_equipment"
@@ -351,7 +403,7 @@
       validations: {
         equipment: {
           equipment_type_id: { required },
-          founding_source_id: { required },
+          funding_source_id: { required },
           manufacturer_id: { required },
           model: { required },
           serial_number: { required },          
@@ -368,14 +420,16 @@
         equipments: [],
         equipment_types: [],
         manufacturers: [],
-        founding_sources: [],
+        funding_sources: [],
+        stations: [],
+        equipment_conditions: [],
         is_new_equipment: true,
         equipment: {
           equipment_id: null,
           equipment_type: null,
           equipment_type_id: null,
-          founding_source: null,
-          founding_source_id: null,          
+          funding_source: null,
+          funding_source_id: null,          
           manufacturer: null,
           manufacturer_id: null,
           model: null,
@@ -390,6 +444,12 @@
           next_calibration_date_menu: false,
           decommission_date: moment().format('YYYY-MM-DD'),
           decommission_date_menu: false,
+          location: null,
+          location_id: null,
+          condition: null,
+          condition_id: null,
+          last_deploy_date: moment().format('YYYY-MM-DD'),
+          last_deploy_date_menu: false
         },
         headers: [
           { text: 'Equipment Type', align: 'left', value: 'equipment_type' },
@@ -398,7 +458,7 @@
           { text: 'Serial Number', align: 'center', value: 'serial_number' },
           { text: 'Acquired', align: 'center', value: 'acquisition_date' },
           { text: 'First Deployed', align: 'center', value: 'first_deploy_date' },
-          { text: 'Last Deployed', align: 'center', value: 'last_deployed' },
+          { text: 'Last Deployed', align: 'center', value: 'last_deploy_date' },
           { text: 'Location', align: 'center', value: 'location' },
           { text: 'Condition', align: 'center', value: 'condition' },
           { text: 'Actions', align: 'center', value: 'actions', sortable: false },
@@ -417,8 +477,8 @@
               equipment_id: null,
               equipment_type: null,
               equipment_type_id: null,
-              founding_source: null,
-              founding_source_id: null,
+              funding_source: null,
+              funding_source_id: null,          
               manufacturer: null,
               manufacturer_id: null,
               model: null,
@@ -433,6 +493,12 @@
               next_calibration_date_menu: false,
               decommission_date: moment().format('YYYY-MM-DD'),
               decommission_date_menu: false,
+              location: null,
+              location_id: null,
+              condition: null,
+              condition_id: null,
+              last_deploy_date: moment().format('YYYY-MM-DD'),
+              last_deploy_date_menu: false
             };            
           }
         }
@@ -448,7 +514,9 @@
               this.equipments = res.data['equipments'];
               this.equipment_types = res.data['equipment_types'];
               this.manufacturers = res.data['manufacturers'];
-              this.founding_sources = res.data['founding_sources']
+              this.funding_sources = res.data['funding_sources'];
+              this.stations = res.data['stations'];
+              this.equipment_conditions = res.data['equipment_conditions'];
           });
         },
         createEquipment(){
@@ -459,7 +527,7 @@
             params: {
               'equipment_type': this.equipment.equipment_type_id,
               'manufacturer': this.equipment.manufacturer_id,
-              'founding_source': this.equipment.founding_source_id,
+              'funding_source': this.equipment.funding_source_id,
               'model': this.equipment.model,
               'serial_number': this.equipment.serial_number,
               'acquisition_date': this.equipment.acquisition_date,
@@ -467,6 +535,9 @@
               'last_calibration_date': this.equipment.last_calibration_date,
               'next_calibration_date': this.equipment.next_calibration_date,
               'decommission_date': this.equipment.decommission_date,
+              'location': this.equipment.location_id,
+              'condition': this.equipment.condition_id,
+              'last_deploy_date': this.equipment.last_deploy_date,
             },
           }) 
           .then(
@@ -491,14 +562,17 @@
               'equipment_id': this.equipment.equipment_id,
               'equipment_type': this.equipment.equipment_type_id,
               'manufacturer': this.equipment.manufacturer_id,
-              'founding_source': this.equipment.founding_source_id,
+              'funding_source': this.equipment.funding_source_id,
               'model': this.equipment.model,
               'serial_number': this.equipment.serial_number,
               'acquisition_date': this.equipment.acquisition_date,
               'first_deploy_date': this.equipment.first_deploy_date,
               'last_calibration_date': this.equipment.last_calibration_date,
               'next_calibration_date': this.equipment.next_calibration_date,
-              'decommission_date': this.decommission_date
+              'decommission_date': this.equipment.decommission_date,
+              'location': this.equipment.location_id,
+              'condition': this.equipment.condition_id,
+              'last_deploy_date': this.equipment.last_deploy_date,
             },
           })
           .then(
