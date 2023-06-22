@@ -17,7 +17,7 @@
     />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined"
     />
     <link
       rel="stylesheet"
@@ -566,10 +566,18 @@
             </li>
 
             {% if request.user.is_staff or request.user.is_superuser %}
-            <li id="maintenance-group" class="hide-menu collapsible-item">
-              <a href="{% url 'maintenance-reports' %}" style="padding: 0px 16px;"><i class="material-icons">build</i>MAINTENANCE</a>
+            <li id="maintenance-group" class="hide-menu">
+              <div class="collapsible-header"><i class="material-icons">build</i>MAINTENANCE</div>
+              <div class="collapsible-body">
+                <div class="collapsible-subitem mb-2">
+                  <ul class="collection">
+                    <a id="equipement-inventory" href="{% url 'equipment-inventory' %}" class="hide-menu collection-item left-space">Equipment Inventory<i class="material-icons-outlined secondary-content">inventory</i></a>
+                    <!-- <a id="maintenance-reports" href="{% url 'maintenance-reports' %}" class="hide-menu collection-item left-space">Maintenance Reports<i class="material-icons secondary-content">build</i></a> -->
+                  </ul>
+                </div>
+              </div>
             </li>
-            {% endif %}
+            {% endif %}            
 
 
             {% if request.user.is_staff or request.user.is_superuser %}
@@ -746,6 +754,7 @@
 
         const localGroups = [
           'stations-group',
+          'maintenance-group',          
           'data-group',
           'products-group',
           'quality-control-group'
@@ -764,7 +773,6 @@
           'wave-data',
           'product-compare',
           'yearly-average',
-          'maintenance-group',
           'spatial-analysis',
           'extremes-means',
           'quality-control',
@@ -772,7 +780,9 @@
           'data-inventory',
           'range-threshold',
           'step-threshold',
-          'persist-threshold'
+          'persist-threshold',
+          'equipement-inventory',
+          'maintenance-reports'
         ]
 
         const menuList = "{{USER_PERMISSIONS|safe}}";
