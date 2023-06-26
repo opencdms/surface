@@ -1394,22 +1394,33 @@ class EquipmentType(BaseModel):
     def __str__(self):
         return self.name        
     
-class FoundingSource(BaseModel):
+class FundingSource(BaseModel):
     name = models.CharField(max_length=128)
 
+    def __str__(self):
+        return self.name    
+
 class Equipment(BaseModel):
+    class EquipmentCondition(models.TextChoices):
+        FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
+        PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
+        NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
+
     equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
     manufacturer = models.ForeignKey(Manufacturer, on_delete=models.DO_NOTHING)
-    founding_source = models.ForeignKey(FoundingSource, on_delete=models.DO_NOTHING)
+    funding_source = models.ForeignKey(FundingSource, on_delete=models.DO_NOTHING)
     model = models.CharField(max_length=64)
     serial_number = models.CharField(max_length=64)
     acquisition_date = models.DateField()
     first_deploy_date = models.DateField(blank=True, null=True)
+    last_deploy_date = models.DateField(blank=True, null=True)
     last_calibration_date = models.DateField(blank=True, null=True)
     next_calibration_date = models.DateField(blank=True, null=True)
-    decomission_date = models.DateField(blank=True, null=True)
+    decommission_date = models.DateField(blank=True, null=True)
+    location = models.ForeignKey(Station, on_delete=models.DO_NOTHING, null=True)
+    condition = models.CharField(max_length=1, choices=EquipmentCondition.choices, null=True)
 
     class Meta:
         unique_together = ("equipment_type", "serial_number")        
         verbose_name = "equipment"
-        verbose_name_plural = "equipments"
+        verbose_name_plural = "equipment"
