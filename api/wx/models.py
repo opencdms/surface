@@ -1400,8 +1400,10 @@ class FundingSource(BaseModel):
     def __str__(self):
         return self.name    
 
+from simple_history.models import HistoricalRecords
+
 class Equipment(BaseModel):
-    class EquipmentCondition(models.TextChoices):
+    class EquipmentClassification(models.TextChoices):
         FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
         PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
         NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
@@ -1418,9 +1420,13 @@ class Equipment(BaseModel):
     next_calibration_date = models.DateField(blank=True, null=True)
     decommission_date = models.DateField(blank=True, null=True)
     location = models.ForeignKey(Station, on_delete=models.DO_NOTHING, null=True)
-    condition = models.CharField(max_length=1, choices=EquipmentCondition.choices, null=True)
+    classification = models.CharField(max_length=1, choices=EquipmentClassification.choices, null=True)
+    history = HistoricalRecords()
 
     class Meta:
-        unique_together = ("equipment_type", "serial_number")        
+        unique_together = ("equipment_type", "serial_number")
         verbose_name = "equipment"
         verbose_name_plural = "equipment"
+
+    def __str__(self):
+        return ' '.join((self.equipment_type.name, self.model, self.serial_number))        

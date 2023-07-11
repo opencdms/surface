@@ -341,16 +341,19 @@ class TechnicianAdmin(admin.ModelAdmin):
 class ManufacturerAdmin(admin.ModelAdmin):
     list_display = ("name",)
 
-@admin.register(models.EquipmentType)
-class EquipmentTypeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
 
 @admin.register(models.FundingSource)
 class FundingSourceAdmin(admin.ModelAdmin):
     list_display = ("name",)
 
+from simple_history.admin import SimpleHistoryAdmin
+
+@admin.register(models.EquipmentType)
+class EquipmentTypeAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
 @admin.register(models.Equipment)
-class EquipmentAdmin(admin.ModelAdmin):
+class EquipmentAdmin(SimpleHistoryAdmin):
     list_display = ("equipment_type", "manufacturer", "model", "serial_number", "acquisition_date", "first_deploy_date", "last_calibration_date")
     readonly_fields=('location',)    
 
