@@ -4002,12 +4002,12 @@ def get_value(variable):
         return '---'
     return variable
 
-def equipment_condition(condition):
-    if condition == 'F':
+def equipment_classification(classification):
+    if classification == 'F':
         return 'Fully Functional'
-    elif condition == 'P':
+    elif classification == 'P':
         return 'Partially Functional'
-    elif condition == 'N':
+    elif classification == 'N':
         return 'Not Functional'
     return None    
 
@@ -4048,14 +4048,14 @@ def get_equipment_inventory_data(request):
                 'last_deploy_date': equipment.last_deploy_date,
                 'location': f"{station.name} - {station.code}" if station else 'Office',
                 'location_id': station.id if station else None,
-                'condition': equipment_condition(equipment.condition),
-                'condition_id': equipment.condition,
+                'classification': equipment_classification(equipment.classification),
+                'classification_id': equipment.classification,
             }
             equipment_list.append(equipment_dict)            
         except ObjectDoesNotExist:
             pass
 
-    equipment_conditions = [
+    equipment_classifications = [
         {'name': 'Fully Functional', 'id': 'F'},
         {'name': 'Partially Functional', 'id': 'P'},
         {'name': 'Not Functional', 'id': 'N'},
@@ -4070,7 +4070,7 @@ def get_equipment_inventory_data(request):
         'manufacturers': list(manufacturers.values()),
         'funding_sources': list(funding_sources.values()),
         'stations': station_list,
-        'equipment_conditions': equipment_conditions,
+        'equipment_classifications': equipment_classifications,
     }
     return JsonResponse(response, status=status.HTTP_200_OK)
 
@@ -4088,7 +4088,7 @@ def create_equipment(request):
     next_calibration_date = request.GET.get('next_calibration_date', None)
     decommission_date = request.GET.get('decommission_date', None)
     location_id = request.GET.get('location', None)
-    condition_id = request.GET.get('condition', None)
+    classification = request.GET.get('classification', None)
     last_deploy_date = request.GET.get('last_deploy_date', None)  
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
@@ -4131,7 +4131,7 @@ def create_equipment(request):
                 next_calibration_date = next_calibration_date,
                 decommission_date = decommission_date,
                 location = location,
-                condition = condition,
+                classification = classification,
                 last_deploy_date = last_deploy_date,
             )
 
@@ -4153,7 +4153,7 @@ def update_equipment(request):
     next_calibration_date = request.GET.get('next_calibration_date', None)
     decommission_date = request.GET.get('decommission_date', None)
     location_id = request.GET.get('location', None)
-    condition = request.GET.get('condition', None)
+    classification = request.GET.get('classification', None)
     last_deploy_date = request.GET.get('last_deploy_date', None)  
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
@@ -4195,7 +4195,7 @@ def update_equipment(request):
         equipment.next_calibration_date = next_calibration_date
         equipment.decommission_date = decommission_date
         equipment.location = location
-        equipment.condition = condition
+        equipment.classification = classification
         equipment.last_deploy_date = last_deploy_date
         equipment.save()
 
