@@ -4640,7 +4640,7 @@ def get_station_equipment_types(station):
         is_full, msg = is_equipment_full(station, equipment_type)
         dictionary = {'key':equipment_type.id,
                       'id':equipment_type.id,
-                      'name': equipment_type.name
+                      'name': equipment_type.name,
                       'is_full': is_full}
 
         equipment_type_list.append(equipment_type)
