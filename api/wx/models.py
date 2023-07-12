@@ -18,8 +18,6 @@ from timescale.db.models.models import TimescaleModel
 from timescale.db.models.fields import TimescaleDateTimeField
 from timescale.db.models.managers import TimescaleManager
 
-from django.db.models import Q
-
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1300,9 +1298,6 @@ def no_future(value):
     if value > today:
         raise ValidationError('Visit date cannot be in the future.')
 
-################################################################
-################################################################
-
 class StationComponent(BaseModel):
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=256)
@@ -1324,10 +1319,6 @@ class StationProfileComponent(BaseModel):
     class Meta:
         unique_together = ('profile', 'station_component')
         unique_together = ('profile', 'presentation_order')
-
-################################################################
-################################################################
-
 
 class MaintenanceReport(BaseModel):
     class Status(models.TextChoices):
@@ -1384,9 +1375,6 @@ class MaintenanceReportStationComponent(BaseModel):
     class Meta:
         unique_together = ('maintenance_report', 'station_component')
 
-################################################################
-################################################################
-
 class Manufacturer(BaseModel):
     name = models.CharField(max_length=64)
 
@@ -1396,6 +1384,7 @@ class Manufacturer(BaseModel):
 class EquipmentType(BaseModel):
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=256)
+    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
     report_template = RichTextField(blank=True, null=True)
 
     class Meta:
@@ -1438,48 +1427,6 @@ class Equipment(BaseModel):
         unique_together = ("equipment_type", "serial_number")
         verbose_name = "equipment"
         verbose_name_plural = "equipment"
-    
+
     def __str__(self):
-        return ' '.join((self.equipment_type.name, self.model, self.serial_number))
-
-class StationProfileEquipmentType(BaseModel):
-    profile = models.ForeignKey(StationProfile, on_delete=models.DO_NOTHING)
-    equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
-    equipment_type_order = models.IntegerField() #Main
-    equipment_order = models.IntegerField() #Sub
-
-
-    def save(self, *args, **kwargs):
-        # For each profile, equiptment_type is one to one with equiptment_type_order:
-        if StationProfileEquipmentType.objects.filter(
-            profile=self.profile,
-            equipment_type=self.equipment_type,
-        ).exclude(equipment_type_order=self.equipment_type_order).exists():
-            raise ValidationError("A StationProfileEquipmentType with the same profile and equipment_type, already exists with a different equipment_type_order.")
-        if StationProfileEquipmentType.objects.filter(
-            profile=self.profile,
-            equipment_type_order=self.equipment_type_order
-        ).exclude(equipment_type=self.equipment_type).exists():
-            raise ValidationError("A StationProfileEquipmentType with the same profile and equipment_type_order, already exists with a different equipment_type.")
-
-        super().save(*args, **kwargs)
-
-    class Meta:
-        unique_together = ('profile', 'equipment_type', 'equipment_type_order', 'equipment_order')
-
-class MaintenanceReportEquipment(BaseModel):
-    class EquipmentClassification(models.TextChoices):
-        FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
-        PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
-        NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
-    
-    profile_equipment = models.ForeignKey(StationProfileEquipmentType, on_delete=models.DO_NOTHING)
-    maintenance_report = models.ForeignKey(MaintenanceReport, on_delete=models.CASCADE)
-    old_equipment = models.ForeignKey(Equipment, on_delete=models.DO_NOTHING, related_name='old_equipment', null=True)
-    current_equipment = models.ForeignKey(Equipment, on_delete=models.DO_NOTHING, related_name='current_equipment')
-    condition = RichTextField()
-    classification = models.CharField(max_length=1, choices=EquipmentClassification.choices, default=EquipmentClassification.FULLY_FUNCTIONAL, null=True)
-
-    class Meta:
-        unique_together = ('maintenance_report', 'current_equipment')
-        unique_together = ('maintenance_report', 'profile_equipment')
+        return ' '.join((self.equipment_type.name, self.model, self.serial_number))        
