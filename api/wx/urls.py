@@ -132,7 +132,7 @@ urlpatterns = [
     path('wx/maintenance_reports/equipment_inventory/', views.get_equipment_inventory, name="equipment-inventory"),
     path('wx/maintenance_reports/equipment_inventory/get/', views.get_equipment_inventory_data),
     path('wx/maintenance_reports/equipment_inventory/create/', views.create_equipment),
-    path('wx/maintenance_reports/equipment_inventory/delete/', views.delete_equipment),
+    # path('wx/maintenance_reports/equipment_inventory/delete/', views.delete_equipment),
     path('wx/maintenance_reports/equipment_inventory/update/', views.update_equipment),
 ]
 

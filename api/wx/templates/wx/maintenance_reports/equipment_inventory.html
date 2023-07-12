@@ -257,20 +257,6 @@
               </v-flex>
             </v-layout>
           </v-layout>            
-
-<!--             <v-layout mx-2 mb-2>
-              <v-flex >
-                <v-autocomplete
-                  :items="stations"
-                  item-text="name"
-                  item-value="id"
-                  v-model="equipment.location_id"
-                  label="Location of the equipment"
-                  autocomplete="off"
-                  clearable
-                ></v-autocomplete>
-              </v-flex>
-            </v-layout> -->
           </v-layout>
 
           <v-card-actions>
@@ -376,14 +362,14 @@
                 </v-tooltip>
                 {% endif %}
 
-                {% if perms.wx.delete_equipment %}
+                <!-- {% if perms.wx.delete_equipment %}
                   <v-tooltip bottom>
                     <template v-slot:activator="{ on }">
                       <v-btn icon> <v-icon color="error" v-on="on" small @click="dialog_del=true; equipment=item">delete</v-icon></v-btn>
                     </template>
                     <span>Delete Equipment</span>
                   </v-tooltip>
-                {% endif %}
+                {% endif %} -->
               </template>              
             </v-data-table>
           </v-flex>            

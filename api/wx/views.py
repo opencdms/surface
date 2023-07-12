@@ -4015,7 +4015,7 @@ def equipment_classification(classification):
 def get_equipment_inventory_data(request):
     equipment_types = EquipmentType.objects.all()
     manufacturers = Manufacturer.objects.all()
-    equipments = Equipment.objects.all()
+    equipments = Equipment.objects.all().order_by('equipment_type', 'serial_number')
     funding_sources = FundingSource.objects.all()
     stations = Station.objects.all()
 
@@ -4130,7 +4130,7 @@ def create_equipment(request):
                 last_calibration_date = last_calibration_date,
                 next_calibration_date = next_calibration_date,
                 decommission_date = decommission_date,
-                location = location,
+                # location = location,
                 classification = classification,
                 last_deploy_date = last_deploy_date,
             )
@@ -4194,7 +4194,7 @@ def update_equipment(request):
         equipment.last_calibration_date = last_calibration_date
         equipment.next_calibration_date = next_calibration_date
         equipment.decommission_date = decommission_date
-        equipment.location = location
+        # equipment.location = location
         equipment.classification = classification
         equipment.last_deploy_date = last_deploy_date
         equipment.save()

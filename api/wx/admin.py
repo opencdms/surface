@@ -354,7 +354,24 @@ class EquipmentTypeAdmin(admin.ModelAdmin):
 
 @admin.register(models.Equipment)
 class EquipmentAdmin(SimpleHistoryAdmin):
+    def changed_fields(self, obj):
+        if obj.prev_record:
+            delta = obj.diff_against(obj.prev_record)
+            return delta.changed_fields
+        return None
+
+    def list_changes(self, obj):
+        fields = ""
+        if obj.prev_record:
+            delta = obj.diff_against(obj.prev_record)
+
+            for change in delta.changes:
+                fields += str("<strong>{}</strong> changed from <span style='background-color:#ffb5ad'>{}</span> to <span style='background-color:#b3f7ab'>{}</span> . <br/>".format(change.field, change.old, change.new))
+            return format_html(fields)
+        return None
+    
     list_display = ("equipment_type", "manufacturer", "model", "serial_number", "acquisition_date", "first_deploy_date", "last_calibration_date")
     readonly_fields=('location',)    
+    history_list_display = ["changed_fields","list_changes"]
 
     
