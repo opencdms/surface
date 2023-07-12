@@ -246,11 +246,11 @@
               </v-flex>
               <v-flex>
                 <v-autocomplete
-                  :items="equipment_conditions"
+                  :items="equipment_classifications"
                   item-text="name"
                   item-value="id"
-                  v-model="equipment.condition_id"
-                  label="Condition of the equipment"
+                  v-model="equipment.classification_id"
+                  label="Classification of the equipment"
                   autocomplete="off"
                   clearable
                 ></v-autocomplete>                           
@@ -258,7 +258,7 @@
             </v-layout>
           </v-layout>            
 
-            <v-layout mx-2 mb-2>
+<!--             <v-layout mx-2 mb-2>
               <v-flex >
                 <v-autocomplete
                   :items="stations"
@@ -270,7 +270,7 @@
                   clearable
                 ></v-autocomplete>
               </v-flex>
-            </v-layout>
+            </v-layout> -->
           </v-layout>
 
           <v-card-actions>
@@ -422,7 +422,7 @@
         manufacturers: [],
         funding_sources: [],
         stations: [],
-        equipment_conditions: [],
+        equipment_classifications: [],
         is_new_equipment: true,
         equipment: {
           equipment_id: null,
@@ -436,19 +436,19 @@
           serial_number: null,
           acquisition_date: moment().format('YYYY-MM-DD'),
           acquisition_date_menu: false,
-          first_deploy_date: moment().format('YYYY-MM-DD'),
+          first_deploy_date: null,
           first_deploy_date_menu: false,
-          last_calibration_date: moment().format('YYYY-MM-DD'),
+          last_calibration_date: null,
           last_calibration_date_menu: false,
-          next_calibration_date: moment().format('YYYY-MM-DD'),
+          next_calibration_date: null,
           next_calibration_date_menu: false,
-          decommission_date: moment().format('YYYY-MM-DD'),
+          decommission_date: null,
           decommission_date_menu: false,
           location: null,
           location_id: null,
-          condition: null,
-          condition_id: null,
-          last_deploy_date: moment().format('YYYY-MM-DD'),
+          classification: null,
+          classification_id: null,
+          last_deploy_date: null,
           last_deploy_date_menu: false
         },
         headers: [
@@ -460,7 +460,7 @@
           { text: 'First Deployed', align: 'center', value: 'first_deploy_date' },
           { text: 'Last Deployed', align: 'center', value: 'last_deploy_date' },
           { text: 'Location', align: 'center', value: 'location' },
-          { text: 'Condition', align: 'center', value: 'condition' },
+          { text: 'Classification', align: 'center', value: 'classification' },
           { text: 'Actions', align: 'center', value: 'actions', sortable: false },
         ],
         equipments: [],
@@ -485,19 +485,19 @@
               serial_number: null,
               acquisition_date: moment().format('YYYY-MM-DD'),
               acquisition_date_menu: false,
-              first_deploy_date: moment().format('YYYY-MM-DD'),
+              first_deploy_date: null,
               first_deploy_date_menu: false,
-              last_calibration_date: moment().format('YYYY-MM-DD'),
+              last_calibration_date: null,
               last_calibration_date_menu: false,
-              next_calibration_date: moment().format('YYYY-MM-DD'),
+              next_calibration_date: null,
               next_calibration_date_menu: false,
-              decommission_date: moment().format('YYYY-MM-DD'),
+              decommission_date: null,
               decommission_date_menu: false,
               location: null,
               location_id: null,
-              condition: null,
-              condition_id: null,
-              last_deploy_date: moment().format('YYYY-MM-DD'),
+              classification: null,
+              classification_id: null,
+              last_deploy_date: null,
               last_deploy_date_menu: false
             };            
           }
@@ -516,7 +516,7 @@
               this.manufacturers = res.data['manufacturers'];
               this.funding_sources = res.data['funding_sources'];
               this.stations = res.data['stations'];
-              this.equipment_conditions = res.data['equipment_conditions'];
+              this.equipment_classifications = res.data['equipment_classifications'];
           });
         },
         createEquipment(){
@@ -536,7 +536,7 @@
               'next_calibration_date': this.equipment.next_calibration_date,
               'decommission_date': this.equipment.decommission_date,
               'location': this.equipment.location_id,
-              'condition': this.equipment.condition_id,
+              'classification': this.equipment.classification_id,
               'last_deploy_date': this.equipment.last_deploy_date,
             },
           }) 
@@ -571,7 +571,7 @@
               'next_calibration_date': this.equipment.next_calibration_date,
               'decommission_date': this.equipment.decommission_date,
               'location': this.equipment.location_id,
-              'condition': this.equipment.condition_id,
+              'classification': this.equipment.classification_id,
               'last_deploy_date': this.equipment.last_deploy_date,
             },
           })
