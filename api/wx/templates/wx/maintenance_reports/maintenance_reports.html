@@ -140,7 +140,8 @@
                   </v-btn>
                 </template>
                 <span>View Maintenance Report</span>
-              </v-tooltip> -->                
+              </v-tooltip> -->
+              {% if perms.wx.delete_maintenancereport %}     
               <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
                   <v-btn icon>                        
@@ -151,6 +152,7 @@
                 </template>
                 <span>Delete Maintenance Report</span>
               </v-tooltip>
+              {% endif %}
             </template>
             <template v-slot:top>
               <v-layout  mr-8 justify-end>
