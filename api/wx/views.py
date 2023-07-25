@@ -4683,10 +4683,6 @@ def update_maintenance_report_equipment_type(maintenance_report, equipment_type,
 
 @require_http_methods(["POST"])
 def update_maintenance_report_equipment_type_data(request):
-    print('------------------------------------')
-    print('Trying to update equipment type data')
-    print('------------------------------------')
-
     maintenance_report_id = request.GET.get('maintenance_report_id', None)
     equipment_type_id = request.GET.get('equipment_type_id', None)
     equipment_order = request.GET.get('equipment_order', None),
@@ -4717,6 +4713,12 @@ def create_maintenance_report(request):
     now = datetime.datetime.now()
     form_data = json.loads(request.body.decode())
 
+    station = Station.objects.get(id=form_data['station_id'])
+    if not StationProfileEquipmentType.objects.filter(station_profile=station.profile):
+        response = {"message": f"Station profile {station.profile.name} is not associated with any equipment type."}        
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+
     # Check if a maintenance report with status '-' exists and hard delete it
     maintenance_report = MaintenanceReport.objects.filter(station_id=form_data['station_id'], visit_date=form_data['visit_date'], status='-').first()
     if maintenance_report:
@@ -4725,7 +4727,6 @@ def create_maintenance_report(request):
     # Check if a previous maintenance report is not approved
     maintenance_report = MaintenanceReport.objects.filter(station_id=form_data['station_id']).exclude(status__in=['A', '-']).first()
     if maintenance_report:
-        station = Station.objects.get(id=form_data['station_id'])
         response = {"message": f"Previous maintenance reports of {station.name} - {station.code} require approval to create a new one."}
         return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
 

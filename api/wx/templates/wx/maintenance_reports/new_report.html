@@ -142,10 +142,7 @@
             <v-overlay :value="loading"> <v-progress-circular indeterminate size="64"></v-progress-circular> </v-overlay>
           </v-layout>
         </v-layout>
-
-        <!------------------------------------------------------------------>
-        <!------------------------------------------------------------------>
-        <!------------------------------------------------------------------>
+        
         <template>
           <v-stepper v-if="disableForm" v-model="e1" vertical class="elevation-0" @change="e2=1">
             <v-stepper-step :complete="e1 > 1" step="1" editable> Describe the station on arrival </v-stepper-step>
@@ -172,7 +169,7 @@
 
               <v-stepper-content :step="n+2" :key="`${n+2}-content`">
                 <template>
-                  <v-stepper v-model="e2" vertical>
+                  <v-stepper v-model="e2" vertical @change="getInitialData(maintenance_report.id)">
                     <v-stepper-step :complete="e2 > 1" step="1" editable> Primary [[equipment_type.name]] </v-stepper-step>
 
                     <v-stepper-content step="1">
@@ -487,7 +484,12 @@
                   class="ml-0 mr-0 mb-8 pa-5"
                 ></ckeditor>              
               </v-card>  
-              <v-btn mt-3 color="primary" @click="nextStep(steps+2)"> Save and Continue</v-btn>
+              <v-btn
+                mt-3 color="primary"
+                @click="nextStep(steps+2); updateMaintenanceReportContacts(maintenance_report)"
+              >
+                Save and Continue
+              </v-btn>
             </v-stepper-content>
 
             <v-divider vertical ></v-divider>
