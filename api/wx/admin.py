@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from import_export.admin import ExportMixin, ImportMixin
 
 from wx import models, forms
-
+from simple_history.utils import update_change_reason
 
 @admin.register(models.AdministrativeRegion)
 class AdministrativeRegionAdmin(admin.ModelAdmin):
@@ -320,14 +320,6 @@ class ElementDecoder(admin.ModelAdmin):
     search_fields = ("element_name", "variable__name", "decoder__name")
     list_display = ("element_name", "variable_id", "decoder")
 
-# admin.site.register(models.StationComponent)
-# class StationComponentAdmin(admin.ModelAdmin):
-#     list_display = ('name', 'description')
-
-# @admin.register(models.StationProfileComponent)
-# class StationProfileComponentAdmin(admin.ModelAdmin):
-#     list_display = ('profile', 'presentation_order', 'station_component')
-
 @admin.register(models.VisitType)
 class VisitTypeAdmin(admin.ModelAdmin):
     list_display = ("name",)
@@ -371,7 +363,14 @@ class EquipmentAdmin(SimpleHistoryAdmin):
         return None
     
     list_display = ("equipment_type", "manufacturer", "model", "serial_number", "acquisition_date", "first_deploy_date", "last_calibration_date")
-    readonly_fields=('location',)    
     history_list_display = ["changed_fields","list_changes"]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        update_change_reason(obj, 'Source of change: Admin page')
+
+@admin.register(models.StationProfileEquipmentType)
+class StationProfileEquipmentTypeAdmin(admin.ModelAdmin):
+    list_display = ("station_profile", "equipment_type", "equipment_type_order")
 
     

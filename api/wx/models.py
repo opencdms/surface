@@ -17,7 +17,10 @@ from wx.enums import FlashTypeEnum
 from timescale.db.models.models import TimescaleModel
 from timescale.db.models.fields import TimescaleDateTimeField
 from timescale.db.models.managers import TimescaleManager
-
+from simple_history.models import HistoricalRecords
+from django.utils.translation import gettext_lazy # Enumaretor
+from datetime import date
+from ckeditor.fields import RichTextField
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1276,6 +1279,63 @@ class HFSummaryTask(BaseModel):
     class Meta:
         unique_together = ('station', 'variable', 'start_datetime', 'end_datetime')
 
+
+class Manufacturer(BaseModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+ 
+
+class FundingSource(BaseModel):
+    name = models.CharField(max_length=128)
+
+    def __str__(self):
+        return self.name    
+
+
+class EquipmentType(BaseModel):
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=256)
+    report_template = RichTextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "equipment type"
+        verbose_name_plural = "equipment types"
+
+    def __str__(self):
+        return self.name  
+
+
+class Equipment(BaseModel):
+    class EquipmentClassification(models.TextChoices):
+        FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
+        PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
+        NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
+
+    equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
+    manufacturer = models.ForeignKey(Manufacturer, on_delete=models.DO_NOTHING)
+    funding_source = models.ForeignKey(FundingSource, on_delete=models.DO_NOTHING)
+    model = models.CharField(max_length=64)
+    serial_number = models.CharField(max_length=64)
+    acquisition_date = models.DateField()
+    first_deploy_date = models.DateField(blank=True, null=True)
+    last_deploy_date = models.DateField(blank=True, null=True)
+    last_calibration_date = models.DateField(blank=True, null=True)
+    next_calibration_date = models.DateField(blank=True, null=True)
+    decommission_date = models.DateField(blank=True, null=True)
+    classification = models.CharField(max_length=1, choices=EquipmentClassification.choices, null=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        unique_together = ("equipment_type", "serial_number")
+        verbose_name = "equipment"
+        verbose_name_plural = "equipment"
+
+    def __str__(self):
+        return ' '.join((self.equipment_type.name, self.model, self.serial_number))        
+
+
 class VisitType(BaseModel):
     name = models.CharField(max_length=64, unique=True, blank=False, null=False)
     description = models.CharField(max_length=256, blank=True, null=True)
@@ -1284,41 +1344,12 @@ class VisitType(BaseModel):
 class Technician(BaseModel): # Singular
     name = models.CharField(max_length=64, unique=True, blank=False, null=False)
 
-################################################################################################
-# https://github.com/jazzband/django-tinymce
-# from tinymce import models as tinymce_models
-from ckeditor.fields import RichTextField
-
-# https://stackoverflow.com/questions/54802616/how-to-use-enums-as-a-choice-field-in-django-model
-from django.utils.translation import gettext_lazy # Enumaretor
-from datetime import date
 
 def no_future(value):
     today = date.today()
     if value > today:
         raise ValidationError('Visit date cannot be in the future.')
 
-class StationComponent(BaseModel):
-    name = models.CharField(max_length=64)
-    description = models.CharField(max_length=256)
-    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
-    report_template = RichTextField(blank=True, null=True)
-
-    class Meta:
-        verbose_name = "station component"
-        verbose_name_plural = "station components"
-
-    def __str__(self):
-        return self.name    
-
-class StationProfileComponent(BaseModel):
-    profile = models.ForeignKey(StationProfile, on_delete=models.DO_NOTHING)
-    presentation_order = models.IntegerField()
-    station_component = models.ForeignKey(StationComponent, on_delete=models.DO_NOTHING)
-
-    class Meta:
-        unique_together = ('profile', 'station_component')
-        unique_together = ('profile', 'presentation_order')
 
 class MaintenanceReport(BaseModel):
     class Status(models.TextChoices):
@@ -1360,73 +1391,33 @@ class MaintenanceReport(BaseModel):
     class Meta:
         unique_together = ('station', 'visit_date')    
 
-class MaintenanceReportStationComponent(BaseModel):
-    class ComponentClassification(models.TextChoices):
-        FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
-        PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
-        NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
 
-    maintenance_report = models.ForeignKey(MaintenanceReport, on_delete=models.CASCADE)
-    station_component = models.ForeignKey(StationComponent, on_delete=models.DO_NOTHING)
-    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
-    condition = RichTextField()
-    component_classification = models.CharField(max_length=1, choices=ComponentClassification.choices, default=ComponentClassification.FULLY_FUNCTIONAL)
+class StationProfileEquipmentType(BaseModel):
+    station_profile = models.ForeignKey(StationProfile, on_delete=models.DO_NOTHING)
+    equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
+    equipment_type_order = models.IntegerField(validators=[MinValueValidator(1)])
 
     class Meta:
-        unique_together = ('maintenance_report', 'station_component')
+        unique_together = (('station_profile', 'equipment_type'), ('station_profile', 'equipment_type_order'))
 
-class Manufacturer(BaseModel):
-    name = models.CharField(max_length=64)
 
-    def __str__(self):
-        return self.name
-
-class EquipmentType(BaseModel):
-    name = models.CharField(max_length=64)
-    description = models.CharField(max_length=256)
-    # https://stackoverflow.com/questions/7946861/how-can-i-add-a-wsywyg-editor-to-django-admin
-    report_template = RichTextField(blank=True, null=True)
-
-    class Meta:
-        verbose_name = "equipment type"
-        verbose_name_plural = "equipment types"
-
-    def __str__(self):
-        return self.name        
-    
-class FundingSource(BaseModel):
-    name = models.CharField(max_length=128)
-
-    def __str__(self):
-        return self.name    
-
-from simple_history.models import HistoricalRecords
-
-class Equipment(BaseModel):
+class MaintenanceReportEquipment(BaseModel):
     class EquipmentClassification(models.TextChoices):
         FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
         PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
         NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
 
+    class EquipmentOrder(models.TextChoices):
+        PRIMARY_EQUIPMENT = 'P', gettext_lazy('Primary Equipment')
+        SECONDARY_EQUIPMENT = 'S', gettext_lazy('Secondary Equipment')
+    
+    maintenance_report = models.ForeignKey(MaintenanceReport, on_delete=models.CASCADE)
     equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
-    manufacturer = models.ForeignKey(Manufacturer, on_delete=models.DO_NOTHING)
-    funding_source = models.ForeignKey(FundingSource, on_delete=models.DO_NOTHING)
-    model = models.CharField(max_length=64)
-    serial_number = models.CharField(max_length=64)
-    acquisition_date = models.DateField()
-    first_deploy_date = models.DateField(blank=True, null=True)
-    last_deploy_date = models.DateField(blank=True, null=True)
-    last_calibration_date = models.DateField(blank=True, null=True)
-    next_calibration_date = models.DateField(blank=True, null=True)
-    decommission_date = models.DateField(blank=True, null=True)
-    location = models.ForeignKey(Station, on_delete=models.DO_NOTHING, null=True)
-    classification = models.CharField(max_length=1, choices=EquipmentClassification.choices, null=True)
-    history = HistoricalRecords()
+    equipment_order = models.CharField(max_length=1, choices=EquipmentOrder.choices, default=EquipmentClassification.FULLY_FUNCTIONAL)
+    old_equipment = models.ForeignKey(Equipment, on_delete=models.DO_NOTHING, related_name='old_equipment', null=True)
+    new_equipment = models.ForeignKey(Equipment, on_delete=models.DO_NOTHING, related_name='new_equipment', null=True)
+    condition = RichTextField()
+    classification = models.CharField(max_length=1, choices=EquipmentClassification.choices, default=EquipmentClassification.FULLY_FUNCTIONAL, null=True)
 
     class Meta:
-        unique_together = ("equipment_type", "serial_number")
-        verbose_name = "equipment"
-        verbose_name_plural = "equipment"
-
-    def __str__(self):
-        return ' '.join((self.equipment_type.name, self.model, self.serial_number))        
+        unique_together = (('maintenance_report', 'new_equipment'), ('maintenance_report', 'equipment_type', 'equipment_order'))
