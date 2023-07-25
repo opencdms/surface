@@ -116,13 +116,12 @@ urlpatterns = [
     path('wx/maintenance_report/<int:id>/get/', login_required(views.get_maintenance_report)),
     path('wx/maintenance_report/<int:id>/update/', login_required(views.update_maintenance_report)),
     path('wx/maintenance_report/<int:id>/update/condition/', login_required(views.update_maintenance_report_condition)),
-    path('wx/maintenance_report/<int:id>/update/component/<int:component_id>/', login_required(views.update_maintenance_report_component)),
     path('wx/maintenance_report/<int:id>/update/contacts/', login_required(views.update_maintenance_report_contacts)),
     path('wx/maintenance_report/<int:id>/update/summary/', login_required(views.update_maintenance_report_summary)),
     path('wx/maintenance_report/<int:id>/update/datalogger/', login_required(views.update_maintenance_report_datalogger)),    
     path('wx/maintenance_report/<int:id>/delete/', login_required(views.delete_maintenance_report)),
     path('wx/maintenance_report/<int:id>/approve/', login_required(views.approve_maintenance_report)),
-    path('wx/maintenance_report/<int:id>/view/<int:source>/', login_required(views.get_maintenance_report_view), name='view-maintenance-report'),
+    # path('wx/maintenance_report/<int:id>/view/<int:source>/', login_required(views.get_maintenance_report_view), name='view-maintenance-report'),
     path('wx/products/wave_data/', login_required(views.get_wave_data_analysis), name='wave-data'),
     path('wx/products/wave_data/get/', login_required(views.get_wave_data), name="get-wave-data"),
     path('wx/stations/stations_monitoring/', views.stationsmonitoring_form, name="stations-monitoring"),
@@ -134,6 +133,7 @@ urlpatterns = [
     path('wx/maintenance_reports/equipment_inventory/create/', views.create_equipment),
     # path('wx/maintenance_reports/equipment_inventory/delete/', views.delete_equipment),
     path('wx/maintenance_reports/equipment_inventory/update/', views.update_equipment),
+    path('wx/maintenance_report/equipmenttype_data/update/', views.update_maintenance_report_equipment_type_data),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

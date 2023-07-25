@@ -55,7 +55,7 @@ from wx.models import Country, Unit, Station, Variable, DataSource, StationVaria
 from wx.utils import get_altitude, get_watershed, get_district, get_interpolation_image, parse_float_value, \
     parse_int_value
 from .utils import get_raw_data, get_station_raw_data
-from wx.models import MaintenanceReport, MaintenanceReportStationComponent, StationProfileComponent, StationComponent, VisitType, Technician
+from wx.models import MaintenanceReport, VisitType, Technician
 from django.views.decorators.http import require_http_methods
 from base64 import b64encode
 
@@ -65,6 +65,14 @@ from wx.models import HighFrequencyData, MeasurementVariable
 from wx.tasks import fft_decompose
 import math
 import numpy as np
+
+from wx.models import Equipment, EquipmentType, Manufacturer, FundingSource, StationProfileEquipmentType
+from django.core.serializers import serialize
+from wx.models import MaintenanceReportEquipment
+from wx.models import QcRangeThreshold, QcStepThreshold, QcPersistThreshold
+from simple_history.utils import update_change_reason
+from django.db.models.functions import Cast
+from django.db.models import IntegerField
 
 logger = logging.getLogger('surface.urls')
 
@@ -561,10 +569,6 @@ def GetImage(request):
         response = HttpResponse(content_type="image/jpeg")
         red.save(response, "JPEG")
         return response
-
-
-from django.db.models.functions import Cast
-from django.db.models import IntegerField
 
 
 @permission_classes([IsAuthenticated])
@@ -3637,7 +3641,6 @@ def stationsmonitoring_form(request):
 class ComingSoonView(LoginRequiredMixin, TemplateView):
     template_name = "coming-soon.html"
 
-
 def get_wave_data_analysis(request):
     template = loader.get_template('wx/products/wave_data.html')
 
@@ -3985,10 +3988,6 @@ def get_wave_data(request):
     return JsonResponse(charts)
 
 
-from wx.models import Equipment, EquipmentType, Manufacturer, FundingSource
-from django.core.serializers import serialize
-
-
 @require_http_methods(["GET"])
 def get_equipment_inventory(request):
     template = loader.get_template('wx/maintenance_reports/equipment_inventory.html')
@@ -4002,6 +4001,7 @@ def get_value(variable):
         return '---'
     return variable
 
+
 def equipment_classification(classification):
     if classification == 'F':
         return 'Fully Functional'
@@ -4009,7 +4009,44 @@ def equipment_classification(classification):
         return 'Partially Functional'
     elif classification == 'N':
         return 'Not Functional'
-    return None    
+    return None
+
+
+def is_equipment_available(equipment, station):
+    new_maintenance_report_eqs = MaintenanceReportEquipment.objects.filter(new_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    old_maintenance_report_eqs = MaintenanceReportEquipment.objects.filter(old_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+
+    new_maintenance_report_eq = new_maintenance_report_eqs.first()
+    old_maintenance_report_eq = old_maintenance_report_eqs.first()
+
+    new_maintenance_report = new_maintenance_report_eq.maintenance_report if new_maintenance_report_eq else None
+    old_maintenance_report = old_maintenance_report_eq.maintenance_report if old_maintenance_report_eq else None
+
+    if old_maintenance_report:
+        if old_maintenance_report.status != 'A' and old_maintenance_report.station_id != station.id:
+            return False
+    if new_maintenance_report and old_maintenance_report:
+        if new_maintenance_report.visit_date >= old_maintenance_report.visit_date:
+            return False
+    elif new_maintenance_report:
+        return False
+    return True
+
+
+def get_equipment_location(equipment):
+    maintenance_reports_new = MaintenanceReportEquipment.objects.filter(new_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    maintenance_reports_old = MaintenanceReportEquipment.objects.filter(old_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    
+    new_maintenance_report = maintenance_reports_new.first()
+    old_maintenance_report = maintenance_reports_old.first()
+
+    if new_maintenance_report and old_maintenance_report:
+        if new_maintenance_report.maintenance_report.visit_date >= old_maintenance_report.maintenance_report.visit_date:
+            return new_maintenance_report.maintenance_report.station
+    elif new_maintenance_report:
+        return new_maintenance_report.maintenance_report.station
+    return None
+
 
 @require_http_methods(["GET"])
 def get_equipment_inventory_data(request):
@@ -4025,10 +4062,7 @@ def get_equipment_inventory_data(request):
             equipment_type = equipment_types.get(id=equipment.equipment_type_id)
             funding_source = funding_sources.get(id=equipment.funding_source_id)
             manufacturer = manufacturers.get(id=equipment.manufacturer_id)
-
-            station = None
-            if equipment.location_id:
-                station = stations.get(id=equipment.location_id)
+            station = get_equipment_location(equipment)
 
             equipment_dict = {
                 'equipment_id': equipment.id,
@@ -4139,30 +4173,18 @@ def create_equipment(request):
 
     return JsonResponse(response, status=status.HTTP_200_OK)   
 
+
 @require_http_methods(["POST"])
 def update_equipment(request):
     equipment_id = request.GET.get('equipment_id', None)
     equipment_type_id = request.GET.get('equipment_type', None)
     manufacturer_id = request.GET.get('manufacturer', None)
     funding_source_id = request.GET.get('funding_source', None)
-    model = request.GET.get('model', None)
     serial_number = request.GET.get('serial_number', None)
-    acquisition_date = request.GET.get('acquisition_date', None)
-    first_deploy_date = request.GET.get('first_deploy_date', None)
-    last_calibration_date = request.GET.get('last_calibration_date', None)
-    next_calibration_date = request.GET.get('next_calibration_date', None)
-    decommission_date = request.GET.get('decommission_date', None)
-    location_id = request.GET.get('location', None)
-    classification = request.GET.get('classification', None)
-    last_deploy_date = request.GET.get('last_deploy_date', None)  
 
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
     manufacturer = Manufacturer.objects.get(id=manufacturer_id)   
     funding_source = FundingSource.objects.get(id=funding_source_id)
-
-    location = None
-    if location_id:
-        location = Station.objects.get(id=location_id)
 
     try:
         equipment = Equipment.objects.get(equipment_type=equipment_type, serial_number=serial_number)
@@ -4187,17 +4209,18 @@ def update_equipment(request):
         equipment.equipment_type = equipment_type
         equipment.manufacturer = manufacturer
         equipment.funding_source = funding_source         
-        equipment.model = model
         equipment.serial_number = serial_number
-        equipment.acquisition_date = acquisition_date
-        equipment.first_deploy_date = first_deploy_date
-        equipment.last_calibration_date = last_calibration_date
-        equipment.next_calibration_date = next_calibration_date
-        equipment.decommission_date = decommission_date
-        # equipment.location = location
-        equipment.classification = classification
-        equipment.last_deploy_date = last_deploy_date
+        equipment.model = request.GET.get('model', None)
+        equipment.acquisition_date = request.GET.get('acquisition_date', None)
+        equipment.first_deploy_date = request.GET.get('first_deploy_date', None)
+        equipment.last_calibration_date = request.GET.get('last_calibration_date', None)
+        equipment.next_calibration_date = request.GET.get('next_calibration_date', None)
+        equipment.decommission_date = request.GET.get('decommission_date', None)
+        equipment.classification = request.GET.get('classification', None)
+        equipment.last_deploy_date = request.GET.get('last_deploy_date', None)
         equipment.save()
+        update_change_reason(equipment, f"Source of change: Front end")
+
 
         response = {}
         return JsonResponse(response, status=status.HTTP_200_OK)             
@@ -4400,6 +4423,23 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
     return HttpResponse(template.render(context, request))
 
 
+def get_ckeditor_config():
+    ckeditor_config = {
+        'toolbar': [
+                ['Bold', 'Italic', 'Font'],
+                ['Format', 'Styles', 'TextColor', 'BGColor', 'RemoveFormat'],
+                ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock', 'Indent', 'Outdent'],
+                ['HorizontalRule', 'BulletedList'],
+                ['Blockquote', 'Source', 'Link', 'Unlink', 'Image', 'Table', 'Print']
+            ],
+        'removeButtons': 'Image',
+        'extraAllowedContent' : 'img(*){*}[*]',              
+        'editorplaceholder': 'Description of station upon arribal:',
+        'language': 'en',            
+    }
+    return ckeditor_config
+
+
 def get_maintenance_report_obj(maintenance_report):
     station = Station.objects.get(id=maintenance_report.station_id)
     station_profile = StationProfile.objects.get(id=station.profile_id)
@@ -4430,101 +4470,295 @@ def get_station_contacts(station_id):
     return None
 
 
-@require_http_methods(["POST"]) # Create maintenance report from sratch
-def create_maintenance_report(request):
-    now = datetime.datetime.now()
-
-    form_data = json.loads(request.body.decode())
+def get_maintenance_report_equipment_data(maintenance_report, equipment_type, equipment_order):
+    equipment_data = {
+        'active_tab': 0,
+        'old_equipment_id': None,
+        'old_equipment_name': None,
+        'new_equipment_id': None,
+        'new_equipment_name': None,
+        'condition': equipment_type.report_template,
+        'classification': "F",
+        'ckeditor_config': get_ckeditor_config()
+    }
 
     try:
-        maintenance_report = MaintenanceReport.objects.get(station_id = form_data['station_id'], visit_date = form_data['visit_date'])
+        maintenancereport_equipment = MaintenanceReportEquipment.objects.get(
+                                        maintenance_report_id=maintenance_report.id,
+                                        equipment_type_id=equipment_type.id,
+                                        equipment_order=equipment_order)
 
-        if maintenance_report.status=="-":
-            maintenance_report.delete()
+        equipment_data['old_equipment_id'] = maintenancereport_equipment.old_equipment_id
+        equipment_data['new_equipment_id'] = maintenancereport_equipment.new_equipment_id
+        equipment_data['condition'] = maintenancereport_equipment.condition
+        equipment_data['classification'] = maintenancereport_equipment.classification
+
+        if maintenancereport_equipment.old_equipment_id:
+            equipment = Equipment.objects.get(id=maintenancereport_equipment.old_equipment_id)
+            equipment_data['old_equipment_name'] = ' '.join([equipment.model, equipment.serial_number]) 
+
+        if maintenancereport_equipment.new_equipment_id:
+            equipment = Equipment.objects.get(id=maintenancereport_equipment.new_equipment_id)
+            equipment_data['new_equipment_name'] = ' '.join([equipment.model, equipment.serial_number]) 
     except ObjectDoesNotExist:
         pass
 
-    try:
-        maintenance_report = MaintenanceReport.objects.get(station_id = form_data['station_id'], visit_date = form_data['visit_date'])
-        
-        response = {"message": "Maintenance report already exist for chosen station and date."}        
-        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    equipment_data['active_tab'] = get_acitve_tab(equipment_data['old_equipment_id'], equipment_data['new_equipment_id'])
 
+    return equipment_data
+
+
+def get_available_equipments(equipment_type_id):
+    equipments = Equipment.objects.filter(equipment_type_id=equipment_type_id)
+    available_equipments = [{'id': equipment.id, 'name': ' '.join([equipment.model, equipment.serial_number])}
+        for equipment in equipments if get_equipment_location(equipment) is None]
+
+    return available_equipments
+
+
+def get_available_equipments(equipment_type_id, station):
+    equipments = Equipment.objects.filter(equipment_type_id=equipment_type_id)
+
+    available_equipments = []
+    for equipment in equipments:
+        if is_equipment_available(equipment, station):
+            available_equipments.append({'id': equipment.id, 'name': ' '.join([equipment.model, equipment.serial_number])})
+
+    return available_equipments
+
+
+def get_maintenance_report_equipment_types(maintenance_report):
+    station = Station.objects.get(id=maintenance_report.station_id)
+    station_profile_equipment_types = StationProfileEquipmentType.objects.filter(station_profile=station.profile_id).distinct('equipment_type')
+    equipment_type_ids = station_profile_equipment_types.distinct('equipment_type').values_list('equipment_type_id', flat=True)
+    equipment_types = EquipmentType.objects.filter(id__in=equipment_type_ids)
+
+    equipment_type_list = []
+
+    for equipment_type in equipment_types:
+        dictionary = {'key':equipment_type.id,
+                      'id':equipment_type.id,
+                      'name': equipment_type.name,
+                      'available_equipments': get_available_equipments(equipment_type.id, station),
+                      'primary_equipment': get_maintenance_report_equipment_data(maintenance_report, equipment_type, 'P'),
+                      'secondary_equipment': get_maintenance_report_equipment_data(maintenance_report, equipment_type, 'S'),
+                      }
+
+        equipment_type_list.append(dictionary)
+
+    return equipment_type_list
+
+
+def get_last_maintenance_report(maintenance_report):
+    station_id = maintenance_report.station_id
+    visit_date = maintenance_report.visit_date
+
+    try:
+        return MaintenanceReport.objects.filter(station_id=station_id,visit_date__lt=visit_date).latest('visit_date')
     except ObjectDoesNotExist:
-        maintenance_report = MaintenanceReport.objects.create(
-                                    created_at = now,
-                                    updated_at = now,
-                                    station_id = form_data['station_id'],
-                                    responsible_technician_id = form_data['responsible_technician_id'],
-                                    visit_type_id = form_data['visit_type_id'],
-                                    visit_date = form_data['visit_date'],
-                                    initial_time = form_data['initial_time'],
-                                    contacts = get_station_contacts(form_data['station_id']),
+        return None
+
+    return last_maintenance_report    
+
+
+def copy_last_maintenance_report_equipments(maintenance_report):
+    last_maintenance_report = get_last_maintenance_report(maintenance_report)
+
+    if last_maintenance_report:
+        last_maintenance_report_equipments = MaintenanceReportEquipment.objects.filter(maintenance_report=last_maintenance_report)
+        for maintenance_report_equipment in last_maintenance_report_equipments:
+            now = datetime.datetime.now()
+
+            equipment = Equipment.objects.get(id=maintenance_report_equipment.new_equipment_id)
+            equipment_type = EquipmentType.objects.get(id=equipment.equipment_type_id)
+
+            created_object = MaintenanceReportEquipment.objects.create(
+                                created_at = now,
+                                updated_at = now,                
+                                maintenance_report = maintenance_report,
+                                equipment_type = equipment_type,
+                                equipment_order = maintenance_report_equipment.equipment_order,
+                                old_equipment = equipment,
+                                new_equipment = equipment,
+                                condition = equipment_type.report_template,
+                                classification = equipment.classification,
                             )
 
-        station = Station.objects.get(pk=maintenance_report.station_id)
-        station_profile_component_list = StationProfileComponent.objects.filter(profile_id = station.profile_id)
+def get_acitve_tab(old_equipment_id, new_equipment_id):
+    if old_equipment_id is None:
+        return 0 #Add
+    elif new_equipment_id is None:
+        return 2 #Remove
+    elif old_equipment_id != new_equipment_id:
+        return 1 #Change
+    else:
+        return 0 #Update
 
-        for station_profile_component in station_profile_component_list:
-            station_component = StationComponent.objects.get(id=station_profile_component.station_component_id)
 
-            maintenance_report_station_component = MaintenanceReportStationComponent.objects.create(
-                                                        maintenance_report_id = maintenance_report.id,
-                                                        station_component_id = station_component.id,
-                                                        condition = station_component.report_template,
-                                                   )
+def get_equipment_last_location(maintenance_report, equipment):
+    new_maintenance_report_eqs = MaintenanceReportEquipment.objects.filter(new_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    old_maintenance_report_eqs = MaintenanceReportEquipment.objects.filter(old_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    
+    new_maintenance_report_eq = new_maintenance_report_eqs.exclude(maintenance_report_id=maintenance_report.id).first()
+    old_maintenance_report_eq = old_maintenance_report_eqs.exclude(maintenance_report_id=maintenance_report.id).first()
 
-        response={"maintenance_report_id": maintenance_report.id}
+    new_maintenance_report = new_maintenance_report_eq.maintenance_report if new_maintenance_report_eq else None
+    old_maintenance_report = old_maintenance_report_eq.maintenance_report if old_maintenance_report_eq else None
 
+    if new_maintenance_report and old_maintenance_report:
+        if new_maintenance_report.visit_date >= old_maintenance_report.visit_date:
+            return new_maintenance_report.station
+    elif new_maintenance_report:
+        return new_maintenance_report.station
+
+    return None
+
+
+def update_maintenance_report_equipment(maintenance_report, equipment, new_classification):
+    today = datetime.date.today()
+
+    changed = False
+    
+    if equipment.first_deploy_date:
+        last_location = get_equipment_last_location(maintenance_report, equipment)
+        if last_location == maintenance_report.station:
+            equipment.last_deploy_date = today
+    else:
+        equipment.first_deploy_date = today
+
+    if equipment.classification != new_classification:
+        equipment.classification = new_classification
+    
+    # equipment.changeReason = 
+    # equipment.changeReason = "Source of change: Maintenance Report"
+    equipment.save()
+    update_change_reason(equipment, f"Source of change: Maintenance Report {maintenance_report.id}, {maintenance_report.station.name} - {maintenance_report.visit_date}")
+
+
+def update_maintenance_report_equipment_type(maintenance_report, equipment_type, equipment_order, equipment_data):
+    new_equipment = None
+    old_equipment = None
+
+    if equipment_data['new_equipment_id']:
+        new_equipment = Equipment.objects.get(id=equipment_data['new_equipment_id'])
+
+    if equipment_data['old_equipment_id']:
+        old_equipment = Equipment.objects.get(id=equipment_data['old_equipment_id'])
+
+    condition = equipment_data['condition']
+    classification = equipment_data['classification']
+
+    try:
+        maintenance_report_equipment = MaintenanceReportEquipment.objects.get(
+            maintenance_report=maintenance_report,
+            equipment_type_id=equipment_type.id,
+            equipment_order=equipment_order,
+        )
+        if old_equipment is None and new_equipment is None:
+            maintenance_report_equipment.delete()
+        else:
+            maintenance_report_equipment.condition = condition
+            maintenance_report_equipment.classification = classification
+            maintenance_report_equipment.old_equipment = old_equipment
+            maintenance_report_equipment.new_equipment = new_equipment
+            maintenance_report_equipment.save()
+            update_maintenance_report_equipment(maintenance_report, new_equipment, classification)
+
+    except ObjectDoesNotExist:
+        if old_equipment is None and new_equipment is None:
+            pass
+        elif old_equipment is None and new_equipment:
+            maintenance_report_equipment = MaintenanceReportEquipment.objects.create(
+                maintenance_report=maintenance_report,
+                equipment_type=equipment_type,
+                equipment_order=equipment_order,
+                condition = condition,
+                classification = classification,
+                new_equipment = new_equipment,
+                old_equipment = old_equipment,
+            )
+        else:
+            logger.error("Error updating maintenance report equipment")
+
+
+@require_http_methods(["POST"])
+def update_maintenance_report_equipment_type_data(request):
+    print('------------------------------------')
+    print('Trying to update equipment type data')
+    print('------------------------------------')
+
+    maintenance_report_id = request.GET.get('maintenance_report_id', None)
+    equipment_type_id = request.GET.get('equipment_type_id', None)
+    equipment_order = request.GET.get('equipment_order', None),
+
+    if type(equipment_order) is tuple:
+        equipment_order = equipment_order[0]
+    elif not type(equipment_order) is str:
+        logger.error("Error in equipment order during maintenance report equipment update")
+
+    equipment_data = {
+        'new_equipment_id': request.GET.get('new_equipment_id', None),
+        'old_equipment_id': request.GET.get('old_equipment_id', None),
+        'condition': request.GET.get('condition', None),
+        'classification': request.GET.get('classification', None),
+    }
+
+    maintenance_report = MaintenanceReport.objects.get(id=maintenance_report_id)
+    equipment_type = EquipmentType.objects.get(id=equipment_type_id)
+
+    update_maintenance_report_equipment_type(maintenance_report, equipment_type, equipment_order, equipment_data)
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"]) # Create maintenance report from sratch
+def create_maintenance_report(request):
+    now = datetime.datetime.now()
+    form_data = json.loads(request.body.decode())
+
+    # Check if a maintenance report with status '-' exists and hard delete it
+    maintenance_report = MaintenanceReport.objects.filter(station_id=form_data['station_id'], visit_date=form_data['visit_date'], status='-').first()
+    if maintenance_report:
+        maintenance_report.delete()
+
+    # Check if a previous maintenance report is not approved
+    maintenance_report = MaintenanceReport.objects.filter(station_id=form_data['station_id']).exclude(status__in=['A', '-']).first()
+    if maintenance_report:
+        station = Station.objects.get(id=form_data['station_id'])
+        response = {"message": f"Previous maintenance reports of {station.name} - {station.code} require approval to create a new one."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if a more recent maintenance report exists
+    maintenance_report = MaintenanceReport.objects.filter(station_id=form_data['station_id'], visit_date__gt=form_data['visit_date']).first()
+    if maintenance_report:
+        response = {"message": "A more recent maintenance report already exists, and the new report must be the latest."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create a new maintenance report if it doesn't already exist
+    try:
+        maintenance_report = MaintenanceReport.objects.get(station_id=form_data['station_id'], visit_date=form_data['visit_date'])
+        response = {"message": "Maintenance report already exists for chosen station and date."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    except ObjectDoesNotExist:
+        maintenance_report = MaintenanceReport.objects.create(
+            created_at=now,
+            updated_at=now,
+            station_id=form_data['station_id'],
+            responsible_technician_id=form_data['responsible_technician_id'],
+            visit_type_id=form_data['visit_type_id'],
+            visit_date=form_data['visit_date'],
+            initial_time=form_data['initial_time'],
+            contacts=get_station_contacts(form_data['station_id']),
+        )
+
+        copy_last_maintenance_report_equipments(maintenance_report)
+
+        response = {"maintenance_report_id": maintenance_report.id}
         return JsonResponse(response, status=status.HTTP_200_OK)
 
 
-def get_ckeditor_config():
-    ckeditor_config = {
-        'toolbar': [
-                ['Bold', 'Italic', 'Font'],
-                ['Format', 'Styles', 'TextColor', 'BGColor', 'RemoveFormat'],
-                ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock', 'Indent', 'Outdent'],
-                ['HorizontalRule', 'BulletedList'],
-                ['Blockquote', 'Source', 'Link', 'Unlink', 'Image', 'Table', 'Print']
-            ],
-        'removeButtons': 'Image',
-        'extraAllowedContent' : 'img(*){*}[*]',              
-        'editorplaceholder': 'Description of station upon arribal:',
-        'language': 'en',            
-    }
-    return ckeditor_config
-
-def get_component_list(maintenance_report):
-    station, station_profile, technician, visit_type = get_maintenance_report_obj(maintenance_report)
-
-    if station.profile_id is not None:
-        profile = StationProfile.objects.get(pk=station.profile_id)
-        station_profile_component_list = StationProfileComponent.objects.filter(profile_id=station.profile_id)
-
-        maintenance_report_station_component_list = []
-        
-        for station_profile_component in station_profile_component_list:
-            station_component = StationComponent.objects.get(id=station_profile_component.station_component_id)
-            maintenance_report_station_component = MaintenanceReportStationComponent.objects.get(maintenance_report_id=maintenance_report.id,
-                                                                                                 station_component_id=station_component.id)
-            
-            # Need one ckeditor config per text editor, otherwise it could store data in incorrect variables.
-            dictionary = {'component_id': station_component.id,
-                          'presentation_order': station_profile_component.presentation_order,
-                          'component_name': station_component.name,
-                          'condition': maintenance_report_station_component.condition,
-                          'component_classification': maintenance_report_station_component.component_classification,
-                          'ckeditor_config': get_ckeditor_config()}
-
-            maintenance_report_station_component_list.append(dictionary)
-
-            maintenance_report_station_component_list = sorted(maintenance_report_station_component_list, key=lambda d: d['presentation_order']) 
-
-    return maintenance_report_station_component_list
-
-
-@require_http_methods(["GET"]) 
+@require_http_methods(["GET"]) # Ok
 def get_maintenance_report(request, id):
     maintenance_report = MaintenanceReport.objects.get(id=id)
 
@@ -4567,8 +4801,8 @@ def get_maintenance_report(request, id):
     response["other_technician_3"] = maintenance_report.other_technician_3_id
 
     response['contacts'] = maintenance_report.contacts  
-    response['components'] = get_component_list(maintenance_report)
-    response['steps'] = len(response['components'])
+    response['equipment_types'] = get_maintenance_report_equipment_types(maintenance_report)
+    response['steps'] = len(response['equipment_types'])
 
     if maintenance_report.data_logger_file_name is None:
         response['data_logger_file_name'] = "Upload latest data logger program"
@@ -4578,7 +4812,7 @@ def get_maintenance_report(request, id):
     return JsonResponse(response, status=status.HTTP_200_OK)
 
 
-@require_http_methods(["PUT"])
+@require_http_methods(["PUT"]) # Ok
 def update_maintenance_report_condition(request, id):
     now = datetime.datetime.now()
 
@@ -4596,26 +4830,7 @@ def update_maintenance_report_condition(request, id):
     return JsonResponse(response, status=status.HTTP_200_OK)
 
 
-@require_http_methods(["PUT"])
-def update_maintenance_report_component(request, id, component_id):
-    now = datetime.datetime.now()
-
-    maintenance_report_station_component = MaintenanceReportStationComponent.objects.get(maintenance_report_id=id, station_component_id=component_id)
-
-    form_data = json.loads(request.body.decode())
-
-    maintenance_report_station_component.component_classification=form_data['component_classification']
-    maintenance_report_station_component.condition=form_data['component_condition']
-
-    maintenance_report_station_component.updated_at = now
-    maintenance_report_station_component.save()
-
-    response={}
-
-    return JsonResponse(response, status=status.HTTP_200_OK)
-
-
-@require_http_methods(["PUT"])
+@require_http_methods(["PUT"]) # Ok
 def update_maintenance_report_contacts(request, id):
     now = datetime.datetime.now()
 
@@ -4633,7 +4848,7 @@ def update_maintenance_report_contacts(request, id):
     return JsonResponse(response, status=status.HTTP_200_OK)
 
 
-@require_http_methods(["POST"])
+@require_http_methods(["POST"]) # Ok
 def update_maintenance_report_datalogger(request, id):
     # print(request.FILES)
     if 'data_logger_file' in request.FILES:
@@ -4657,7 +4872,7 @@ def update_maintenance_report_datalogger(request, id):
     return JsonResponse(response, status=status.HTTP_206_PARTIAL_CONTENT)
 
 
-@require_http_methods(["PUT"])
+@require_http_methods(["PUT"]) # Ok
 def update_maintenance_report_summary(request, id):
     now = datetime.datetime.now()
 
@@ -4695,7 +4910,6 @@ def update_maintenance_report_summary(request, id):
     response={}
 
     return JsonResponse(response, status=status.HTTP_200_OK)
-
 
 class SpatialAnalysisView(LoginRequiredMixin, TemplateView):
     template_name = "wx/spatial_analysis.html"
@@ -4955,7 +5169,6 @@ def update_global_threshold(request):
     return JsonResponse(response, status=status.HTTP_200_OK)
 
 
-from wx.models import QcRangeThreshold
 
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
 def range_threshold_view(request): # For synop and daily data captures
@@ -5357,9 +5570,6 @@ def delete_range_threshold(request):
     return JsonResponse(response, status=status.HTTP_200_OK)
 
 
-from wx.models import QcStepThreshold
-
-
 def get_step_threshold_form(request):
     template = loader.get_template('wx/quality_control/step_threshold.html')
 
@@ -5532,9 +5742,6 @@ def delete_step_threshold(request):
 
     response = {}
     return JsonResponse(response, status=status.HTTP_200_OK)
-
-
-from wx.models import QcPersistThreshold
 
 
 def get_persist_threshold_form(request):
@@ -6174,7 +6381,6 @@ def get_station_variable_day_data_inventory(request):
             day["dow"] = (day_difference + day_with_data_dow) % 7
 
     return Response(days, status=status.HTTP_200_OK)
-
 
 
 @api_view(['POST'])
