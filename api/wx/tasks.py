@@ -32,6 +32,7 @@ from wx.decoders.hydro import read_file as read_file_hydrology
 from wx.decoders.manual_data import read_file as read_file_manual_data
 from wx.decoders.manual_data_hourly import read_file as read_file_manual_data_hourly
 from wx.decoders.nesa import read_data as read_data_nesa
+from wx.decoders.sat_tx325 import read_data as read_data_sat_tx325
 from wx.decoders.surtron import read_data as read_data_surtron
 from wx.decoders.surface import read_file as read_file_surface
 from wx.decoders.toa5 import read_file as read_file_toa5
@@ -739,6 +740,7 @@ def retrieve_dcp_messages(noaa_dict):
 
     available_decoders = {
         'NESA': read_data_nesa,
+        'SAT_TX325': read_data_sat_tx325,  
         # 'SURTRON': read_data_surtron,
     }
 
