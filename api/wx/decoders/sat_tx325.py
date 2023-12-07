@@ -135,7 +135,6 @@ def parse_line(station_id, header_date, line, interval_lookup_table, records):
         except Exception as ex:
             logging.error(f"Error inside ingestion loop: {ex}")
 
-
 def read_data(station_id, dcp_address, config_file, response, err_message):
     print(f'Inside SAT_TX325 decoder - read_data(station_id={station_id}, dcp_address={dcp_address})')
 
@@ -176,6 +175,8 @@ def read_data(station_id, dcp_address, config_file, response, err_message):
             for line in lines:
                 # if line and not line.isspace():
                 parse_line(station_id, header_date, line, interval_lookup_table, records)
+                if line and not line.isspace():
+                    parse_line(station_id, header_date, line, interval_lookup_table, records)
 
         except Exception as ex:
             _lines = "\n".join(lines)
