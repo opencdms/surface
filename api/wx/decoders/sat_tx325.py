@@ -1,4 +1,4 @@
-#SAT_TX325
+# SAT_TX325
 
 import logging
 from datetime import datetime, timedelta
@@ -77,6 +77,10 @@ def parse_message(fields):
 
 def parse_line(station_id, header_date, line, interval_lookup_table, records):
 
+    logging.info(f"Header_date: {header_date}")
+
+    logging.info(f"Interval_lookup_table: {interval_lookup_table}")
+
     # taking the message and splitting (by blank spaces) into an array
     fields = line.split(",")
 
@@ -101,35 +105,44 @@ def parse_line(station_id, header_date, line, interval_lookup_table, records):
     # values = [parse_float(f) for f in fields[1:]]
     values = parse_message(fields)
 
-    for idx, (k, v) in enumerate(list(zip(list(ELEMENTS.values())[:len(values)], values)), 1):
-        if v is not None:
-            columns = [
-                station_id,                         # station
-                k,                                  # element
-                interval_lookup_table[str(idx)],    # interval seconds
-                line_date,                          # datetime
-                v,                                  # value
-                None,                               # "quality_flag"
-                None,                               # "qc_range_quality_flag"
-                None,                               # "qc_range_description"
-                None,                               # "qc_step_quality_flag"
-                None,                               # "qc_step_description"
-                None,                               # "qc_persist_quality_flag"
-                None,                               # "qc_persist_description"
-                None,                               # "manual_flag"
-                None,                               # "consisted"
-                False                               # "is_daily"
-            ]
-            records.append(columns)
+    # removing the last element from values as it won't be added to surface yet
+    values.pop()
 
+    logging.info(f"Values being ingested: {values}")
+
+    for idx, (k, v) in enumerate(list(zip(list(ELEMENTS.values())[:len(values)], values)), 1):
+        try:
+            if v is not None:
+                columns = [
+                    station_id,                         # station
+                    k,                                  # element
+                    interval_lookup_table[str(idx)],    # interval seconds
+                    line_date,                          # datetime
+                    v,                                  # value
+                    None,                               # "quality_flag"
+                    None,                               # "qc_range_quality_flag"
+                    None,                               # "qc_range_description"
+                    None,                               # "qc_step_quality_flag"
+                    None,                               # "qc_step_description"
+                    None,                               # "qc_persist_quality_flag"
+                    None,                               # "qc_persist_description"
+                    None,                               # "manual_flag"
+                    None,                               # "consisted"
+                    False                               # "is_daily"
+                ]
+                records.append(columns)
+
+        except Exception as ex:
+            logging.error(f"Error inside ingestion loop: {ex}")
 
 def read_data(station_id, dcp_address, config_file, response, err_message):
     print(f'Inside SAT_TX325 decoder - read_data(station_id={station_id}, dcp_address={dcp_address})')
 
     transmissions = response.split(dcp_address)
+
     records = []
 
-    dcp_format = 6
+    dcp_format = 7
 
     interval_lookup_table = {
         lookup_key: seconds for (lookup_key, seconds) in VariableFormat.objects.filter(
@@ -138,21 +151,30 @@ def read_data(station_id, dcp_address, config_file, response, err_message):
     }
 
     for transmission in transmissions[1:]:
-        header, *lines = transmission.split(",\r\n")
+        header, *lines = transmission.split("\r\n")
 
+        # removing blank space in the lines list
+        lines.pop()
+
+        print("Header:")
         print(header)
+
+        print("Lines:")
         print(lines)
 
         # code can't decode errors like missing transmission spot, soh skip error messages
         try:
             header_date = datetime.strptime(header[:11], '%y%j%H%M%S')
             dcp_message = DcpMessages.create(f"{dcp_address}{header}", "\n".join(lines))
+
             try:
                 dcp_message.save()
             except IntegrityError:
                 logging.info(f"dcp_message already saved in the database: {header}")
 
             for line in lines:
+                # if line and not line.isspace():
+                parse_line(station_id, header_date, line, interval_lookup_table, records)
                 if line and not line.isspace():
                     parse_line(station_id, header_date, line, interval_lookup_table, records)
 
@@ -167,4 +189,3 @@ def read_data(station_id, dcp_address, config_file, response, err_message):
         insert(records)
     else:
         print('SAT_TX325 DECODER - NO DATA FOUND - ' + err_message.decode('ascii'))
-
