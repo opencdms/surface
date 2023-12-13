@@ -16,7 +16,7 @@ jobs:
         port: ${{ secrets.PORT }}
         script: |
           cd ${{ secrets.PATH }}
-          git pull origin dev
+          git pull origin development
           docker-compose exec -T api bash deploy_workflow_migrations.sh
           docker-compose exec -T api python manage.py collectstatic --noinput
           docker-compose stop
