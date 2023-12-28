@@ -45,13 +45,13 @@ def parse_message(fields):
 
     try:
         # Parse the first and second elements in the 'fields' list
-        for value in fields[0:3]:
+        for value in fields[0:2]:
             parsed = parse_float(value)
             
             parsed_values.append(parsed)
 
         # Parse the rest of the elements in the 'fields' list
-        for value in fields[3:]:
+        for value in fields[2:]:
             if value[-1] in {'G', 'B'}:
                 # If the value ends with 'G' or 'B', remove the suffix and try parsing
                 parsed = parse_float(value[:-1])

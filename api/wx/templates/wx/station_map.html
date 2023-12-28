@@ -49,10 +49,10 @@
                       ></v-list-item-title>
                     </v-list-item-content>
 
-                    <span class="avg"
-                      >[[ item.value | truncate(5) || 0.00 ]]
-                      [[item.variable.unit_symbol ]]</span
-                    >
+                    <span class="avg">
+                      [[ valueFormatting(item.value) || 0.00 ]]
+                      [[ item.variable.unit_symbol ]]
+                    </span>
                   </v-list-item>
                 </v-list-item-group>
               </v-list>
@@ -72,10 +72,11 @@
                       ></v-list-item-title>
                     </v-list-item-content>
 
-                    <span class="avg"
-                      >[[ item.value | truncate(5) || 0.00 ]]
-                      [[item.variable.unit_symbol ]]</span
-                    >
+                    <span class="avg">
+                      [[ valueFormatting(item.value) || 0.00 ]]
+                      [[ item.variable.unit_symbol ]]
+                    </span>
+
                   </v-list-item>
                 </v-list-item-group>
               </v-list>
@@ -95,10 +96,11 @@
                       ></v-list-item-title>
                     </v-list-item-content>
 
-                    <span class="avg"
-                      >[[ item.value | truncate(5) || 0.00 ]]
-                      [[item.variable.unit_symbol ]]</span
-                    >
+                    <span class="avg">
+                      [[ valueFormatting(item.value) || 0.00 ]]
+                      [[ item.variable.unit_symbol ]]
+                    </span>
+                    
                   </v-list-item>
                 </v-list-item-group>
               </v-list>
@@ -956,6 +958,17 @@
         })
       },
       
+      // Function to format non-integer numeric values to one decimal place
+      valueFormatting(value) {
+        // Check if the value is a number and not an integer
+        if (typeof value === 'number' && !Number.isInteger(value)) {
+          // If it's a non-integer number (float), round it to one decimal place
+          return Math.round(value * 10) / 10;
+        }
+        // Return the original value if it's not a number or if it's an integer
+        return value;
+      },
+
       getVariableValue(marker, variable) {
         if (marker !== null)
           return marker[variable]
