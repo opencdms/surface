@@ -46,12 +46,14 @@ def parse_message(fields):
     try:
         # Parse the first and second elements in the 'fields' list
         for value in fields[0:2]:
+
             parsed = parse_float(value)
             
             parsed_values.append(parsed)
 
         # Parse the rest of the elements in the 'fields' list
         for value in fields[2:]:
+
             if value[-1] in {'G', 'B'}:
                 # If the value ends with 'G' or 'B', remove the suffix and try parsing
                 parsed = parse_float(value[:-1])
@@ -135,6 +137,7 @@ def parse_line(station_id, header_date, line, interval_lookup_table, records):
         except Exception as ex:
             logging.error(f"Error inside ingestion loop: {ex}")
 
+
 def read_data(station_id, dcp_address, config_file, response, err_message):
     print(f'Inside SAT_TX325 decoder - read_data(station_id={station_id}, dcp_address={dcp_address})')
 
@@ -173,8 +176,7 @@ def read_data(station_id, dcp_address, config_file, response, err_message):
                 logging.info(f"dcp_message already saved in the database: {header}")
 
             for line in lines:
-                # if line and not line.isspace():
-                parse_line(station_id, header_date, line, interval_lookup_table, records)
+              
                 if line and not line.isspace():
                     parse_line(station_id, header_date, line, interval_lookup_table, records)
 
