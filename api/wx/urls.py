@@ -12,6 +12,7 @@ router.register(r'station_images', views.StationImageViewSet)
 router.register(r'station_files', views.StationFileViewSet)
 router.register(r'quality_flags', views.QualityFlagList)
 router.register(r'stations_metadata', views.StationMetadataViewSet)
+router.register(r'synoptic_station', views.SynopticCaptureViewSet)
 
 urlpatterns = [
     path('api/stations/metadata', include(router.urls)),
@@ -71,8 +72,8 @@ urlpatterns = [
     path('get_yearly_average/', views.get_yearly_average),
     path('wx/reports/yearly_average/', views.YearlyAverageReport.as_view(), name='yearly-average'),
     path('wx/reports/synop_capture/', views.SynopCaptureView.as_view(), name='synop-capture'),
-    path('wx/reports/synop_capture/load/', views.pgia_load, name='load-pgia-report'),
-    path('wx/reports/synop_capture/update/', views.pgia_update, name='update-pgia-report'),
+    path('wx/reports/synop_capture/load/', views.synoptic_station_load, name='load-pgia-report'),
+    path('wx/reports/synop_capture/update/', views.synoptic_station_update, name='update-pgia-report'),
     path('wx/reports/synop_capture/delete/', views.delete_pgia_hourly_capture_row, name='delete-pgia-report-row'),
     path('wx/data/capture/daily/', views.DailyFormView, name='daily-form'),
     path('wx/data/capture/daily/load/', views.MonthlyFormLoad, name='load-monthly-form'),

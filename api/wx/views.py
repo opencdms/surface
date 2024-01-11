@@ -647,7 +647,16 @@ class StationMetadataViewSet(viewsets.ModelViewSet):
         if self.request.method in ['GET']:
             return serializers.StationSerializerRead
         return serializers.StationMetadataSerializer
+    
+class SynopticCaptureViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Station.objects.filter(is_synoptic_station=True)
+    serializer_class = serializers.StationMetadataSerializer
 
+    def get_serializer_class(self):
+        if self.request.method in ['GET']:
+            return serializers.StationSerializerRead
+        return serializers.StationMetadataSerializer
 
 class StationViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -2216,7 +2225,7 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         Fieldset('Editing station',
                  Row('latitude', 'longitude'),
                  Row('name'),
-                 Row('is_active', 'is_automatic'),
+                 Row('is_active', 'is_automatic', 'is_synoptic_station'),
                  Row('alias_name'),
                  Row('code', 'profile'),
                  Row('wmo', 'organization'),
@@ -2268,8 +2277,9 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     layout = Layout(
         Fieldset('Editing station',
                  Row('latitude', 'longitude'),
-                 Row('name', 'is_active'),
-                 Row('alias_name', 'is_automatic'),
+                 Row('name'),
+                 Row('is_active', 'is_automatic', 'is_synoptic_station'),
+                 Row('alias_name'),
                  Row('code', 'profile'),
                  Row('wmo', 'organization'),
                  Row('wigos', 'observer'),
@@ -2283,38 +2293,38 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('soil_type', 'station_details'),
                  Row('site_description', 'alternative_names')
                  ),
-        Fieldset('Hydrology information',
-                 Row('hydrology_station_type', 'ground_water_province'),
-                 Row('existing_gauges', 'flow_direction_at_station'),
-                 Row('flow_direction_above_station', 'flow_direction_below_station'),
-                 Row('bank_full_stage', 'bridge_level'),
-                 Row('temporary_benchmark', 'mean_sea_level'),
-                 Row('river_code', 'river_course'),
-                 Row('catchment_area_station', 'river_origin'),
-                 Row('easting', 'northing'),
-                 Row('river_outlet', 'river_length'),
-                 Row('z', 'land_surface_elevation'),
-                 Row('top_casing_land_surface', 'casing_diameter'),
-                 Row('screen_length', 'depth_midpoint'),
-                 Row('casing_type', 'datum'),
-                 Row('zone')
-                 )
+        # Fieldset('Hydrology information',
+        #          Row('hydrology_station_type', 'ground_water_province'),
+        #          Row('existing_gauges', 'flow_direction_at_station'),
+        #          Row('flow_direction_above_station', 'flow_direction_below_station'),
+        #          Row('bank_full_stage', 'bridge_level'),
+        #          Row('temporary_benchmark', 'mean_sea_level'),
+        #          Row('river_code', 'river_course'),
+        #          Row('catchment_area_station', 'river_origin'),
+        #          Row('easting', 'northing'),
+        #          Row('river_outlet', 'river_length'),
+        #          Row('z', 'land_surface_elevation'),
+        #          Row('top_casing_land_surface', 'casing_diameter'),
+        #          Row('screen_length', 'depth_midpoint'),
+        #          Row('casing_type', 'datum'),
+        #          Row('zone')
+        #          )
 
     )
 
 
 @api_view(['POST'])
-def pgia_update(request):
+def synoptic_station_update(request):
     try:
         hours_dict = request.data['table']
         now_utc = datetime.datetime.now().astimezone(pytz.UTC) + datetime.timedelta(
             hours=settings.PGIA_REPORT_HOURS_AHEAD_TIME)
 
-        pgia = Station.objects.get(id=4)
-        datetime_offset = pytz.FixedOffset(pgia.utc_offset_minutes)
+        synoptic_station = Station.objects.get(int(request.GET['station']))
+        datetime_offset = pytz.FixedOffset(synoptic_station.utc_offset_minutes)
 
         day = datetime.datetime.strptime(request.data['date'], '%Y-%m-%d')
-        station_id = pgia.id
+        station_id = synoptic_station.id
         seconds = 3600
 
         records_list = []
@@ -2362,7 +2372,7 @@ def pgia_update(request):
 
 
 @api_view(['GET'])
-def pgia_load(request):
+def synoptic_station_load(request):
     try:
         date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
     except ValueError as e:
@@ -2372,8 +2382,8 @@ def pgia_load(request):
         logger.error(repr(e))
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    pgia = Station.objects.get(id=4)
-    datetime_offset = pytz.FixedOffset(pgia.utc_offset_minutes)
+    synoptic_station = Station.objects.get(int(request.GET['station']))
+    datetime_offset = pytz.FixedOffset(synoptic_station.utc_offset_minutes)
     request_datetime = datetime_offset.localize(date)
 
     start_datetime = request_datetime
@@ -2383,7 +2393,7 @@ def pgia_load(request):
         with conn.cursor() as cursor:
             cursor.execute(
                 f"""
-                    SELECT (datetime + interval '{pgia.utc_offset_minutes} minutes') at time zone 'utc',
+                    SELECT (datetime + interval '{synoptic_station.utc_offset_minutes} minutes') at time zone 'utc',
                         variable_id,
                         CASE WHEN var.variable_type ilike 'code' THEN code ELSE measured::varchar END as value,
                         remarks,
@@ -2397,7 +2407,7 @@ def pgia_load(request):
                 {
                     'start_date': start_datetime,
                     'end_date': end_datetime,
-                    'station_id': pgia.id
+                    'station_id': synoptic_station.id
                 })
 
             response = cursor.fetchall()

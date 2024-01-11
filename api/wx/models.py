@@ -386,6 +386,7 @@ class Station(BaseModel):
 
     is_active = models.BooleanField(default=False)
     is_automatic = models.BooleanField(default=True)
+    is_synoptic_station = models.BooleanField(default=False)
     organization = models.CharField(
         max_length=256,
         null=True,
