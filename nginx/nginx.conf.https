@@ -1,0 +1,70 @@
+upstream api {
+    server api:8000 max_fails=3 fail_timeout=30s;
+}
+
+server {
+    listen 80;
+    client_body_buffer_size 16k;
+    client_max_body_size 2m;
+    client_body_in_single_buffer on;
+    client_header_buffer_size  1m;
+    large_client_header_buffers 4 8k;
+
+    location /static/ {
+        alias /home/app/web/staticfiles/;
+        sendfile on;
+        aio      on;
+    }
+
+    location /data/ {
+        alias /home/app/web/data/;
+        sendfile on;
+        aio      on;
+    }
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://${DOLLAR}host${DOLLAR}request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name ${HOST_FQDN};
+    server_tokens off;
+    client_body_buffer_size 16k;
+    client_max_body_size 2m;
+    client_body_in_single_buffer on;
+    client_header_buffer_size  1m;
+    large_client_header_buffers 4 8k;
+
+    ssl_certificate /etc/letsencrypt/live/${HOST_FQDN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${HOST_FQDN}/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        set ${DOLLAR}target http://api;
+
+        proxy_set_header    Host                ${DOLLAR}http_host;
+        proxy_set_header    X-Real-IP           ${DOLLAR}remote_addr;
+        proxy_set_header    X-Forwarded-For     ${DOLLAR}proxy_add_x_forwarded_for;
+        proxy_pass ${DOLLAR}target;
+    }
+
+    location /static/ {
+        alias /home/app/web/staticfiles/;
+        sendfile on;
+        aio      on;
+    }
+
+    location /data/ {
+        alias /home/app/web/data/;
+        sendfile on;
+        aio      on;
+    }
+
+}

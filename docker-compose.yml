@@ -7,12 +7,23 @@ services:
     volumes:
       - ./api/static:/home/app/web/staticfiles
       - ./data:/home/app/web/data
+      - ./ssl/certbot/conf:/etc/letsencrypt
+      - ./ssl/certbot/www:/var/www/certbot
     env_file:
       - api/production.env
+    environment:
+      HOST_FQDN: $HOST_FQDN
+      WEBMASTER_EMAIL: $WEBMASTER_EMAIL
     ports:
-      - 8080:80
+      - "80:80"
+      - "443:443"
     depends_on:
       - api
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1M"
+        max-file: "10"
 
   cache:
     container_name: surface-cache
@@ -68,6 +79,8 @@ services:
       options:
         max-size: "1M"
         max-file: "10"
+    expose:
+      - 8000
 
   celery_worker:
     build:
