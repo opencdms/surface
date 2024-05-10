@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import random
+from typing import List
 import uuid
 from datetime import datetime as datetime_constructor
 from datetime import timezone
@@ -74,6 +75,11 @@ from simple_history.utils import update_change_reason
 from django.db.models.functions import Cast
 from django.db.models import IntegerField
 
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
+
+
+
 logger = logging.getLogger('surface.urls')
 
 # CONSTANT to be used in datetime to milliseconds conversion
@@ -141,7 +147,7 @@ def ScheduleDataExport(request):
     return HttpResponse(created_data_file_ids, status=status.HTTP_200_OK)
 
 
-@api_view(('GET',))
+#@api_view(('GET',))
 def DataExportFiles(request):
     files = []
     for df in DataFile.objects.all().order_by('-created_at').values()[:100:1]:
@@ -637,6 +643,13 @@ class VariableViewSet(viewsets.ModelViewSet):
     queryset = Variable.objects.all().order_by("name")
     serializer_class = serializers.VariableSerializer
 
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all variables.'
+            )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
 
 class StationMetadataViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -647,6 +660,13 @@ class StationMetadataViewSet(viewsets.ModelViewSet):
         if self.request.method in ['GET']:
             return serializers.StationSerializerRead
         return serializers.StationMetadataSerializer
+
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of the metadata of all stations.'
+            )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 class StationViewSet(viewsets.ModelViewSet):
@@ -660,19 +680,58 @@ class StationViewSet(viewsets.ModelViewSet):
 
     #     station_object.save()
     # serializer = serializers.StationSerializerWrite
-        
+
 
     def get_serializer_class(self):
         if self.request.method in ['GET']:
             return serializers.StationSerializerRead
 
         return serializers.StationSerializerWrite
+    
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all station.'
+            )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @extend_schema(
+            methods=['POST'],
+            description='Create the desired station.'
+            )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @extend_schema(
+            methods=['PUT'],
+            description='Update the chosen station based on its id.'
+            )
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id', 
+                description='Id of the station to change.', 
+                required=True, 
+                type=OpenApiTypes.INT, 
+                location=OpenApiParameter.QUERY
+                )
+        ]
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
 
 
 class StationSimpleViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     queryset = Station.objects.all()
     serializer_class = serializers.StationSimpleSerializer
+
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all stations in simplified form.'
+            )
+    def list(self, request, *args, **kargs):
+        return super().list(request, *args, **kargs)
 
 
 class StationVariableViewSet(viewsets.ModelViewSet):
@@ -689,12 +748,26 @@ class StationVariableViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(station__id=station_id)
 
         return queryset
+    
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all station variables.'
+            )
+    def list(self, request, *args, **kargs):
+        return super().list(request, *args, **kargs)
 
 
 class StationProfileViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     queryset = StationProfile.objects.all().order_by("name")
     serializer_class = serializers.StationProfileSerializer
+
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all station profiles.'
+            )
+    def list(self, request, *args, **kargs):
+        return super().list(request, *args, **kargs)
 
 
 
@@ -730,7 +803,67 @@ class AdministrativeRegionViewSet(viewsets.ModelViewSet):
     queryset = AdministrativeRegion.objects.all().order_by("name")
     serializer_class = serializers.AdministrativeRegionSerializer
 
+    @extend_schema(methods=['GET'], 
+                   description='Returns a paginated list of all Administrative Regions.'
+                   )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
+
+@extend_schema(
+    methods=['GET'],
+    description="Endpoint for retrieving telemetry data for a specific station.",
+    parameters=[
+        # Aggiungi eventuali parametri qui, se necessario
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Telemetry data retrieved successfully.",
+            examples={
+                "application/json": {
+                    "latest": {
+                        "temperature": {
+                            "min": 10,
+                            "max": 13,
+                            "avg": 16
+                        },
+                        "relativeHumidity": {
+                            "min": 10,
+                            "max": 13,
+                            "avg": 16
+                        },
+                        "precipitation": {
+                            "current": 123
+                        },
+                        "windDirection": {
+                            "current": "SW"
+                        },
+                        "windSpeed": {
+                            "current": 11,
+                            "max": 12
+                        },
+                        "windGust": {
+                            "current": 12,
+                            "max": 11
+                        },
+                        "solarRadiation": {
+                            "current": 12
+                        },
+                        "atmosphericPressure": {
+                            "current": 11
+                        }
+                    },
+                    "last24": {
+                        # Aggiungi dati per last24 qui, se disponibili
+                    },
+                    "current": {
+                        # Aggiungi dati per current qui, se disponibili
+                    }
+                }
+            }
+        )
+    }
+)
 @api_view(['GET'])
 def station_telemetry_data(request, date):
     mock = {
@@ -775,6 +908,44 @@ def station_telemetry_data(request, date):
     return Response(data)
 
 
+@extend_schema(
+    methods=['GET'],
+    description=r'Returns raw data based on provided parameters.\
+        The API accepts a range of 7 days.\
+        The parameter search_type allows three possible values:\
+        if search_type has value "station", then the parameter search_value corresponds to the station id or code, while search_value2 is not used;\
+        if search_type has value "variable", then the parameter search_value corresponds to the variable id, while search_value2 is not used;\
+        if search_type has value "stationvariable", then the parameter search_value corresponds to the station id or code,' +
+        ' while search_value2 corresponds to the variable id.',
+    parameters=[
+        OpenApiParameter(
+            name='search_type',
+            description='Search type, it can be station, variable or stationvariable',
+            type=str
+        ),
+        OpenApiParameter(
+            name='search_value',
+            description='Search value, it can be the id or the code of a station, or the id of a variable',
+            type=str
+        ),
+        OpenApiParameter(
+            name='search_value2',
+            description='Additional search value, it can be the id of a variable',
+            type=str
+        ),
+        OpenApiParameter(
+            name='search_date_start',
+            description='Search start date, format YYYY-MM-DDTHH:MI:SSZ',
+            type=OpenApiTypes.DATE
+        ),
+        OpenApiParameter(
+            name='search_date_end',
+            description='Search end date, format YYYY-MM-DDTHH:MI:SSZ',
+            type=OpenApiTypes.DATE
+        )
+    ]
+)
+@api_view(['GET'])
 def raw_data_list(request):
     search_type = request.GET.get('search_type', None)
     search_value = request.GET.get('search_value', None)
@@ -797,6 +968,9 @@ def raw_data_list(request):
     try:
         start_date = datetime.datetime.strptime(search_date_start, '%Y-%m-%dT%H:%M:%SZ')
         end_date = datetime.datetime.strptime(search_date_end, '%Y-%m-%dT%H:%M:%SZ')
+
+        logger.info(f'start {start_date}')
+        logger.info(f'end {end_date}')
 
     except ValueError:
         message = 'Invalid date format. Expected YYYY-MM-DDTHH:MI:SSZ'
@@ -918,6 +1092,42 @@ def raw_data_list(request):
     return JsonResponse(data={"message": "No data found."}, status=status.HTTP_404_NOT_FOUND)
 
 
+@extend_schema(
+    description=r'Returns hourly summary data based on provided parameters.\
+        The parameter search_type allows three possible values:\
+        if search_type has value "station", then the parameter search_value corresponds to the station id or code, while search_value2 is not used;\
+        if search_type has value "variable", then the parameter search_value corresponds to the variable id, while search_value2 is not used;\
+        if search_type has value "stationvariable", then the parameter search_value corresponds to the station id or code,' +
+        ' while search_value2 corresponds to the variable id.',
+    parameters=[
+        OpenApiParameter(
+            name='search_type',
+            description='Search type, it can be station, variable, or stationvariable',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_value',
+            description='Search value, it can be the id or the code of a station, or the id of a variable',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_value2',
+            description='Additional search value, it can be the id of a variable',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_date_start',
+            description='Search start date, format YYYY-MM-DDTHH:MI:SSZ',
+            type=OpenApiTypes.DATETIME
+        ),
+        OpenApiParameter(
+            name='search_date_end',
+            description='Search end date, format YYYY-MM-DDTHH:MI:SSZ',
+            type=OpenApiTypes.DATETIME
+        )
+    ],
+)
+@api_view(['GET'])
 def hourly_summary_list(request):
     search_type = request.GET.get('search_type', None)
     search_value = request.GET.get('search_value', None)
@@ -1084,6 +1294,43 @@ def hourly_summary_list(request):
     return JsonResponse(data=response)
 
 
+@extend_schema(
+    methods=['GET'],
+    description=r'Returns hourly summary data based on provided parameters.\
+                The API accepts a range of 31 days.\
+                The parameter search_type allows three possible values:\
+                if search_type has value "station", then the parameter search_value corresponds to the station id or code, while search_value2 is not used;\
+                if search_type has value "variable", then the parameter search_value corresponds to the variable id, while search_value2 is not used;\
+                if search_type has value "stationvariable", then the parameter search_value corresponds to the station id or code, while search_value2 corresponds to the variable id.',
+    parameters=[
+        OpenApiParameter(
+            name='search_type',
+            description='Search type, it can be station, variable or stationvariable',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_value',
+            description='Search value, it can be the id or the code of a station, or the id of a variable',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_value2',
+            description='Additional search value, it can be the id of a variable',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_date_start',
+            description='Search start date, format YYYY-MM-DDTHH:MI:SSZ',
+            type=OpenApiTypes.DATE
+        ),
+        OpenApiParameter(
+            name='search_date_end',
+            description='Search end date, format YYYY-MM-DDTHH:MI:SSZ',
+            type=OpenApiTypes.DATE
+        )
+    ]
+)
+@api_view(['GET']) 
 def daily_summary_list(request):
     search_type = request.GET.get('search_type', None)
     search_value = request.GET.get('search_value', None)
@@ -1250,6 +1497,43 @@ def daily_summary_list(request):
     return JsonResponse(data=response)
 
 
+@extend_schema(
+    methods=['GET'],
+    description=r'Endpoint for retrieving monthly summary of meteorological or environmental data.\
+        The parameter search_type allows three possible values:\
+        if search_type has value "station", then the parameter search_value corresponds to the station id or code, while search_value2 is not used;\
+        if search_type has value "variable", then the parameter search_value corresponds to the variable id, while search_value2 is not used;\
+        if search_type has value "stationvariable", then the parameter search_value corresponds to the station id or code,' +
+        ' while search_value2 corresponds to the variable id.',
+    parameters=[
+        OpenApiParameter(
+            name='search_type',
+            description='Search type. It can be station, variable, or stationvariable.',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_value',
+            description='Search value. It can be the id or the code of a station, or the id of a variable.',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_value2',
+            description='Additional search value. It can be the id of a variable.',
+            type=OpenApiTypes.STR
+        ),
+        OpenApiParameter(
+            name='search_date_start',
+            description='Search start date, format YYYY-MM-DD.',
+            type=OpenApiTypes.DATE
+        ),
+        OpenApiParameter(
+            name='search_date_end',
+            description='Search end date, format YYYY-MM-DD.',
+            type=OpenApiTypes.DATE
+        )
+    ]
+)
+@api_view(['GET'])
 def monthly_summary_list(request):
     search_type = request.GET.get('search_type', None)
     search_value = request.GET.get('search_value', None)
@@ -1419,6 +1703,83 @@ def monthly_summary_list(request):
     return JsonResponse(data=response)
 
 
+@extend_schema(
+    methods=['GET'],
+    description=r'Endpoint for retrieving yearly summary of meteorological or environmental data.\
+        The parameter search_type allows three possible values:\
+        if search_type has value "station", then the parameter search_value corresponds to the station id or code, while search_value2 is not used;\
+        if search_type has value "variable", then the parameter search_value corresponds to the variable id, while search_value2 is not used;\
+        if search_type has value "stationvariable", then the parameter search_value corresponds to the station id or code,' +
+        ' while search_value2 corresponds to the variable id.',
+    parameters=[
+        OpenApiParameter(
+            name='search_type',
+            description='Search type, it can be station, variable, or stationvariable.',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False
+        ),
+        OpenApiParameter(
+            name='search_value',
+            description='Search value, it can be the id or the code of a station, or the id of a variable.',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False
+        ),
+        OpenApiParameter(
+            name='search_value2',
+            description='Additional search value, it can be the id of a variable.',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False
+        ),
+        OpenApiParameter(
+            name='search_date_start',
+            description='Search start date, format YYYY-MM-DD.',
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            required=False
+        ),
+        OpenApiParameter(
+            name='search_date_end',
+            description='Search end date, format YYYY-MM-DD.',
+            type=OpenApiTypes.DATE,
+            location=OpenApiParameter.QUERY,
+            required=False
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Yearly summary data retrieved successfully.",
+            examples={
+                "application/json": {
+                    "count": -999,
+                    "next": None,
+                    "previous": None,
+                    "results": [
+                        {
+                            "station": "station_id_value",
+                            "date": "year_value",
+                            "value": 0.0,
+                            "min": 0.0,
+                            "max": 0.0,
+                            "avg": 0.0,
+                            "total": 0.0,
+                            "count": 0,
+                            "variable": {
+                                "symbol": "symbol_value",
+                                "name": "name_value",
+                                "unit_name": "unit_name_value",
+                                "unit_symbol": "unit_symbol_value"
+                            }
+                        }
+                    ]
+                }
+            }
+        )
+    }
+)
+@api_view(['GET'])
 def yearly_summary_list(request):
     search_type = request.GET.get('search_type', None)
     search_value = request.GET.get('search_value', None)
@@ -1588,7 +1949,7 @@ def yearly_summary_list(request):
     return JsonResponse(data=response)
 
 
-@api_view(['GET'])
+#@api_view(['GET'])
 def station_geo_features(request, lon, lat):
     longitude = float(lon)
     latitude = float(lat)
@@ -1794,6 +2155,18 @@ def get_current_data(station_id):
     return result, max_date
 
 
+@extend_schema(
+    methods=['GET'],
+    description='Returns real-time data for a given station.',
+    parameters=[
+        OpenApiParameter(
+            name='code',
+            location=OpenApiParameter.PATH,
+            description='Code of an existing station',
+            type=str
+        )
+    ]
+)
 @api_view(['GET'])
 def livedata(request, code):
     try:
@@ -1829,11 +2202,25 @@ class WatershedList(generics.ListAPIView):
     serializer_class = serializers.WatershedSerializer
     queryset = Watershed.objects.all().order_by("watershed")
 
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all watersheds.'
+            )
+    def get(self, request, *args, **kargs):
+        return super().get(request, *args, **kargs)
+
 
 class StationCommunicationList(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = serializers.StationCommunicationSerializer
     queryset = StationCommunication.objects.all()
+
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all types of station communication.'
+            )
+    def get(self, request, *args, **kargs):
+        return super().get(request, *args, **kargs)
 
 
 class DecoderList(generics.ListAPIView):
@@ -1841,13 +2228,59 @@ class DecoderList(generics.ListAPIView):
     serializer_class = serializers.DecoderSerializer
     queryset = Decoder.objects.all().order_by("name")
 
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all decoders.'
+            )
+    def get(self, request, *args, **kargs):
+        return super().get(request, *args, **kargs)
+
 
 class QualityFlagList(viewsets.ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = serializers.QualityFlagSerializer
     queryset = QualityFlag.objects.all().order_by("name")
 
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all quality flags.'
+            )
+    def list(self, request, *args, **kargs):
+        return super().list(request, *args, **kargs)
 
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a quality flag based on the provided id.'
+            )
+    def retrieve(self, request, *args, **kargs):
+        return super().retrieve(request, *args, **kargs)
+
+
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    methods=['GET'],
+    description="Endpoint to retrieve quality control data.",
+    parameters=[
+        OpenApiParameter(name='station_id', type=OpenApiTypes.INT, description="ID of the weather station."),
+        OpenApiParameter(name='variable_id', type=OpenApiTypes.INT, description="ID of the weather variable."),
+        OpenApiParameter(name='start_date', type=OpenApiTypes.DATE, description="Start date for data filtering.", required=False),
+        OpenApiParameter(name='end_date', type=OpenApiTypes.DATE, description="End date for data filtering.", required=False),
+        
+    ],
+    responses={200: {'description': 'Successful response'}},
+)
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    methods=['PATCH'],
+    description="Endpoint to update quality control data.",
+    parameters=[
+        OpenApiParameter(name='station_id', type=OpenApiTypes.INT, description="ID of the weather station."),
+        OpenApiParameter(name='variable_id', type=OpenApiTypes.INT, description="ID of the weather variable."),
+        OpenApiParameter(name='datetime', type=OpenApiTypes.DATE, description="Timestamp for the data to be updated."),
+    ],
+    responses={200: OpenApiResponse(description="Success")}
+)
+@api_view(['GET', 'PATCH'])
 def qc_list(request):
     if request.method == 'GET':
         station_id = request.GET.get('station_id', None)
@@ -2303,7 +2736,7 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     )
 
 
-@api_view(['POST'])
+#@api_view(['POST'])
 def pgia_update(request):
     try:
         hours_dict = request.data['table']
@@ -2361,7 +2794,7 @@ def pgia_update(request):
     return HttpResponse(status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
+#@api_view(['GET'])
 def pgia_load(request):
     try:
         date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
@@ -2405,7 +2838,7 @@ def pgia_load(request):
     return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
 
 
-@api_view(['GET'])
+#@api_view(['GET'])
 def MonthlyFormLoad(request):
     try:
         start_date = datetime.datetime.strptime(request.GET['date'], '%Y-%m')
@@ -2444,7 +2877,7 @@ def MonthlyFormLoad(request):
     return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
 
 
-@api_view(['POST'])
+#@api_view(['POST'])
 def MonthlyFormUpdate(request):
     with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
         records_list = []
@@ -2604,6 +3037,21 @@ class StationVariableDeleteView(LoginRequiredMixin, DeleteView):
         return reverse('stationvariable-list', kwargs={'pk': self.kwargs.get('pk_station')})
 
 
+@extend_schema(
+    description="Retrieve data for generating charts based on specified parameters.",
+    parameters=[
+        OpenApiParameter(name='station', description='Station ID', required=True, type=str),
+        OpenApiParameter(name='initial_datetime', description='Initial datetime for data range (YYYY-MM-DDTHH:MM:SS)', required=True, type=str),
+        OpenApiParameter(name='final_datetime', description='Final datetime for data range (YYYY-MM-DDTHH:MM:SS)', required=True, type=str),
+        OpenApiParameter(name='source', description='Source of data (0 for raw data, 1 for hourly, 2 for daily, 3 for monthly, 4 for yearly)', required=True, type=OpenApiTypes.INT),
+    ],
+    responses={
+        status.HTTP_200_OK: OpenApiResponse(description='Returns charts data for the requested parameters'),
+        status.HTTP_400_BAD_REQUEST: OpenApiResponse(description='Bad request - one or more parameters missing'),
+        status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Not found - data for the requested parameters not available'),
+    }
+)
+@api_view(['GET'])
 def station_report_data(request):
     station = request.GET.get('station', None)
     initial_datetime = request.GET.get('initial_datetime', None)
@@ -2734,6 +3182,22 @@ def station_report_data(request):
         return JsonResponse({}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    description="Retrieve variable report data based on specified parameters.",
+    parameters=[
+        OpenApiParameter(name="variable_ids", type=str, location=OpenApiParameter.QUERY, description="List of variable IDs."),
+        OpenApiParameter(name="initial_datetime", type=str, location=OpenApiParameter.QUERY, description="Initial date and time for the data range."),
+        OpenApiParameter(name="final_datetime", type=str, location=OpenApiParameter.QUERY, description="Final date and time for the data range."),
+        OpenApiParameter(name="source", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, description="Data source (0: Raw data, 1: Hourly data, 2: Daily data, 3: Monthly data, 4: Yearly data)."),
+        OpenApiParameter(name="station_ids", type=str, location=OpenApiParameter.QUERY, description="List of station IDs."),
+    ],
+    responses={
+        200: OpenApiResponse(description="Variable report data retrieved successfully."),
+        400: OpenApiResponse(description="Bad request. Some required parameters are missing or invalid."),
+        404: OpenApiResponse(description="Not found. Data not available for the specified parameters."),
+    }
+)
+@api_view(['GET'])
 def variable_report_data(request):
     variable_ids_list = request.GET.get('variable_ids', None)
     initial_datetime = request.GET.get('initial_datetime', None)
@@ -3012,7 +3476,71 @@ class StationVariableStationViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(variable__id=variable_id)
 
         return queryset
+    
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all stations, in simplified form, associated with at least one station_variable.'
+            )
+    def list(self, request, *args, **kargs):
+        return super().list(request, *args, **kargs)
 
+
+@extend_schema(
+    methods=['GET'],
+    description="Endpoint for retrieving summary data for the last 24 hours based on a specific variable.",
+    parameters=[
+        OpenApiParameter(
+            name='search_type',
+            description='Search type, it can be variable.',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False
+        ),
+        OpenApiParameter(
+            name='search_value',
+            description='Search value, it should be the id of a variable.',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Summary data for the last 24 hours retrieved successfully.",
+            examples={
+                "application/json": {
+                    "results": [
+                        {
+                            "station": "station_id_value",
+                            "value": 0.0,
+                            "min": 0.0,
+                            "max": 0.0,
+                            "avg": 0.0,
+                            "sum": 0.0,
+                            "count": 0,
+                            "variable": {
+                                "name": "name_value",
+                                "symbol": "symbol_value",
+                                "unit_name": "unit_name_value",
+                                "unit_symbol": "unit_symbol_value"
+                            }
+                        }
+                    ],
+                    "messages": []
+                }
+            }
+        ),
+        404: OpenApiResponse(
+            description="No data found for the given search parameters.",
+            examples={
+                "application/json": {
+                    "message": "No data found."
+                }
+            }
+        )
+    }
+)
+@api_view(['GET'])
 def last24_summary_list(request):
     search_type = request.GET.get('search_type', None)
     search_value = request.GET.get('search_value', None)
@@ -4922,6 +5450,38 @@ class SpatialAnalysisView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
+@extend_schema(
+    methods=['GET'],
+    description="Endpoint for retrieving raw data recorded in the last 24 hours for a specific station.",
+    parameters=[
+        OpenApiParameter(
+            name='station_id',
+            description='The ID of the station for which to retrieve data.',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Raw data retrieved successfully.",
+            examples={
+                "application/json": {
+                    "YYYY-MM-DD HH24:MI:SS": [
+                        {
+                            "value": 0.0,
+                            "variable": {
+                                "name": "name_value",
+                                "symbol": "symbol_value",
+                                "unit_name": "unit_name_value",
+                                "unit_symbol": "unit_symbol_value"
+                            }
+                        }
+                    ]
+                }
+            }
+        )
+    }
+)
 @api_view(['GET'])
 def raw_data_last_24h(request, station_id):
     station = Station.objects.get(pk=station_id)
@@ -5003,6 +5563,39 @@ class StationMetadataView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
+@extend_schema(
+    methods=['GET'],
+    description="Endpoint for retrieving the latest data recorded for a specific variable.",
+    parameters=[
+        OpenApiParameter(
+            name='variable_id',
+            description='The ID of the variable for which to retrieve the latest data.',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        200: {
+            "description": "Latest data retrieved successfully.",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "value": {"type": "string"},
+                                "longitude": {"type": "number"},
+                                "latitude": {"type": "number"},
+                                "symbol": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
 @api_view(['GET'])
 def latest_data(request, variable_id):
     result = []
@@ -5058,6 +5651,48 @@ class StationImageViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all station images.'
+            )
+    def list(self, request, *args, **kargs):
+        return super().list(request, *args, **kargs)
+
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a station image based on the provided id.'
+            )
+    def retrieve(self, request, *args, **kargs):
+        return super().retrieve(request, *args, **kargs)
+
+    @extend_schema(
+            methods=['POST'],
+            description='Create the desired station image.'
+            )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @extend_schema(
+            methods=['PUT'],
+            description='Update the chosen station image based on its id.'
+            )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+    
+    @extend_schema(
+            methods=['PATCH'],
+            description='Update the chosen station image based on its id.'
+            )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @extend_schema(
+            methods=['DELETE'],
+            description='Update the chosen station image based on its id.'
+            )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
 
 class StationFileViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -5074,6 +5709,48 @@ class StationFileViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(station__id=station_id)
 
         return queryset
+    
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a paginated list of all station files.'
+            )
+    def list(self, request, *args, **kargs):
+        return super().list(request, *args, **kargs)
+
+    @extend_schema(
+            methods=['GET'],
+            description='Returns a station file based on the provided id.'
+            )
+    def retrieve(self, request, *args, **kargs):
+        return super().retrieve(request, *args, **kargs)
+
+    @extend_schema(
+            methods=['POST'],
+            description='Create the desired station file.'
+            )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @extend_schema(
+            methods=['PUT'],
+            description='Update the chosen station file based on its id.'
+            )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+    
+    @extend_schema(
+            methods=['PATCH'],
+            description='Update the chosen station file based on its id.'
+            )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @extend_schema(
+            methods=['DELETE'],
+            description='Update the chosen station file based on its id.'
+            )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 
 class ExtremesMeansView(LoginRequiredMixin, TemplateView):
@@ -5170,7 +5847,45 @@ def update_global_threshold(request):
     return JsonResponse(response, status=status.HTTP_200_OK)
 
 
-
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    methods=['GET'],
+    parameters=[
+        OpenApiParameter(name='station_id', required=True, type=str, location=OpenApiParameter.QUERY),
+        OpenApiParameter(name='variable_id_list', required=False, type=str, location=OpenApiParameter.QUERY),
+        OpenApiParameter(name='month', required=False, type=str, location=OpenApiParameter.QUERY),
+    ],
+    responses={200: OpenApiResponse(description="Success")}
+)
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    methods=['POST'],
+    parameters=[
+        OpenApiParameter(name='station_id', required=True, type=str, location=OpenApiParameter.QUERY),
+        OpenApiParameter(name='variable_id', required=True, type=str, location=OpenApiParameter.QUERY),
+        OpenApiParameter(name='month', required=True, type=str, location=OpenApiParameter.QUERY),
+        OpenApiParameter(name='interval', required=True, type=str, location=OpenApiParameter.QUERY),
+        OpenApiParameter(name='range_min', required=True, type=str, location=OpenApiParameter.QUERY),
+        OpenApiParameter(name='range_max', required=True, type=str, location=OpenApiParameter.QUERY),
+    ],
+    responses={200: OpenApiResponse(description="Success")}
+)
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    methods=['PATCH'],
+    parameters=[
+        OpenApiParameter(name='id', required=True, type=str, location=OpenApiParameter.QUERY),
+    ],
+    responses={200: OpenApiResponse(description="Success")}
+)
+@extend_schema(
+    request=OpenApiTypes.OBJECT,
+    methods=['DELETE'],
+    parameters=[
+        OpenApiParameter(name='id', required=True, type=str, location=OpenApiParameter.QUERY),
+    ],
+    responses={200: OpenApiResponse(description="Success")}
+)
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
 def range_threshold_view(request): # For synop and daily data captures
     if request.method == 'GET':
@@ -5919,6 +6634,49 @@ def delete_persist_threshold(request):
     return JsonResponse(response, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    description="Endpoint to retrieve and update quality control data.",
+    parameters=[
+        OpenApiParameter(
+            name='station_id',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description="ID della stazione",
+        ),
+        OpenApiParameter(
+            name='month',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description="Mese",
+        ),
+        OpenApiParameter(
+            name='variable_id_list',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description="Lista degli ID delle variabili, format:[1, 2, 'int', ...]",
+        ),
+        OpenApiParameter(
+            name='begin_year',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description="Anno di inizio del periodo",
+        ),
+        OpenApiParameter(
+            name='end_year',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description="Anno di fine del periodo",
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="Success",
+        ),
+        400: OpenApiResponse(
+            description="Bad Request",
+        ),
+    }
+)
 @api_view(['GET'])
 def daily_means_data_view(request):
     station_id = request.GET.get('station_id', None)
@@ -6164,6 +6922,30 @@ class DataInventoryView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
+@extend_schema(
+    description="Retrieve data inventory with optional filters for start_date, end_date, and is_automatic.",
+    parameters=[
+        OpenApiParameter(
+            name="start_date",
+            description="Start date for filtering data (format: YYYY-MM-DD)",
+            type=OpenApiTypes.DATE,
+            required=False,
+        ),
+        OpenApiParameter(
+            name="end_date",
+            description="End date for filtering data (format: YYYY-MM-DD)",
+            type=OpenApiTypes.DATE,
+            required=False,
+        ),
+        OpenApiParameter(
+            name="is_automatic",
+            description="Filter by automatic stations",
+            type=OpenApiTypes.BOOL,
+            required=False,
+        ),
+    ],
+    responses={200: OpenApiResponse(description="Data inventory retrieved successfully")},
+)
 @api_view(['GET'])
 def get_data_inventory(request):
     start_year = request.GET.get('start_date', None)
@@ -6212,6 +6994,32 @@ def get_data_inventory(request):
     return Response(result, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    methods=['GET'],
+    description="Get data inventory by station.",
+    parameters=[
+        OpenApiParameter(
+            name='start_date',
+            description='Start date for data retrieval (YYYY-MM-DD)',
+            type=OpenApiTypes.DATE
+        ),
+        OpenApiParameter(
+            name='end_date',
+            description='End date for data retrieval (YYYY-MM-DD)',
+            type=OpenApiTypes.DATE
+        ),
+        OpenApiParameter(
+            name='station_id',
+            description='ID of the station',
+            type=OpenApiTypes.INT
+        ),
+        OpenApiParameter(
+            name='record_limit',
+            description='Limit number of records to retrieve',
+            type=OpenApiTypes.INT
+        )
+    ]
+)
 @api_view(['GET'])
 def get_data_inventory_by_station(request):
     start_year = request.GET.get('start_date', None)
@@ -6267,6 +7075,22 @@ def get_data_inventory_by_station(request):
 
     return Response(result, status=status.HTTP_200_OK)
 
+@extend_schema(
+    methods=['GET'],
+    description="Get data inventory by station and month.",
+    parameters=[
+        OpenApiParameter(
+            name='year',
+            description='Year for data retrieval',
+            type=OpenApiTypes.INT
+        ),
+        OpenApiParameter(
+            name='station_id',
+            description='ID of the station',
+            type=OpenApiTypes.INT
+        )
+    ]
+)
 @api_view(['GET'])
 def get_station_variable_month_data_inventory(request):
     year = request.GET.get('year', None)
@@ -6310,6 +7134,32 @@ def get_station_variable_month_data_inventory(request):
     return Response(result, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    methods=['GET'],
+    description="Get data inventory by station, year, month, and variable.",
+    parameters=[
+        OpenApiParameter(
+            name='year',
+            description='Year for data retrieval',
+            type=OpenApiTypes.INT
+        ),
+        OpenApiParameter(
+            name='month',
+            description='Month for data retrieval',
+            type=OpenApiTypes.INT
+        ),
+        OpenApiParameter(
+            name='station_id',
+            description='ID of the station',
+            type=OpenApiTypes.INT
+        ),
+        OpenApiParameter(
+            name='variable_id',
+            description='ID of the variable',
+            type=OpenApiTypes.INT
+        )
+    ]
+)
 @api_view(['GET'])
 def get_station_variable_day_data_inventory(request):
     year = request.GET.get('year', None)
@@ -6384,7 +7234,7 @@ def get_station_variable_day_data_inventory(request):
     return Response(days, status=status.HTTP_200_OK)
 
 
-@api_view(['POST'])
+#@api_view(['POST'])
 def delete_pgia_hourly_capture_row(request):
     request_date = request.data['date']
     hour = request.data['hour']

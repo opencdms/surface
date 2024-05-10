@@ -152,6 +152,24 @@ class StationSerializerRead(serializers.ModelSerializer):
         )
 
 
+class StationSerializer(serializers.ModelSerializer):
+    """
+    Serializer class for the Station model, 
+    """
+
+    profile = serializers.IntegerField(source="profile.id")
+    country = serializers.IntegerField(source="country.id")
+    data_source = serializers.IntegerField(source="data_source.id")
+    communication_type = serializers.IntegerField(source="communication_type.id")
+    wmo_station_type = serializers.IntegerField(source="wmo_station_type.id")
+    wmo_region = serializers.IntegerField(source="wmo_region.id")
+    wmo_program = serializers.IntegerField(source="wmo_program.id")
+
+    class meta:
+        models = models.Station
+        fields = '__all__'
+
+
 class StationSerializerReadSimple(serializers.ModelSerializer):
     class Meta:
         model = models.Station

@@ -36,11 +36,13 @@ from wx.decoders.sat_tx325 import read_data as read_data_sat_tx325
 from wx.decoders.surtron import read_data as read_data_surtron
 from wx.decoders.surface import read_file as read_file_surface
 from wx.decoders.toa5 import read_file as read_file_toa5
+from wx.decoders.json_nasa import read_file as read_file_json_nasa
 from wx.models import DataFile
 from wx.models import Document
+from wx.models import Decoder
 from wx.models import NoaaDcp
 from wx.models import Station
-from wx.models import StationFileIngestion, StationDataFile
+from wx.models import StationFileIngestion, StationDataFile, StationVariable
 from wx.models import HourlySummaryTask, DailySummaryTask
 from wx.models import HydroMLPredictionStation, HydroMLPredictionMapping
 from wx.models import HighFrequencyData, HFSummaryTask
@@ -49,7 +51,7 @@ from wx.decoders.insert_raw_data import insert as insert_rd
 from django.core.exceptions import ObjectDoesNotExist
 import numpy as np
 import pandas as pd
-from wx.models import Variable
+from wx.models import Variable, VariableFormat, Format
 from wx.models import QcPersistThreshold, BackupTask, BackupLog
 from wx.enums import QualityFlagEnum
 
@@ -1175,6 +1177,141 @@ def ftp_ingest_highfrequency_station_files():
     hfreq_data = True
     ftp_ingest_station_files(hist_data, hfreq_data)
 
+
+def date_2_string(date):
+    """
+    Conversion of datetime to string in json NASA format
+    """
+    return str(date.year) + str(date.month) + str(date.day)
+
+@shared_task
+def api_ingest_station_files():
+    """
+    Get and process station data files via API
+
+    Parameters: 
+        historical_data (bool): flag to process historical station data files
+
+    """
+    dt = datetime.now()
+
+    api_ftp_server=FTPServer.objects.get(name="api")
+    station_file_ingestions = StationFileIngestion.objects.filter(is_active=True, ftp_server=api_ftp_server.pk) 
+    station_file_ingestions = [s for s in station_file_ingestions if cronex.CronExpression(s.cron_schedule).check_trigger(
+        (dt.year, dt.month, dt.day, dt.hour, dt.minute))]
+
+    stations_list_ids = []
+
+    for elem in station_file_ingestions :
+        stations_list_ids.append(elem.station.pk)
+
+    stations_list_ids = list(set(stations_list_ids))
+
+    stations = Station.objects.filter(pk__in=stations_list_ids)
+
+    logger.info(f"Stations: {stations}")
+
+    # decoder
+    decoder = Decoder.objects.get(name="JSON_NASA")
+
+    # format
+    format = Format.objects.get(name="JSON_NASA")
+
+    for station in stations:
+
+        # url API
+        base_url = station.data_source.base_url
+        location = station.data_source.location
+        url = base_url + location
+
+        api_min_date = datetime(year=2001, month=1, day=1, tzinfo=pytz.FixedOffset(station.utc_offset_minutes))
+        past_queries = StationDataFile.objects.filter(station=station, decoder=decoder, status=3).order_by("-created_at")
+        if not past_queries:
+            start_date = station.begin_date
+            start_date = max(start_date, api_min_date)
+        else:
+            start_date = past_queries[0].created_at
+        
+        start_date = date_2_string(start_date)
+        logger.info(f"Start_date: {start_date}")
+
+        station_variables = StationVariable.objects.filter(station=station)
+        api_parameters = []
+        for station_variable in station_variables:
+            variable_format = VariableFormat.objects.get(format=format, variable=station_variable.variable)
+            api_parameters.append(variable_format.lookup_key)
+        api_parameters = (",").join(api_parameters)
+
+        params = {
+            "start":start_date,
+            "end":date_2_string(datetime.now()),
+            "latitude":station.latitude,
+            "longitude":station.longitude,
+            "community":"ag",
+            "parameters":api_parameters,
+            "header":True,
+            "time-standard":"lst",
+            "site-elevation":station.elevation
+        }
+
+        logging.info(f'API used: {url}')
+        logging.info(f"Params: {str(params)}")
+        
+
+        try:
+            response = requests.get(url=url, params=params)
+            response.raise_for_status()
+
+            # Code here will only run if the request is successful
+
+            data = response.json()
+
+            try:
+                local_folder = '/data/documents/ingest/%s/%s/%s/%04d/%02d/%02d' % (decoder.name, 
+                                                                                   station.code, 
+                                                                                   'raw_data', dt.year, dt.month, dt.day)
+                
+                fname = f'request_{station.name}_{str(params["start"])}_{params["end"]}_{params["parameters"]}.json'
+                
+                local_filename = '%04d%02d%02d%02d%02d%02d_%s' % (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, fname)
+                local_path = '%s/%s' % (local_folder, local_filename)
+                os.makedirs(local_folder, exist_ok=True)
+
+                hash_md5 = hashlib.md5()
+
+                with open(local_folder + '/' + local_filename, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+                    hash_md5.update((json.dumps(data)).encode('utf8'))
+
+                # Inserts a StationDataFile object with status = 1 (Not processed)
+                station_data_file = StationDataFile(station=station,
+                                                    decoder=decoder,
+                                                    status_id=1,
+                                                    utc_offset_minutes=station.utc_offset_minutes,
+                                                    filepath=local_path,
+                                                    file_hash=hash_md5.hexdigest(),
+                                                    file_size=os.path.getsize(local_path),
+                                                    is_historical_data=False,
+                                                    is_highfrequency_data=False,
+                                                    override_data_on_conflict=False)
+                station_data_file.save()
+                logging.info(f'Downloaded file from API: {local_path}')
+            except OSError as e:
+                logger.error('OS error. ' + repr(e))
+                db_logger.error('OS error. ' + repr(e))
+
+        except requests.exceptions.HTTPError as errh:
+            print(errh)
+        except requests.exceptions.ConnectionError as errc:
+            print(errc)
+        except requests.exceptions.Timeout as errt:
+            print(errt)
+        except requests.exceptions.RequestException as err:
+            print(err)
+
+    process_station_data_files()
+
+
 def ftp_ingest_station_files(historical_data, highfrequency_data):
     """
     Get and process station data files via FTP protocol
@@ -1185,7 +1322,9 @@ def ftp_ingest_station_files(historical_data, highfrequency_data):
     """
     dt = datetime.now()
 
-    station_file_ingestions = StationFileIngestion.objects.filter(is_active=True, is_historical_data=historical_data, is_highfrequency_data=highfrequency_data)
+    api_ftp_server=FTPServer.objects.get(name="api")
+
+    station_file_ingestions = StationFileIngestion.objects.filter(is_active=True, is_historical_data=historical_data, is_highfrequency_data=highfrequency_data).exclude(ftp_server=api_ftp_server.pk)
     station_file_ingestions = [s for s in station_file_ingestions if
                                cronex.CronExpression(s.cron_schedule).check_trigger(
                                    (dt.year, dt.month, dt.day, dt.hour, dt.minute))]
@@ -1288,6 +1427,7 @@ def process_station_data_files(historical_data=False, highfrequency_data=False, 
         'BELIZE MANUAL DAILY DATA': read_file_manual_data,
         'BELIZE MANUAL HOURLY DATA': read_file_manual_data_hourly,
         'SURFACE': read_file_surface,
+        'JSON_NASA': read_file_json_nasa
     }
 
     # Get StationDataFile to process

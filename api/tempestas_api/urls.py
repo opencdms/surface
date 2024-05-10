@@ -16,6 +16,7 @@ urlpatterns = [
     path('password/', change_password, name='change_password'),
     path('admin/', admin.site.urls),
     path('', include('wx.urls')),
+    path('', include('wx.urls_dir.api_urls')),
 ]
 
 admin.site.site_header = 'Surface Admin Area'
