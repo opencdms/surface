@@ -1,38 +1,12 @@
 from django.conf import settings
 from django.conf.urls.static import static
-from django.urls import path, include
-from rest_framework import routers
+from django.urls import path
 
 from django.contrib.auth.decorators import login_required
 
 from wx import views
 
-router = routers.DefaultRouter()
-router.register(r'station_images', views.StationImageViewSet)
-router.register(r'station_files', views.StationFileViewSet)
-router.register(r'quality_flags', views.QualityFlagList)
-router.register(r'stations_metadata', views.StationMetadataViewSet)
-
 urlpatterns = [
-    path('api/stations/metadata', include(router.urls)),
-    path('api/administrative_regions/', views.AdministrativeRegionViewSet.as_view({'get': 'list'})),
-    path('api/stations/', views.StationViewSet.as_view({'get': 'list', 'post': 'create', 'put': 'update'})),
-    path('api/stations_simple/', views.StationSimpleViewSet.as_view({'get': 'list'})),
-    path('api/station_profiles/', views.StationProfileViewSet.as_view({'get': 'list'})),
-    path('api/stations_variables/', views.StationVariableViewSet.as_view({'get': 'list'})),
-    path('api/stations_variables/stations/', views.StationVariableStationViewSet.as_view({'get': 'list'})),
-    path('api/variables/', views.VariableViewSet.as_view({'get': 'list'})),
-    path('api/watersheds/', views.WatershedList.as_view()),
-    path('api/station_communications/', views.StationCommunicationList.as_view()),
-    path('api/livedata/<code>/', views.livedata),
-    path('api/rawdata/', views.raw_data_list),
-    path('api/hourlysummaries/', views.hourly_summary_list),
-    path('api/dailysummaries/', views.daily_summary_list),
-    path('api/monthlysummaries/', views.monthly_summary_list),
-    path('api/yearlysummaries/', views.yearly_summary_list),
-    path('api/last24hrsummaries/', views.last24_summary_list),
-    path('api/station_telemetry_data/<str:date>', views.station_telemetry_data),
-    path('api/', include(router.urls)),
     path('', views.StationsMapView.as_view(), name='stations-map'),
     path('station_geo_features/<str:lon>/<str:lat>', views.station_geo_features),
     path('decoders/', views.DecoderList.as_view()),
@@ -56,12 +30,9 @@ urlpatterns = [
     path('wx/stations/<int:pk_station>/variables/<int:pk>/delete/', views.StationVariableDeleteView.as_view(),
          name='stationvariable-delete'),
     path('wx/products/station_report/', views.StationReportView.as_view(), name='station-report'),
-    path('api/station_report/', views.station_report_data, name='station_report_data'),
     path('wx/variablereport/', views.VariableReportView.as_view(), name='variable-report'),
     path('wx/product/compare/', views.ProductCompareView.as_view(), name='product-compare'),
     path('wx/quality_control/validation/', views.QualityControlView.as_view(), name='quality-control'),
-    path('api/quality_control/', views.qc_list),
-    path('api/variable-report/', views.variable_report_data, name='variable-report-data'),
     path('wx/data/capture/', views.DataCaptureView, name='data-capture'),
     path('wx/data/export/', views.DataExportView.as_view(), name='data-export'),
     path('wx/data/export/files/', views.DataExportFiles, name='data-export-files'),
@@ -85,16 +56,8 @@ urlpatterns = [
     path('wx/spatial_analysis/color_bar', views.GetColorMapBar, name='spatial-analysis-color-bar'),
     path('coming-soon', views.ComingSoonView.as_view(), name='coming-soon'),
     path('coming-soon-qc', views.ComingSoonView.as_view(), name='coming-soon-qc'),
-    path('api/raw_data_last_24h/<station_id>/', views.raw_data_last_24h),
-    path('api/latest_data/<variable_id>/', views.latest_data),
     path('wx/product/extremes_means/', views.ExtremesMeansView.as_view(), name='extremes-means'),
-    path('api/daily_means/', views.daily_means_data_view),
     path('wx/data/inventory/', views.DataInventoryView.as_view(), name='data-inventory'),
-    path('api/data_inventory/', views.get_data_inventory),
-    path('api/data_inventory_by_station/', views.get_data_inventory_by_station),
-    path('api/station_variable_data_month_inventory/', views.get_station_variable_month_data_inventory),
-    path('api/station_variable_data_day_inventory/', views.get_station_variable_day_data_inventory),
-    path('api/range_threshold/', views.range_threshold_view), # For synop and daily data capture
     path('wx/quality_control/update_reference_station/', views.update_reference_station),    
     path('wx/quality_control/global_threshold/update/', views.update_global_threshold),
     path('wx/quality_control/range_threshold/', views.get_range_threshold_form, name='range-threshold'),
