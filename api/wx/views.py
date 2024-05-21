@@ -6485,3 +6485,90 @@ def delete_pgia_hourly_capture_row(request):
         conn.commit()
 
     return Response(result, status=status.HTTP_200_OK)
+
+class UserInfo(views.APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        username = request.user.username
+        return Response({'username': username})
+
+class AvailableDataView(views.APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            json_data = json.loads(request.body)
+
+            initial_date = json_data['initial_date']
+            final_date = json_data['final_date']
+            data_source = json_data['data_source']
+            sv_list = [(row['station_id'], row['variable_id']) for row in json_data['series']]
+
+            if (data_source=="monthly_summary"):
+                initial_date = initial_date[:-2]+'01'
+                final_date = final_date[:-2]+'31'
+            elif (data_source=="yearly_summary"):
+                initial_date = initial_date[:-5]+'01-01'
+                final_date = final_date[:-5]+'12-31'
+
+            initial_datetime = datetime.datetime.strptime(initial_date, '%Y-%m-%d')
+            final_datetime = datetime.datetime.strptime(final_date, '%Y-%m-%d')
+
+            num_days = (final_datetime-initial_datetime).days + 1            
+
+            ret_data =  {
+                'initial_date': initial_date,
+                'final_date': final_date,
+                'data_source': data_source,
+                'sv_list': sv_list
+            }
+
+            query = f"""
+                WITH series AS (
+                    SELECT station_id, variable_id
+                    FROM UNNEST(ARRAY{sv_list}) AS t(station_id int, variable_id int)
+                ),
+                daily_summ AS(
+                    SELECT
+                        MIN(day) AS firs_day
+                        ,MAX(day) AS last_day
+                        ,station_id
+                        ,variable_id
+                        ,100*COUNT(*)/{num_days}::float AS percentage
+                    FROM daily_summary
+                    WHERE day >= '{initial_date}'
+                      AND day < '{final_date}'
+                      AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+                    GROUP BY station_id, variable_id
+                )
+                SELECT
+                    daily_summ.firs_day 
+                    ,daily_summ.firs_day
+                    ,series.station_id
+                    ,series.variable_id
+                    ,COALESCE(daily_summ.percentage, 0)
+                FROM series
+                LEFT JOIN daily_summ ON daily_summ.station_id = series.station_id AND daily_summ.variable_id = series.variable_id
+            """
+
+
+            result = []
+
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                for row in rows:
+                    new_entry = {
+                        'first_date': row[0],
+                        'last_date': row[1],
+                        'station_id': row[2],
+                        'variable_id': row[3],
+                        'percentage': round(row[4], 1)
+                    }
+
+                    result.append(new_entry)
+
+            return JsonResponse({'data': result}, status=status.HTTP_200_OK)
+        except json.JSONDecodeError:
+            return Response({'error': 'Invalid JSON format'}, status=status.HTTP_400_BAD_REQUEST)
