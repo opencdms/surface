@@ -6505,6 +6505,9 @@ class AvailableDataView(views.APIView):
             data_source = json_data['data_source']
             sv_list = [(row['station_id'], row['variable_id']) for row in json_data['series']]
 
+            logging.info('sv_list', sv_list)
+            print('sv_list', sv_list)
+
             if (data_source=="monthly_summary"):
                 initial_date = initial_date[:-2]+'01'
                 final_date = final_date[:-2]+'31'
@@ -6531,20 +6534,20 @@ class AvailableDataView(views.APIView):
                 ),
                 daily_summ AS(
                     SELECT
-                        MIN(day) AS firs_day
+                        MIN(day) AS first_day
                         ,MAX(day) AS last_day
                         ,station_id
                         ,variable_id
                         ,100*COUNT(*)/{num_days}::float AS percentage
                     FROM daily_summary
                     WHERE day >= '{initial_date}'
-                      AND day < '{final_date}'
+                      AND day <= '{final_date}'
                       AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
                     GROUP BY station_id, variable_id
                 )
                 SELECT
-                    daily_summ.firs_day 
-                    ,daily_summ.firs_day
+                    daily_summ.first_day 
+                    ,daily_summ.last_day
                     ,series.station_id
                     ,series.variable_id
                     ,COALESCE(daily_summ.percentage, 0)
