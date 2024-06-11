@@ -42,7 +42,7 @@ def get_user_id(token):
     return None
   return None
 
-def get_data(initial_datetime, final_datetime, data_source, series):
+def get_data(initial_datetime, final_datetime, data_source, series, interval):
     DB_NAME=os.getenv('SURFACE_DB_NAME')
     DB_USER=os.getenv('SURFACE_DB_USER')
     DB_PASSWORD=os.getenv('SURFACE_DB_PASSWORD')
@@ -63,32 +63,82 @@ def get_data(initial_datetime, final_datetime, data_source, series):
 
         if fin_day <= final_datetime:
           query = f"""
-            WITH series AS (
+            WITH time_series AS(
+              SELECT 
+                timestamp AS datetime
+              FROM
+                GENERATE_SERIES(
+                  '{ini_day}'::TIMESTAMP
+                  ,'{fin_day}'::TIMESTAMP
+                  ,'{interval} SECONDS'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{ini_day}' AND '{fin_day}'
+            )          
+            ,series AS (
                 SELECT station_id, variable_id
                 FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
             )
-            SELECT datetime
-                ,var.id as variable_id
-                ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
-            FROM raw_data data
-            LEFT JOIN wx_variable var ON data.variable_id = var.id
-            WHERE data.datetime >= '{ini_day}'
-              AND data.datetime < '{fin_day}'
-              AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            ,processed_data AS (
+              SELECT datetime
+                  ,station_id
+                  ,var.id as variable_id
+                  ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
+              FROM raw_data data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.datetime >= '{ini_day}'
+                AND data.datetime < '{fin_day}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.datetime AS datetime
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.datetime = ts.datetime
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;
           """
         else:
           query = f"""
-            WITH series AS (
+            WITH time_series AS(
+              SELECT 
+                timestamp AS datetime
+              FROM
+                GENERATE_SERIES(
+                  '{ini_day}'::TIMESTAMP
+                  ,'{fin_day}'::TIMESTAMP
+                  ,'{interval} SECONDS'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{ini_day}' AND '{fin_day}'
+            )
+            ,series AS (
                 SELECT station_id, variable_id
                 FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
             )
-            SELECT datetime
-                ,var.id as variable_id
-                ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
-            FROM raw_data data
-            LEFT JOIN wx_variable var ON data.variable_id = var.id
-            WHERE data.datetime BETWEEN '{ini_day}' AND '{fin_day}'
-              AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)          
+            ,processed_data AS (
+              SELECT datetime
+                  ,station_id
+                  ,var.id as variable_id
+                  ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
+              FROM raw_data data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.datetime BETWEEN '{ini_day}' AND '{fin_day}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.datetime AS datetime
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.datetime = ts.datetime
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;
           """
 
         with psycopg2.connect(config) as conn:
@@ -325,6 +375,7 @@ class DataExport(Resource):
 
       data_source = request.args.get('data_source')
       file_format = request.args.get('file_format')
+      interval = request.args.get('interval')
 
       initial_date = request.args.get('initial_date')
       initial_time = request.args.get('initial_time')
@@ -336,7 +387,7 @@ class DataExport(Resource):
       initial_datetime = datetime.datetime.strptime(initial_date+' '+initial_time, '%Y-%m-%d %H:%M')
       final_datetime = datetime.datetime.strptime(final_date+' '+final_time, '%Y-%m-%d %H:%M')
 
-      df = get_data(initial_datetime, final_datetime, data_source, series)
+      df = get_data(initial_datetime, final_datetime, data_source, series, interval)
       try:
           # logging.info(df)
 

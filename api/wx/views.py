@@ -6505,15 +6505,12 @@ class AvailableDataView(views.APIView):
             data_source = json_data['data_source']
             sv_list = [(row['station_id'], row['variable_id']) for row in json_data['series']]
 
-            logging.info('sv_list', sv_list)
-            print('sv_list', sv_list)
-
             if (data_source=="monthly_summary"):
                 initial_date = initial_date[:-2]+'01'
-                final_date = final_date[:-2]+'31'
+                final_date = final_date[:-2]+'01'
             elif (data_source=="yearly_summary"):
                 initial_date = initial_date[:-5]+'01-01'
-                final_date = final_date[:-5]+'12-31'
+                final_date = final_date[:-5]+'01-01'
 
             initial_datetime = datetime.datetime.strptime(initial_date, '%Y-%m-%d')
             final_datetime = datetime.datetime.strptime(final_date, '%Y-%m-%d')
