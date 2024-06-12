@@ -1,0 +1,8 @@
+pandas
+psycopg2
+flask
+pygeoapi
+flask-restful
+datetime
+flask-cors
+openpyxl
