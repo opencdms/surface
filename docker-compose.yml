@@ -1,44 +1,6 @@
 version: "3.5"
 
 services:
-  pygeoapi-flask:
-    container_name: surface-pygeoapi-flask
-    build: ./pygeoapi-flask
-    volumes:
-      - ./pygeoapi-flask:/pygeoapi-flask
-    environment:
-      - PYGEOAPI_CONFIG=/pygeoapi-flask/pygeoapi-config.yml
-      - PYGEOAPI_OPENAPI=/pygeoapi-flask/openapi-config.yml
-    env_file:
-      - api/production.env      
-    ports:
-      - "5000:5000"
-    depends_on:
-      - postgres
-        
-  pygeoapi:
-    container_name: surface-pygeoapi   
-    image: geopython/pygeoapi:latest
-    volumes:
-      - ./pygeoapi/pygeoapi-config.yml:/pygeoapi/local.config.yml
-      - ./pygeoapi/mycoolsqrtprocess:/pygeoapi/mycoolsqrtprocess
-    ports:
-      - "5001:80"
-    depends_on:
-      - postgres
-
-  flask:
-    container_name: surface-flask
-    build: ./flask
-    volumes:
-      - ./flask:/flask
-    env_file:
-      - api/production.env      
-    ports:
-      - "5000:5000"
-    depends_on:
-      - postgres
-
   nginx:
     container_name: surface-nginx
     build: ./nginx

@@ -136,6 +136,7 @@ urlpatterns = [
     path('wx/maintenance_report/equipmenttype_data/update/', views.update_maintenance_report_equipment_type_data),
     path('api/available_data/', views.AvailableDataView.as_view()),
     path('api/user_info/', views.UserInfo.as_view()),
+    path('api/data_export/', views.AppDataExportView.as_view()),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
