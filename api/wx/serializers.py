@@ -279,3 +279,8 @@ class DataExportSerializer(serializers.Serializer):
     final_date = serializers.DateField(format='%Y-%m-%d')
     final_time = serializers.TimeField(format='%H:%M')
     series = StationVariableSeriesSerializer(many=True)
+
+class IntervalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Interval
+        fields = '__all__'

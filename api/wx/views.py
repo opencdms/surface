@@ -6555,7 +6555,6 @@ class AvailableDataView(views.APIView):
                 LEFT JOIN daily_summ ON daily_summ.station_id = series.station_id AND daily_summ.variable_id = series.variable_id
             """
 
-
             result = []
 
             with connection.cursor() as cursor:
@@ -6575,8 +6574,6 @@ class AvailableDataView(views.APIView):
             return JsonResponse({'data': result}, status=status.HTTP_200_OK)
         except json.JSONDecodeError:
             return Response({'error': 'Invalid JSON format'}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 def DataExportQueryData(initial_datetime, final_datetime, data_source, series, interval):
     DB_NAME=os.getenv('SURFACE_DB_NAME')
@@ -6862,7 +6859,7 @@ class AppDataExportView(views.APIView):
 
             try:
                 file_format = data_dict.get('file_format')            
-                if(file_format == 'excell'):
+                if(file_format == 'excel'):
                     output = io.BytesIO()
                     df.to_excel(output, index=False, engine='openpyxl')
                     output.seek(0)
@@ -6903,3 +6900,8 @@ class AppDataExportView(views.APIView):
                 content_type='application/json',
                 status=400
             )
+
+class IntervalViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Interval.objects.all().order_by('seconds')
+    serializer_class = serializers.IntervalSerializer

@@ -137,6 +137,7 @@ urlpatterns = [
     path('api/available_data/', views.AvailableDataView.as_view()),
     path('api/user_info/', views.UserInfo.as_view()),
     path('api/data_export/', views.AppDataExportView.as_view()),
+    path('api/intervals/', views.IntervalViewSet.as_view({'get': 'list'})),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
