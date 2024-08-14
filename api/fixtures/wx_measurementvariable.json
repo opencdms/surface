@@ -248,5 +248,15 @@
         "name": "Wave Phase",
         "physical_quantity": 6
     }
+},
+{
+    "model": "wx.measurementvariable",
+    "pk": 27,
+    "fields": {
+        "created_at": "2024-07-26T23:51:57.735Z",
+        "updated_at": "2024-07-26T23:51:57.735Z",
+        "name": "Cloud Height",
+        "physical_quantity": 2
+    }
 }
 ]

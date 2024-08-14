@@ -134,6 +134,12 @@ urlpatterns = [
     # path('wx/maintenance_reports/equipment_inventory/delete/', views.delete_equipment),
     path('wx/maintenance_reports/equipment_inventory/update/', views.update_equipment),
     path('wx/maintenance_report/equipmenttype_data/update/', views.update_maintenance_report_equipment_type_data),
+    path('wx/reports/synop/', views.SynopView.as_view(), name='synop-capture-update'),
+    path('wx/reports/synop/load/', views.synop_load),
+    path('wx/reports/synop/update/', views.synop_update),
+    path('wx/reports/synop/delete/', views.synop_delete),
+    path('wx/reports/synop/form/', views.SynopFormView.as_view()),
+    path('wx/reports/synop/form/load/', views.synop_load_form),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

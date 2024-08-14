@@ -1,1 +1,222 @@
-[{"model": "wx.codetable", "pk": 500, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "C", "description": "Genus of cloud"}}, {"model": "wx.codetable", "pk": 509, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "CH", "description": "Clouds of the genera Cirrus, Cirrocumulus and Cirrostratus"}}, {"model": "wx.codetable", "pk": 513, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "CL", "description": "Clouds of the genera Stratocumulus, Stratus, Cumulus and Cumulonimbus"}}, {"model": "wx.codetable", "pk": 515, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "CM", "description": "Clouds of the genera Altocumulus, Altostratus and Nimbostratus"}}, {"model": "wx.codetable", "pk": 1677, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "hh", "description": "Height of clouds"}}, {"model": "wx.codetable", "pk": 2700, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "N", "description": "Cloud Cover"}}, {"model": "wx.codetable", "pk": 4377, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "VV", "description": "Horizontal visibility at surface"}}, {"model": "wx.codetable", "pk": 4561, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "W1W2", "description": "Weather during past hour"}}, {"model": "wx.codetable", "pk": 4677, "fields": {"created_at": "2015-01-21T17:01:28Z", "updated_at": "2015-01-21T17:01:28Z", "name": "ww", "description": "Present weather reported from a manned weather station"}}]
+[
+{
+    "model": "wx.codetable",
+    "pk": 430,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "CS",
+        "description": "State of Sky in Tropics."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 500,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "C",
+        "description": "Genus of cloud"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 509,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "CH",
+        "description": "Clouds of the genera Cirrus, Cirrocumulus and Cirrostratus"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 513,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "CL",
+        "description": "Clouds of the genera Stratocumulus, Stratus, Cumulus and Cumulonimbus"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 515,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "CM",
+        "description": "Clouds of the genera Altocumulus, Altostratus and Nimbostratus"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 700,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "D",
+        "description": "True direction of the point position from the station."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 833,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "dc",
+        "description": "Duration and character of precipitation given by RRR."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 877,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "dd",
+        "description": "True Direction, in tens of degrees."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 1200,
+    "fields": {
+        "created_at": "2024-07-12T21:38:19.222Z",
+        "updated_at": "2024-07-12T21:38:19.222Z",
+        "name": "f",
+        "description": "Wind speed derived from movement of cloud elements."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 1600,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "h",
+        "description": "Height above surface of the base of the lowest cloud seen."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 1677,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "hh",
+        "description": "Height of clouds"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 1819,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "iR",
+        "description": "Indicator for inclusion or omission of precipitation data."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 1855,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "iw",
+        "description": "Indicator for source and units of wind speed."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 1860,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "ix",
+        "description": "Indicator for type of station operation and for present and past weather data."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 2700,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "N",
+        "description": "Cloud Cover"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 3552,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "Rt",
+        "description": "Time at which precipitation given by RRR began or ended."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 3590,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "RRR",
+        "description": "Amount of precipitation which has fallen during the period preceding the time of observation, as indicated by tR."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 4019,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "tR",
+        "description": "Duration of period of reference for amount of precipitation, ending at the time of the report."
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 4377,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "VV",
+        "description": "Horizontal visibility at surface"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 4561,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "W1W2",
+        "description": "Weather during past hour"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 4677,
+    "fields": {
+        "created_at": "2015-01-21T17:01:28Z",
+        "updated_at": "2015-01-21T17:01:28Z",
+        "name": "ww",
+        "description": "Present weather reported from a manned weather station"
+    }
+},
+{
+    "model": "wx.codetable",
+    "pk": 4678,
+    "fields": {
+        "created_at": "2024-07-10T21:33:26.285Z",
+        "updated_at": "2024-07-10T21:33:26.285Z",
+        "name": "w'w'",
+        "description": "Significant present and forecast weather."
+    }
+}
+]
