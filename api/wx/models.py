@@ -232,6 +232,8 @@ class Variable(BaseModel):
         default='line',
         choices=[('line', 'Line'), ('point', 'Point'), ('bar', 'Bar'), ('column', 'Column')])
 
+    synoptic_code_form = models.CharField(max_length=32, null=True, blank=True)
+
     class Meta:
         ordering = ('name',)
 
