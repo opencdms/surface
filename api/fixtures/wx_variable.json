@@ -25,7 +25,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -54,7 +55,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -83,7 +85,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -112,7 +115,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -141,7 +145,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -170,7 +175,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -199,7 +205,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -228,7 +235,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -257,7 +265,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -286,7 +295,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -315,7 +325,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "tR"
     }
 },
 {
@@ -344,7 +355,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -373,7 +385,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -402,7 +415,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -431,7 +445,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "TXTXTX"
     }
 },
 {
@@ -460,7 +475,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -489,7 +505,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "TnTnTn"
     }
 },
 {
@@ -518,7 +535,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -547,7 +565,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "NULL"
     }
 },
 {
@@ -576,7 +595,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "T'dT'd Td TdTd"
     }
 },
 {
@@ -605,7 +625,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -634,7 +655,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -663,7 +685,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -692,7 +715,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -721,7 +745,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -750,7 +775,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -779,7 +805,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -808,7 +835,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -837,7 +865,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -866,7 +895,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -895,7 +925,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -924,7 +955,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -953,7 +985,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -982,7 +1015,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1011,7 +1045,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1040,7 +1075,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "bar"
+        "default_representation": "bar",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1069,7 +1105,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "bar"
+        "default_representation": "bar",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1098,7 +1135,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "(fmfm) f f"
     }
 },
 {
@@ -1127,7 +1165,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1156,7 +1195,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1185,7 +1225,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1214,7 +1255,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1243,7 +1285,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "ddd dd"
     }
 },
 {
@@ -1272,7 +1315,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1301,7 +1345,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1330,7 +1375,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1359,7 +1405,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1388,7 +1435,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "POPOPOPO"
     }
 },
 {
@@ -1417,7 +1465,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "PHPHPHPH PPPP"
     }
 },
 {
@@ -1446,7 +1495,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1475,7 +1525,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1504,7 +1555,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1533,7 +1585,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1562,7 +1615,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1591,7 +1645,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1620,7 +1675,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1649,7 +1705,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1678,7 +1735,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1707,7 +1765,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1736,7 +1795,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1765,7 +1825,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1794,7 +1855,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1823,7 +1885,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1852,7 +1915,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1881,7 +1945,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1910,7 +1975,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1939,7 +2005,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1968,7 +2035,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -1997,7 +2065,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2026,7 +2095,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2055,7 +2125,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2084,7 +2155,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2113,7 +2185,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2142,7 +2215,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2171,7 +2245,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "(VV) VV"
     }
 },
 {
@@ -2200,7 +2275,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "N"
     }
 },
 {
@@ -2229,7 +2305,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "ww"
     }
 },
 {
@@ -2258,7 +2335,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "W1"
     }
 },
 {
@@ -2287,7 +2365,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "W2"
     }
 },
 {
@@ -2316,7 +2395,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2345,7 +2425,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "CL"
     }
 },
 {
@@ -2374,7 +2455,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "CM"
     }
 },
 {
@@ -2403,7 +2485,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "CH"
     }
 },
 {
@@ -2432,7 +2515,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "NS"
     }
 },
 {
@@ -2461,7 +2545,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "C"
     }
 },
 {
@@ -2490,7 +2575,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "hShS"
     }
 },
 {
@@ -2519,7 +2605,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "NS"
     }
 },
 {
@@ -2548,7 +2635,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "C"
     }
 },
 {
@@ -2577,7 +2665,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "hShS"
     }
 },
 {
@@ -2606,7 +2695,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "NS"
     }
 },
 {
@@ -2635,7 +2725,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "C"
     }
 },
 {
@@ -2664,7 +2755,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "hShS"
     }
 },
 {
@@ -2693,7 +2785,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "NS"
     }
 },
 {
@@ -2722,7 +2815,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "C"
     }
 },
 {
@@ -2751,7 +2845,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "hShS"
     }
 },
 {
@@ -2780,7 +2875,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "Nh"
     }
 },
 {
@@ -2809,7 +2905,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "9SPSPsPsP"
     }
 },
 {
@@ -2838,7 +2935,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2867,7 +2965,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2896,7 +2995,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2925,7 +3025,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2954,7 +3055,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -2983,7 +3085,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3012,7 +3115,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3041,7 +3145,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3070,7 +3175,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3099,7 +3205,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3128,7 +3235,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3157,7 +3265,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3186,7 +3295,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3215,7 +3325,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3244,7 +3355,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3273,7 +3385,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3302,7 +3415,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3331,7 +3445,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3360,7 +3475,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3389,7 +3505,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3418,7 +3535,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3447,7 +3565,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3476,7 +3595,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3505,7 +3625,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3534,7 +3655,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3563,7 +3685,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3592,7 +3715,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3621,7 +3745,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3650,7 +3775,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3679,7 +3805,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3708,7 +3835,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "column"
+        "default_representation": "column",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3737,7 +3865,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3766,7 +3895,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "iW"
     }
 },
 {
@@ -3795,7 +3925,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "iR"
     }
 },
 {
@@ -3824,7 +3955,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "iX"
     }
 },
 {
@@ -3853,7 +3985,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 },
 {
@@ -3882,7 +4015,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "CS"
     }
 },
 {
@@ -3911,7 +4045,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "DL"
     }
 },
 {
@@ -3940,7 +4075,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "DM"
     }
 },
 {
@@ -3969,7 +4105,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "DH"
     }
 },
 {
@@ -3998,7 +4135,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": "h"
     }
 },
 {
@@ -4027,7 +4165,8 @@
         "persistence_hourly": null,
         "persistence_window": null,
         "persistence_window_hourly": null,
-        "default_representation": "line"
+        "default_representation": "line",
+        "synoptic_code_form": null
     }
 }
 ]

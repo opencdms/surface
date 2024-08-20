@@ -2663,7 +2663,7 @@ def station_report_data(request):
                 if current_unit not in y_axis_unit_dict.keys():
                     chart['yAxis'].append({
                         'labels': {
-                            'format': '{value} ' + variable_data['unit']
+                            'format': '{value} ' + variable_data['unit'],
                         },
                         'title': {
                             'text': None
@@ -2692,7 +2692,7 @@ def station_report_data(request):
                         chart['xAxis'] = {
                             'type': 'datetime',
                             'labels': {
-                                'format': '{value:%Y-%b}'
+                                'format': '{value:%Y-%b}',
                             },
                             'title': {
                                 'text': 'Y'
@@ -2707,7 +2707,7 @@ def station_report_data(request):
                         chart['xAxis'] = {
                             'type': 'datetime',
                             'labels': {
-                                'format': '{value:%Y-%b}'
+                                'format': '{value:%Y-%b}',
                             },
                             'title': {
                                 'text': 'Reference'
@@ -2802,7 +2802,7 @@ def variable_report_data(request):
                 if current_unit not in y_axis_unit_dict.keys():
                     chart['yAxis'].append({
                         'labels': {
-                            'format': '{value} ' + variable_data['unit']
+                            'format': '{value} ' + variable_data['unit'],
                         },
                         'title': {
                             'text': None
@@ -2831,7 +2831,7 @@ def variable_report_data(request):
                         chart['xAxis'] = {
                             'type': 'datetime',
                             'labels': {
-                                'format': '{value:%Y-%b}'
+                                'format': '{value:%Y-%b}',
                             },
                             'title': {
                                 'text': 'Y'
@@ -2846,7 +2846,7 @@ def variable_report_data(request):
                         chart['xAxis'] = {
                             'type': 'datetime',
                             'labels': {
-                                'format': '{value:%Y-%b}'
+                                'format': '{value:%Y-%b}',
                             },
                             'title': {
                                 'text': 'Reference'
@@ -3903,7 +3903,7 @@ def create_wave_chart(dataset):
             if current_unit not in y_axis_unit_dict.keys():
                 chart['yAxis'].append({
                     'labels': {
-                        'format': '{value} ' + variable_data['unit']
+                        'format': '{value} ' + variable_data['unit'],
                     },
                     'title': {
                         'text': None
@@ -6493,10 +6493,11 @@ def delete_pgia_hourly_capture_row(request):
 def get_synop_table_config():
     # List of variables, in order, for synoptic station input form
     variable_ids = [
-        4040, 4041, 4048, 1000, 1001, 55, 10, 19, 18, 30, 60, 61,
-        0, 4043, 4049, 1002, 1003, 1004, 4005, 1006, 1007, 1008,
-        4044, 4045, 4046, 4047, 14, 16, 1009, 1010, 1011, 1012,
-        1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 4006
+        4040, 4041, 4042, 4048, 1000, 1001, 55, 50,
+        10, 19, 18, 60, 61, 0, 4049, 1002, 1003, 1004,
+        4005, 1006, 1007, 1008, 4044, 4045, 4046, 4047,
+        14, 16, 1009, 1010, 1011, 1012, 1013, 1014, 1015,
+        1016, 1017, 1018, 1019, 1020, 4006
     ]
     # Get a variable list using the order of variable_ids list
     variable_dict = {variable.id: variable for variable in Variable.objects.filter(id__in=variable_ids)}
@@ -6504,14 +6505,15 @@ def get_synop_table_config():
 
     nested_headers = [
         [variable.name for variable in variable_list]+['Remarks', 'Observer', 'Action'],
-        [variable.symbol for variable in variable_list]+['Remarks', 'Observer', 'Action'],
+        # [variable.symbol for variable in variable_list]+['Remarks', 'Observer', 'Action'],
+        [variable.synoptic_code_form if variable.synoptic_code_form is not None else '' for variable in variable_list]+['Remarks', 'Observer', 'Action'],
     ]
 
     col_widths = [
-        99, 146, 136, 61, 107, 100, 171, 154, 175, 117, 163, 180,
-        129, 187, 181, 112, 144, 144, 169, 108, 124, 110, 82, 148,
-        153, 150, 208, 212, 162, 159, 195, 162, 159, 195, 162, 159,
-        195, 162, 159, 195, 145, 64, 65, 49
+        99, 146, 176, 136, 61, 107, 100, 83, 171, 154, 175,
+        163, 180, 129, 181, 112, 144, 144, 169, 108, 124, 110,
+        82, 148, 153, 150, 208, 212, 162, 159, 195, 162, 159,
+        195, 162, 159, 195, 162, 159, 195, 145, 64, 65, 49
     ]
 
 
@@ -6550,14 +6552,7 @@ def get_synop_table_config():
             }
 
         columns.append(new_column)
-
-    # Add text columns
-    # columns.append({
-    #     'data': 'sp_events',
-    #     'name': 'sp_events',
-    #     'type': 'text',
-    #     'validator': 'textFieldValidator'
-    # })    
+ 
     columns.append({
         'data': 'remarks',
         'name':'remarks',
@@ -6861,17 +6856,9 @@ def get_synop_form_config():
             "P24P24P24", "7", "R24R24R24R24", "8", "NS", "C", "hShS", "8", "NS", "C", "hShS", "8", "NS",
             "C", "hShS", "8", "NS", "C", "hShS", "9SPSPsPsP", "", ""
         ],
-        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12",
-            "13", "14", "15", { 'label': "16", 'colspan': 2 }, "17", "18", "19",
-            "20", "21", "22", "23", "24", "25", { 'label': "26", 'colspan': 2 },  { 'label': "27", 'colspan': 2 }, "28", "29", "30",
-            "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41",
-            "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52",
-            "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63",
-            "64", "65"
-        ]
     ]
 
-    number_of_columns = len(nested_headers[2])+3 # Adding the 3 colspans
+    number_of_columns = len(nested_headers[0])+2 # Adding the 2 colspans
 
     columns = []
     for i in range(number_of_columns):
@@ -6912,6 +6899,29 @@ class SynopFormView(LoginRequiredMixin, TemplateView):
 
         return self.render_to_response(context)
 
+def get_synop_pvd_data(station, date):
+    datetime_offset = pytz.FixedOffset(station.utc_offset_minutes)
+    request_datetime = datetime_offset.localize(date)
+
+    pvd_data = []
+    with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
+        with conn.cursor() as cursor:
+            query = f"""
+                SELECT
+                    (datetime + INTERVAL '{station.utc_offset_minutes} MINUTES') AT TIME ZONE 'utc',
+                    variable_id,
+                    measured 
+                FROM raw_data
+                WHERE datetime >='{request_datetime-datetime.timedelta(days=1)}'
+                  AND datetime < '{request_datetime}'
+                  AND variable_id IN (0, 60)
+                  AND station_id={station.id}
+            """
+            
+            cursor.execute(query)
+            pvd_data = cursor.fetchall()
+
+    return pvd_data
 
 @api_view(['GET'])
 def synop_load_form(request):
@@ -6935,10 +6945,10 @@ def synop_load_form(request):
     def airTempCalc(value: float):
         if value is None:
             return None
-        return round(10*value)
+        return abs(round(10*value))
 
     def windSpeedCalc(wind_speed_val: float):
-        if wind_speed_val is None:
+        if wind_speed_val is None or str(wind_speed_val)==str(settings.MISSING_VALUE) :
             wind_speed_code = '/'
         elif 0 <= wind_speed_val < 90:
             wind_speed_code = str(math.floor(wind_speed_val/10))
@@ -6950,8 +6960,8 @@ def synop_load_form(request):
         return wind_speed_code
 
     def windDirCalc(wind_dir_deg: float):
-        if wind_dir_deg is None: 
-            wind_dir_code = 0
+        if wind_dir_deg is None or str(wind_dir_deg)==str(settings.MISSING_VALUE) : 
+            return None
         elif 0 <= wind_dir_deg<=360: 
             wind_dir_code = math.floor(((wind_dir_deg-5)%360)/10)+1
         else:
@@ -6959,6 +6969,77 @@ def synop_load_form(request):
 
         wind_dir_code = str(wind_dir_code).zfill(2)
         return wind_dir_code
+
+    def sumPrecPeriod(curr_datetime:datetime, prec_data:list):
+        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
+
+        # If there is no measurement at the current datetime, precipitation may not have been measured.
+        # If there is no measurement at the last 24h datetime, the last measurment may have data from previous datetimes.
+        if len([row for row in prec_data if row[0] in [last24h_datetime, curr_datetime]]) < 2:
+            return None
+        
+        return sum([row[2] for row in prec_data if last24h_datetime < row[0] <= curr_datetime])
+    
+    def last6hPeriods(curr_datetime:datetime, prec_data:list):
+        values = {
+            'curr_datetime': None,
+            'last6h_datetime': None,
+            'last12h_datetime': None,
+            'last18h_datetime': None,
+            'last24h_datetime': None,
+        }
+
+        datetimes_map = {
+            curr_datetime: 'curr_datetime',
+            curr_datetime-datetime.timedelta(hours=6): 'last6h_datetime',
+            curr_datetime-datetime.timedelta(hours=12): 'last12h_datetime',
+            curr_datetime-datetime.timedelta(hours=18): 'last18h_datetime',
+            curr_datetime-datetime.timedelta(hours=24): 'last24h_datetime'
+        }
+
+        for row in prec_data:
+            if row[0] in datetimes_map.keys():
+                value = int((curr_datetime-row[0]).total_seconds()/3600)
+                values[row[0]]=value
+
+        if values['curr_datetime'] is None:
+            return None
+
+        for key in ['last6h_datetime', 'last12h_datetime', 'last18h_datetime', 'last24h_datetime']:
+            if values.get(key) is not None:
+                return values[key]
+            
+        return None
+    
+    def rainfallSinceLastReport(curr_datetime:datetime, prec_data:list):
+        values = {
+            'curr_datetime': None,
+            'last6h_datetime': None,
+            'last12h_datetime': None,
+            'last18h_datetime': None,
+            'last24h_datetime': None,
+        }
+
+        datetimes_map = {
+            curr_datetime: 'curr_datetime',
+            curr_datetime-datetime.timedelta(hours=6): 'last6h_datetime',
+            curr_datetime-datetime.timedelta(hours=12): 'last12h_datetime',
+            curr_datetime-datetime.timedelta(hours=18): 'last18h_datetime',
+            curr_datetime-datetime.timedelta(hours=24): 'last24h_datetime'
+        }
+
+        for row in prec_data:
+            if row[0] in datetimes_map.keys():
+                values[datetimes_map[row[0]]]=float(row[2])
+
+        if values['curr_datetime'] is None:
+            return None
+
+        for key in ['last6h_datetime', 'last12h_datetime', 'last18h_datetime', 'last24h_datetime']:
+            if values.get(key) is not None:
+                return values[key]
+
+        return None    
 
     try:
         date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
@@ -6970,26 +7051,33 @@ def synop_load_form(request):
         logger.error(repr(e))
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    # Current Day Data
     data =  get_synop_data(station, date)
+
+    # Previous Day Data
+    pvd_data = get_synop_pvd_data(station, date)
+
+    # Precipitation Measurements
+    prec_data = [row for row in pvd_data + data if row[1] == 0 and str(row[2]) != str(settings.MISSING_VALUE)]
 
     reference = [
         {'type': 'Const', 'ref': 'AAXX'}, {'type': 'Func', 'ref': 'DateHour'}, {'type': 'Var', 'ref': 4040},
         {'type': 'Const', 'ref': station.synop_code}, {'type': 'Var', 'ref': 4041}, {'type': 'Var', 'ref': 4042},
         {'type': 'Var', 'ref': 4048}, {'type': 'Var', 'ref': 1000}, {'type': 'Var', 'ref': 1001},
-        {'type': 'SpecVar', 'ref': 55}, {'type': 'SpecVar', 'ref': 50}, {'type': 'GreenConst', 'ref': 10},
-        {'type': 'SpecVar', 'ref': 10}, {'type': 'GreenConst', 'ref': 20}, {'type': 'Var', 'ref': 19},
+        {'type': 'SpecVar', 'ref': 55}, {'type': 'SpecVar', 'ref': 50}, {'type': '1sn', 'ref': 10},
+        {'type': 'SpecVar', 'ref': 10}, {'type': '2sn', 'ref': 20}, {'type': 'Var', 'ref': 19},
         {'type': 'Func', 'ref': 'VP'}, {'type': 'Func', 'ref': 'RH'}, {'type': 'SpecVar', 'ref': 18},
-        {'type': 'Const', 'ref': 3}, {'type': '??', 'ref': '??'}, {'type': 'Const', 'ref': 4},
-        {'type': 'Var', 'ref': 60}, {'type': 'Const', 'ref': 6}, {'type': '??', 'ref': '??'},
-        {'type': '??', 'ref': '??'}, {'type': 'Const', 'ref': 7}, {'type': 'Var', 'ref': 4678},
+        {'type': 'Const', 'ref': 3}, {'type': 'Var', 'ref': 60}, {'type': 'Const', 'ref': 4},
+        {'type': 'Var', 'ref': 61}, {'type': 'Const', 'ref': 6}, {'type': 'Func', 'ref': 'RainfallSinceLastReport'},
+        {'type': 'Func', 'ref': '6hPeriods'}, {'type': 'Const', 'ref': 7}, {'type': 'Var', 'ref': 4049},
         {'type': 'Var', 'ref': 1002}, {'type': 'Var', 'ref': 1003}, {'type': 'Var', 'ref': 1004},
         {'type': 'Const', 'ref': 8}, {'type': 'Var', 'ref': 4005}, {'type': 'Var', 'ref': 1006},
         {'type': 'Var', 'ref': 1007}, {'type': 'Var', 'ref': 1008}, {'type': 'Const', 'ref': 333},
         {'type': 'Const', 'ref': 0}, {'type': 'Var', 'ref': 4044}, {'type': 'Var', 'ref': 4045},
-        {'type': 'Var', 'ref': 4046}, {'type': 'Var', 'ref': 4047}, {'type': 'GreenConst', 'ref': 10},
-        {'type': 'SpecVar', 'ref': 14}, {'type': 'GreenConst', 'ref': 20}, {'type': 'SpecVar', 'ref': 16},
-        {'type': 'GreenConst', 'ref': 59}, {'type': 'Func', 'ref': 'calc'}, {'type': 'Const', 'ref': 7},
-        {'type': 'Func', 'ref': 'calc'}, {'type': 'Const', 'ref': 8}, {'type': 'Var', 'ref': 1009},
+        {'type': 'Var', 'ref': 4046}, {'type': 'Var', 'ref': 4047}, {'type': '1sn', 'ref': 14},
+        {'type': 'SpecVar', 'ref': 14}, {'type': '2sn', 'ref': 16}, {'type': 'SpecVar', 'ref': 16},
+        {'type': '5j1', 'ref': 59}, {'type': 'Func', 'ref': 'BarometricChange'}, {'type': 'Const', 'ref': 7},
+        {'type': 'Func', 'ref': '24hRainfall'}, {'type': 'Const', 'ref': 8}, {'type': 'Var', 'ref': 1009},
         {'type': 'Var', 'ref': 1010}, {'type': 'Var', 'ref': 1011}, {'type': 'Const', 'ref': 8},
         {'type': 'Var', 'ref': 1012}, {'type': 'Var', 'ref': 1013}, {'type': 'Var', 'ref': 1014},
         {'type': 'Const', 'ref': 8}, {'type': 'Var', 'ref': 1015}, {'type': 'Var', 'ref': 1016},
@@ -6998,7 +7086,6 @@ def synop_load_form(request):
         {'type': 'Text', 'ref': 'remarks'}, {'type': 'Text', 'ref': 'observer'},
     ]
 
-    
     number_of_columns = len(reference)
     number_of_rows = 24
 
@@ -7006,28 +7093,76 @@ def synop_load_form(request):
     for i in range(number_of_rows):
         datetime_row = date+datetime.timedelta(hours=i)
         data_row = [row for row in data if row[0] == datetime_row]
+        pvd_data_row = [row for row in pvd_data if row[0] == datetime_row -datetime.timedelta(days=1)]
         dayhour = f"{date.day:02}{i+1:02}"
 
         remarks, observer = (data_row[0][3], data_row[0][4]) if data_row else (None, None)
 
         air_temp = next((float(row[2]) for row in data_row if row[1] == 10), None) # TEMP id is 10
         air_temp_wb = next((float(row[2]) for row in data_row if row[1] == 18), None) # TEMPWB id is 18
-        atm_pressure = next((float(row[2]) for row in data_row if row[1] == 60), None) # PRESSTN id is 60
+        atm_pressure = next((float(row[2]) for row in data_row if row[1] == 60), None) # PRESSTN id is 60   
 
-        varaibles = [air_temp, air_temp_wb, atm_pressure]
-        if all(varaibles) and settings.MISSING_VALUE not in varaibles:
+        variables = [air_temp, air_temp_wb, atm_pressure]
+        if all(variables) and settings.MISSING_VALUE not in variables:
             vapor_pressure = vaporPressure(air_temp, air_temp_wb, atm_pressure)
             relative_humidity = relativeHumidity(air_temp, vapor_pressure)
         else:
             vapor_pressure = None
             relative_humidity = None
             
+        pvd_atm_pressure = next((float(row[2]) for row in pvd_data_row if row[1] == 60), None) # PRESSTN id is 60    
+        
+        variables = [atm_pressure, pvd_atm_pressure]
+        if all(variables) and settings.MISSING_VALUE not in variables:
+            barometric_change_24h = round(atm_pressure-pvd_atm_pressure)
+        else:
+            barometric_change_24h = None
 
         hotRow = []
         for j in range(number_of_columns):
             column_type=reference[j]['type']
-            if column_type=='Const' or column_type=='GreenConst':
+            if column_type=='Const':
                 value = reference[j]['ref']
+            elif column_type=='1sn':
+                if data_row:
+                    variable_id = reference[j]['ref']
+                    value = next((row[2] for row in data_row if row[1] == variable_id), None)
+                    if value == str(settings.MISSING_VALUE):
+                        value = None
+                    
+                    if value is None:
+                        value = '19'
+                    elif value >= 0:
+                        value = '10'
+                    else:
+                        value = '11'
+                else:
+                    value='19'
+            elif column_type=='2sn':
+                if data_row:
+                    variable_id = reference[j]['ref']
+                    value = next((row[2] for row in data_row if row[1] == variable_id), None)
+                    if value == str(settings.MISSING_VALUE):
+                        value = None
+                    
+                    if value is None:
+                        value = '29'
+                    elif value >= 0:
+                        value = '20'
+                    else:
+                        value = '21'
+                else:
+                    value='29'
+            elif column_type=='5j1':
+                if data_row:
+                    if barometric_change_24h is None:
+                        value = None
+                    elif barometric_change_24h >= 0:
+                        value = '58'
+                    else:
+                        value = '59'
+                else:
+                    value=None
             elif column_type=='Var':
                 if data_row:
                     variable_id = reference[j]['ref']
@@ -7060,8 +7195,26 @@ def synop_load_form(request):
                     value = vapor_pressure
                 elif reference[j]['ref']=='RH':
                     value = relative_humidity
+                elif reference[j]['ref']=='BarometricChange':
+                    value =  f"{abs(barometric_change_24h):04}" if barometric_change_24h is not None else None
+                elif reference[j]['ref']=='24hRainfall':
+                    # To calculate 24-hour rainfall, we need the last 6-hour measurement.
+                    if i in [0,6,12,18]:
+                        value = sumPrecPeriod(datetime_row, prec_data)
+                    else:
+                        value = None
+                elif reference[j]['ref']=='6hPeriods':
+                    if i in [0,6,12,18]:
+                        value = last6hPeriods(datetime_row, prec_data)
+                    else:
+                        value = None                    
+                elif reference[j]['ref']=='RainfallSinceLastReport':
+                    if i in [0,6,12,18]:
+                        value = rainfallSinceLastReport(datetime_row, prec_data)
+                    else:
+                        value = None
                 else:
-                    value = 'Func'
+                    value = 'Func'    
             elif column_type=='Text':
                 value = {'remarks': remarks, 'observer': observer}.get(reference[j]['ref'])
             else:
