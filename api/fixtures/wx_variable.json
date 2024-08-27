@@ -566,7 +566,7 @@
         "persistence_window": null,
         "persistence_window_hourly": null,
         "default_representation": "line",
-        "synoptic_code_form": "NULL"
+        "synoptic_code_form": ""
     }
 },
 {
@@ -4115,15 +4115,15 @@
     "fields": {
         "created_at": "2024-07-26T23:59:28.639Z",
         "updated_at": "2024-07-26T23:59:28.639Z",
-        "variable_type": "Numeric",
+        "variable_type": "Code",
         "symbol": "LOWCLH",
         "name": "Lowest Cloud height",
-        "sampling_operation": 3,
-        "measurement_variable": 27,
-        "unit": 20,
-        "precision": 5,
-        "scale": 1,
-        "code_table": null,
+        "sampling_operation": null,
+        "measurement_variable": null,
+        "unit": null,
+        "precision": null,
+        "scale": null,
+        "code_table": 1600,
         "color": "#FF0000",
         "range_min": null,
         "range_max": null,
@@ -4166,7 +4166,37 @@
         "persistence_window": null,
         "persistence_window_hourly": null,
         "default_representation": "line",
-        "synoptic_code_form": null
+        "synoptic_code_form": "w'w'"
+    }
+},
+{
+    "model": "wx.variable",
+    "pk": 4050,
+    "fields": {
+        "created_at": "2024-08-26T17:53:04.612Z",
+        "updated_at": "2024-08-26T17:53:04.612Z",
+        "variable_type": "Numeric",
+        "symbol": "PRECSLR",
+        "name": "Precipitation Since Last Report",
+        "sampling_operation": 6,
+        "measurement_variable": 3,
+        "unit": 2,
+        "precision": 4,
+        "scale": 1,
+        "code_table": null,
+        "color": "#0000FF",
+        "range_min": null,
+        "range_max": null,
+        "range_min_hourly": null,
+        "range_max_hourly": null,
+        "step": null,
+        "step_hourly": null,
+        "persistence": null,
+        "persistence_hourly": null,
+        "persistence_window": null,
+        "persistence_window_hourly": null,
+        "default_representation": "column",
+        "synoptic_code_form": "RRR"
     }
 }
 ]

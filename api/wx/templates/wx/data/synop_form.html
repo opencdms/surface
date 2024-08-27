@@ -61,6 +61,16 @@
                       <span> Synoptic Caputre </span>
                       <v-icon  class="ml-2"> mdi-keyboard </v-icon>                                 
                     </v-btn>
+                    <v-btn
+                      class="mt-3 ml-15"
+                      @click="exportToCSV()"
+                      outlined
+                      class="btn-outline-default"
+                      append-icon
+                    >
+                      <span> Download as CSV </span>
+                      <v-icon  class="ml-2"> mdi-download </v-icon>                                 
+                    </v-btn>                    
                 </v-row>
               </v-row>            
               </div>
@@ -89,7 +99,7 @@
     Vue.component('hot-table',window.Handsontable.vue.HotTable );
     Vue.use(window.vuelidate.default);
     const { required, minLength } = window.validators;
-  
+
     new Vue({
       el: "#app",
       vuetify: new Vuetify(),
@@ -119,6 +129,7 @@
           maxCols: {{handsontable_config.number_of_columns}},
           preventOverflow: 'horizontal',
           nestedHeaders: {{handsontable_config.nested_headers|safe}},
+          colHeaders: {{handsontable_config.nested_headers|safe}}[1],
           columns: {{handsontable_config.columns|safe}},
           contextMenu: ['undo', 'redo', '---------', 'copy', 'cut', '---------', 'clear_column'],
         },
@@ -153,6 +164,37 @@
                 console.error('Error fetching data:', error);
             });
         },
+        flattenNestedHeaders(nestedHeaders) {
+          // Flattening function to convert nested headers into a single-level array
+          function flatten(headers, depth = 0) {
+            return headers.reduce((acc, header) => {
+              if (Array.isArray(header)) {
+                acc.push(...flatten(header, depth + 1));
+              } else {
+                acc.push({ header: header, depth: depth });
+              }
+              return acc;
+            }, []);
+          }
+          return flatten(nestedHeaders);
+        },
+        exportToCSV() {
+          const hot = this.$refs.synopTable.hotInstance
+          const exportPlugin = hot.getPlugin('exportFile');
+
+          exportPlugin.downloadFile('csv', {
+            bom: false,
+            columnDelimiter: ',',
+            columnHeaders: true,
+            exportHiddenColumns: true,
+            exportHiddenRows: true,
+            fileExtension: 'csv',
+            filename: 'Handsontable-CSV-file_[YYYY]-[MM]-[DD]',
+            mimeType: 'text/csv',
+            rowDelimiter: '\r\n',
+            rowHeaders: false,
+          });
+        }        
       },
       mounted(){
         this.fetchData()
