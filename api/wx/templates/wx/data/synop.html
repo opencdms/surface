@@ -292,6 +292,7 @@
           });
         });
     
+
         // Format data based on updated hours
         const formatedData = {};
         this.hotData.forEach((row, index) => {
@@ -300,6 +301,7 @@
           }
         });
 
+        
         let { stationId, interval, date } = this.requestedData;
         const url = `/wx/reports/synop/update/?station_id=${stationId}&date=${date}`
     
@@ -448,6 +450,18 @@
           callback(true);
           return
         }
+
+        const requestedDateHour = moment(this.requestedData.date).set('hour', this.validating.row); 
+        const rowDatetime = requestedDateHour.format('YYYY-MM-DD HH:mm');
+        const nowDatetime = moment().format('YYYY-MM-DD HH:mm');
+       
+        // Compare the formatted dates
+        if (rowDatetime > nowDatetime) {
+          error = `Can not insert future data at "${rowDatetime}", current time is ${nowDatetime}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        }        
         
         const column_data = this.hotSettings.columns.find(column => column.data == this.validating.column)
         if(column_data) {
@@ -459,6 +473,18 @@
         callback(false);
       },
       textFieldValidator(value, callback) {
+        const requestedDateHour = moment(this.requestedData.date).set('hour', this.validating.row); 
+        const rowDatetime = requestedDateHour.format('YYYY-MM-DD HH:mm');
+        const nowDatetime = moment().format('YYYY-MM-DD HH:mm');
+       
+        // Compare the formatted dates
+        if (rowDatetime > nowDatetime) {
+          error = `Can not insert future data at "${rowDatetime}", current time is ${nowDatetime}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        }
+
         callback(true)
       },
       numericFieldValidator(value, callback) {
@@ -466,6 +492,19 @@
           callback(true);
           return
         }
+
+        const requestedDateHour = moment(this.requestedData.date).set('hour', this.validating.row); 
+        const rowDatetime = requestedDateHour.format('YYYY-MM-DD HH:mm');
+        const nowDatetime = moment().format('YYYY-MM-DD HH:mm');
+       
+        // Compare the formatted dates
+        if (rowDatetime > nowDatetime) {
+          error = `Can not insert future data at "${rowDatetime}", current time is ${nowDatetime}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        }
+
 
         const numValue = Number(value)
         if (isNaN(numValue)) {
@@ -544,10 +583,10 @@
 
       this.hideTable = this.requestData.stationId==null
 
-      // const hot = this.$refs.synopTable.hotInstance
-      // const columnSizes = Array.from({length: hot.countCols()}, (_, i) => hot.getColWidth(i));
-      // console.log(columnSizes)
-      // console.log(this.hotSettings.nestedHeaders)
+      const hot = this.$refs.synopTable.hotInstance
+      const columnSizes = Array.from({length: hot.countCols()}, (_, i) => hot.getColWidth(i));
+      console.log(columnSizes)
+      console.log(this.hotSettings.nestedHeaders)
     },
     afterCreate(){
       this.calculateStatistics();
