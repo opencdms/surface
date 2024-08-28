@@ -6492,15 +6492,17 @@ def delete_pgia_hourly_capture_row(request):
 
 def get_synop_table_config():
     # List of variables, in order, for synoptic station input form
-    variable_ids = [
-        4040, 4041, 4042, 4048, 1000, 1001, 55, 50,
-        10, 19, 30, 18, 60, 61, 4050, 1002, 1003, 1004,
-        4005, 1006, 1007, 1008, 4044, 4045, 4046, 4047,
-        14, 16, 1009, 1010, 1011, 1012, 1013, 1014, 1015,
-        1016, 1017, 1018, 1019, 1020, 4006
+    variable_symbols = [
+        'TEMP', 'TEMPMIN', 'TEMPMAX', 'TEMPWB', 'TDEWPNT', 'RH',
+        'WNDSPD', 'WNDDIR', 'PRESSTN', 'PRESSEA ', 'VISBY', 'CLDTOT',
+        'PRSWX', 'W1', 'W2', 'CL', 'CM', 'CH', 'N1', 'C1', 'hh1',
+        'N2', 'C2', 'hh2', 'N3', 'C3', 'hh3', 'N4', 'C4', 'hh4',
+        'Nh', 'SpPhenom', 'WINDINDR', 'PRECIND', 'STATIND', 'STSKY',
+        'DL', 'DM', 'DH', 'LOWCLH', 'PRECSLR'
     ]
+
     # Get a variable list using the order of variable_ids list
-    variable_dict = {variable.id: variable for variable in Variable.objects.filter(id__in=variable_ids)}
+    variable_dict = {variable.id: variable for variable in Variable.objects.filter(id__symbol=variable_symbols)}
     variable_list = [variable_dict[variable_id] for variable_id in variable_ids]
 
     nested_headers = [
@@ -6541,6 +6543,7 @@ def get_synop_table_config():
                 'type': var_type,
                 'codetable': variable.code_table_id,
                 'strict': 'true',
+                'validator': 'dropdownFieldValidator'
             }            
         else:
             var_type='text'
@@ -6898,6 +6901,7 @@ class SynopFormView(LoginRequiredMixin, TemplateView):
 
         return self.render_to_response(context)
 
+
 def get_synop_pvd_data(station, date):
     datetime_offset = pytz.FixedOffset(station.utc_offset_minutes)
     request_datetime = datetime_offset.localize(date)
@@ -6911,10 +6915,11 @@ def get_synop_pvd_data(station, date):
                     variable_id,
                     measured 
                 FROM raw_data
+                INNER JOIN wx_variable var ON raw_data.variable_id=var.id
                 WHERE datetime >='{request_datetime-datetime.timedelta(days=1)}'
                   AND datetime < '{request_datetime}'
-                  AND variable_id IN (4050, 60)
                   AND station_id={station.id}
+                  AND var.symbol IN ('PRECSLR', 'PRESSTN')
             """
             
             cursor.execute(query)
@@ -6922,29 +6927,34 @@ def get_synop_pvd_data(station, date):
 
     return pvd_data
 
+
 @api_view(['GET'])
 def synop_load_form(request):
-    def alpha(air_temp: float):
+    # Functions that are used to format the data
+    def alphaCalc(air_temp: float):
         return (17.27 * air_temp) / (air_temp + 237.3)
     
-    def vaporPressure(air_temp: float, air_temp_wb: float, atm_pressure: float):
-        E_w = 6.108 * math.exp(alpha(air_temp_wb))
+    def vaporPressureCalc(air_temp: float, air_temp_wb: float, atm_pressure: float):
+        E_w = 6.108 * math.exp(alphaCalc(air_temp_wb))
         VP = E_w - (0.00066 * (1 + 0.00115 * air_temp_wb) * (air_temp - air_temp_wb) * atm_pressure)
         return VP    
 
-    def relativeHumidity(air_temp: float, vapor_pressure: float):
-        E_s = 6.108 * math.exp(alpha(air_temp))
+    def relativeHumidityCalc(air_temp: float, vapor_pressure: float):
+        E_s = 6.108 * math.exp(alphaCalc(air_temp))
         RH = (vapor_pressure / E_s) * 100
         return RH
 
-    def dewPoint(vapor_pressure: float):
+    def dewPointCalc(vapor_pressure: float):
         DP = (237.3*vapor_pressure)/(1-vapor_pressure)
         return DP
 
     def airTempCalc(value: float):
         return None if value is None else abs(round(10*value))
 
-    def windSpeedCalc(wind_speed_val: float):
+    def atmPressureCalc(atm_pressure: float):
+        return None if atm_pressure is None else f"{round(atm_pressure*10) % 10000:04}"
+
+    def windSpeedToCode(wind_speed_val: float):
         if wind_speed_val is None or str(wind_speed_val)==str(settings.MISSING_VALUE) :
             wind_speed_code = '/'
         elif 0 <= wind_speed_val < 90:
@@ -6956,48 +6966,16 @@ def synop_load_form(request):
 
         return wind_speed_code
 
-    def windDirCalc(wind_dir_deg: float):
-        if wind_dir_deg is None or str(wind_dir_deg)==str(settings.MISSING_VALUE) : 
+    def windDirToCode(wind_dir: float):
+        if wind_dir is None or str(wind_dir)==str(settings.MISSING_VALUE) : 
             return None
-        elif 0 <= wind_dir_deg<=360: 
-            wind_dir_code = math.floor(((wind_dir_deg-5)%360)/10)+1
+        elif 0 <= wind_dir<=360: 
+            wind_dir_code = math.floor(((wind_dir-5)%360)/10)+1
         else:
             wind_dir_code = 99
 
         wind_dir_code = str(wind_dir_code).zfill(2)
         return wind_dir_code
-
-    def sumPrecPeriod(curr_datetime:datetime, prec_data:list):
-        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
-
-        # If there is no measurement at the current datetime, precipitation may not have been measured.
-        # If there is no measurement at the last 24h datetime, the last measurment may have data from previous datetimes.
-        if len([row for row in prec_data if row[0] in [last24h_datetime, curr_datetime]]) < 2:
-            return None
-        
-        rainfall = sum([float(row[2]) for row in prec_data if last24h_datetime < row[0] <= curr_datetime])
-
-        return reinfall24hToCode(rainfall)
-    
-    def last6hPeriods(curr_datetime:datetime, prec_data:list):
-        curr_datetime = curr_datetime
-        last6h_datetime = curr_datetime-datetime.timedelta(hours=6)
-        last12h_datetime = curr_datetime-datetime.timedelta(hours=12)
-        last18h_datetime = curr_datetime-datetime.timedelta(hours=18)
-        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
-
-        if curr_datetime not in [row[0] for row in prec_data]:
-            return None
-        elif last6h_datetime in [row[0] for row in prec_data]:
-            return 1
-        elif last12h_datetime in [row[0] for row in prec_data]:
-            return 2
-        elif last18h_datetime in [row[0] for row in prec_data]:
-            return 3
-        elif last24h_datetime in [row[0] for row in prec_data]:
-            return 4
-        else:
-            return None
 
     def reinfallToCode(rainfall:float):
         # Rainfall in mm.
@@ -7029,37 +7007,66 @@ def synop_load_form(request):
         else:
             return '9998'
 
-    def rainfallSinceLastReport(curr_datetime:datetime, prec_data:list):
+    def last6hPeriods(curr_datetime:datetime, rainfall_data:list):
         curr_datetime = curr_datetime
         last6h_datetime = curr_datetime-datetime.timedelta(hours=6)
         last12h_datetime = curr_datetime-datetime.timedelta(hours=12)
         last18h_datetime = curr_datetime-datetime.timedelta(hours=18)
         last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
 
-        if curr_datetime not in [row[0] for row in prec_data]:
+        if curr_datetime not in [row[0] for row in rainfall_data]:
+            return None
+        elif last6h_datetime in [row[0] for row in rainfall_data]:
+            return 1
+        elif last12h_datetime in [row[0] for row in rainfall_data]:
+            return 2
+        elif last18h_datetime in [row[0] for row in rainfall_data]:
+            return 3
+        elif last24h_datetime in [row[0] for row in rainfall_data]:
+            return 4
+        else:
             return None
 
-        elif last6h_datetime in [row[0] for row in prec_data]:
-            rainfall = sum([float(row[2]) for row in prec_data if last6h_datetime < row[0] <= curr_datetime])
+    def rainfallSinceLastReport(curr_datetime:datetime, rainfall_data:list):
+        curr_datetime = curr_datetime
+        last6h_datetime = curr_datetime-datetime.timedelta(hours=6)
+        last12h_datetime = curr_datetime-datetime.timedelta(hours=12)
+        last18h_datetime = curr_datetime-datetime.timedelta(hours=18)
+        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
+
+        if curr_datetime not in [row[0] for row in rainfall_data]:
+            return None
+
+        elif last6h_datetime in [row[0] for row in rainfall_data]:
+            rainfall = sum([float(row[2]) for row in rainfall_data if last6h_datetime < row[0] <= curr_datetime])
             return reinfallToCode(rainfall)
 
-        elif last12h_datetime in [row[0] for row in prec_data]:
-            rainfall = sum([float(row[2]) for row in prec_data if last12h_datetime < row[0] <= curr_datetime])
+        elif last12h_datetime in [row[0] for row in rainfall_data]:
+            rainfall = sum([float(row[2]) for row in rainfall_data if last12h_datetime < row[0] <= curr_datetime])
             return reinfallToCode(rainfall)
 
-        elif last18h_datetime in [row[0] for row in prec_data]:
-            rainfall = sum([float(row[2]) for row in prec_data if last18h_datetime < row[0] <= curr_datetime])
+        elif last18h_datetime in [row[0] for row in rainfall_data]:
+            rainfall = sum([float(row[2]) for row in rainfall_data if last18h_datetime < row[0] <= curr_datetime])
             return reinfallToCode(rainfall)
         
-        elif last24h_datetime in [row[0] for row in prec_data]:
-            rainfall = sum([float(row[2]) for row in prec_data if last24h_datetime < row[0] <= curr_datetime])
+        elif last24h_datetime in [row[0] for row in rainfall_data]:
+            rainfall = sum([float(row[2]) for row in rainfall_data if last24h_datetime < row[0] <= curr_datetime])
             return reinfallToCode(rainfall)
         
         else:
             return None    
 
-    def atmPressure(atm_pressure: float):
-        return None if atm_pressure is None else f"{round(atm_pressure*10) % 10000:04}"
+    def sumRainfallPeriod(curr_datetime:datetime, rainfall_data:list):
+        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
+
+        # If there is no measurement at the current datetime, precipitation may not have been measured.
+        # If there is no measurement at the last 24h datetime, the last measurment may have data from previous datetimes.
+        if len([row for row in rainfall_data if row[0] in [last24h_datetime, curr_datetime]]) < 2:
+            return None
+        
+        rainfall = sum([float(row[2]) for row in rainfall_data if last24h_datetime < row[0] <= curr_datetime])
+
+        return reinfall24hToCode(rainfall)
 
     try:
         date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
@@ -7077,33 +7084,56 @@ def synop_load_form(request):
     # Previous Day Data
     pvd_data = get_synop_pvd_data(station, date)
 
-    # Precipitation Measurements
-    prec_data = [row for row in pvd_data + data if row[1] == 4050 and str(row[2]) != str(settings.MISSING_VALUE)]
+    variables = Variable.objects.all()
 
+    # Precipitation Measurements
+    rainfall_data = [row for row in pvd_data + data if row[1] == variables.get(symbol='PRECSLR').id and str(row[2]) != str(settings.MISSING_VALUE)]
+
+    # This is a table reference that is usedd to identify what is the type of the data.
+    # Const is used for constant values.
+    # Var is used for general variable.
+    # Text is used for text values.
+    # SpVar is used for special variable that need some formating.
+    # Func is used for functions like Date-Hour, Vapor Pressure, etc.
+    # 1sn, 2sn and 5j1 are used for signals, usualy following some variable value.
     reference = [
-        {'type': 'Const', 'ref': 'AAXX'}, {'type': 'Func', 'ref': 'DateHour'}, {'type': 'Var', 'ref': 4040},
-        {'type': 'Const', 'ref': station.synop_code}, {'type': 'Var', 'ref': 4041}, {'type': 'Var', 'ref': 4042},
-        {'type': 'Var', 'ref': 4048}, {'type': 'Var', 'ref': 1000}, {'type': 'Var', 'ref': 1001},
-        {'type': 'SpecVar', 'ref': 55}, {'type': 'SpecVar', 'ref': 50}, {'type': '1sn', 'ref': 10},
-        {'type': 'SpecVar', 'ref': 10}, {'type': '2sn', 'ref': 19}, {'type': 'Func', 'ref': 'DP'},
-        {'type': 'Func', 'ref': 'VP'}, {'type': 'Func', 'ref': 'RH'},
-        {'type': 'Const', 'ref': 3}, {'type': 'SpecVar', 'ref': 60}, {'type': 'Const', 'ref': 4},
-        {'type': 'SpecVar', 'ref': 61}, {'type': 'Const', 'ref': 6}, {'type': 'Func', 'ref': 'RainfallSinceLastReport'},
-        {'type': 'Func', 'ref': '6hPeriods'}, {'type': 'Const', 'ref': 7},
-        {'type': 'Var', 'ref': 1002}, {'type': 'Var', 'ref': 1003}, {'type': 'Var', 'ref': 1004},
-        {'type': 'Const', 'ref': 8}, {'type': 'Var', 'ref': 4005}, {'type': 'Var', 'ref': 1006},
-        {'type': 'Var', 'ref': 1007}, {'type': 'Var', 'ref': 1008}, {'type': 'Const', 'ref': 333},
-        {'type': 'Const', 'ref': 0}, {'type': 'Var', 'ref': 4044}, {'type': 'Var', 'ref': 4045},
-        {'type': 'Var', 'ref': 4046}, {'type': 'Var', 'ref': 4047}, {'type': '1sn', 'ref': 14},
-        {'type': 'SpecVar', 'ref': 14}, {'type': '2sn', 'ref': 16}, {'type': 'SpecVar', 'ref': 16},
-        {'type': '5j1', 'ref': 59}, {'type': 'Func', 'ref': 'BarometricChange'}, {'type': 'Const', 'ref': 7},
-        {'type': 'Func', 'ref': '24hRainfall'}, {'type': 'Const', 'ref': 8}, {'type': 'Var', 'ref': 1009},
-        {'type': 'Var', 'ref': 1010}, {'type': 'Var', 'ref': 1011}, {'type': 'Const', 'ref': 8},
-        {'type': 'Var', 'ref': 1012}, {'type': 'Var', 'ref': 1013}, {'type': 'Var', 'ref': 1014},
-        {'type': 'Const', 'ref': 8}, {'type': 'Var', 'ref': 1015}, {'type': 'Var', 'ref': 1016},
-        {'type': 'Var', 'ref': 1017}, {'type': 'Const', 'ref': 8}, {'type': 'Var', 'ref': 1018},
-        {'type': 'Var', 'ref': 1019}, {'type': 'Var', 'ref': 1020}, {'type': 'Var', 'ref': 4006},
-        {'type': 'Text', 'ref': 'remarks'}, {'type': 'Text', 'ref': 'observer'},
+        {'type': 'Const', 'ref': 'AAXX'}, {'type': 'Func', 'ref': 'DateHour'},
+        {'type': 'Var', 'ref': 'WINDINDR'}, {'type': 'Const', 'ref': station.synop_code},
+        {'type': 'Var', 'ref': 'PRECIND'}, {'type': 'Var', 'ref': 'STATIND'},
+        {'type': 'Var', 'ref': 'LOWCLH'}, {'type': 'Var', 'ref': 'VISBY'}, {'type': 'Var', 'ref': 'CLDTOT'},
+        {'type': 'SpVar', 'ref': 'WNDDIR'}, {'type': 'SpVar', 'ref': 'WNDSPD'},
+        {'type': '1sn', 'ref': 'TEMP'}, {'type': 'SpVar', 'ref': 'TEMP'},
+        {'type': '2sn', 'ref': 'TDEWPNT'},
+        {'type': 'Func', 'ref': 'DP'}, {'type': 'Func', 'ref': 'VP'}, {'type': 'Func', 'ref': 'RH'},
+        {'type': 'Const', 'ref': 3},
+        {'type': 'SpVar', 'ref': 'PRESSTN'},
+        {'type': 'Const', 'ref': 4},
+        {'type': 'SpVar', 'ref': 'PRESSEA'},
+        {'type': 'Const', 'ref': 6},
+        {'type': 'Func', 'ref': 'RainfallSLR'}, {'type': 'Func', 'ref': '6hPeriods'},
+        {'type': 'Const', 'ref': 7},
+        {'type': 'Var', 'ref': 'PRSWX'}, {'type': 'Var', 'ref': 'W1'}, {'type': 'Var', 'ref': 'W2'},
+        {'type': 'Const', 'ref': 8}, 
+        {'type': 'Var', 'ref': 'Nh'},
+        {'type': 'Var', 'ref': 'CL'}, {'type': 'Var', 'ref': 'CM'}, {'type': 'Var', 'ref': 'CH'},
+        {'type': 'Const', 'ref': 333},  
+        {'type': 'Const', 'ref': 0},
+        {'type': 'Var', 'ref': 'STSKY'},
+        {'type': 'Var', 'ref': 'DL'}, {'type': 'Var', 'ref': 'DM'}, {'type': 'Var', 'ref': 'DH'},
+        {'type': '1sn', 'ref': 'TEMPMIN'}, {'type': 'SpVar', 'ref': 'TEMPMIN'},
+        {'type': '2sn', 'ref': 'TEMPMAX'}, {'type': 'SpVar', 'ref': 'TEMPMAX'},
+        {'type': '5j1', 'ref': None}, {'type': 'Func', 'ref': 'BarometricChange'},
+        {'type': 'Const', 'ref': 7},
+        {'type': 'Func', 'ref': '24hRainfall'},
+        {'type': 'Const', 'ref': 8},
+        {'type': 'Var', 'ref': 'N1'}, {'type': 'Var', 'ref': 'C1'}, {'type': 'Var', 'ref': 'hh1'},
+        {'type': 'Const', 'ref': 8},
+        {'type': 'Var', 'ref': 'N2'}, {'type': 'Var', 'ref': 'C2'}, {'type': 'Var', 'ref': 'hh2'},
+        {'type': 'Const', 'ref': 8},
+        {'type': 'Var', 'ref': 'N3'}, {'type': 'Var', 'ref': 'C3'},{'type': 'Var', 'ref': 'hh3'},
+        {'type': 'Const', 'ref': 8},
+        {'type': 'Var', 'ref': 'N4'}, {'type': 'Var', 'ref': 'C4'}, {'type': 'Var', 'ref': 'hh4'},
+        {'type': 'Var', 'ref': 'SpPhenom'}, {'type': 'Text', 'ref': 'remarks'}, {'type': 'Text', 'ref': 'observer'},
     ]
 
     number_of_columns = len(reference)
@@ -7113,36 +7143,35 @@ def synop_load_form(request):
     for i in range(number_of_rows):
         datetime_row = date+datetime.timedelta(hours=i)
         data_row = [row for row in data if row[0] == datetime_row]
-        pvd_data_row = [row for row in pvd_data if row[0] == datetime_row -datetime.timedelta(days=1)]
+        pvd_data_row = [row for row in pvd_data if row[0] == datetime_row-datetime.timedelta(days=1)]
         dayhour = f"{date.day:02}{i+1:02}"
 
         remarks, observer = (data_row[0][3], data_row[0][4]) if data_row else (None, None)
 
-        air_temp = next((float(row[2]) for row in data_row if row[1] == 10), None) # TEMP id is 10
-        air_temp_wb = next((float(row[2]) for row in data_row if row[1] == 18), None) # TEMPWB id is 18
-        atm_pressure = next((float(row[2]) for row in data_row if row[1] == 60), None) # PRESSTN id is 60   
+        air_temp = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='TEMP').id), None)
+        air_temp_wb = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='TEMPWB').id), None)
+        atm_pressure = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='PRESSTN').id), None)
+        dew_point = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='TDEWPNT').id and str(row[2]) != str(settings.MISSING_VALUE)), None)
+        pvd_atm_pressure = next((float(row[2]) for row in pvd_data_row if row[1] == variables.get(symbol='PRESSTN').id), None)
+        relative_humidity = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='RH').id and str(row[2]) != str(settings.MISSING_VALUE)), None)
 
-        variables = [air_temp, air_temp_wb, atm_pressure]
-        if all(variables) and settings.MISSING_VALUE not in variables:
-            vapor_pressure = vaporPressure(air_temp, air_temp_wb, atm_pressure)
-        else:
-            vapor_pressure = None
-
-        relative_humidity = next((float(row[2]) for row in data_row if row[1] == 30 and str(row[2]) != str(settings.MISSING_VALUE)), None) # RH id is 30
-        if relative_humidity is None and vapor_pressure is not None:
-            relative_humidity = relativeHumidity(air_temp, vapor_pressure)
-
-        dew_point = next((float(row[2]) for row in data_row if row[1] == 19 and str(row[2]) != str(settings.MISSING_VALUE)), None) # TDEWPNT id is 19
-        if dew_point is None and vapor_pressure is not None:
-            dew_point = dewPoint(vapor_pressure)
-            
-        pvd_atm_pressure = next((float(row[2]) for row in pvd_data_row if row[1] == 60), None) # PRESSTN id is 60    
-        
-        variables = [atm_pressure, pvd_atm_pressure]
-        if all(variables) and settings.MISSING_VALUE not in variables:
+        vars = [atm_pressure, pvd_atm_pressure]
+        if all(vars) and settings.MISSING_VALUE not in vars:
             barometric_change_24h = round(atm_pressure-pvd_atm_pressure)
         else:
             barometric_change_24h = None
+
+        vars = [air_temp, air_temp_wb, atm_pressure]
+        if all(vars) and settings.MISSING_VALUE not in vars:
+            vapor_pressure = vaporPressureCalc(air_temp, air_temp_wb, atm_pressure)
+        else:
+            vapor_pressure = None
+
+        if relative_humidity is None and vapor_pressure is not None:
+            relative_humidity = relativeHumidityCalc(air_temp, vapor_pressure)
+
+        if dew_point is None and vapor_pressure is not None:
+            dew_point = dewPointCalc(vapor_pressure)
 
         hotRow = []
         for j in range(number_of_columns):
@@ -7150,58 +7179,42 @@ def synop_load_form(request):
             if column_type=='Const':
                 value = reference[j]['ref']
             elif column_type=='1sn':
+                value=None
                 if data_row:
-                    variable_id = reference[j]['ref']
-                    value = next((float(row[2]) for row in data_row if row[1] == variable_id), None)
+                    variable = variables.get(symbol=reference[j]['ref'])
+                    value = next((float(row[2]) for row in data_row if row[1] == variable.id), None)
                     if str(value) == str(settings.MISSING_VALUE):
                         value = None
                     
-                    if value is None:
-                        value = None
-                    elif value >= 0:
-                        value = '10'
-                    else:
-                        value = '11'
-                else:
-                    value=None
+                    if value is not None:
+                       value = '10' if value >= 0 else '11'
             elif column_type=='2sn':
+                value=None
                 if data_row:
-                    variable_id = reference[j]['ref']
-                    value = next((float(row[2]) for row in data_row if row[1] == variable_id), None)
+                    variable = variables.get(symbol=reference[j]['ref'])
+                    value = next((float(row[2]) for row in data_row if row[1] == variable.id), None)
                     if str(value) == str(settings.MISSING_VALUE):
                         value = None
                     
-                    if value is None:
-                        if variable_id == 19 and relative_humidity is not None:
-                            value = '29'
-                        else:
-                            value = None
-                    elif value >= 0:
-                        value = '20'
-                    else:
-                        value = '21'
-                else:
-                    value=None
+                    if value is not None:
+                       value = '20' if value >= 0 else '21'
+                    elif variable.id == 19 and relative_humidity is not None:
+                        value = '29'
             elif column_type=='5j1':
+                value = None
                 if data_row:
-                    if barometric_change_24h is None:
-                        value = None
-                    elif barometric_change_24h >= 0:
-                        value = '58'
-                    else:
-                        value = '59'
-                else:
-                    value=None
+                    if barometric_change_24h is not None:
+                        value = '58' if barometric_change_24h >= 0 else '59'    
             elif column_type=='Var':
+                value=None
                 if data_row:
-                    variable_id = reference[j]['ref']
-                    value = next((row[2] for row in data_row if row[1] == variable_id), None)
-                else:
-                    value=None
-            elif column_type=='SpecVar':
+                    variable = variables.get(symbol=reference[j]['ref'])
+                    value = next((row[2] for row in data_row if row[1] == variable.id), None)
+            elif column_type=='SpVar':
+                value=None
                 if data_row:
-                    variable_id = reference[j]['ref']
-                    value = next((row[2] for row in data_row if row[1] == variable_id), None)
+                    variable =  variables.get(symbol=reference[j]['ref'])
+                    value = next((row[2] for row in data_row if row[1] == variable.id), None)
                     
                     if value in [str(settings.MISSING_VALUE), settings.MISSING_VALUE_CODE]:
                         value = None
@@ -7209,48 +7222,31 @@ def synop_load_form(request):
                     if value is not None:
                         value = float(value)
 
-                    if variable_id in [10,14,16,18,19]:
+                    if variable.symbol in ['TEMP', 'TEMPMIN', 'TEMPMAX', 'TDEWPNT']:
                         value = airTempCalc(value)
-                    elif variable_id in [60,61]:
-                        value = atmPressure(value)
-                    elif variable_id==50:
-                        value = windSpeedCalc(value)
-                    elif variable_id==55:
-                        value = windDirCalc(value)
-                    
-                else:
-                    value=None
+                    elif variable.symbol in ['PRESSTN', 'PRESSEA']:
+                        value = atmPressureCalc(value)
+                    elif variable.symbol=='WNDDIR':
+                        value = windSpeedToCode(value)
+                    elif variable.symbol=='WNDSPD':
+                        value = windDirToCode(value)        
             elif column_type=='Func':
                 if reference[j]['ref']=='DateHour':
                     value=dayhour
-                elif reference[j]['ref']=='VP':
-                    value = vapor_pressure
-                    if value is not None:
-                        value = round(value, 1)                    
+                elif reference[j]['ref']=='VP':   
+                    value = round(vapor_pressure, 1) if vapor_pressure is not None else None            
                 elif reference[j]['ref']=='RH':
-                    value = relative_humidity
-                    if value is not None:
-                        value = round(value)
+                    value = round(relative_humidity) if relative_humidity is not None else None
                 elif reference[j]['ref']=='DP':
                     value = airTempCalc(dew_point)
                 elif reference[j]['ref']=='BarometricChange':
                     value =  f"{abs(barometric_change_24h):04}" if barometric_change_24h is not None else None
                 elif reference[j]['ref']=='24hRainfall':
-                    # To calculate 24-hour rainfall, we need the last 6-hour measurement.
-                    if i in [0,6,12,18]:
-                        value = sumPrecPeriod(datetime_row, prec_data)
-                    else:
-                        value = None
+                    value = sumRainfallPeriod(datetime_row, rainfall_data) if i in [0,6,12,18] else None
                 elif reference[j]['ref']=='6hPeriods':
-                    if i in [0,6,12,18]:
-                        value = last6hPeriods(datetime_row, prec_data)
-                    else:
-                        value = None                    
-                elif reference[j]['ref']=='RainfallSinceLastReport':
-                    if i in [0,6,12,18]:
-                        value = rainfallSinceLastReport(datetime_row, prec_data)
-                    else:
-                        value = None
+                    value = last6hPeriods(datetime_row, rainfall_data) if i in [0,6,12,18] else None
+                elif reference[j]['ref']=='RainfallSLR':
+                    value = rainfallSinceLastReport(datetime_row, rainfall_data) if i in [0,6,12,18] else None
                 else:
                     value = 'Func'    
             elif column_type=='Text':

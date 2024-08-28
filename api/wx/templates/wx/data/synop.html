@@ -545,6 +545,7 @@
     },
     beforeMount(){
       Handsontable.validators.registerValidator('numericFieldValidator', this.numericFieldValidator);
+      Handsontable.validators.registerValidator('dropdownFieldValidator', this.dropdownFieldValidator);
       Handsontable.validators.registerValidator('textFieldValidator', this.textFieldValidator);
       Handsontable.renderers.registerRenderer('deleteButtonRenderer', this.deleteButtonRenderer);
     },
@@ -583,10 +584,10 @@
 
       this.hideTable = this.requestData.stationId==null
 
-      const hot = this.$refs.synopTable.hotInstance
-      const columnSizes = Array.from({length: hot.countCols()}, (_, i) => hot.getColWidth(i));
-      console.log(columnSizes)
-      console.log(this.hotSettings.nestedHeaders)
+      // const hot = this.$refs.synopTable.hotInstance
+      // const columnSizes = Array.from({length: hot.countCols()}, (_, i) => hot.getColWidth(i));
+      // console.log(columnSizes)
+      // console.log(this.hotSettings.nestedHeaders)
     },
     afterCreate(){
       this.calculateStatistics();
