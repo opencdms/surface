@@ -6493,17 +6493,17 @@ def delete_pgia_hourly_capture_row(request):
 def get_synop_table_config():
     # List of variables, in order, for synoptic station input form
     variable_symbols = [
-        'TEMP', 'TEMPMIN', 'TEMPMAX', 'TEMPWB', 'TDEWPNT', 'RH',
-        'WNDSPD', 'WNDDIR', 'PRESSTN', 'PRESSEA ', 'VISBY', 'CLDTOT',
-        'PRSWX', 'W1', 'W2', 'CL', 'CM', 'CH', 'N1', 'C1', 'hh1',
-        'N2', 'C2', 'hh2', 'N3', 'C3', 'hh3', 'N4', 'C4', 'hh4',
-        'Nh', 'SpPhenom', 'WINDINDR', 'PRECIND', 'STATIND', 'STSKY',
-        'DL', 'DM', 'DH', 'LOWCLH', 'PRECSLR'
+        'WINDINDR', 'PRECIND', 'STATIND', 'LOWCLH', 'VISBY',
+        'CLDTOT', 'WNDDIR', 'WNDSPD', 'TEMP', 'TDEWPNT', 'RH',
+        'TEMPWB', 'PRESSTN', 'PRESSEA', 'PRECSLR', 'PRSWX',
+        'W1', 'W2', 'Nh', 'CL', 'CM', 'CH', 'STSKY',
+        'DL', 'DM', 'DH', 'TEMPMIN', 'TEMPMAX', 'N1', 'C1', 'hh1',
+        'N2', 'C2', 'hh2', 'N3', 'C3', 'hh3', 'N4', 'C4', 'hh4', 'SpPhenom'
     ]
-
+    
     # Get a variable list using the order of variable_ids list
-    variable_dict = {variable.id: variable for variable in Variable.objects.filter(id__symbol=variable_symbols)}
-    variable_list = [variable_dict[variable_id] for variable_id in variable_ids]
+    variable_dict = {variable.symbol: variable for variable in Variable.objects.filter(symbol__in=variable_symbols)}
+    variable_list = [variable_dict[variable_symbol] for variable_symbol in variable_symbols]
 
     nested_headers = [
         [variable.name for variable in variable_list]+['Remarks', 'Observer', 'Action'],
@@ -6600,7 +6600,7 @@ def get_synop_table_config():
         'nested_headers': nested_headers,
         'row_headers': row_headers,
         'columns': columns,
-        'variable_ids': variable_ids,
+        'variable_ids': [variable.id for variable in variable_list],
         'wmocodevalue_dict': wmocodevalue_dict,
         'number_of_columns': number_of_columns,
         'number_of_rows': number_of_rows,
