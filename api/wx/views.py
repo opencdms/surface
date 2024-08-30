@@ -6854,7 +6854,7 @@ def get_synop_form_config():
             "Height of next layer", "Special Phenomena", "REMARKS", "Initails"
         ],
         ["Land Station-no distinction AAXX", "GGggYYGG", "iW", "IIiii", "iR", "iX", "h", "(VV) VV", "N",
-            "ddd dd", "(fmfm) f f", "1sn", "T'T' TTT", "2sn", "T'dT'd Td TdTd", { 'label': "UUU", 'colspan': 2 },
+            "ddd dd", "(fmfm) f f", "1sn", "T'T' TTT", "2sn", "T'dT'd Td TdTd", "UUU", "",
             "3", "POPOPOPO", "4", "PHPHPHPH PPPP", "6", "RRR", "tR", "7", "ww", "W1", "W2", "8", "Nh", "CL",
             "CM", "CH", "333", "0", "CS", "DL", "DM", "DH", "1sn", "TXTXTX", "2sn", "TnTnTn", "5j1",
             "P24P24P24", "7", "R24R24R24R24", "8", "NS", "C", "hShS", "8", "NS", "C", "hShS", "8", "NS",
@@ -7097,8 +7097,8 @@ def synop_load_form(request):
     # Func is used for functions like Date-Hour, Vapor Pressure, etc.
     # 1sn, 2sn and 5j1 are used for signals, usualy following some variable value.
     reference = [
-        {'type': 'Const', 'ref': 'AAXX'}, {'type': 'Func', 'ref': 'DateHour'},
-        {'type': 'Var', 'ref': 'WINDINDR'}, {'type': 'Const', 'ref': station.synop_code},
+        {'type': 'Const', 'ref': station.synoptic_type}, {'type': 'Func', 'ref': 'DateHour'},
+        {'type': 'Var', 'ref': 'WINDINDR'}, {'type': 'Const', 'ref': station.synoptic_code},
         {'type': 'Var', 'ref': 'PRECIND'}, {'type': 'Var', 'ref': 'STATIND'},
         {'type': 'Var', 'ref': 'LOWCLH'}, {'type': 'Var', 'ref': 'VISBY'}, {'type': 'Var', 'ref': 'CLDTOT'},
         {'type': 'SpVar', 'ref': 'WNDDIR'}, {'type': 'SpVar', 'ref': 'WNDSPD'},
@@ -7144,7 +7144,7 @@ def synop_load_form(request):
         datetime_row = date+datetime.timedelta(hours=i)
         data_row = [row for row in data if row[0] == datetime_row]
         pvd_data_row = [row for row in pvd_data if row[0] == datetime_row-datetime.timedelta(days=1)]
-        dayhour = f"{date.day:02}{i+1:02}"
+        dayhour = f"{date.day:02}{i:02}"
 
         remarks, observer = (data_row[0][3], data_row[0][4]) if data_row else (None, None)
 

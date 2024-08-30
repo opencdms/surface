@@ -77,11 +77,23 @@
                 <span> Synoptic Message </span>
                 <v-icon  class="ml-2"> mdi-table </v-icon>          
               </v-btn>
+              <v-btn
+                class="mt-3 ml-15"
+                @click="exportToCSV()"
+                outlined
+                class="btn-outline-default"
+                append-icon
+              >
+                <span> Download as CSV </span>
+                <v-icon  class="ml-2"> mdi-download </v-icon>                                 
+              </v-btn>  
           </v-row>
           <v-row class="mt-3">
             <v-btn class="ml-1" :disabled="draft" outlined class="btn-outline-default" @click="fetchData()"> Load </v-btn>
             <v-btn class="ml-1" :disabled="!draft" outlined class="btn-outline-default" @click="fetchData()"> Cancel </v-btn>
             <v-btn class="ml-1" :disabled="!(draft && valid)" outlined class="btn-outline-default" @click="updateData"> Save </v-btn>
+            
+
           </v-row>            
         </div>
       </form>
@@ -164,6 +176,7 @@
           minCols: {{handsontable_config.number_of_columns}},
           maxCols: {{handsontable_config.number_of_columns}},
           colWidths: {{handsontable_config.col_widths}},
+          colHeaders: {{handsontable_config.nested_headers|safe}}[0],
           preventOverflow: 'horizontal',
           nestedHeaders: {{handsontable_config.nested_headers|safe}},
           rowHeaders: {{handsontable_config.row_headers|safe}},
@@ -262,8 +275,8 @@
           this.draft = false;
           this.loading = false;
         });
-      },
-    updateData() {
+      },  
+      updateData() {
         if (!this.valid) {
           return
         }
@@ -542,6 +555,42 @@
       removeErrorMessage(row, prop) {
         this.errors = this.errors.filter(error => !(error.row === row && error.prop === prop));
       },
+      // Export to csv
+      exportToCSV() {
+        const hot = this.$refs.synopTable.hotInstance;
+        const data = hot.getData().slice(0, 24);
+        
+        // Create a temporary Handsontable instance
+        const tempContainer = document.createElement('div');
+        document.body.appendChild(tempContainer);
+      
+        const tempHot = new Handsontable(tempContainer, {
+          data: data,
+          rowHeaders: hot.getRowHeader(),
+          colHeaders: this.variableIds,
+        });
+      
+        // Remove the last 3 columns from the temporary Handsontable instance
+        tempHot.alter('remove_col', this.variableIds.length, 3);
+      
+        // Export the data to CSV
+        tempHot.getPlugin('exportFile').downloadFile('csv', {
+          bom: false,
+          columnDelimiter: ',',
+          columnHeaders: true,
+          exportHiddenColumns: true,
+          exportHiddenRows: true,
+          fileExtension: 'csv',
+          filename: 'Synop-capture-file_[YYYY]-[MM]-[DD]',
+          mimeType: 'text/csv',
+          rowDelimiter: '\r\n',
+          rowHeaders: true,
+        });
+
+        // Clean up
+        tempHot.destroy();
+        document.body.removeChild(tempContainer);
+      }
     },
     beforeMount(){
       Handsontable.validators.registerValidator('numericFieldValidator', this.numericFieldValidator);
@@ -561,7 +610,6 @@
       Handsontable.hooks.add('afterChange', this.afterChange, this.$refs.synopTable.hotInstance);
 
       // Fetching coded values
-      // Improve that!
       this.fetchCodedValues();
       this.fetchData();
 
