@@ -6755,7 +6755,7 @@ def synop_delete(request):
     variable_id_list = request.data.get('variable_ids')
 
     # Validate inputs
-    if not all([request_date_str, hour, station_id, variable_id_list]):
+    if (None in [request_date_str, hour, station_id, variable_id_list]):
         message = "Invalid request. 'date', 'hour', 'station_id', and 'variable_ids' must be provided."
         return JsonResponse({"message": message}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -6831,7 +6831,7 @@ def synop_delete(request):
             
             last_data_datetime_row = cursor.fetchone()
             if last_data_datetime_row and last_data_datetime_row[0] == request_datetime:
-                cursor.execute(queries['update_last_updated_datetime_query'])
+                cursor.execute(queries['update_last_updated'])
         conn.commit()
 
     return Response([], status=status.HTTP_200_OK)
