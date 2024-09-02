@@ -6843,7 +6843,7 @@ def get_synop_form_config():
             "6-Group Ind.", "7-Group Ind.", "Lowest Cloud height", "Visibility", "Total cloud", "Wind Direction",
             "Wind Speed", "Indicator and sign", "Air Temperature", "Indicator and sign", "Dew Point", 
             "V.P.", "R.H.", "Indicator", "QNH", "Indicator", "QNH",
-            "Indicator", "Rainfall since Last Report", "6-hr periods", "Indicator", { 'label': "Present Weather", 'colspan': 2 },
+            "Indicator", "Rainfall since Last Report", "6-hr periods", "Indicator", "Present Weather",
             { 'label': "Past Weather", 'colspan': 2 }, "Indicator", "Amt. CL/CM", "CL Clouds", "CM Clouds", "CH Clouds",
             "SECTION 3 Indicator", "Indicator", "State of sky", "CL Direction", "CM Direction", "CH Direction",
             "Indicator and sign", "Maximum Temperature", "Indicator and sign", "Minimum Temperature", "Indicator",
@@ -6862,7 +6862,7 @@ def get_synop_form_config():
         ],
     ]
 
-    number_of_columns = len(nested_headers[0])+2 # Adding the 2 colspans
+    number_of_columns = len(nested_headers[0])+1 # Adding the 2 colspans
 
     columns = []
     for i in range(number_of_columns):
