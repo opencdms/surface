@@ -19,6 +19,7 @@ import psycopg2
 import pytz
 import requests
 import subprocess
+import wx.export_surface_oscar as exso
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.core.cache import cache
@@ -1999,3 +2000,88 @@ def process_wave_data(station_id, e_datetime, data, seconds):
     reads = df[cols].values.tolist()
 
     return reads
+
+
+
+
+######################################################################
+# logic to submit station information to OSCAR given a request
+@shared_task
+def export_station_to_oscar(request):
+    # get wigos ID's
+    selected_ids = request.POST.getlist('selected_ids[]')
+
+    api_token = request.POST.get('api_token')
+
+    # Log the wigos id
+    print(f"Selected IDs: {selected_ids}")
+    # print(f"Token entered: {api_token}")
+
+    if selected_ids:
+
+        stations = Station.objects.filter(wigos__in=selected_ids)
+
+        try:
+            for obj in stations:
+                station_info = []
+                
+                station_info.append(str(obj.wigos))
+                station_info.append(str(obj.name))
+                station_info.append(str(datetime.strptime(f'{obj.begin_date}', '%Y-%m-%d %H:%M:%S%z').strftime('%Y-%m-%dT%H:%M:%SZ')))
+                station_info.append(str(obj.latitude))
+                station_info.append(str(obj.longitude))
+                station_info.append(str(obj.elevation))
+                station_info.append(str(obj.wmo_region.notation))
+                station_info.append(str(obj.wmo_station_type.notation))
+                station_info.append(str(obj.reporting_status.notation))
+                station_info.append(str(datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')))
+                station_info.append(str(datetime.utcnow().strftime('%Y-%m-%dZ')))
+                station_info.append(str(obj.country.notation))
+
+                # export station information to OSCAR
+                exso.surface_to_oscar(station_info, api_token=api_token)
+
+        except Exception as e:
+            raise e
+        
+    else:
+        raise Exception("No WIGOS ID was provided")
+
+
+# logic to submit station information to OSCAR given the wigos id and the api token
+@shared_task
+def export_station_to_oscar_wigos(selected_ids, api_token):
+
+    # Log the wigos id
+    print(f"Selected IDs: {selected_ids}")
+    # print(f"Token entered: {api_token}")
+
+    if selected_ids:
+
+        stations = Station.objects.filter(wigos__in=selected_ids)
+
+        try:
+            for obj in stations:
+                station_info = []
+                
+                station_info.append(str(obj.wigos))
+                station_info.append(str(obj.name))
+                station_info.append(str(datetime.strptime(f'{obj.begin_date}', '%Y-%m-%d %H:%M:%S%z').strftime('%Y-%m-%dT%H:%M:%SZ')))
+                station_info.append(str(obj.latitude))
+                station_info.append(str(obj.longitude))
+                station_info.append(str(obj.elevation))
+                station_info.append(str(obj.wmo_region.notation))
+                station_info.append(str(obj.wmo_station_type.notation))
+                station_info.append(str(obj.reporting_status.notation))
+                station_info.append(str(datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')))
+                station_info.append(str(datetime.utcnow().strftime('%Y-%m-%dZ')))
+                station_info.append(str(obj.country.notation))
+
+                # export station information to OSCAR
+                exso.surface_to_oscar(station_info, api_token=api_token)
+
+        except Exception as e:
+            raise e
+        
+    else:
+        raise Exception("No WIGOS ID was provided")
