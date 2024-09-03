@@ -2,11 +2,36 @@
 {% block station_content %}
 {% load material_form %}
 
+<h4>Create Station</h4>
+
+<h6>Select all options the Station should support</h6>
+
+<div class="toggle-container">
+  <div class="toggle-item">
+    <label class="toggle-label">SURFACE</label>
+    <div class="toggle-switch active no-toggle">
+      <div class="toggle-knob"></div>
+    </div>
+  </div>
+  <div class="toggle-item">
+    <label class="toggle-label" style="padding-left: 30px;">OSCAR</label>
+    <div class="toggle-switch oscar-switch" onclick="toggleOptions('oscar')">
+      <div class="toggle-knob"></div>
+    </div>
+  </div>
+  <div class="toggle-item">
+    <label class="toggle-label" style="padding-left: 30px;">WIS2BOX</label>
+    <div class="toggle-switch wis2box-switch" onclick="toggleOptions('wis2box')">
+      <div class="toggle-knob"></div>
+    </div>
+  </div>
+</div>
+
 <h6>Select station location on the map</h6>
 
 <div id="mapid" class="map-small"></div>
 
-<form method="POST">
+<form method="POST" id="station-form">
     {% csrf_token %}
     <div style="max-width: 622.50px;">
       {% form %}
@@ -14,12 +39,28 @@
         {% attr form.is_active 'group' class %}srf-field-checkbox{% endattr %}
         {% attr form.end_date 'widget' class %}srf-field-max-300{% endattr %}
         {% attr form.zone 'widget' class %}srf-field-max-300{% endattr %}
-        {% attr form.watershed 'widget' list %}watersheds{% endattr %}
-        {% attr form.region 'widget' list %}regions{% endattr %}
       {% endform %}
     </div>
 
-    <button type="submit" class="btn-outline-default btn-small">Submit</button>
+    <div style="margin-bottom: 20px;" id="exportOptions">
+        
+      <div class="toggle-item">
+        <label class="toggle-label" style="font-weight: 500; font-size: 20px;">Export Station Metadata to OSCAR on Station Creation</label>
+        <div class="toggle-switch export-switch" onclick="toggleOptions('export')">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+
+      <div id="token_option" style="width: 50%;">
+        <div>
+          <label for="oscar_api_token">API Token</label>
+          <input type="text" id="oscar_api_token" name="oscar_api_token"/>
+        </div>
+      </div>
+      
+    </div>
+
+    <button type="submit" class="btn-outline-default btn-small" onclick="overlayLoader()">Submit</button>
 
     <a href="{% url 'stations-list' %}">
 
@@ -28,7 +69,86 @@
     </a>
 </form>
 
+<!-- spinner and overlay -->
+<div id="overlay" class="overlay"></div>
+<div id="spinner" class="spinner"></div>
+<div id="spinner-text" class="spinner-text"><p style="font-size: 20px;">Attempting Station Creation....</p></div>
+
 <style>
+.oscar-options-container {
+  margin-top: 20px;
+  width: 50%;
+  /* gap: 20px; Adjusts the spacing between toggle items */
+  /* margin-bottom: 50px; */
+}
+.toggle-container {
+  display: flex;
+  gap: 20px; /* Adjusts the spacing between toggle items */
+  margin-bottom: 50px;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-label {
+  padding-right: 15px; /* Adjusts the spacing between the label and the switch */
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 60px;
+  height: 34px;
+  background-color: #ccc;
+  border-radius: 34px;
+  cursor: pointer;
+  transition: background-color 0.4s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-switch.no-toggle {
+  pointer-events: none; /* Disable interaction */
+  background-color: #2196F3; /* Permanently 'on' color */
+}
+
+.toggle-knob {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  background-color: white;
+  border-radius: 50%;
+  top: 4px;
+  left: 4px;
+  transition: transform 0.4s;
+}
+
+/* Specific colors for each switch */
+.oscar-switch.active {
+  background-color: #9C27B0; /* Purple color for OSCAR */
+}
+
+.export-switch.active {
+  background-color: #9C27B0; /* Purple color for OSCAR */
+}
+
+.wis2box-switch.active {
+  background-color: #4CAF50 ; /* Green color for WIS2BOX */
+}
+
+.toggle-switch.active .toggle-knob {
+  transform: translateX(26px);
+}
+
+/* Hide options by default */
+.form-item {
+  display: none;
+}
+
   .srf-field-checkbox label {
     display: flex;
     align-items: center;
@@ -42,8 +162,10 @@
     color: red !important;
   }
   .map-small {
-    max-width: 622.50px; 
-    height: 311.25px !important;
+    max-width: 70%; 
+    height: 511.25px !important;
+    border-radius: 20px;
+    border: 2px solid rgba(0, 0, 0, 0.628);
   }
   .map-large {
     max-width: 1022.50px; 
@@ -76,14 +198,67 @@
   h5 {
     margin-bottom: 25px !important;
   }
+
+
+  .spinner {
+      display: none;
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 70px;
+      height: 70px;
+      animation: spin 2s linear infinite;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      margin-left: -35px;
+      margin-top: -50px;
+      z-index: 1001;
+  }
+
+
+  .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.306);
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+  }
+
+
+  .spinner-text {
+      display: none;
+      position: fixed;
+      top: 60%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #5a5a5a;
+      font-size: 20px !important;
+      text-align: center;
+      z-index: 1001;
+  }
+
+  @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+  }
 </style>
   
   {% endblock %} {% block localjavascript %}
   <script>
+    
+    // map
     $(document).ready(function() {
-
-      var tempLat = 17.202212;
-      var tempLng = -88.429595;
+      // var tempLat = "{{ MAP_LATITUDE|safe }}";
+      // var tempLng = "{{ MAP_LONGITUDE|safe }}";
+      // var tempZoom = 8;
+      var tempLat = 0;
+      var tempLng = 0;
+      var tempZoom = 0;
 
       $('select').formSelect();
 
@@ -103,7 +278,7 @@
       // map js
       var mymap = L.map('mapid', {
         zoomControl: true
-      }).setView([tempLat, tempLng], 8);
+      }).setView([tempLat, tempLng], tempZoom);
 
       var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
@@ -147,6 +322,17 @@
       // var to hold marker based on clicking action
       var newStationMarker;
 
+      // fxn to add a marker
+      function addNewMarker(lat, lng) {
+        // clearing existing marker
+        if (newStationMarker != undefined) {
+          mymap.removeLayer(newStationMarker);
+        }
+
+        // adding a marker to show where user clicked
+        newStationMarker = L.marker([lat,lng]).addTo(mymap).bindPopup('Location of new station').openPopup();
+      }
+
       // getting map coordinates based on clicking action and passing it to the latitude and longitude feild
       mymap.on('click',function(e){
 
@@ -158,13 +344,8 @@
         document.getElementById('id_latitude').value = e.latlng.lat;
         document.getElementById('id_longitude').value = e.latlng.lng;
 
-        // clearing existing marker
-        if (newStationMarker != undefined) {
-          mymap.removeLayer(newStationMarker);
-        }
-
-        // adding a marker to show where user clicked
-        newStationMarker = L.marker([e.latlng.lat,e.latlng.lng]).addTo(mymap).bindPopup('Location of new station').openPopup();
+        // add a new marker
+        addNewMarker(e.latlng.lat, e.latlng.lng);
       });
 
       // adding a resize button to the map
@@ -208,30 +389,223 @@
 
       L.control.mapResize({ position: 'topright' }).addTo(mymap);
 
+
+      // fxn to update map latitude
+      function updateLatitude(lat) {
+        var currentLng = mymap.getCenter().lng; // get the current longitude
+        
+        // set the map view
+        mymap.setView([lat, currentLng], 5);
+
+        // setting the marker
+        addNewMarker(lat, currentLng);
+      }
+
+      // fxn to update map longitude
+      function updateLongitude(lng) {
+        var currentLat = mymap.getCenter().lat; // get the current latitude
+        mymap.setView([currentLat, lng],5);
+
+        // setting the marker
+        addNewMarker(currentLat, lng);
+      }
+
+      // event listener to any changes to the latitude column
+      document.getElementById('id_latitude').addEventListener('input', function() {
+        var lat = parseFloat(this.value);
+        
+        // make sure the number is valid
+        if (!isNaN(lat)) {
+          updateLatitude(lat);
+        }
+      });
+
+      // event listener to any changes to the longitude column
+      document.getElementById('id_longitude').addEventListener('input', function() {
+        var lng = parseFloat(this.value);
+        
+        // make sure the number is valid
+        if (!isNaN(lng)) {
+          updateLongitude(lng);
+        }
+      });
+
     });
 
+    document.addEventListener("DOMContentLoaded", function() {
+      // Automatically add IDs and classes to specific elements
+      var ids = [
+        'id_wigos_container',
+        'id_wmo_region_container',
+        'id_wmo_station_type_container',
+        'id_international_station_container',
+        'id_reporting_status_container'
+      ];
+
+      ids.forEach(function(id) {
+        var element = document.getElementById(id);
+        if (element) {
+          element.classList.add('form-item');
+        }
+      });
+
+      // Automatically assign ID to the <h5> element for "Additional OSCAR / WIS2BOX Requirements"
+      var additionalRequirementsHeader = Array.from(document.getElementsByTagName('h5'))
+        .find(el => el.textContent.includes('Additional OSCAR / WIS2BOX Requirements'));
+      if (additionalRequirementsHeader) {
+        additionalRequirementsHeader.id = 'additional-requirements';
+        additionalRequirementsHeader.classList.add('form-item');
+      }
+
+      // Initialize visibility based on toggle states
+      toggleOptions('oscar');
+      // toggleOptions('wis2box');
+    });
+
+    function toggleOptions(toggleName) {
+      var toggleElement = document.querySelector('.' + toggleName + '-switch');
+      var isActive = toggleElement.classList.toggle('active');
+
+      var oscarActive = document.querySelector('.oscar-switch').classList.contains('active');
+      var wis2boxActive = document.querySelector('.wis2box-switch').classList.contains('active');
+      var exportActive = document.querySelector('.export-switch').classList.contains('active');
+
+      // Shared container and additional requirements
+      var sharedContainer = document.getElementById('id_wigos_container');
+      var additionalRequirements = document.getElementById('additional-requirements');
+
+      if (oscarActive || wis2boxActive) {
+        sharedContainer.style.display = 'block';
+        additionalRequirements.style.display = 'block';
+      } else {
+        sharedContainer.style.display = 'none';
+        additionalRequirements.style.display = 'none';
+      }
+
+      // OSCAR-specific containers
+      var exportOptions = document.getElementById('exportOptions');
+      var wmo_regionContainer = document.getElementById('id_wmo_region_container');
+      var reporting_statusContainer = document.getElementById('id_reporting_status_container');
+      var wmo_station_typeContainer = document.getElementById('id_wmo_station_type_container');
+      if (oscarActive) {
+        exportOptions.style.display = 'block';
+        wmo_regionContainer.style.display = 'block';
+        reporting_statusContainer.style.display = 'block';
+        wmo_station_typeContainer.style.display = 'block';
+      } else {
+        exportOptions.style.display = 'none';
+        wmo_regionContainer.style.display = 'none';
+        reporting_statusContainer.style.display = 'none';
+        wmo_station_typeContainer.style.display = 'none';
+      }
+
+      var tokenOption = document.getElementById('token_option');
+      var tokenInput = document.getElementById('oscar_api_token');
+      if(exportActive) {
+        tokenOption.style.display = 'block';
+        // tokenInput.setAttribute('required', 'required');
+      } else {
+        tokenOption.style.display = 'none';
+        // tokenInput.removeAttribute('required');
+      }
+
+      // WIS2BOX-specific containers
+      var wis2boxContainer = document.getElementById('id_international_station_container');
+      if (wis2boxActive) {
+        wis2boxContainer.style.display = 'block';
+      } else {
+        wis2boxContainer.style.display = 'none';
+      }
+    }
+
+    // formatting wigos input
+    document.addEventListener('DOMContentLoaded', (event) => {
+      const cardNumberInput = document.getElementById('id_wigos');
+
+      // Ensure the first section is always 0
+      cardNumberInput.addEventListener('focus', function () {
+        if (cardNumberInput.value === '' || cardNumberInput.value.charAt(0) !== '0') {
+          cardNumberInput.value = '0    -    '; // Initial value with spaces and dash
+        }
+      });
+
+      // Handle input and space bar for section switching
+      cardNumberInput.addEventListener('keydown', function (e) {
+        let cursorPosition = e.target.selectionStart;
+        let value = e.target.value;
+        let sections = value.split('-');
+
+        // Prevent modification of the first section
+        if (cursorPosition <= 1 && e.key !== 'Tab' && e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') {
+          e.preventDefault();
+          return;
+        }
+
+        // Allow numbers, control keys, and space bar for moving to the next section
+        if ((e.key >= '0' && e.key <= '9') || e.key === 'Backspace' || e.key === 'Tab' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          // Do nothing, allow input
+        } else if (e.key === ' ') {
+          // Insert a dash and spaces when space is pressed, unless already at the maximum number of sections
+          if (sections.length < 4 && sections[sections.length - 1].trim().length > 0) {
+            e.preventDefault();
+            e.target.value += '    -    ';
+          } else {
+            e.preventDefault(); // Prevent space if section is empty or sections are 4
+          }
+        } else {
+          // Prevent any other keys
+          e.preventDefault();
+        }
+      });
+
+      // Before form submission, format the value properly
+      document.getElementById('station-form').addEventListener('submit', function (e) {
+        cardNumberInput.value = cardNumberInput.value.replace(/\s+/g, '').trim().replace(/-$/, ''); // Remove blank spaces or trailing dash if any
+      });
+    });
+
+    // js for overlay loader
+    function overlayLoader() {
+      // Show the spinner, text, and overlay
+      document.getElementById('overlay').style.display = 'block';
+      document.getElementById('spinner').style.display = 'block';
+      document.getElementById('spinner-text').style.display = 'block';
+
+      // grab api token
+      var apiTkn = document.getElementById('oscar_api_token').value;
+
+      // check if an api token is entered
+      if (apiTkn.length == 0) {
+        document.getElementById('spinner-text').textContent = "Attempting Station Creation...";
+      } else {
+        document.querySelector('#spinner-text p').textContent = "Attempting Station Creation and Metadata Export to OSCAR...";
+      }
+    }
+
+    // js for label name changes
+
+
     // autocomple for watershed
-    var watershedParent = document.getElementById("id_watershed_container");
+    // var watershedParent = document.getElementById("id_watershed_container");
 
-    var watershedComplete = document.createElement("datalist");
+    // var watershedComplete = document.createElement("datalist");
 
-    watershedComplete.setAttribute('id', 'watersheds');
+    // watershedComplete.setAttribute('id', 'watersheds');
 
-    watershedParent.appendChild(watershedComplete);
+    // watershedParent.appendChild(watershedComplete);
 
-    document.getElementById("watersheds").innerHTML = '{% for watershed in watersheds %}<option value="{{ watershed.watershed }}"></option>{% endfor %}';
+    // document.getElementById("watersheds").innerHTML = '{% for watershed in watersheds %}<option value="{{ watershed.watershed }}"></option>{% endfor %}';
 
     // autocomple for region
-    var regionParent = document.getElementById("id_region_container");
+    // var regionParent = document.getElementById("id_region_container");
 
-    var regionComplete = document.createElement("datalist");
+    // var regionComplete = document.createElement("datalist");
 
-    regionComplete.setAttribute('id', 'regions');
+    // regionComplete.setAttribute('id', 'regions');
 
-    regionParent.appendChild(regionComplete);
+    // regionParent.appendChild(regionComplete);
 
-    document.getElementById("regions").innerHTML = '{% for region in regions %}<option value="{{ region.name }}"></option>{% endfor %}';
-
+    // document.getElementById("regions").innerHTML = '{% for region in regions %}<option value="{{ region.name }}"></option>{% endfor %}';
   </script>
 </div>
 {% endblock %}

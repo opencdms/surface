@@ -5,6 +5,8 @@ import logging
 import os
 import random
 import uuid
+import wx.export_surface_oscar as exso
+import pyoscar
 from datetime import datetime as datetime_constructor
 from datetime import timezone
 
@@ -16,6 +18,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import psycopg2
 import pytz
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.cache import cache
@@ -62,7 +65,7 @@ from base64 import b64encode
 from wx.models import QualityFlag
 import time
 from wx.models import HighFrequencyData, MeasurementVariable
-from wx.tasks import fft_decompose
+from wx.tasks import fft_decompose, export_station_to_oscar, export_station_to_oscar_wigos
 import math
 import numpy as np
 
@@ -2198,6 +2201,58 @@ def capture_forms_values_patch(request):
     return JsonResponse({'message': 'Only the GET and PATCH methods is allowed.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class StationOscarExportView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+    model = Station
+    template_name = 'wx/station_oscar_export.html'
+
+    def get_queryset(self):
+        # filter out all stations which don't have a wigos, wmo_region, and reporting_status
+        oscar_stations = Station.objects.filter(
+                                                wigos__isnull=False,
+                                                wmo_region__isnull=False,
+                                                reporting_status__isnull=False,
+                                                wmo_station_type__isnull=False
+                                            )
+        
+        # filter out all stations which are already in OSCAR into a list
+        export_ready_stations = [obj for obj in oscar_stations if not exso.check_station(obj.wigos, pyoscar.OSCARClient())]
+
+        # extract primary keys of the filtered objects
+        filtered_ids = [obj.id for obj in export_ready_stations]
+
+        # convert filtered list back to a queryset
+        filtered_queryset = Station.objects.filter(id__in=filtered_ids)
+
+        return filtered_queryset
+    
+
+    def post(self, request, *args, **kwargs):
+
+        try:
+            # run station export task
+            export_station_to_oscar(request)
+            
+            response_data = {
+                'success': True,
+                'message': 'Selected station codes were successfully submitted to OSCAR.',
+            }
+
+            # Set the success message
+            messages.success(request, 'Station information submitted to OSCAR!')
+
+        except Exception as e:
+            response_data = {
+                'success': False,
+                'message': f'An error occurred while submitting stations to OSCAR: {str(e)}',
+            }
+
+            messages.error(request, 'An error occured, unable to submit to OSCAR!')
+            
+        return JsonResponse(response_data)
+
+
+
+    
 class StationListView(LoginRequiredMixin, ListView):
     model = Station
 
@@ -2213,24 +2268,29 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     form_class = StationForm
 
     layout = Layout(
-        Fieldset('Editing station',
+        Fieldset('SURFACE Requirements',
                  Row('latitude', 'longitude'),
                  Row('name'),
                  Row('is_active', 'is_automatic'),
-                 Row('alias_name'),
-                 Row('code', 'profile'),
-                 Row('wmo', 'organization'),
-                 Row('wigos', 'observer'),
-                 Row('begin_date', 'data_source'),
-                 Row('end_date', 'communication_type')
+                 Row('code', 'elevation'),
+                 Row('country', 'communication_type'),
+                 Row('region', 'watershed'),
+                 Row('utc_offset_minutes', 'begin_date'),
                  ),
-        Fieldset('Other information',
-                 Row('elevation', 'watershed'),
-                 Row('country', 'region'),
-                 Row('utc_offset_minutes', 'local_land_use'),
-                 Row('soil_type', 'station_details'),
-                 Row('site_description', 'alternative_names')
+        Fieldset('Additional OSCAR / WIS2BOX Requirements',
+                 Row('wigos'),
+                 Row('wmo_region'),
+                 Row('wmo_station_type', 'reporting_status'),
+                 Row('international_station'),
                  ),
+        # Fieldset('Other information',
+        #          Row('alias_name', 'observer'),
+        #          Row('wmo', 'organization'),
+        #          Row('profile', 'data_source'),
+        #          Row('end_date', 'local_land_use'),
+        #          Row('soil_type', 'station_details'),
+        #          Row('site_description', 'alternative_names')
+        #          ),
         # Fieldset('Hydrology information',
         #          Row('hydrology_station_type', 'ground_water_province'),
         #          Row('existing_gauges', 'flow_direction_at_station'),
@@ -2257,6 +2317,23 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         context['regions'] = AdministrativeRegion.objects.all()
 
         return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        # retrieve api token and wigos_id
+        oscar_api_token = self.request.POST.get('oscar_api_token')
+        station_wigos_id = [self.request.POST.get('wigos')]
+
+        try:
+            # run station export task
+            export_station_to_oscar_wigos(station_wigos_id, oscar_api_token)
+
+        except Exception as e:
+
+            print(f"An error occured when attempting to add a station to OSCAR during station create!\nError: {e}")
+
+        return response
 
 
 
@@ -4985,7 +5062,7 @@ class StationMetadataView(LoginRequiredMixin, TemplateView):
         context['station_id'] = kwargs.get('pk', 'null')
         print('kwargs', context['station_id'])
 
-        wmo_station_type_list = WMOStationType.objects.all()
+        wmo_station_type_list = WMOStationType.objects.all() 
         context['wmo_station_type_list'] = wmo_station_type_list
 
         wmo_region_list = WMORegion.objects.all()

@@ -1,0 +1,222 @@
+{% extends "base.html" %} {% block content %}
+<div class="srf-container">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 16px">
+    <span class="srf-display-1 text-uppercase">Export Stations to OSCAR</span>
+    <div class="srf-flex">
+      <a href="{% url 'station-create' %}">
+        <button class="btn-outline-default btn-small" type="button">
+          Add station
+        </button>
+      </a>
+    </div>
+  </div>
+  <div class="srf-layout flex-row" style="width:100%;">
+    <form id="oscar-station-form">
+      {% csrf_token %} 
+      <table id="id_station_list" class="mdl-data-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Export</th>
+            <th>Wigos ID</th>
+            <th>Name</th>
+            <th>Reporting Status</th>
+            <th>Longitude</th>
+            <th>Latitude</th>
+            <th>Station Type</th> 
+            <th>Begin Date</th>
+            <th>Last update</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for station in object_list %}
+            <tr>
+              <td>
+                <label>
+                  <input type="checkbox" class="filled-in" name="selected_ids[]" value="{{ station.wigos }}"/>
+                  <span></span>
+                </label>
+              </td>
+              <td>{{ station.wigos }}</td>
+              <td>
+                <a href="{{ station.get_absolute_url }}">{{ station.name }}</a>
+              </td>
+              <td>{{ station.reporting_status }}</td>
+              <td>{{ station.longitude }}</td>
+              <td>{{ station.latitude }}</td>
+              <td>{{ station.wmo_station_type }}</td>
+              <td>{{ station.begin_date }}</td>
+              <td>{{ station.updated_at }}</td>
+            </tr>
+
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div style="width: 20%; margin-bottom: 25px;">
+        <label for="api-token" style="margin-bottom: 0px;"><span style="font-size: 20px; color: red; display: inline-block;">* </span>API Token:</label>
+        <input type="text" id="api-token" name="api_token" required>
+      </div> 
+
+      <div class="srf-flex">
+          <button class="btn-outline-default btn-small" type="button" onclick="selectAll()">
+            Export All
+          </button>
+
+          <button id="export-selected-btn" class="btn-outline-default btn-small" type="button" onclick="submitForm()">
+            Export Selected
+          </button>
+
+      </div>
+
+    </form>
+
+    <!-- spinner and overlay -->
+    <div id="overlay" class="overlay"></div>
+    <div id="spinner" class="spinner"></div>
+    <div id="spinner-text" class="spinner-text">Exporting Station Metadata to OSCAR....</div>
+    
+
+  </div>
+</div>
+<style>
+  table.dataTable thead .sorting, 
+  table.dataTable thead .sorting_asc, 
+  table.dataTable thead .sorting_desc {
+    background : none;
+  }
+
+  .spinner {
+      display: none;
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 70px;
+      height: 70px;
+      animation: spin 2s linear infinite;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      margin-left: -35px;
+      margin-top: -50px;
+      z-index: 1001;
+  }
+
+
+  .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.306);
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+  }
+
+
+  .spinner-text {
+      display: none;
+      position: fixed;
+      top: 60%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #5a5a5a;
+      font-size: 25px;
+      text-align: center;
+      z-index: 1001;
+  }
+
+  @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+  }
+
+  .input-error {
+    border-bottom: 1px solid red !important;
+  }
+
+  .input-error:focus {
+    border-bottom: 1px solid red !important;
+  }
+
+</style>
+<!-- </div> -->
+{% endblock %} {% block localjavascript %}
+<script>
+  
+  $(document).ready(function() {
+    $('#id_station_list').DataTable({
+      scrollX: true,
+      columnDefs: [
+        {
+          targets: [0, 1, 2],
+          className: 'mdl-data-table__cell--non-numeric'
+        }
+      ]
+    });
+  });
+
+  // submit wigos ids for station export to OSCAR
+  function submitForm() {
+    var formData = $('#oscar-station-form').serializeArray();
+
+    if (!formData[formData.length - 1]['value']) {
+      document.getElementById('api-token').classList.add('input-error');
+
+      document.getElementById('api-token').addEventListener('click', function() {
+          document.getElementById('api-token').classList.remove('input-error');
+      });
+      return;
+    }
+
+    // Show the spinner, text, and overlay
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('spinner-text').style.display = 'block';
+
+    $.ajax({
+      type: 'POST',
+      url: '',
+      data: formData,
+      success: function(response) {
+            if (response.success) {
+                window.location.reload();  // Reload the page to show messages
+            } else {
+                alert(response.message);  // Show the error message
+            }
+        },
+      error: function() {
+      }
+    });
+  }
+
+  // select all options and submit the form
+  function selectAll() {
+    $('input[name="selected_ids[]"]').prop('checked', true);
+    submitForm();
+  }
+
+
+  // disable submit selected button until an option is submitted
+  document.addEventListener('DOMContentLoaded', function () {
+      const form = document.getElementById('oscar-station-form');
+      const submitButton = document.getElementById('export-selected-btn');
+      const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+
+      function updateSubmitButtonState() {
+          const isAnyCheckboxChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+          submitButton.disabled = !isAnyCheckboxChecked;
+      }
+
+      checkboxes.forEach(checkbox => {
+          checkbox.addEventListener('change', updateSubmitButtonState);
+      });
+
+      updateSubmitButtonState();  // Initial check
+  });
+
+
+
+</script>
+{% endblock %}

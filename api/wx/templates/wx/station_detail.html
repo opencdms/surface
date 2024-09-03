@@ -100,15 +100,319 @@
 
           <!--Station information-->
           <v-tab-item :key="1">
-          <form id="stationInformation" @submit="checkStationInformation">
-            <div class="row w-100 mt-3">
-            
-              <div class="col s4" v-tooltip="3-03">
+            <form id="stationInformation" @submit="checkStationInformation">
+              <div class="row w-100 mt-3">
+              
+                <div class="col s4" v-tooltip="3-03">
 
+                    <v-text-field
+                      type="text"
+                      v-model="selectedStation.name"
+                      label="Station/Platform Name"
+                      required
+                      hint="*Required"
+                      persistent-hint
+                      :rules="simpleTextFieldsRules"
+                      :disabled="!isEditing"
+                      :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                      false
+                      {% else %}
+                      true
+                      {% endif %}"
+                    >
+                    <v-tooltip slot="append" right>
+                      <template v-slot:activator="{ on }">
+                        <v-icon 
+                        v-on="on" 
+                        color="primary" 
+                        dark
+                        >
+                        info
+                        </v-icon>
+                      </template>
+                      <span>WIGOS category 3-03</span>
+                    </v-tooltip>
+                    </v-text-field>
+
+                </div>
+              
+
+                <div class="col s4">
                   <v-text-field
                     type="text"
-                    v-model="selectedStation.name"
-                    label="Station/Platform Name"
+                    v-model="selectedStation.alias_name"
+                    label="Alias Name"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                      false
+                      {% else %}
+                      true
+                      {% endif %}"
+                  ></v-text-field>
+                </div>
+
+              </div>
+              
+              <div class="row w-100 mt-3">
+                
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.code"
+                    label="Local Station ID"
+                    disabled
+                  ></v-text-field>
+                </div>
+
+                <div class="col s4">
+                  
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.wigos"
+                    required
+                    hint="*Required"
+                    persistent-hint
+                    :rules="simpleTextFieldsRules"
+                    label="Station/Platform unique indetifier"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                      false
+                      {% else %}
+                      true
+                      {% endif %}"
+                  >
+                    <v-tooltip slot="append" right>
+                        <template v-slot:activator="{ on }">
+                          <v-icon 
+                          v-on="on" 
+                          color="primary" 
+                          dark
+                          >
+                          info
+                          </v-icon>
+                        </template>
+                        <span>WIGOS category 3-06 (WIGOS ID)</span>
+                      </v-tooltip>
+                  </v-text-field>
+                    
+                </div>
+
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-autocomplete
+                  :items="wmoProgramList"
+                  item-text="name"
+                  item-value="id"
+                  v-model="selectedStation.wmo"
+                  label="WMO Program"
+                  required
+                  hint="*Required"
+                  persistent-hint
+                  :rules="simpleTextFieldsRules"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                      false
+                      {% else %}
+                      true
+                      {% endif %}"
+                  autocomplete="off"
+                >
+                <v-tooltip slot="append" right>
+                  <template v-slot:activator="{ on }">
+                    <v-icon 
+                    v-on="on" 
+                    color="primary" 
+                    dark
+                    >
+                    info
+                    </v-icon>
+                  </template>
+                  <span>WIGOS category 2-02</span>
+                </v-tooltip>
+                </v-autocomplete>
+                </div>
+                <div class="col s4">
+                  <v-menu
+                    :close-on-content-click="false"
+                    v-model="begin_date_menu"
+                    transition="scale-transition"
+                    offset-y
+                  >
+                    <template v-slot:activator="{ on }">
+                      <v-text-field
+                        v-model="selectedStation.begin_date"
+                        label="Begin Date"
+                        v-on="on"
+                        required
+                        prepend-icon="event"
+                        hint="*Required"
+                        :rules="dateSimpleRules"
+                        {% if request.user.is_staff or request.user.is_superuser %}
+                        clearable
+                        {% endif %}
+                        persistent-hint
+                        :disabled="!isEditing"
+                        :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                        false
+                        {% else %}
+                        true
+                        {% endif %}"
+                      ></v-text-field>
+                    </template>
+                    {% if request.user.is_staff or request.user.is_superuser %}
+                    <v-date-picker
+                      v-model="selectedStation.begin_date"
+                      @input="begin_date_menu = false"
+                      hint="*Required"
+                      required
+                      no-title
+                      persistent-hint
+                    ></v-date-picker>
+                    {% endif %}
+                  </v-menu>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                
+                <div class="col s4">
+                  <v-menu
+                    :close-on-content-click="false"
+                    v-model="end_date_menu"
+                    transition="scale-transition"
+                    offset-y
+                  >
+                    <template v-slot:activator="{ on }">
+                      <v-text-field
+                        v-model="selectedStation.end_date"
+                        label="End date"
+                        v-on="on"
+                        prepend-icon="event"
+                        :disabled="!isEditing"
+                        {% if request.user.is_staff or request.user.is_superuser %}
+                        clearable
+                        {% endif %}
+                        :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                        false
+                        {% else %}
+                        true
+                        {% endif %}"
+                      ></v-text-field>
+                    </template>
+                    {% if request.user.is_staff or request.user.is_super %}
+                    <v-date-picker
+                      v-model="selectedStation.end_date"
+                      no-title
+                      @input="end_date_menu = false"
+                    ></v-date-picker>
+                    {% endif %}
+                  </v-menu>
+                </div>
+
+                <div class="col s4">
+                  <v-menu
+                    :close-on-content-click="false"
+                    v-model="relocation_date_menu"
+                    transition="scale-transition"
+                    offset-y
+                  >
+                    <template v-slot:activator="{ on, attrs}">
+                      <v-text-field
+                        v-model="selectedStation.relocation_date"
+                        label="Date of relocation"
+                        v-on="on"
+                        v-bind="attrs"
+                        prepend-icon="event"
+                        :disabled="!isEditing"
+                        {% if request.user.is_staff or request.user.is_superuser %}
+                        clearable
+                        {% endif %}
+                        :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                        false
+                        {% else %}
+                        true
+                        {% endif %}"
+                      ></v-text-field>
+                    </template>
+                    {% if request.user.is_staff or request.user.is_super %}
+                    <v-date-picker
+                      :active-picker.sync="activePicker"
+                      v-model="selectedStation.relocation_date"
+                      no-title
+                      @input="relocation_date_menu = false"
+                    ></v-date-picker>
+                    {% endif %}
+                  </v-menu>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <div class="srf-field">
+                    <span class="srf-field-header">Station operation Status (Active or Inactive)</span>
+                    <v-switch
+                      v-model="selectedStation.is_active"
+                      :disabled="!isEditing"
+                      :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                      false
+                      {% else %}
+                      true
+                      {% endif %}"
+                    >
+                    <v-tooltip slot="append" right>
+                      <template v-slot:activator="{ on }">
+                        <v-icon 
+                        v-on="on" 
+                        color="primary" 
+                        dark
+                        >
+                        info
+                        </v-icon>
+                      </template>
+                      <span>WIGOS category 3-09</span>
+                    </v-tooltip>
+                  </div>
+                </div>
+                <div class="col s4">
+                  <div class="srf-field">
+                    <span class="srf-field-header">Conventional or Automatic</span>
+                    <v-switch
+                      v-model="selectedStation.is_automatic"
+                      :disabled="!isEditing"
+                      :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                      false
+                      {% else %}
+                      true
+                      {% endif %}"
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Network (Local)"
+                  v-model="selectedStation.network"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+                <div class="col s4">
+                  <v-autocomplete
+                    :items="wmoStationTypeList"
+                    item-text="name"
+                    item-value="id"
+                    v-model="selectedStation.wmo_station_type"
+                    label="Station/Platform Type (WMO)"
                     required
                     hint="*Required"
                     persistent-hint
@@ -119,6 +423,7 @@
                     {% else %}
                     true
                     {% endif %}"
+                    autocomplete="off"
                   >
                   <v-tooltip slot="append" right>
                     <template v-slot:activator="{ on }">
@@ -130,230 +435,92 @@
                       info
                       </v-icon>
                     </template>
-                    <span>WIGOS category 3-03</span>
+                    <span>WIGOS category 3-04</span>
+                  </v-tooltip>
+                  </v-autocomplete>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-autocomplete
+                    :items="stationProfileList"
+                    item-text="name"
+                    item-value="id"
+                    v-model="selectedStation.profile"
+                    label="Type of Station (Local Profile)"
+                    required
+                    hint="*Required"
+                    persistent-hint
+                    :rules="simpleTextFieldsRules"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                    autocomplete="off"
+                  ></v-autocomplete>
+                </div>
+                <div class="col s4">
+                  <v-autocomplete
+                    :items="stationCommunicationList"
+                    item-text="name"
+                    item-value="id"
+                    v-model="selectedStation.communication_type"
+                    label="Communication"
+                    required
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                    autocomplete="off"
+                  ></v-autocomplete>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.latitude"
+                    label="Latitude"
+                    required
+                    hint="*Required"
+                    persistent-hint
+                    :rules="simpleFloatFieldsRules"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  >
+                  <v-tooltip slot="append" right>
+                    <template v-slot:activator="{ on }">
+                      <v-icon 
+                      v-on="on" 
+                      color="primary" 
+                      dark
+                      >
+                      info
+                      </v-icon>
+                    </template>
+                    <span>WIGOS category 3-07</span>
                   </v-tooltip>
                   </v-text-field>
-
-              </div>
-            
-
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.alias_name"
-                  label="Alias Name"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                    false
-                    {% else %}
-                    true
-                    {% endif %}"
-                ></v-text-field>
-              </div>
-
-            </div>
-            
-            <div class="row w-100 mt-3">
-              
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.code"
-                  label="Local Station ID"
-                  disabled
-                ></v-text-field>
-              </div>
-
-              <div class="col s4">
-                
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.wigos"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleTextFieldsRules"
-                  label="Station/Platform unique indetifier"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                    false
-                    {% else %}
-                    true
-                    {% endif %}"
-                >
-                   <v-tooltip slot="append" right>
-                      <template v-slot:activator="{ on }">
-                        <v-icon 
-                        v-on="on" 
-                        color="primary" 
-                        dark
-                        >
-                        info
-                        </v-icon>
-                      </template>
-                      <span>WIGOS category 3-06 (WIGOS ID)</span>
-                    </v-tooltip>
-                </v-text-field>
-                  
-              </div>
-
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-autocomplete
-                :items="wmoProgramList"
-                item-text="name"
-                item-value="id"
-                v-model="selectedStation.wmo"
-                label="WMO Program"
-                required
-                hint="*Required"
-                persistent-hint
-                :rules="simpleTextFieldsRules"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                    false
-                    {% else %}
-                    true
-                    {% endif %}"
-                autocomplete="off"
-              >
-              <v-tooltip slot="append" right>
-                <template v-slot:activator="{ on }">
-                  <v-icon 
-                  v-on="on" 
-                  color="primary" 
-                  dark
-                  >
-                  info
-                  </v-icon>
-                </template>
-                <span>WIGOS category 2-02</span>
-              </v-tooltip>
-              </v-autocomplete>
-              </div>
-              <div class="col s4">
-                <v-menu
-                  :close-on-content-click="false"
-                  v-model="begin_date_menu"
-                  transition="scale-transition"
-                  offset-y
-                >
-                  <template v-slot:activator="{ on }">
-                    <v-text-field
-                      v-model="selectedStation.begin_date"
-                      label="Begin Date"
-                      v-on="on"
-                      required
-                      prepend-icon="event"
-                      hint="*Required"
-                      :rules="dateSimpleRules"
-                      {% if request.user.is_staff or request.user.is_superuser %}
-                      clearable
-                      {% endif %}
-                      persistent-hint
-                      :disabled="!isEditing"
-                      :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                      false
-                      {% else %}
-                      true
-                      {% endif %}"
-                    ></v-text-field>
-                  </template>
-                  {% if request.user.is_staff or request.user.is_superuser %}
-                  <v-date-picker
-                    v-model="selectedStation.begin_date"
-                    @input="begin_date_menu = false"
-                    hint="*Required"
+                </div>
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.longitude"
                     required
-                    no-title
+                    hint="*Required"
                     persistent-hint
-                  ></v-date-picker>
-                  {% endif %}
-                </v-menu>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              
-              <div class="col s4">
-                <v-menu
-                  :close-on-content-click="false"
-                  v-model="end_date_menu"
-                  transition="scale-transition"
-                  offset-y
-                >
-                  <template v-slot:activator="{ on }">
-                    <v-text-field
-                      v-model="selectedStation.end_date"
-                      label="End date"
-                      v-on="on"
-                      prepend-icon="event"
-                      :disabled="!isEditing"
-                      {% if request.user.is_staff or request.user.is_superuser %}
-                      clearable
-                      {% endif %}
-                      :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                      false
-                      {% else %}
-                      true
-                      {% endif %}"
-                    ></v-text-field>
-                  </template>
-                  {% if request.user.is_staff or request.user.is_super %}
-                  <v-date-picker
-                    v-model="selectedStation.end_date"
-                    no-title
-                    @input="end_date_menu = false"
-                  ></v-date-picker>
-                  {% endif %}
-                </v-menu>
-              </div>
-
-              <div class="col s4">
-                <v-menu
-                  :close-on-content-click="false"
-                  v-model="relocation_date_menu"
-                  transition="scale-transition"
-                  offset-y
-                >
-                  <template v-slot:activator="{ on, attrs}">
-                    <v-text-field
-                      v-model="selectedStation.relocation_date"
-                      label="Date of relocation"
-                      v-on="on"
-                      v-bind="attrs"
-                      prepend-icon="event"
-                      :disabled="!isEditing"
-                      {% if request.user.is_staff or request.user.is_superuser %}
-                      clearable
-                      {% endif %}
-                      :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                      false
-                      {% else %}
-                      true
-                      {% endif %}"
-                    ></v-text-field>
-                  </template>
-                  {% if request.user.is_staff or request.user.is_super %}
-                  <v-date-picker
-                    :active-picker.sync="activePicker"
-                    v-model="selectedStation.relocation_date"
-                    no-title
-                    @input="relocation_date_menu = false"
-                  ></v-date-picker>
-                  {% endif %}
-                </v-menu>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <div class="srf-field">
-                  <span class="srf-field-header">Station operation Status (Active or Inactive)</span>
-                  <v-switch
-                    v-model="selectedStation.is_active"
+                    :rules="simpleFloatFieldsRules"
+                    label="Longitude"
                     :disabled="!isEditing"
                     :readonly="{% if request.user.is_staff or request.user.is_superuser %}
                     false
@@ -371,15 +538,233 @@
                       info
                       </v-icon>
                     </template>
-                    <span>WIGOS category 3-09</span>
+                    <span>WIGOS category 3-07</span>
                   </v-tooltip>
+                  </v-text-field>
                 </div>
               </div>
-              <div class="col s4">
-                <div class="srf-field">
-                  <span class="srf-field-header">Conventional or Automatic</span>
-                  <v-switch
-                    v-model="selectedStation.is_automatic"
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.elevation"
+                    required
+                    hint="*Required"
+                    persistent-hint
+                    :rules="simpleFloatFieldsRules"
+                    label="Elevation"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  >
+                  <v-tooltip slot="append" right>
+                    <template v-slot:activator="{ on }">
+                      <v-icon 
+                      v-on="on" 
+                      color="primary" 
+                      dark
+                      >
+                      info
+                      </v-icon>
+                    </template>
+                    <span>WIGOS category 3-07</span>
+                  </v-tooltip>
+                  </v-text-field>
+                </div>
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.country"
+                    required
+                    hint="*Required"
+                    persistent-hint
+                    :rules="simpleTextFieldsRules"
+                    label="Country"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  >
+                  <v-tooltip slot="append" right>
+                    <template v-slot:activator="{ on }">
+                      <v-icon 
+                      v-on="on" 
+                      color="primary" 
+                      dark
+                      >
+                      info
+                      </v-icon>
+                    </template>
+                    <span>WIGOS category 3-02</span>
+                  </v-tooltip>
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.region"
+                    label="Local Administrative Region(District)"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  ></v-text-field>
+                </div>
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.watershed"
+                    label="Basin"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  ></v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-autocomplete
+                    :items="wmoRegionList"
+                    item-text="name"
+                    item-value="id"
+                    v-model="selectedStation.wmo_region"
+                    label="WMO Region"
+                    required
+                    hint="*Required"
+                    persistent-hint
+                    :rules="simpleTextFieldsRules"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                    autocomplete="on"
+                  >
+                  <v-tooltip slot="append" right>
+                    <template v-slot:activator="{ on }">
+                      <v-icon 
+                      v-on="on" 
+                      color="primary" 
+                      dark
+                      >
+                      info
+                      </v-icon>
+                    </template>
+                    <span>WIGOS category 3-01</span>
+                  </v-tooltip>
+                  </v-autocomplete>
+                </div>
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.utc_offset_minutes"
+                    label="Time Zone (UTC offset in minutes)"
+                    required
+                    hint="*Required"
+                    persistent-hint
+                    :rules="timezoneRules"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  ></v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.wmo_station_plataform"
+                    label="Station/Platform model (WMO)"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  >
+                  <v-tooltip slot="append" right>
+                    <template v-slot:activator="{ on }">
+                      <v-icon 
+                      v-on="on" 
+                      color="primary" 
+                      dark
+                      >
+                      info
+                      </v-icon>
+                    </template>
+                    <span>WIGOS category 3-05</span>
+                  </v-tooltip>
+                  </v-text-field>
+                </div>
+                <div class="col s4">
+                  <v-text-field
+                    type="text"
+                    v-model="selectedStation.data_type"
+                    label="Data Communication Method"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  >
+                  <v-tooltip slot="append" right>
+                    <template v-slot:activator="{ on }">
+                      <v-icon 
+                      v-on="on" 
+                      color="primary" 
+                      dark
+                      >
+                      info
+                      </v-icon>
+                    </template>
+                    <span>WIGOS category 3-08</span>
+                  </v-tooltip>
+
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                    type="text"
+                    v-model="selectedStation.observer"
+                    label="Local Observer Name"
+                    :disabled="!isEditing"
+                    :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                    false
+                    {% else %}
+                    true
+                    {% endif %}"
+                  >
+                </div>
+
+                <div class="col s4">
+                  <v-text-field 
+                    type="text"
+                    v-model="selectedStation.organization"
+                    label="Responsible Organization (Local)"
                     :disabled="!isEditing"
                     :readonly="{% if request.user.is_staff or request.user.is_superuser %}
                     false
@@ -389,559 +774,8 @@
                   >
                 </div>
               </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Network (Local)"
-                v-model="selectedStation.network"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-              <div class="col s4">
-                <v-autocomplete
-                  :items="wmoStationTypeList"
-                  item-text="name"
-                  item-value="id"
-                  v-model="selectedStation.wmo_station_type"
-                  label="Station/Platform Type (WMO)"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleTextFieldsRules"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                  autocomplete="off"
-                >
-                <v-tooltip slot="append" right>
-                  <template v-slot:activator="{ on }">
-                    <v-icon 
-                    v-on="on" 
-                    color="primary" 
-                    dark
-                    >
-                    info
-                    </v-icon>
-                  </template>
-                  <span>WIGOS category 3-04</span>
-                </v-tooltip>
-                </v-autocomplete>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-autocomplete
-                  :items="stationProfileList"
-                  item-text="name"
-                  item-value="id"
-                  v-model="selectedStation.profile"
-                  label="Type of Station (Local Profile)"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleTextFieldsRules"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                  autocomplete="off"
-                ></v-autocomplete>
-              </div>
-              <div class="col s4">
-                <v-autocomplete
-                  :items="stationCommunicationList"
-                  item-text="name"
-                  item-value="id"
-                  v-model="selectedStation.communication_type"
-                  label="Communication"
-                  required
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                  autocomplete="off"
-                ></v-autocomplete>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.latitude"
-                  label="Latitude"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleFloatFieldsRules"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                >
-                <v-tooltip slot="append" right>
-                  <template v-slot:activator="{ on }">
-                    <v-icon 
-                    v-on="on" 
-                    color="primary" 
-                    dark
-                    >
-                    info
-                    </v-icon>
-                  </template>
-                  <span>WIGOS category 3-07</span>
-                </v-tooltip>
-                </v-text-field>
-              </div>
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.longitude"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleFloatFieldsRules"
-                  label="Longitude"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                >
-                <v-tooltip slot="append" right>
-                  <template v-slot:activator="{ on }">
-                    <v-icon 
-                    v-on="on" 
-                    color="primary" 
-                    dark
-                    >
-                    info
-                    </v-icon>
-                  </template>
-                  <span>WIGOS category 3-07</span>
-                </v-tooltip>
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.elevation"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleFloatFieldsRules"
-                  label="Elevation"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                >
-                <v-tooltip slot="append" right>
-                  <template v-slot:activator="{ on }">
-                    <v-icon 
-                    v-on="on" 
-                    color="primary" 
-                    dark
-                    >
-                    info
-                    </v-icon>
-                  </template>
-                  <span>WIGOS category 3-07</span>
-                </v-tooltip>
-                </v-text-field>
-              </div>
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.country"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleTextFieldsRules"
-                  label="Country"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                >
-                <v-tooltip slot="append" right>
-                  <template v-slot:activator="{ on }">
-                    <v-icon 
-                    v-on="on" 
-                    color="primary" 
-                    dark
-                    >
-                    info
-                    </v-icon>
-                  </template>
-                  <span>WIGOS category 3-02</span>
-                </v-tooltip>
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.region"
-                  label="Local Administrative Region(District)"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                ></v-text-field>
-              </div>
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.watershed"
-                  label="Basin"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                ></v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-autocomplete
-                  :items="wmoRegionList"
-                  item-text="name"
-                  item-value="id"
-                  v-model="selectedStation.wmo_region"
-                  label="WMO Region"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="simpleTextFieldsRules"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                  autocomplete="on"
-                >
-                <v-tooltip slot="append" right>
-                  <template v-slot:activator="{ on }">
-                    <v-icon 
-                    v-on="on" 
-                    color="primary" 
-                    dark
-                    >
-                    info
-                    </v-icon>
-                  </template>
-                  <span>WIGOS category 3-01</span>
-                </v-tooltip>
-                </v-autocomplete>
-              </div>
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.utc_offset_minutes"
-                  label="Time Zone (UTC offset in minutes)"
-                  required
-                  hint="*Required"
-                  persistent-hint
-                  :rules="timezoneRules"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                ></v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.wmo_station_plataform"
-                  label="Station/Platform model (WMO)"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                >
-                <v-tooltip slot="append" right>
-                  <template v-slot:activator="{ on }">
-                    <v-icon 
-                    v-on="on" 
-                    color="primary" 
-                    dark
-                    >
-                    info
-                    </v-icon>
-                  </template>
-                  <span>WIGOS category 3-05</span>
-                </v-tooltip>
-                </v-text-field>
-              </div>
-              <div class="col s4">
-                <v-text-field
-                  type="text"
-                  v-model="selectedStation.data_type"
-                  label="Data Communication Method"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                >
-                <v-tooltip slot="append" right>
-                  <template v-slot:activator="{ on }">
-                    <v-icon 
-                    v-on="on" 
-                    color="primary" 
-                    dark
-                    >
-                    info
-                    </v-icon>
-                  </template>
-                  <span>WIGOS category 3-08</span>
-                </v-tooltip>
-
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                  type="text"
-                  v-model="selectedStation.observer"
-                  label="Local Observer Name"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                >
-              </div>
-
-              <div class="col s4">
-                <v-text-field 
-                  type="text"
-                  v-model="selectedStation.organization"
-                  label="Responsible Organization (Local)"
-                  :disabled="!isEditing"
-                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                  false
-                  {% else %}
-                  true
-                  {% endif %}"
-                >
-              </div>
-            </div>
-            
-            {% if request.user.is_staff or request.user.is_superuser %}
-            <v-btn
-              v-if="isEditing"
-              class="ml-2"
-              outlined
-              justify-end
-              color="primary"
-              @click="onSaveEdit"
-            >SAVE</v-btn>  
-            <v-btn
-              v-if="isEditing"
-              class="ml-2"
-              outlined
-              justify-end
-              color="red"
-              @click="cancelEditing"
-            >CANCEL</v-btn>  
-            {% endif %}
-          </form>  
-        </v-tab-item >
-
-          <!--Local Enviroment-->
-          <v-tab-item :key="2" >
-
-          <form id="localEnviroment" @submit="">
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text"
-                label="Local land use/land cover"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Instrument exposure"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Soil type"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-
-            </div>
-            
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Site conditions"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Photos"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-
-            </div>
-
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Site plans"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
               
-
-
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Skyline Diagrams"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="WIGOS Metadata"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            
-            {% if request.user.is_staff or request.user.is_superuser %}
+              {% if request.user.is_staff or request.user.is_superuser %}
               <v-btn
                 v-if="isEditing"
                 class="ml-2"
@@ -958,784 +792,944 @@
                 color="red"
                 @click="cancelEditing"
               >CANCEL</v-btn>  
-            {% endif %}
-          </form>
+              {% endif %}
+            </form>  
+          </v-tab-item >
+
+          <!--Local Enviroment-->
+          <v-tab-item :key="2" >
+
+            <form id="localEnviroment" @submit="">
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text"
+                  label="Local land use/land cover"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Instrument exposure"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Soil type"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
+              </div>
+              
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Site conditions"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Photos"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
+              </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Site plans"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+                
+
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Skyline Diagrams"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="WIGOS Metadata"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="primary"
+                  @click="onSaveEdit"
+                >SAVE</v-btn>  
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="red"
+                  @click="cancelEditing"
+                >CANCEL</v-btn>  
+              {% endif %}
+            </form>
           </v-tab-item>
 
           <!--Instrumentation and Maintenance-->
           <v-tab-item :key="3" >
 
-          <form id="instrumentationAndMaintenance" @submit="">
+            <form id="instrumentationAndMaintenance" @submit="">
 
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Type of instruments"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Type of instruments"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Instrument comparisons"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Start/end dates of instruments"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Instrument comparisons"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Start/end dates of instruments"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Condition of instruments"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Instrument sheltering and mounting"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Type of recording"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Calibration results"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Condition of instruments"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Instrument sheltering and mounting"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Special maintenance faults"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Modifications"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
               </div>
 
-            </div>
-            
-            <div class="row w-100 mt-3">
+              <div class="row w-100 mt-3">
 
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Barometer height"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Type of recording"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
-            </div>
 
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="WIGOS"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Calibration results"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
               </div>
-            </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Special maintenance faults"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Modifications"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
+              </div>
+              
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Barometer height"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="WIGOS"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
 
 
-            {% if request.user.is_staff or request.user.is_superuser %}
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="primary"
-                @click="onSaveEdit"
-              >SAVE</v-btn>  
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="red"
-                @click="cancelEditing"
-              >CANCEL</v-btn>  
-            {% endif %}
-          </form>
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="primary"
+                  @click="onSaveEdit"
+                >SAVE</v-btn>  
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="red"
+                  @click="cancelEditing"
+                >CANCEL</v-btn>  
+              {% endif %}
+            </form>
           </v-tab-item>           
 
           <!--Observing Practices-->
           <v-tab-item :key="4" >
 
-          <form id="observingPratices" @submit="">
+            <form id="observingPratices" @submit="">
 
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Observer Information"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Observer Information"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Observer level of training"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="List of observed elements"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Observer level of training"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="List of observed elements"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
 
-            <div class="row w-100 mt3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Observing times"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text"
-                label="Units used"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
               </div>
 
-            </div>
+              <div class="row w-100 mt3">
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Observation instructions"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Routine maintenance operations"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Observing times"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text"
+                  label="Units used"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Disposable item replacement"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
               </div>
-            </div>
 
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Corrections made by observer"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Observation instructions"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
-            </div>
 
-            <div class="row w-100 mt-3">
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Routine maintenance operations"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
 
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Observed Variable"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
               </div>
-            </div>
 
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Purpose of observation"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Disposable item replacement"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
-            </div>
 
-            {% if request.user.is_staff or request.user.is_superuser %}
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="primary"
-                @click="onSaveEdit"
-              >SAVE</v-btn>  
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="red"
-                @click="cancelEditing"
-              >CANCEL</v-btn>  
-            {% endif %}
-          </form>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Corrections made by observer"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Observed Variable"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Purpose of observation"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="primary"
+                  @click="onSaveEdit"
+                >SAVE</v-btn>  
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="red"
+                  @click="cancelEditing"
+                >CANCEL</v-btn>  
+              {% endif %}
+            </form>
           </v-tab-item>         
 
           <!--Data Processing-->
           <v-tab-item :key="5" >
 
-          <form id="dataProcessing" @submit="">
+            <form id="dataProcessing" @submit="">
 
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Units"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Units"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Special codes"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Calculations"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Special codes"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Calculations"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Algorithms"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text"
-                label="QC applied?"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Homogenization applied?"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Data recovery efforts?"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Algorithms"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text"
+                  label="QC applied?"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Other data detail on data recovery"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Treatment of redundant data"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="WIGOS sampling"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
-
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="WIGOS data processing and reporting"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Homogenization applied?"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
 
-            </div>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Data recovery efforts?"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
 
-            <div class="row w-100 mt-3">
-
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="WIGOS data quality"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
               </div>
-            </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Other data detail on data recovery"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Treatment of redundant data"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
+              </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="WIGOS sampling"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
+
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="WIGOS data processing and reporting"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+
+              </div>
+
+              <div class="row w-100 mt-3">
+
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="WIGOS data quality"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+              </div>
 
 
-            {% if request.user.is_staff or request.user.is_superuser %}
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="primary"
-                @click="onSaveEdit"
-              >SAVE</v-btn>  
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="red"
-                @click="cancelEditing"
-              >CANCEL</v-btn>  
-            {% endif %}
-          </form>
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="primary"
+                  @click="onSaveEdit"
+                >SAVE</v-btn>  
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="red"
+                  @click="cancelEditing"
+                >CANCEL</v-btn>  
+              {% endif %}
+            </form>
           </v-tab-item>
 
           <!--Historical Events-->
           <v-tab-item :key="6">
-          <form id="historicalEvents" @submit="">
+            <form id="historicalEvents" @submit="">
 
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field 
-                type="text" 
-                label="Historic"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field 
+                  type="text" 
+                  label="Historic"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
-            </div>
 
-            {% if request.user.is_staff or request.user.is_superuser %}
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="primary"
-                @click="onSaveEdit"
-              >SAVE</v-btn>  
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="red"
-                @click="cancelEditing"
-              >CANCEL</v-btn>  
-            {% endif %}
-          </form>
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="primary"
+                  @click="onSaveEdit"
+                >SAVE</v-btn>  
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="red"
+                  @click="cancelEditing"
+                >CANCEL</v-btn>  
+              {% endif %}
+            </form>
           </v-tab-item>
 
           <!--Other metadata-->
           <v-tab-item :key="7" >
-          <form id="otherMetadata" @submit="">
+            <form id="otherMetadata" @submit="">
 
-            <div class="row w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Communication"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="row w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Communication"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Ownership and data policy"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Ownership and data policy"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
-              </div>
-            </div>
 
-            <div class="col w-100 mt-3">
-              <div class="col s4">
-                <v-text-field
-                type="text"
-                label="Contact"
-                :disabled="!isEditing"
-                :readonly="{% if request.user.is_staff or request.user.is_superuser %}
-                false
-                {% else %}
-                true
-                {% endif %}"
-                >
-                </v-text-field>
+              <div class="col w-100 mt-3">
+                <div class="col s4">
+                  <v-text-field
+                  type="text"
+                  label="Contact"
+                  :disabled="!isEditing"
+                  :readonly="{% if request.user.is_staff or request.user.is_superuser %}
+                  false
+                  {% else %}
+                  true
+                  {% endif %}"
+                  >
+                  </v-text-field>
+                </div>
               </div>
-            </div>
 
-            {% if request.user.is_staff or request.user.is_superuser %}
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="primary"
-                @click="onSaveEdit"
-              >SAVE</v-btn>  
-              <v-btn
-                v-if="isEditing"
-                class="ml-2"
-                outlined
-                justify-end
-                color="red"
-                @click="cancelEditing"
-              >CANCEL</v-btn>  
-            {% endif %}
-          </form>
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="primary"
+                  @click="onSaveEdit"
+                >SAVE</v-btn>  
+                <v-btn
+                  v-if="isEditing"
+                  class="ml-2"
+                  outlined
+                  justify-end
+                  color="red"
+                  @click="cancelEditing"
+                >CANCEL</v-btn>  
+              {% endif %}
+            </form>
           </v-tab-item>
 
         </v-tabs>
-
-          </form>
-          </v-tab-item> 
-     
-        
-      </v-tabs>
-    </template>
+      </template>
     </v-layout>
     </v-container>
   </v-app>
@@ -1778,7 +1772,7 @@
       },
       data: {
         iconSizeTest: [32, 32],
-        zoom: "{{ MAP_ZOOM|safe }}",
+        zoom: Number("{{ MAP_ZOOM|safe }}"),
         center: L.latLng("{{ MAP_LATITUDE|safe }}", "{{ MAP_LONGITUDE|safe }}"),
         url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         attribution:
@@ -2090,10 +2084,7 @@
         this.getStations();
       }
     })
-    
-    function consolePrint() {
-      console.log("it might work");
-    }
+  
   </script>
 
   <style>
@@ -2110,5 +2101,3 @@
     }
   </style>
 {% endblock %}
-
-
