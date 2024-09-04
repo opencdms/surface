@@ -425,8 +425,6 @@ class Station(BaseModel):
         blank=True,
     )
 
-    max_length=16
-
     wigos_part_3 = models.IntegerField(
         null=True,
         blank=True,
