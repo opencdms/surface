@@ -246,6 +246,18 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
   }
+
+  .subInfo {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 16px;
+    margin-top: 0px;
+  }
+
+  #additionalInfo {
+    margin-top: 30px !important;
+  }
+
 </style>
   
   {% endblock %} {% block localjavascript %}
@@ -432,10 +444,77 @@
 
     });
 
+    // js for overlay loader
+    function overlayLoader() {
+      // Show the spinner, text, and overlay
+      document.getElementById('overlay').style.display = 'block';
+      document.getElementById('spinner').style.display = 'block';
+      document.getElementById('spinner-text').style.display = 'block';
+
+      // grab api token
+      var apiTkn = document.getElementById('oscar_api_token').value;
+
+      // check if an api token is entered
+      if (apiTkn.length == 0) {
+        document.getElementById('spinner-text').textContent = "Attempting Station Creation...";
+      } else {
+        document.querySelector('#spinner-text p').textContent = "Attempting Station Creation and Metadata Export to OSCAR...";
+      }
+    }
+
+    // WIGOS information group heading
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get the wigos row div by its ID
+      var wigosRowDiv = document.getElementById('id_wigos_part_1_container');
+
+      if (wigosRowDiv) {  // Ensure the wigos row div exists
+        // Get the parent of the wigos div
+        var parentDiv = wigosRowDiv.parentNode.parentNode.parentNode;
+
+        // Create a new <p> element
+        var pElement = document.createElement('p');
+        pElement.textContent = 'WIGOS INFORMATION';
+
+        // Set the id and class for the <p> element
+        pElement.setAttribute('id', 'wigosInfo');
+        pElement.className = 'subInfo';
+
+        // Insert the <p> element before the parent div
+        parentDiv.parentNode.insertBefore(pElement, parentDiv);
+      }
+    });
+    
+    // Other options group heading
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get the current div by its ID
+      var wigosRowDiv = document.getElementById('id_wigos_part_1_container');
+
+      if (wigosRowDiv) {  // Ensure the wigos row div exists
+        // Get the parent of the wigos div
+        var parentDiv = wigosRowDiv.parentNode.parentNode.parentNode;
+
+        // Create a new <p> element
+        var pElement = document.createElement('p');
+        pElement.textContent = 'ADDITIONAL OPTIONS';
+
+        // Set the id and class for the <p> element
+        pElement.setAttribute('id', 'additionalInfo');
+        pElement.className = 'subInfo';
+
+        // Insert the <p> element after the parent div
+        parentDiv.insertAdjacentElement('afterend', pElement);
+      }
+    });
+
+
+    // additional options radio buttons control
     document.addEventListener("DOMContentLoaded", function() {
       // Automatically add IDs and classes to specific elements
       var ids = [
-        'id_wigos_container',
+        'id_wigos_part_1_container',
+        'id_wigos_part_2_container',
+        'id_wigos_part_3_container',
+        'id_wigos_part_4_container',
         'id_wmo_region_container',
         'id_wmo_station_type_container',
         'id_international_station_container',
@@ -449,9 +528,9 @@
         }
       });
 
-      // Automatically assign ID to the <h5> element for "Additional OSCAR / WIS2BOX Requirements"
+      // Automatically assign ID to the <h5> element for "OSCAR / WIS2BOX Requirements"
       var additionalRequirementsHeader = Array.from(document.getElementsByTagName('h5'))
-        .find(el => el.textContent.includes('Additional OSCAR / WIS2BOX Requirements'));
+        .find(el => el.textContent.includes('OSCAR / WIS2BOX Requirements'));
       if (additionalRequirementsHeader) {
         additionalRequirementsHeader.id = 'additional-requirements';
         additionalRequirementsHeader.classList.add('form-item');
@@ -471,15 +550,30 @@
       var exportActive = document.querySelector('.export-switch').classList.contains('active');
 
       // Shared container and additional requirements
-      var sharedContainer = document.getElementById('id_wigos_container');
+      var sharedContainer1 = document.getElementById('id_wigos_part_1_container');
+      var sharedContainer2 = document.getElementById('id_wigos_part_2_container');
+      var sharedContainer3 = document.getElementById('id_wigos_part_3_container');
+      var sharedContainer4 = document.getElementById('id_wigos_part_4_container');
       var additionalRequirements = document.getElementById('additional-requirements');
+      var wigosInfo = document.getElementById('wigosInfo');
+      var additionalInfo = document.getElementById('additionalInfo');
 
       if (oscarActive || wis2boxActive) {
-        sharedContainer.style.display = 'block';
+        sharedContainer1.style.display = 'block';
+        sharedContainer2.style.display = 'block';
+        sharedContainer3.style.display = 'block';
+        sharedContainer4.style.display = 'block';
         additionalRequirements.style.display = 'block';
+        wigosInfo.style.display = 'block';
+        additionalInfo.style.display = 'block';
       } else {
-        sharedContainer.style.display = 'none';
+        sharedContainer1.style.display = 'none';
+        sharedContainer2.style.display = 'none';
+        sharedContainer3.style.display = 'none';
+        sharedContainer4.style.display = 'none';
         additionalRequirements.style.display = 'none';
+        wigosInfo.style.display = 'none';
+        additionalInfo.style.display = 'none';
       }
 
       // OSCAR-specific containers
@@ -501,6 +595,7 @@
 
       var tokenOption = document.getElementById('token_option');
       var tokenInput = document.getElementById('oscar_api_token');
+
       if(exportActive) {
         tokenOption.style.display = 'block';
         // tokenInput.setAttribute('required', 'required');
@@ -517,72 +612,6 @@
         wis2boxContainer.style.display = 'none';
       }
     }
-
-    // formatting wigos input
-    document.addEventListener('DOMContentLoaded', (event) => {
-      const cardNumberInput = document.getElementById('id_wigos');
-
-      // Ensure the first section is always 0
-      cardNumberInput.addEventListener('focus', function () {
-        if (cardNumberInput.value === '' || cardNumberInput.value.charAt(0) !== '0') {
-          cardNumberInput.value = '0    -    '; // Initial value with spaces and dash
-        }
-      });
-
-      // Handle input and space bar for section switching
-      cardNumberInput.addEventListener('keydown', function (e) {
-        let cursorPosition = e.target.selectionStart;
-        let value = e.target.value;
-        let sections = value.split('-');
-
-        // Prevent modification of the first section
-        if (cursorPosition <= 1 && e.key !== 'Tab' && e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') {
-          e.preventDefault();
-          return;
-        }
-
-        // Allow numbers, control keys, and space bar for moving to the next section
-        if ((e.key >= '0' && e.key <= '9') || e.key === 'Backspace' || e.key === 'Tab' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-          // Do nothing, allow input
-        } else if (e.key === ' ') {
-          // Insert a dash and spaces when space is pressed, unless already at the maximum number of sections
-          if (sections.length < 4 && sections[sections.length - 1].trim().length > 0) {
-            e.preventDefault();
-            e.target.value += '    -    ';
-          } else {
-            e.preventDefault(); // Prevent space if section is empty or sections are 4
-          }
-        } else {
-          // Prevent any other keys
-          e.preventDefault();
-        }
-      });
-
-      // Before form submission, format the value properly
-      document.getElementById('station-form').addEventListener('submit', function (e) {
-        cardNumberInput.value = cardNumberInput.value.replace(/\s+/g, '').trim().replace(/-$/, ''); // Remove blank spaces or trailing dash if any
-      });
-    });
-
-    // js for overlay loader
-    function overlayLoader() {
-      // Show the spinner, text, and overlay
-      document.getElementById('overlay').style.display = 'block';
-      document.getElementById('spinner').style.display = 'block';
-      document.getElementById('spinner-text').style.display = 'block';
-
-      // grab api token
-      var apiTkn = document.getElementById('oscar_api_token').value;
-
-      // check if an api token is entered
-      if (apiTkn.length == 0) {
-        document.getElementById('spinner-text').textContent = "Attempting Station Creation...";
-      } else {
-        document.querySelector('#spinner-text p').textContent = "Attempting Station Creation and Metadata Export to OSCAR...";
-      }
-    }
-
-    // js for label name changes
 
 
     // autocomple for watershed
