@@ -1,0 +1,2155 @@
+[
+
+    {
+        "model": "wx.countryisocode",
+        "pk": 1,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Afghanistan",
+            "notation": "4",
+            "description": "ISO 3166-1 numeric code for Afghanistan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 2,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Albania",
+            "notation": "8",
+            "description": "ISO 3166-1 numeric code for Albania"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 3,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Algeria",
+            "notation": "12",
+            "description": "ISO 3166-1 numeric code for Algeria"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 4,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Andorra",
+            "notation": "20",
+            "description": "ISO 3166-1 numeric code for Andorra"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 5,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Angola",
+            "notation": "24",
+            "description": "ISO 3166-1 numeric code for Angola"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 6,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Antigua and Barbuda",
+            "notation": "28",
+            "description": "ISO 3166-1 numeric code for Antigua and Barbuda"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 7,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Argentina",
+            "notation": "32",
+            "description": "ISO 3166-1 numeric code for Argentina"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 8,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Armenia",
+            "notation": "51",
+            "description": "ISO 3166-1 numeric code for Armenia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 9,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Australia",
+            "notation": "36",
+            "description": "ISO 3166-1 numeric code for Australia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 10,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Austria",
+            "notation": "40",
+            "description": "ISO 3166-1 numeric code for Austria"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 11,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Azerbaijan",
+            "notation": "31",
+            "description": "ISO 3166-1 numeric code for Azerbaijan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 12,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Bahamas",
+            "notation": "44",
+            "description": "ISO 3166-1 numeric code for Bahamas"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 13,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Bahrain",
+            "notation": "48",
+            "description": "ISO 3166-1 numeric code for Bahrain"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 14,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Bangladesh",
+            "notation": "50",
+            "description": "ISO 3166-1 numeric code for Bangladesh"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 15,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Barbados",
+            "notation": "52",
+            "description": "ISO 3166-1 numeric code for Barbados"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 16,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Belarus",
+            "notation": "112",
+            "description": "ISO 3166-1 numeric code for Belarus"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 17,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Belgium",
+            "notation": "56",
+            "description": "ISO 3166-1 numeric code for Belgium"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 18,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Belize",
+            "notation": "84",
+            "description": "ISO 3166-1 numeric code for Belize"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 19,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Benin",
+            "notation": "204",
+            "description": "ISO 3166-1 numeric code for Benin"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 20,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Bhutan",
+            "notation": "64",
+            "description": "ISO 3166-1 numeric code for Bhutan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 21,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Bolivia",
+            "notation": "68",
+            "description": "ISO 3166-1 numeric code for Bolivia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 22,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Bosnia and Herzegovina",
+            "notation": "70",
+            "description": "ISO 3166-1 numeric code for Bosnia and Herzegovina"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 23,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Botswana",
+            "notation": "72",
+            "description": "ISO 3166-1 numeric code for Botswana"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 24,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Brazil",
+            "notation": "76",
+            "description": "ISO 3166-1 numeric code for Brazil"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 25,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Brunei",
+            "notation": "96",
+            "description": "ISO 3166-1 numeric code for Brunei"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 26,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Bulgaria",
+            "notation": "100",
+            "description": "ISO 3166-1 numeric code for Bulgaria"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 27,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Burkina Faso",
+            "notation": "854",
+            "description": "ISO 3166-1 numeric code for Burkina Faso"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 28,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Burundi",
+            "notation": "108",
+            "description": "ISO 3166-1 numeric code for Burundi"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 29,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Cabo Verde",
+            "notation": "132",
+            "description": "ISO 3166-1 numeric code for Cabo Verde"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 30,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Cambodia",
+            "notation": "116",
+            "description": "ISO 3166-1 numeric code for Cambodia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 31,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Cameroon",
+            "notation": "120",
+            "description": "ISO 3166-1 numeric code for Cameroon"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 32,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Canada",
+            "notation": "124",
+            "description": "ISO 3166-1 numeric code for Canada"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 33,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Central African Republic",
+            "notation": "140",
+            "description": "ISO 3166-1 numeric code for Central African Republic"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 34,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Chad",
+            "notation": "148",
+            "description": "ISO 3166-1 numeric code for Chad"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 35,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Chile",
+            "notation": "152",
+            "description": "ISO 3166-1 numeric code for Chile"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 36,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "China",
+            "notation": "156",
+            "description": "ISO 3166-1 numeric code for China"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 37,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Colombia",
+            "notation": "170",
+            "description": "ISO 3166-1 numeric code for Colombia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 38,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Comoros",
+            "notation": "174",
+            "description": "ISO 3166-1 numeric code for Comoros"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 39,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Congo (Congo-Brazzaville)",
+            "notation": "178",
+            "description": "ISO 3166-1 numeric code for Congo (Congo-Brazzaville)"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 40,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Congo (Democratic Republic)",
+            "notation": "180",
+            "description": "ISO 3166-1 numeric code for Congo (Democratic Republic)"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 41,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Costa Rica",
+            "notation": "188",
+            "description": "ISO 3166-1 numeric code for Costa Rica"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 42,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Croatia",
+            "notation": "191",
+            "description": "ISO 3166-1 numeric code for Croatia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 43,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Cuba",
+            "notation": "192",
+            "description": "ISO 3166-1 numeric code for Cuba"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 44,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Cyprus",
+            "notation": "196",
+            "description": "ISO 3166-1 numeric code for Cyprus"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 45,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Czech Republic",
+            "notation": "203",
+            "description": "ISO 3166-1 numeric code for Czech Republic"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 46,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Denmark",
+            "notation": "208",
+            "description": "ISO 3166-1 numeric code for Denmark"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 47,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Djibouti",
+            "notation": "262",
+            "description": "ISO 3166-1 numeric code for Djibouti"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 48,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Dominica",
+            "notation": "212",
+            "description": "ISO 3166-1 numeric code for Dominica"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 49,
+        "fields": {
+            "created_at": "2024-09-04T17:56:05.075455",
+            "updated_at": "2024-09-04T17:56:05.075508",
+            "name": "Dominican Republic",
+            "notation": "214",
+            "description": "ISO 3166-1 numeric code for Dominican Republic"
+        }
+    },
+
+    {
+        "model": "wx.countryisocode",
+        "pk": 1,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Romania",
+            "notation": "642",
+            "description": "ISO 3166-1 numeric code for Romania"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 2,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Russia",
+            "notation": "643",
+            "description": "ISO 3166-1 numeric code for Russia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 3,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Rwanda",
+            "notation": "646",
+            "description": "ISO 3166-1 numeric code for Rwanda"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 4,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Saint Kitts and Nevis",
+            "notation": "659",
+            "description": "ISO 3166-1 numeric code for Saint Kitts and Nevis"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 5,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Saint Lucia",
+            "notation": "662",
+            "description": "ISO 3166-1 numeric code for Saint Lucia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 6,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Saint Vincent and the Grenadines",
+            "notation": "670",
+            "description": "ISO 3166-1 numeric code for Saint Vincent and the Grenadines"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 7,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Samoa",
+            "notation": "882",
+            "description": "ISO 3166-1 numeric code for Samoa"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 8,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "San Marino",
+            "notation": "674",
+            "description": "ISO 3166-1 numeric code for San Marino"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 9,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Sao Tome and Principe",
+            "notation": "678",
+            "description": "ISO 3166-1 numeric code for Sao Tome and Principe"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 10,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Saudi Arabia",
+            "notation": "682",
+            "description": "ISO 3166-1 numeric code for Saudi Arabia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 11,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Senegal",
+            "notation": "686",
+            "description": "ISO 3166-1 numeric code for Senegal"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 12,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Serbia",
+            "notation": "688",
+            "description": "ISO 3166-1 numeric code for Serbia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 13,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Seychelles",
+            "notation": "690",
+            "description": "ISO 3166-1 numeric code for Seychelles"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 14,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Sierra Leone",
+            "notation": "694",
+            "description": "ISO 3166-1 numeric code for Sierra Leone"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 15,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Singapore",
+            "notation": "702",
+            "description": "ISO 3166-1 numeric code for Singapore"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 16,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Slovakia",
+            "notation": "703",
+            "description": "ISO 3166-1 numeric code for Slovakia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 17,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Slovenia",
+            "notation": "705",
+            "description": "ISO 3166-1 numeric code for Slovenia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 18,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Solomon Islands",
+            "notation": "90",
+            "description": "ISO 3166-1 numeric code for Solomon Islands"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 19,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Somalia",
+            "notation": "706",
+            "description": "ISO 3166-1 numeric code for Somalia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 20,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "South Africa",
+            "notation": "710",
+            "description": "ISO 3166-1 numeric code for South Africa"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 21,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "South Sudan",
+            "notation": "728",
+            "description": "ISO 3166-1 numeric code for South Sudan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 22,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Spain",
+            "notation": "724",
+            "description": "ISO 3166-1 numeric code for Spain"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 23,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Sri Lanka",
+            "notation": "144",
+            "description": "ISO 3166-1 numeric code for Sri Lanka"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 24,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Sudan",
+            "notation": "729",
+            "description": "ISO 3166-1 numeric code for Sudan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 25,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Suriname",
+            "notation": "740",
+            "description": "ISO 3166-1 numeric code for Suriname"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 26,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Sweden",
+            "notation": "752",
+            "description": "ISO 3166-1 numeric code for Sweden"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 27,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Switzerland",
+            "notation": "756",
+            "description": "ISO 3166-1 numeric code for Switzerland"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 28,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Syria",
+            "notation": "760",
+            "description": "ISO 3166-1 numeric code for Syria"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 29,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Taiwan",
+            "notation": "158",
+            "description": "ISO 3166-1 numeric code for Taiwan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 30,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Tajikistan",
+            "notation": "762",
+            "description": "ISO 3166-1 numeric code for Tajikistan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 31,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Tanzania",
+            "notation": "834",
+            "description": "ISO 3166-1 numeric code for Tanzania"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 32,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Thailand",
+            "notation": "764",
+            "description": "ISO 3166-1 numeric code for Thailand"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 33,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Timor-Leste",
+            "notation": "626",
+            "description": "ISO 3166-1 numeric code for Timor-Leste"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 34,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Togo",
+            "notation": "768",
+            "description": "ISO 3166-1 numeric code for Togo"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 35,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Tonga",
+            "notation": "776",
+            "description": "ISO 3166-1 numeric code for Tonga"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 36,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Trinidad and Tobago",
+            "notation": "780",
+            "description": "ISO 3166-1 numeric code for Trinidad and Tobago"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 37,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Tunisia",
+            "notation": "788",
+            "description": "ISO 3166-1 numeric code for Tunisia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 38,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Turkey",
+            "notation": "792",
+            "description": "ISO 3166-1 numeric code for Turkey"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 39,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Turkmenistan",
+            "notation": "795",
+            "description": "ISO 3166-1 numeric code for Turkmenistan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 40,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Tuvalu",
+            "notation": "798",
+            "description": "ISO 3166-1 numeric code for Tuvalu"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 41,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Uganda",
+            "notation": "800",
+            "description": "ISO 3166-1 numeric code for Uganda"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 42,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Ukraine",
+            "notation": "804",
+            "description": "ISO 3166-1 numeric code for Ukraine"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 43,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "United Arab Emirates",
+            "notation": "784",
+            "description": "ISO 3166-1 numeric code for United Arab Emirates"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 44,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "United Kingdom",
+            "notation": "826",
+            "description": "ISO 3166-1 numeric code for United Kingdom"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 45,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "United States",
+            "notation": "840",
+            "description": "ISO 3166-1 numeric code for United States"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 46,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Uruguay",
+            "notation": "858",
+            "description": "ISO 3166-1 numeric code for Uruguay"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 47,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Uzbekistan",
+            "notation": "860",
+            "description": "ISO 3166-1 numeric code for Uzbekistan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 48,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Vanuatu",
+            "notation": "548",
+            "description": "ISO 3166-1 numeric code for Vanuatu"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 49,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Vatican City (Holy See)",
+            "notation": "336",
+            "description": "ISO 3166-1 numeric code for Vatican City (Holy See)"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 50,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Venezuela",
+            "notation": "862",
+            "description": "ISO 3166-1 numeric code for Venezuela"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 51,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Vietnam",
+            "notation": "704",
+            "description": "ISO 3166-1 numeric code for Vietnam"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 52,
+        "fields": {
+            "created_at": "2024-09-04T18:05:23.439171",
+            "updated_at": "2024-09-04T18:05:23.439241",
+            "name": "Western Sahara",
+            "notation": "732",
+            "description": "ISO 3166-1 numeric code for Western Sahara"
+        }
+    },
+
+    {
+        "model": "wx.countryisocode",
+        "pk": 1,
+        "fields": {
+            "created_at": "2024-09-04T18:06:08.712922",
+            "updated_at": "2024-09-04T18:06:08.712958",
+            "name": "Yemen",
+            "notation": "887",
+            "description": "ISO 3166-1 numeric code for Yemen"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 2,
+        "fields": {
+            "created_at": "2024-09-04T18:06:08.712922",
+            "updated_at": "2024-09-04T18:06:08.712958",
+            "name": "Zambia",
+            "notation": "894",
+            "description": "ISO 3166-1 numeric code for Zambia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 3,
+        "fields": {
+            "created_at": "2024-09-04T18:06:08.712922",
+            "updated_at": "2024-09-04T18:06:08.712958",
+            "name": "Zimbabwe",
+            "notation": "716",
+            "description": "ISO 3166-1 numeric code for Zimbabwe"
+        }
+    },
+
+    {
+        "model": "wx.countryisocode",
+        "pk": 1,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Ecuador",
+            "notation": "218",
+            "description": "ISO 3166-1 numeric code for Ecuador"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 2,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Egypt",
+            "notation": "818",
+            "description": "ISO 3166-1 numeric code for Egypt"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 3,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "El Salvador",
+            "notation": "222",
+            "description": "ISO 3166-1 numeric code for El Salvador"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 4,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Equatorial Guinea",
+            "notation": "226",
+            "description": "ISO 3166-1 numeric code for Equatorial Guinea"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 5,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Eritrea",
+            "notation": "232",
+            "description": "ISO 3166-1 numeric code for Eritrea"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 6,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Estonia",
+            "notation": "233",
+            "description": "ISO 3166-1 numeric code for Estonia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 7,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Eswatini",
+            "notation": "748",
+            "description": "ISO 3166-1 numeric code for Eswatini"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 8,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Ethiopia",
+            "notation": "231",
+            "description": "ISO 3166-1 numeric code for Ethiopia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 9,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Fiji",
+            "notation": "242",
+            "description": "ISO 3166-1 numeric code for Fiji"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 10,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Finland",
+            "notation": "246",
+            "description": "ISO 3166-1 numeric code for Finland"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 11,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "France",
+            "notation": "250",
+            "description": "ISO 3166-1 numeric code for France"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 12,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Gabon",
+            "notation": "266",
+            "description": "ISO 3166-1 numeric code for Gabon"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 13,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Gambia",
+            "notation": "270",
+            "description": "ISO 3166-1 numeric code for Gambia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 14,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Georgia",
+            "notation": "268",
+            "description": "ISO 3166-1 numeric code for Georgia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 15,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Germany",
+            "notation": "276",
+            "description": "ISO 3166-1 numeric code for Germany"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 16,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Ghana",
+            "notation": "288",
+            "description": "ISO 3166-1 numeric code for Ghana"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 17,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Greece",
+            "notation": "300",
+            "description": "ISO 3166-1 numeric code for Greece"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 18,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Grenada",
+            "notation": "308",
+            "description": "ISO 3166-1 numeric code for Grenada"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 19,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Guatemala",
+            "notation": "320",
+            "description": "ISO 3166-1 numeric code for Guatemala"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 20,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Guinea",
+            "notation": "324",
+            "description": "ISO 3166-1 numeric code for Guinea"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 21,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Guinea-Bissau",
+            "notation": "624",
+            "description": "ISO 3166-1 numeric code for Guinea-Bissau"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 22,
+        "fields": {
+            "created_at": "2024-09-04T18:00:08.137975",
+            "updated_at": "2024-09-04T18:00:08.138025",
+            "name": "Guyana",
+            "notation": "328",
+            "description": "ISO 3166-1 numeric code for Guyana"
+        }
+    },
+
+    {
+        "model": "wx.countryisocode",
+        "pk": 1,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Haiti",
+            "notation": "332",
+            "description": "ISO 3166-1 numeric code for Haiti"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 2,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Honduras",
+            "notation": "340",
+            "description": "ISO 3166-1 numeric code for Honduras"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 3,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Hungary",
+            "notation": "348",
+            "description": "ISO 3166-1 numeric code for Hungary"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 4,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Iceland",
+            "notation": "352",
+            "description": "ISO 3166-1 numeric code for Iceland"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 5,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "India",
+            "notation": "356",
+            "description": "ISO 3166-1 numeric code for India"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 6,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Indonesia",
+            "notation": "360",
+            "description": "ISO 3166-1 numeric code for Indonesia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 7,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Iran",
+            "notation": "364",
+            "description": "ISO 3166-1 numeric code for Iran"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 8,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Iraq",
+            "notation": "368",
+            "description": "ISO 3166-1 numeric code for Iraq"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 9,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Ireland",
+            "notation": "372",
+            "description": "ISO 3166-1 numeric code for Ireland"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 10,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Israel",
+            "notation": "376",
+            "description": "ISO 3166-1 numeric code for Israel"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 11,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Italy",
+            "notation": "380",
+            "description": "ISO 3166-1 numeric code for Italy"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 12,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Jamaica",
+            "notation": "388",
+            "description": "ISO 3166-1 numeric code for Jamaica"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 13,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Japan",
+            "notation": "392",
+            "description": "ISO 3166-1 numeric code for Japan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 14,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Jordan",
+            "notation": "400",
+            "description": "ISO 3166-1 numeric code for Jordan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 15,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Kazakhstan",
+            "notation": "398",
+            "description": "ISO 3166-1 numeric code for Kazakhstan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 16,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Kenya",
+            "notation": "404",
+            "description": "ISO 3166-1 numeric code for Kenya"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 17,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Kiribati",
+            "notation": "296",
+            "description": "ISO 3166-1 numeric code for Kiribati"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 18,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Korea (North)",
+            "notation": "408",
+            "description": "ISO 3166-1 numeric code for Korea (North)"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 19,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Korea (South)",
+            "notation": "410",
+            "description": "ISO 3166-1 numeric code for Korea (South)"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 20,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Kuwait",
+            "notation": "414",
+            "description": "ISO 3166-1 numeric code for Kuwait"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 21,
+        "fields": {
+            "created_at": "2024-09-04T18:01:12.276199",
+            "updated_at": "2024-09-04T18:01:12.276245",
+            "name": "Kyrgyzstan",
+            "notation": "417",
+            "description": "ISO 3166-1 numeric code for Kyrgyzstan"
+        }
+    },
+
+    {
+        "model": "wx.countryisocode",
+        "pk": 1,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Oman",
+            "notation": "512",
+            "description": "ISO 3166-1 numeric code for Oman"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 2,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Pakistan",
+            "notation": "586",
+            "description": "ISO 3166-1 numeric code for Pakistan"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 3,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Palau",
+            "notation": "585",
+            "description": "ISO 3166-1 numeric code for Palau"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 4,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Panama",
+            "notation": "591",
+            "description": "ISO 3166-1 numeric code for Panama"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 5,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Papua New Guinea",
+            "notation": "598",
+            "description": "ISO 3166-1 numeric code for Papua New Guinea"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 6,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Paraguay",
+            "notation": "600",
+            "description": "ISO 3166-1 numeric code for Paraguay"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 7,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Peru",
+            "notation": "604",
+            "description": "ISO 3166-1 numeric code for Peru"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 8,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Philippines",
+            "notation": "608",
+            "description": "ISO 3166-1 numeric code for Philippines"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 9,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Poland",
+            "notation": "616",
+            "description": "ISO 3166-1 numeric code for Poland"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 10,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Portugal",
+            "notation": "620",
+            "description": "ISO 3166-1 numeric code for Portugal"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 11,
+        "fields": {
+            "created_at": "2024-09-04T18:03:51.821099",
+            "updated_at": "2024-09-04T18:03:51.821128",
+            "name": "Qatar",
+            "notation": "634",
+            "description": "ISO 3166-1 numeric code for Qatar"
+        }
+    },
+
+    {
+        "model": "wx.countryisocode",
+        "pk": 1,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Laos",
+            "notation": "418",
+            "description": "ISO 3166-1 numeric code for Laos"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 2,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Latvia",
+            "notation": "428",
+            "description": "ISO 3166-1 numeric code for Latvia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 3,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Lebanon",
+            "notation": "422",
+            "description": "ISO 3166-1 numeric code for Lebanon"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 4,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Lesotho",
+            "notation": "426",
+            "description": "ISO 3166-1 numeric code for Lesotho"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 5,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Liberia",
+            "notation": "430",
+            "description": "ISO 3166-1 numeric code for Liberia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 6,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Libya",
+            "notation": "434",
+            "description": "ISO 3166-1 numeric code for Libya"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 7,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Liechtenstein",
+            "notation": "438",
+            "description": "ISO 3166-1 numeric code for Liechtenstein"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 8,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Lithuania",
+            "notation": "440",
+            "description": "ISO 3166-1 numeric code for Lithuania"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 9,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Luxembourg",
+            "notation": "442",
+            "description": "ISO 3166-1 numeric code for Luxembourg"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 10,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Madagascar",
+            "notation": "450",
+            "description": "ISO 3166-1 numeric code for Madagascar"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 11,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Malawi",
+            "notation": "454",
+            "description": "ISO 3166-1 numeric code for Malawi"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 12,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Malaysia",
+            "notation": "458",
+            "description": "ISO 3166-1 numeric code for Malaysia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 13,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Maldives",
+            "notation": "462",
+            "description": "ISO 3166-1 numeric code for Maldives"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 14,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Mali",
+            "notation": "466",
+            "description": "ISO 3166-1 numeric code for Mali"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 15,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Malta",
+            "notation": "470",
+            "description": "ISO 3166-1 numeric code for Malta"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 16,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Marshall Islands",
+            "notation": "584",
+            "description": "ISO 3166-1 numeric code for Marshall Islands"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 17,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Mauritania",
+            "notation": "478",
+            "description": "ISO 3166-1 numeric code for Mauritania"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 18,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Mauritius",
+            "notation": "480",
+            "description": "ISO 3166-1 numeric code for Mauritius"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 19,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Mexico",
+            "notation": "484",
+            "description": "ISO 3166-1 numeric code for Mexico"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 20,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Micronesia",
+            "notation": "583",
+            "description": "ISO 3166-1 numeric code for Micronesia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 21,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Moldova",
+            "notation": "498",
+            "description": "ISO 3166-1 numeric code for Moldova"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 22,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Monaco",
+            "notation": "492",
+            "description": "ISO 3166-1 numeric code for Monaco"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 23,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Mongolia",
+            "notation": "496",
+            "description": "ISO 3166-1 numeric code for Mongolia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 24,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Montenegro",
+            "notation": "499",
+            "description": "ISO 3166-1 numeric code for Montenegro"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 25,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Morocco",
+            "notation": "504",
+            "description": "ISO 3166-1 numeric code for Morocco"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 26,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Mozambique",
+            "notation": "508",
+            "description": "ISO 3166-1 numeric code for Mozambique"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 27,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Myanmar (Burma)",
+            "notation": "104",
+            "description": "ISO 3166-1 numeric code for Myanmar (Burma)"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 28,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Namibia",
+            "notation": "516",
+            "description": "ISO 3166-1 numeric code for Namibia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 29,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Nauru",
+            "notation": "520",
+            "description": "ISO 3166-1 numeric code for Nauru"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 30,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Nepal",
+            "notation": "524",
+            "description": "ISO 3166-1 numeric code for Nepal"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 31,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Netherlands",
+            "notation": "528",
+            "description": "ISO 3166-1 numeric code for Netherlands"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 32,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "New Zealand",
+            "notation": "554",
+            "description": "ISO 3166-1 numeric code for New Zealand"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 33,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Nicaragua",
+            "notation": "558",
+            "description": "ISO 3166-1 numeric code for Nicaragua"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 34,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Niger",
+            "notation": "562",
+            "description": "ISO 3166-1 numeric code for Niger"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 35,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Nigeria",
+            "notation": "566",
+            "description": "ISO 3166-1 numeric code for Nigeria"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 36,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "North Macedonia",
+            "notation": "807",
+            "description": "ISO 3166-1 numeric code for North Macedonia"
+        }
+    },
+    {
+        "model": "wx.countryisocode",
+        "pk": 37,
+        "fields": {
+            "created_at": "2024-09-04T18:02:44.213991",
+            "updated_at": "2024-09-04T18:02:44.214042",
+            "name": "Norway",
+            "notation": "578",
+            "description": "ISO 3166-1 numeric code for Norway"
+        }
+    }
+
+]

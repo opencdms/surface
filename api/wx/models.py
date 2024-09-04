@@ -343,6 +343,14 @@ class WMOReportingStatus(BaseModel):
 
     def __str__(self):
         return self.name
+    
+class CountryISOCode(BaseModel):
+    name = models.CharField(max_length=256, unique=True)
+    description = models.CharField(max_length=256, null=True, blank=True)
+    notation = models.CharField(max_length=256, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class WMOProgram(BaseModel):
@@ -402,6 +410,30 @@ class Station(BaseModel):
     wigos = models.CharField(
         null=True,
         max_length=64,
+        blank=True,
+    )
+
+    wigos_part_1 = models.IntegerField(
+        null=True,
+        blank=True,
+    )
+
+    wigos_part_2 = models.ForeignKey(
+        CountryISOCode,
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True,
+    )
+
+    max_length=16
+
+    wigos_part_3 = models.IntegerField(
+        null=True,
+        blank=True,
+    )
+
+    wigos_part_4 = models.IntegerField(
+        null=True,
         blank=True,
     )
 
