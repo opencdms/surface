@@ -2259,6 +2259,64 @@ class StationListView(LoginRequiredMixin, ListView):
 
 class StationDetailView(LoginRequiredMixin, DetailView):
     model = Station
+    template_name = 'wx/station_detail.html'  # Use the appropriate template
+    context_object_name = 'station'
+
+    # Define the same layout as in the UpdateView
+    layout = Layout(
+        Fieldset('Station Information',
+                 Row('latitude', 'longitude'),
+                 Row('name', 'alias_name'),
+                 Row('code', 'wigos'),
+                 Row('begin_date', 'end_date', 'relocation_date'),
+                 Row('wmo', 'reporting_status'),
+                 Row('is_active', 'is_automatic'),
+                 Row('network', 'wmo_station_type'),
+                 Row('profile', 'communication_type'),
+                 Row('elevation', 'country'),
+                 Row('region', 'watershed'),
+                 Row('wmo_region', 'utc_offset_minutes'),
+                 Row('wmo_station_plataform', 'data_type'),
+                 Row('observer', 'organization'),
+                ),
+        Fieldset('Local Environment',
+                 Row('local_land_use'),
+                 Row('soil_type'),
+                 Row('site_description'),
+                ),
+        Fieldset('Instrumentation and Maintenance'),
+        Fieldset('Observing Practices'),
+        Fieldset('Data Processing'),
+        Fieldset('Historical Events'),
+        Fieldset('Other Metadata',
+                 Row('hydrology_station_type', 'ground_water_province'),
+                 Row('existing_gauges', 'flow_direction_at_station'),
+                 Row('flow_direction_above_station', 'flow_direction_below_station'),
+                 Row('bank_full_stage', 'bridge_level'),
+                 Row('temporary_benchmark', 'mean_sea_level'),
+                 Row('river_code', 'river_course'),
+                 Row('catchment_area_station', 'river_origin'),
+                 Row('easting', 'northing'),
+                 Row('river_outlet', 'river_length'),
+                 Row('z', 'land_surface_elevation'),
+                 Row('top_casing_land_surface', 'casing_diameter'),
+                 Row('screen_length', 'depth_midpoint'),
+                 Row('casing_type', 'datum'),
+                 Row('zone')
+                 )
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Disable all fields
+        station_form = StationForm(instance=self.object)
+        for field in station_form.fields:
+            station_form.fields[field].widget.attrs['disabled'] = 'disabled'
+            # Add a custom class to apply the dashed border via CSS
+            station_form.fields[field].widget.attrs['class'] = 'dashed-border-field'
+        context['form'] = station_form
+        context['layout'] = self.layout
+        return context
 
 
 class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -2277,13 +2335,19 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  Row('region', 'watershed'),
                  Row('utc_offset_minutes', 'begin_date'),
                  ),
-        Fieldset('OSCAR / WIS2BOX Requirements',
+        Fieldset('Additional Options',
                 #  Row('wigos'),
                  Row('wigos_part_1', 'wigos_part_2', 'wigos_part_3', 'wigos_part_4'),
                  Row('wmo_region'),
                  Row('wmo_station_type', 'reporting_status'),
                  Row('international_station'),
                  ),
+        Fieldset('OSCAR Specific Settings',
+                #  Row(''),
+                ),
+        Fieldset('WIS2BOX Specific Settings',
+                #  Row(''),
+                )
         # Fieldset('Other information',
         #          Row('alias_name', 'observer'),
         #          Row('wmo', 'organization'),
@@ -2324,44 +2388,62 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
         # retrieve api token and wigos_id
         oscar_api_token = self.request.POST.get('oscar_api_token')
-        station_wigos_id = [self.request.POST.get('wigos')]
 
-        try:
-            # run station export task
-            export_station_to_oscar_wigos(station_wigos_id, oscar_api_token)
+        station_wigos_id = [Station.objects.filter(wigos_part_4=self.request.POST.get('wigos_part_4')).values_list('wigos', flat=True).first()]
 
-        except Exception as e:
+        if oscar_api_token:
+            try:
+                # run station export task
+                export_station_to_oscar_wigos(station_wigos_id, oscar_api_token)
 
-            print(f"An error occured when attempting to add a station to OSCAR during station create!\nError: {e}")
+            except Exception as e:
+
+                print(f"An error occured when attempting to add a station to OSCAR during station create!\nError: {e}")
 
         return response
 
 
 
 class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    template_name = "wx/station_update.html"
     model = Station
     success_message = "%(name)s was updated successfully"
     form_class = StationForm
 
     layout = Layout(
-        Fieldset('Editing station',
+        Fieldset('Station Information',
                  Row('latitude', 'longitude'),
-                 Row('name', 'is_active'),
-                 Row('alias_name', 'is_automatic'),
-                 Row('code', 'profile'),
-                 Row('wmo', 'organization'),
-                 Row('wigos', 'observer'),
-                 Row('begin_date', 'data_source'),
-                 Row('end_date', 'communication_type')
-                 ),
-        Fieldset('Other information',
-                 Row('elevation', 'watershed'),
-                 Row('country', 'region'),
-                 Row('utc_offset_minutes', 'local_land_use'),
-                 Row('soil_type', 'station_details'),
-                 Row('site_description', 'alternative_names')
-                 ),
-        Fieldset('Hydrology information',
+                 Row('name', 'alias_name'),
+                 Row('code', 'wigos'),
+                 Row('begin_date', 'end_date', 'relocation_date'),
+                 Row('wmo', 'reporting_status'),
+                 Row('is_active', 'is_automatic'),
+                 Row('network', 'wmo_station_type'),
+                 Row('profile', 'communication_type'),
+                 Row('elevation', 'country'),
+                 Row('region', 'watershed'),
+                 Row('wmo_region', 'utc_offset_minutes'),
+                 Row('wmo_station_plataform', 'data_type'),
+                 Row('observer', 'organization'),
+                ),
+        Fieldset('Local Environment',
+                 Row('local_land_use'),
+                 Row('soil_type'),
+                 Row('site_description'),
+                ),
+        Fieldset('Instrumentation and Maintenance',
+                #  Row(''),
+                ),
+        Fieldset('Observing Practices',
+                #  Row(''),
+                ),
+        Fieldset('Data Processing',
+                #  Row(''),
+                ),
+        Fieldset('Historical Events',
+                #  Row(''),
+                ),
+        Fieldset('Other Metadata',
                  Row('hydrology_station_type', 'ground_water_province'),
                  Row('existing_gauges', 'flow_direction_at_station'),
                  Row('flow_direction_above_station', 'flow_direction_below_station'),
@@ -2377,9 +2459,53 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('casing_type', 'datum'),
                  Row('zone')
                  )
+        )
 
-    )
+    # layout = Layout(
+    #     Fieldset('Editing station',
+    #              Row('latitude', 'longitude'),
+    #              Row('name', 'is_active'),
+    #              Row('alias_name', 'is_automatic'),
+    #              Row('code', 'profile'),
+    #              Row('wmo', 'organization'),
+    #              Row('wigos', 'observer'),
+    #              Row('begin_date', 'data_source'),
+    #              Row('end_date', 'communication_type')
+    #              ),
+    #     Fieldset('Other information',
+    #              Row('elevation', 'watershed'),
+    #              Row('country', 'region'),
+    #              Row('utc_offset_minutes', 'local_land_use'),
+    #              Row('soil_type', 'station_details'),
+    #              Row('site_description', 'alternative_names')
+    #              ),
+    #     Fieldset('Hydrology information',
+    #              Row('hydrology_station_type', 'ground_water_province'),
+    #              Row('existing_gauges', 'flow_direction_at_station'),
+    #              Row('flow_direction_above_station', 'flow_direction_below_station'),
+    #              Row('bank_full_stage', 'bridge_level'),
+    #              Row('temporary_benchmark', 'mean_sea_level'),
+    #              Row('river_code', 'river_course'),
+    #              Row('catchment_area_station', 'river_origin'),
+    #              Row('easting', 'northing'),
+    #              Row('river_outlet', 'river_length'),
+    #              Row('z', 'land_surface_elevation'),
+    #              Row('top_casing_land_surface', 'casing_diameter'),
+    #              Row('screen_length', 'depth_midpoint'),
+    #              Row('casing_type', 'datum'),
+    #              Row('zone')
+    #              )
 
+    # )
+
+       
+    # passing required context for watershed and region autocomplete fields
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['is_update'] = True
+
+        return context
 
 @api_view(['POST'])
 def pgia_update(request):
@@ -5057,29 +5183,19 @@ class StationsMapView(LoginRequiredMixin, TemplateView):
 
 class StationMetadataView(LoginRequiredMixin, TemplateView):
     template_name = "wx/station_metadata.html"
+    model = Station
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['station_id'] = kwargs.get('pk', 'null')
-        print('kwargs', context['station_id'])
+    # passing required context for watershed and region autocomplete fields
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-        wmo_station_type_list = WMOStationType.objects.all() 
-        context['wmo_station_type_list'] = wmo_station_type_list
+        context['primary_keys'] = Station.objects.values_list('pk', flat=True)
 
-        wmo_region_list = WMORegion.objects.all()
-        context['wmo_region_list'] = wmo_region_list
+        context['station_name'] = Station.objects.values('pk', 'name')  # Fetch only pk and name
 
-        wmo_program_list = WMOProgram.objects.all()
-        context['wmo_program_list'] = wmo_program_list
+        context['is_metadata'] = True
 
-        station_profile_list = StationProfile.objects.all()
-        context['station_profile_list'] = station_profile_list
-
-        station_communication_list = StationCommunication.objects.all()
-        context['station_communication_list'] = station_communication_list
-
-        return self.render_to_response(context)
-
+        return context
 
 @api_view(['GET'])
 def latest_data(request, variable_id):

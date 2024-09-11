@@ -27,13 +27,31 @@
   </div>
 </div>
 
-<h6>Select station location on the map</h6>
-
-<div id="mapid" class="map-small"></div>
-
 <form method="POST" id="station-form">
-    {% csrf_token %}
-    <div style="max-width: 622.50px;">
+
+  {% csrf_token %}
+
+  <h6>Select station location on the map</h6>
+
+  <div id="mapid" class="map-small"></div>
+
+  <h6 style="color: #9e9e9e;">Options prefixed with <span style="color: red;">**</span> are required!</h6>
+
+  <div class="tab-container">
+    <div class="scroll-arrow" onclick="tabLeft()">
+      <i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-left theme--light"></i>
+    </div>
+    <div class="tab-bar">
+        <div class="tab active-tab" onclick="openTab('option1')">SURFACE Requirements</div>
+        <div class="tab" onclick="openTab('option2')">OSCAR SPECIFIC SETTINGS</div>
+        <div class="tab" onclick="openTab('option2')">WIS2BOX SPECIFIC SETTINGS</div>
+    </div>
+    <div class="scroll-arrow" onclick="tabRight()">
+      <i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-right theme--light"></i>
+    </div>
+  </div>
+  
+    <div>
       {% form %}
         {% attr form.is_automatic 'group' class %}srf-field-checkbox{% endattr %}
         {% attr form.is_active 'group' class %}srf-field-checkbox{% endattr %}
@@ -60,11 +78,11 @@
       
     </div>
 
-    <button type="submit" class="btn-outline-default btn-small" onclick="overlayLoader()">Submit</button>
+    <button type="submit" class="btn-outline-default metadata-btn-success btn-small" onclick="overlayLoader()">Submit</button>
 
     <a href="{% url 'stations-list' %}">
 
-      <button type="button" class="btn-outline-default btn-small">Cancel and back</button>
+      <button type="button" class="btn-outline-default metadata-btn-danger btn-small">Cancel and back</button>
 
     </a>
 </form>
@@ -75,6 +93,11 @@
 <div id="spinner-text" class="spinner-text"><p style="font-size: 20px;">Attempting Station Creation....</p></div>
 
 <style>
+#station-form {
+  max-width: 95%; 
+  margin: 0 auto;
+}
+
 .oscar-options-container {
   margin-top: 20px;
   width: 50%;
@@ -156,17 +179,19 @@
     max-height: 76px;
     padding-left: 11.25px;
     padding-right: 11.25px;
+    margin-bottom: 25px !important;
   }
   div.required label::before {
     content: "** " !important;
     color: red !important;
   }
   .map-small {
-    max-width: 70%; 
+    max-width: 80%; 
     height: 511.25px !important;
     border-radius: 20px;
     border: 2px solid rgba(0, 0, 0, 0.628);
-  }
+    /* margin: 0 auto; */
+}
   .map-large {
     max-width: 1022.50px; 
     height: 622.50px !important;
@@ -258,6 +283,97 @@
     margin-top: 30px !important;
   }
 
+  /* Style the tab links */
+  /* Style the tab links */
+  .tab {
+      display: inline-block;
+      cursor: pointer;
+      padding: 10px 20px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      font-size: .875rem;
+      font-weight: 600;
+      color: #9e9e9e;
+      letter-spacing: .0892857143em;
+      text-transform: uppercase;
+  }
+
+  .tab:hover {
+      background-color: #dddddda9;
+  }
+
+  .active-tab {
+      border-bottom: 2px solid #1976d2 ;
+      color: #1976d2;
+  }
+
+  .active-tab:hover {
+    background-color: #1976d24a ;
+  }
+
+  /* Hide all sections by default */
+  .tab-content {
+      display: none;
+      /* padding: 20px; */
+      border-top: none;
+  }
+
+  /* Style visible content */
+  .show-tab {
+      display: block;
+  }
+
+  /* Optional styling */
+  .tab-bar {
+      display: flex;
+      overflow-x: auto; /* Enables horizontal scrolling */
+      white-space: nowrap; /* Prevents breaking of text into new lines */
+      padding: 10px;
+  }
+
+  /* Hide scrollbar but allow scrolling */
+  .tab-bar::-webkit-scrollbar {
+      display: none; /* For Chrome, Safari, and Opera */
+  }
+
+  .tab-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      /* padding: 10px; */
+      margin-bottom: 0px;
+  }
+
+  .tab-bar {
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap; /* Prevents breaking of text into new lines */
+      flex-grow: 1;
+      margin: 0 10px; /* Space between the arrows and tabs */
+  }
+
+  .scroll-arrow {
+      cursor: pointer;
+      user-select: none;
+      padding: 10px;
+  }
+
+  /* buttons styling */
+  .metadata-btn-danger {
+    color: red !important;
+    border-color: red !important;
+  }
+
+  .metadata-btn-success {
+    color: #4CAF50 !important;
+    border-color: #4CAF50 !important;
+  }
+
+  .metadata-btn-info {
+    color: #1976d2 !important;
+    border-color: #1976d2 !important;
+  }
 </style>
   
   {% endblock %} {% block localjavascript %}
@@ -487,7 +603,7 @@
     // Other options group heading
     document.addEventListener('DOMContentLoaded', function() {
       // Get the current div by its ID
-      var wigosRowDiv = document.getElementById('id_wigos_part_1_container');
+      var wigosRowDiv = document.getElementById('id_wigos_part_4_container');
 
       if (wigosRowDiv) {  // Ensure the wigos row div exists
         // Get the parent of the wigos div
@@ -528,9 +644,9 @@
         }
       });
 
-      // Automatically assign ID to the <h5> element for "OSCAR / WIS2BOX Requirements"
+      // Automatically assign ID to the <h5> element for "Additional Options"
       var additionalRequirementsHeader = Array.from(document.getElementsByTagName('h5'))
-        .find(el => el.textContent.includes('OSCAR / WIS2BOX Requirements'));
+        .find(el => el.textContent.includes('Additional Options'));
       if (additionalRequirementsHeader) {
         additionalRequirementsHeader.id = 'additional-requirements';
         additionalRequirementsHeader.classList.add('form-item');
@@ -614,27 +730,117 @@
     }
 
 
-    // autocomple for watershed
-    // var watershedParent = document.getElementById("id_watershed_container");
+    // adding more information to the botton of the last 2 wigos sections
+    //for wigos_part_3
+    // Get the container div by its ID
+    const wigos3Container = document.getElementById('id_wigos_part_3_container');
 
-    // var watershedComplete = document.createElement("datalist");
+    // Create a new div element
+    const errorDivWigos3 = document.createElement('div');
+    errorDivWigos3.className = 'errors'; // Add the 'errors' class
 
-    // watershedComplete.setAttribute('id', 'watersheds');
+    // Create the small element
+    const errorTextWigos3 = document.createElement('small');
+    errorTextWigos3.className = 'error'; // Add the 'error' class
+    errorTextWigos3.textContent = 'Between 0 to 65534'; // Add the error message
 
-    // watershedParent.appendChild(watershedComplete);
+    // Append the small element to the div
+    errorDivWigos3.appendChild(errorTextWigos3);
 
-    // document.getElementById("watersheds").innerHTML = '{% for watershed in watersheds %}<option value="{{ watershed.watershed }}"></option>{% endfor %}';
+    // Append the errorDiv as the last child of the container
+    wigos3Container.appendChild(errorDivWigos3);
 
-    // autocomple for region
-    // var regionParent = document.getElementById("id_region_container");
+    //for wigos_part_4
+    // Get the container div by its ID
+    const wigos4Container = document.getElementById('id_wigos_part_4_container');
 
-    // var regionComplete = document.createElement("datalist");
+    // Create a new div element
+    const errorDivWigos4 = document.createElement('div');
+    errorDivWigos4.className = 'errors'; // Add the 'errors' class
 
-    // regionComplete.setAttribute('id', 'regions');
+    // Create the small element
+    const errorTextWigos4 = document.createElement('small');
+    errorTextWigos4.className = 'error'; // Add the 'error' class
+    errorTextWigos4.textContent = '16 characters max'; // Add the error message
 
-    // regionParent.appendChild(regionComplete);
+    // Append the small element to the div
+    errorDivWigos4.appendChild(errorTextWigos4);
 
-    // document.getElementById("regions").innerHTML = '{% for region in regions %}<option value="{{ region.name }}"></option>{% endfor %}';
+    // Append the errorDiv as the last child of the container
+    wigos4Container.appendChild(errorDivWigos4);
+
+
+
+    // control for tab options below map
+    function openTab(tabId) {
+        // Hide all tab content
+        var tabs = document.getElementsByClassName("tab-content");
+        for (var i = 0; i < tabs.length; i++) {
+            tabs[i].classList.remove("show-tab");
+        }
+
+        // Remove active class from all tabs
+        var tabLinks = document.getElementsByClassName("tab");
+        for (var i = 0; i < tabLinks.length; i++) {
+            tabLinks[i].classList.remove("active-tab");
+        }
+
+        // Show the selected tab content and set active tab
+        document.getElementById(tabId).classList.add("show-tab");
+        event.currentTarget.classList.add("active-tab");
+    }
+
+    function tabLeft() {
+        document.querySelector('.tab-bar').scrollBy({
+            left: -300, // Adjust the scroll amount
+            behavior: 'smooth'
+        });
+    }
+
+    function tabRight() {
+        document.querySelector('.tab-bar').scrollBy({
+            left: 300, // Adjust the scroll amount
+            behavior: 'smooth'
+        });
+    }
+
+    // add the necessary attributes to the calss options
+    window.addEventListener('DOMContentLoaded', function() {
+      // Find all h5 elements
+      const h5Tags = document.querySelectorAll('h5');
+      
+      // Loop through each h5 tag to find the tab options
+      h5Tags.forEach(function(h5) {
+          if (h5.textContent.trim() === "SURFACE Requirements") {
+              // Get the grandparent element of the h5 tag
+              const grandparent = h5.parentElement.parentElement;
+              
+              // Set the id and class attributes to the grandparent
+              grandparent.setAttribute('id', 'option1');
+              grandparent.setAttribute('class', 'tab-content show-tab');
+          }
+
+          else if (h5.textContent.trim() === "OSCAR Specific Settings") {
+              // Get the grandparent element of the h5 tag
+              const grandparent = h5.parentElement.parentElement;
+              
+              // Set the id and class attributes to the grandparent
+              grandparent.setAttribute('id', 'option2');
+              grandparent.setAttribute('class', 'tab-content');
+          }
+
+          else if (h5.textContent.trim() === "WIS2BOX Specific Settings") {
+              // Get the grandparent element of the h5 tag
+              const grandparent = h5.parentElement.parentElement;
+              
+              // Set the id and class attributes to the grandparent
+              grandparent.setAttribute('id', 'option3');
+              grandparent.setAttribute('class', 'tab-content');
+          }
+      });
+
+  });
+
   </script>
 </div>
 {% endblock %}
