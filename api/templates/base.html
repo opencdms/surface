@@ -554,7 +554,7 @@
 
                     {% if request.user.is_staff or request.user.is_superuser %}
 
-                    <a id="stations-list" href="{% url 'station-create' %}" class="hide-menu collection-item left-space ">CREATE A STATION<i class="material-icons secondary-content">donut_small</i></a>
+                    <a id="station-create" href="{% url 'station-create' %}" class="hide-menu collection-item left-space ">CREATE A STATION<i class="material-icons secondary-content">donut_small</i></a>
                     <a id="stations-list" href="{% url 'stations-list' %}" class="hide-menu collection-item left-space ">LIST<i class="material-icons secondary-content">donut_small</i></a>
                     <a id="station-metadata" href="{% url 'station-metadata' %}" class="hide-menu collection-item left-space ">METADATA<i class="material-icons secondary-content">donut_small</i></a>
                     <a id="station-oscar-export" href="{% url 'station-oscar-export' %}" class="hide-menu collection-item left-space ">Export to OSCAR<i class="material-icons secondary-content">donut_small</i></a>
@@ -764,6 +764,7 @@
 
         const localMenus = [
           'stations-map',
+          'station-create',
           'stations-list',
           'station-metadata',
           'station-oscar-export',

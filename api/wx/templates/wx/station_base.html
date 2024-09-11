@@ -1,24 +1,55 @@
 {% extends "base.html" %} {% block content %}
 <!-- <div class="jumbotron w-100" style="position: fixed; z-index: 99999"> -->
-{% if station %}
-<div class="jumbotron w-100">
-  <span id="stationDetailHeader" class="srf-display-1 text-uppercase">{{ station.name }}</span>
-  <div class="d-flex flex-row align-items-center mt-2 separate-items">
-    <a href="{% url 'station-detail' station.id %}" class="btn-outline-default btn-small">Metadata</a>
 
-    {% if user.is_superuser %}
-      {% url 'station-detail' station.id as metadataView %}
-      {% if request.path == metadataView %}
-        <button onclick="vmtest.toggleEditing()" class="btn-outline-default btn-small">Edit</button>
+{% if is_update %}
+
+    <div class="custom-style-station-edit">
+      <h4>Update {{ station.name }}</h4>
+      <h6>Station Management Options</h6>
+
+      <a href="{% url 'stationfiles-list' station.id %}" class="btn-outline-default btn-small">Files</a>
+
+      <a href="{% url 'stationvariable-list' station.id %}" class="btn-outline-default btn-small">Variables</a>
+
+      <a href="{% url 'station-detail' station.id %}" class="btn-outline-default metadata-btn-success btn-small">Cancel</a>
+
+      {% if user.is_superuser %}
+        <a href="{% url 'station-delete' station.id %}" class="btn-outline-default btn-small metadata-btn-danger">Delete</a>
       {% endif %}
-      <a href="{% url 'station-delete' station.id %}" class="btn-outline-default btn-small">Delete</a>
+      
+      <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small metadata-btn-info">Return to Station List</a>
+    </div>
+
+{% elif is_metadata %}
+
+
+{% else %}
+
+    {% if station %}
+        <div class="custom-style-station-edit">
+          <h4>{{ station.name }} Metadata</h4>
+          <h6>Station Management Options</h6>
+    
+          <a href="{% url 'station-metadata' %}" class="btn-outline-default btn-small">Metadata</a>
+
+          {% if user.is_superuser %}
+            {% url 'station-detail' station.id as metadataView %}
+            {% if request.path == metadataView %}
+              <a href="{% url 'station-update' station.id %}" class="btn-outline-default btn-small">Edit</a>
+            {% endif %}
+          {% endif %}
+
+          <a href="{% url 'stationfiles-list' station.id %}" class="btn-outline-default btn-small">Files</a>
+          <a href="{% url 'stationvariable-list' station.id %}" class="btn-outline-default btn-small">Variables</a>
+
+          {% if user.is_superuser %}
+          <a href="{% url 'station-delete' station.id %}" class="btn-outline-default btn-small metadata-btn-danger">Delete</a>
+        {% endif %}
+
+          <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small metadata-btn-info">Return to Station List</a>
+        </div>
     {% endif %}
 
-    <a href="{% url 'stationfiles-list' station.id %}" class="btn-outline-default btn-small">Files</a>
-    <a href="{% url 'stationvariable-list' station.id %}" class="btn-outline-default btn-small">Variables</a>
-    <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small">Return to list</a>
-  </div>
-</div>
 {% endif %}
 
 <!-- <div class="srf-container custom-space-top"> -->
@@ -28,6 +59,25 @@
 </div>
 
 <style>
+/* metadata page styles start */
+.metadata-btn-danger {
+  color: red !important;
+  border-color: red !important;
+}
+
+.metadata-btn-success {
+  color: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+}
+
+.metadata-btn-info {
+  color: #1976d2 !important;
+  border-color: #1976d2 !important;
+}
+/* metadata page styles end */
+.custom-style-station-edit {
+  padding: 24px;
+}
 .custom-space-top {
   padding-top: 119px;
 }
