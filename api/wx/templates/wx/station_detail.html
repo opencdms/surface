@@ -20,6 +20,28 @@ form input[disabled], form textarea[disabled] {
     border-bottom: 1px dashed #949494 !important;  /* Apply the same styling */
     margin-bottom: 20px !important;
 }
+
+#mapid {
+    pointer-events: none;
+    user-select: none;  /* Prevents text selection inside the div */
+    opacity: 0.8;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const elements = document.querySelectorAll('body, body *'); // Search all elements inside the body
+
+    elements.forEach(function(element) {
+        if (element.childNodes && element.childNodes.length > 0) {
+            element.childNodes.forEach(function(node) {
+                if (node.nodeType === 3 && node.nodeValue.includes('Select station location on the map')) { // Check if the node is a text node
+                    node.nodeValue = node.nodeValue.replace('Select station location on the map', 'Station location on the map');
+                }
+            });
+        }
+    });
+});
+</script>
 
 {% endblock %}

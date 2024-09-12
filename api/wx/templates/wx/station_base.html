@@ -17,11 +17,27 @@
         <a href="{% url 'station-delete' station.id %}" class="btn-outline-default btn-small metadata-btn-danger">Delete</a>
       {% endif %}
       
-      <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small metadata-btn-info">Return to Station List</a>
+      <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small metadata-btn-info">Station List</a>
     </div>
 
 {% elif is_metadata %}
 
+
+{% elif is_create %}
+
+  <div class="custom-style-station-edit">
+    <h4>Create Station</h4>
+    <h6>Station Management Options</h6>
+
+    <a href="{% url 'station-metadata' %}" class="btn-outline-default btn-small">Metadata</a>
+
+    <a href="{% url 'stations-map' %}" class="btn-outline-default metadata-btn-danger btn-small">Cancel</a>
+
+    <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small metadata-btn-info">Station List</a>
+
+    <!-- <br/><br/> -->
+
+  </div>
 
 {% else %}
 
@@ -46,7 +62,7 @@
           <a href="{% url 'station-delete' station.id %}" class="btn-outline-default btn-small metadata-btn-danger">Delete</a>
         {% endif %}
 
-          <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small metadata-btn-info">Return to Station List</a>
+          <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small metadata-btn-info">Station List</a>
         </div>
     {% endif %}
 
