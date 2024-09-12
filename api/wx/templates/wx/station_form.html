@@ -2,33 +2,316 @@
 {% block station_content %}
 {% load material_form %}
 
-<h4>Create Station</h4>
 
-<h6>Select all options the Station should support</h6>
-
-<div class="toggle-container">
-  <div class="toggle-item">
-    <label class="toggle-label">SURFACE</label>
-    <div class="toggle-switch active no-toggle">
-      <div class="toggle-knob"></div>
-    </div>
-  </div>
-  <div class="toggle-item">
-    <label class="toggle-label" style="padding-left: 30px;">OSCAR</label>
-    <div class="toggle-switch oscar-switch" onclick="toggleOptions('oscar')">
-      <div class="toggle-knob"></div>
-    </div>
-  </div>
-  <div class="toggle-item">
-    <label class="toggle-label" style="padding-left: 30px;">WIS2BOX</label>
-    <div class="toggle-switch wis2box-switch" onclick="toggleOptions('wis2box')">
-      <div class="toggle-knob"></div>
-    </div>
-  </div>
-</div>
+<style>
+  #station-form {
+    max-width: 95%; 
+    margin: 0 auto;
+  }
+  
+  .oscar-options-container {
+    margin-top: 20px;
+    width: 50%;
+    /* gap: 20px; Adjusts the spacing between toggle items */
+    /* margin-bottom: 50px; */
+  }
+  .toggle-container {
+    display: flex;
+    gap: 20px; /* Adjusts the spacing between toggle items */
+    margin-bottom: 50px;
+  }
+  
+  .toggle-item {
+    display: flex;
+    align-items: center;
+  }
+  
+  .toggle-label {
+    padding-right: 15px; /* Adjusts the spacing between the label and the switch */
+    font-size: 14px;
+    font-weight: bold;
+  }
+  
+  .toggle-switch {
+    position: relative;
+    width: 60px;
+    height: 34px;
+    background-color: #ccc;
+    border-radius: 34px;
+    cursor: pointer;
+    transition: background-color 0.4s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .toggle-switch.no-toggle {
+    pointer-events: none; /* Disable interaction */
+    background-color: #2196F3; /* Permanently 'on' color */
+  }
+  
+  .toggle-knob {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    background-color: white;
+    border-radius: 50%;
+    top: 4px;
+    left: 4px;
+    transition: transform 0.4s;
+  }
+  
+  /* Specific colors for each switch */
+  .oscar-switch.active {
+    background-color: #9C27B0; /* Purple color for OSCAR */
+  }
+  
+  .export-switch.active {
+    background-color: #9C27B0; /* Purple color for OSCAR */
+  }
+  
+  .wis2box-switch.active {
+    background-color: #4CAF50 ; /* Green color for WIS2BOX */
+  }
+  
+  .toggle-switch.active .toggle-knob {
+    transform: translateX(26px);
+  }
+  
+  /* Hide options by default */
+  .form-item {
+    display: none;
+  }
+  
+    .srf-field-checkbox label {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      max-height: 76px;
+      padding-left: 11.25px;
+      padding-right: 11.25px;
+      margin-bottom: 25px !important;
+    }
+    div.required label::before {
+      content: "** " !important;
+      color: red !important;
+    }
+    .map-small {
+      max-width: 80%; 
+      height: 511.25px !important;
+      border-radius: 20px;
+      border: 2px solid rgba(0, 0, 0, 0.628);
+      /* margin: 0 auto; */
+  }
+    .map-large {
+      max-width: 1022.50px; 
+      height: 622.50px !important;
+    }
+    .mouse-coordinates-box {
+      bottom: 5px;
+      left: 5px;
+      background-color: white;
+      padding: 2px;
+      width: 185px;
+      font-size: 12px;
+      border-radius: 2px;
+      box-shadow: 0px 3px 10px -2px rgba(0, 0, 0, 0.2),
+        0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+    }
+    #mapid {
+      margin-bottom: 20px;
+    }
+    .fullscreen-button-width {
+      width: 100px !important;
+    }
+    .transparent-caret {
+      caret-color: transparent !important;
+      cursor: default;
+    }
+    input::-webkit-calendar-picker-indicator {
+      display: none !important;
+    }
+    h5 {
+      margin-bottom: 25px !important;
+    }
+  
+  
+    .spinner {
+        display: none;
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #3498db;
+        border-radius: 50%;
+        width: 70px;
+        height: 70px;
+        animation: spin 2s linear infinite;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        margin-left: -35px;
+        margin-top: -50px;
+        z-index: 1001;
+    }
+  
+  
+    .overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.306);
+        z-index: 1000;
+        backdrop-filter: blur(5px);
+    }
+  
+  
+    .spinner-text {
+        display: none;
+        position: fixed;
+        top: 60%;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #5a5a5a;
+        font-size: 20px !important;
+        text-align: center;
+        z-index: 1001;
+    }
+  
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+  
+    .subInfo {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 16px;
+      margin-top: 0px;
+    }
+  
+    #additionalInfo {
+      margin-top: 30px !important;
+    }
+  
+    /* Style the tab links */
+    /* Style the tab links */
+    .tab {
+        display: inline-block;
+        cursor: pointer;
+        padding: 10px 20px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        font-size: .875rem;
+        font-weight: 600;
+        color: #9e9e9e;
+        letter-spacing: .0892857143em;
+        text-transform: uppercase;
+    }
+  
+    .tab:hover {
+        background-color: #dddddda9;
+    }
+  
+    .active-tab {
+        border-bottom: 2px solid #1976d2 ;
+        color: #1976d2;
+    }
+  
+    .active-tab:hover {
+      background-color: #1976d24a ;
+    }
+  
+    /* Hide all sections by default */
+    .tab-content {
+        display: none;
+        border-top: none;
+    }
+  
+    /* Style visible content */
+    .show-tab {
+        display: block;
+    }
+  
+    /* Optional styling */
+    .tab-bar {
+        display: flex;
+        overflow-x: auto; /* Enables horizontal scrolling */
+        white-space: nowrap; /* Prevents breaking of text into new lines */
+        padding: 10px;
+    }
+  
+    /* Hide scrollbar but allow scrolling */
+    .tab-bar::-webkit-scrollbar {
+        display: none; /* For Chrome, Safari, and Opera */
+    }
+  
+    .tab-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        /* padding: 10px; */
+        margin-bottom: 0px;
+    }
+  
+    .tab-bar {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap; /* Prevents breaking of text into new lines */
+        flex-grow: 1;
+        margin: 0 10px; /* Space between the arrows and tabs */
+    }
+  
+    .scroll-arrow {
+        cursor: pointer;
+        user-select: none;
+        padding: 10px;
+    }
+  
+    /* buttons styling */
+    .metadata-btn-danger {
+      color: red !important;
+      border-color: red !important;
+    }
+  
+    .metadata-btn-success {
+      color: #4CAF50 !important;
+      border-color: #4CAF50 !important;
+    }
+  
+    .metadata-btn-info {
+      color: #1976d2 !important;
+      border-color: #1976d2 !important;
+    }
+</style>
+    
 
 <form method="POST" id="station-form">
 
+  <h6>Select all options the Station should support</h6>
+
+  <div class="toggle-container">
+    <div class="toggle-item">
+      <label class="toggle-label">SURFACE</label>
+      <div class="toggle-switch active no-toggle">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+    <div class="toggle-item">
+      <label class="toggle-label" style="padding-left: 30px;">OSCAR</label>
+      <div class="toggle-switch oscar-switch" onclick="toggleOptions('oscar')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+    <div class="toggle-item">
+      <label class="toggle-label" style="padding-left: 30px;">WIS2BOX</label>
+      <div class="toggle-switch wis2box-switch" onclick="toggleOptions('wis2box')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+  </div>  
+  
   {% csrf_token %}
 
   <h6>Select station location on the map</h6>
@@ -43,8 +326,8 @@
     </div>
     <div class="tab-bar">
         <div class="tab active-tab" onclick="openTab('option1')">SURFACE Requirements</div>
-        <div class="tab" onclick="openTab('option2')">OSCAR SPECIFIC SETTINGS</div>
-        <div class="tab" onclick="openTab('option2')">WIS2BOX SPECIFIC SETTINGS</div>
+        <div id="oscar_specific_settings" class="tab" onclick="openTab('option2')">OSCAR SPECIFIC SETTINGS</div>
+        <div id="wis2box_specific_settings" class="tab" onclick="openTab('option3')">WIS2BOX SPECIFIC SETTINGS</div>
     </div>
     <div class="scroll-arrow" onclick="tabRight()">
       <i aria-hidden="true" class="v-icon notranslate mdi mdi-chevron-right theme--light"></i>
@@ -60,29 +343,31 @@
       {% endform %}
     </div>
 
-    <div style="margin-bottom: 20px;" id="exportOptions">
-        
-      <div class="toggle-item">
-        <label class="toggle-label" style="font-weight: 500; font-size: 20px;">Export Station Metadata to OSCAR on Station Creation</label>
-        <div class="toggle-switch export-switch" onclick="toggleOptions('export')">
-          <div class="toggle-knob"></div>
+    <div id="exportOptionsContainer" class="tab-content show-tab">
+      <div style="margin-bottom: 20px;" id="exportOptions">
+          
+        <div class="toggle-item">
+          <label class="toggle-label" style="font-weight: 500; font-size: 20px;">Export Station Metadata to OSCAR on Station Creation</label>
+          <div class="toggle-switch export-switch" onclick="toggleOptions('export')">
+            <div class="toggle-knob"></div>
+          </div>
         </div>
-      </div>
 
-      <div id="token_option" style="width: 50%;">
-        <div>
-          <label for="oscar_api_token">API Token</label>
-          <input type="text" id="oscar_api_token" name="oscar_api_token"/>
+        <div id="token_option" style="width: 50%;">
+          <div>
+            <label for="oscar_api_token">API Token</label>
+            <input type="text" id="oscar_api_token" name="oscar_api_token"/>
+          </div>
         </div>
+        
       </div>
-      
     </div>
 
     <button type="submit" class="btn-outline-default metadata-btn-success btn-small" onclick="overlayLoader()">Submit</button>
 
-    <a href="{% url 'stations-list' %}">
+    <a href="{% url 'stations-map' %}">
 
-      <button type="button" class="btn-outline-default metadata-btn-danger btn-small">Cancel and back</button>
+      <button type="button" class="btn-outline-default metadata-btn-danger btn-small">Cancel</button>
 
     </a>
 </form>
@@ -92,290 +377,7 @@
 <div id="spinner" class="spinner"></div>
 <div id="spinner-text" class="spinner-text"><p style="font-size: 20px;">Attempting Station Creation....</p></div>
 
-<style>
-#station-form {
-  max-width: 95%; 
-  margin: 0 auto;
-}
 
-.oscar-options-container {
-  margin-top: 20px;
-  width: 50%;
-  /* gap: 20px; Adjusts the spacing between toggle items */
-  /* margin-bottom: 50px; */
-}
-.toggle-container {
-  display: flex;
-  gap: 20px; /* Adjusts the spacing between toggle items */
-  margin-bottom: 50px;
-}
-
-.toggle-item {
-  display: flex;
-  align-items: center;
-}
-
-.toggle-label {
-  padding-right: 15px; /* Adjusts the spacing between the label and the switch */
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.toggle-switch {
-  position: relative;
-  width: 60px;
-  height: 34px;
-  background-color: #ccc;
-  border-radius: 34px;
-  cursor: pointer;
-  transition: background-color 0.4s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.toggle-switch.no-toggle {
-  pointer-events: none; /* Disable interaction */
-  background-color: #2196F3; /* Permanently 'on' color */
-}
-
-.toggle-knob {
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  background-color: white;
-  border-radius: 50%;
-  top: 4px;
-  left: 4px;
-  transition: transform 0.4s;
-}
-
-/* Specific colors for each switch */
-.oscar-switch.active {
-  background-color: #9C27B0; /* Purple color for OSCAR */
-}
-
-.export-switch.active {
-  background-color: #9C27B0; /* Purple color for OSCAR */
-}
-
-.wis2box-switch.active {
-  background-color: #4CAF50 ; /* Green color for WIS2BOX */
-}
-
-.toggle-switch.active .toggle-knob {
-  transform: translateX(26px);
-}
-
-/* Hide options by default */
-.form-item {
-  display: none;
-}
-
-  .srf-field-checkbox label {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    max-height: 76px;
-    padding-left: 11.25px;
-    padding-right: 11.25px;
-    margin-bottom: 25px !important;
-  }
-  div.required label::before {
-    content: "** " !important;
-    color: red !important;
-  }
-  .map-small {
-    max-width: 80%; 
-    height: 511.25px !important;
-    border-radius: 20px;
-    border: 2px solid rgba(0, 0, 0, 0.628);
-    /* margin: 0 auto; */
-}
-  .map-large {
-    max-width: 1022.50px; 
-    height: 622.50px !important;
-  }
-  .mouse-coordinates-box {
-    bottom: 5px;
-    left: 5px;
-    background-color: white;
-    padding: 2px;
-    width: 185px;
-    font-size: 12px;
-    border-radius: 2px;
-    box-shadow: 0px 3px 10px -2px rgba(0, 0, 0, 0.2),
-      0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
-  }
-  #mapid {
-    margin-bottom: 20px;
-  }
-  .fullscreen-button-width {
-    width: 100px !important;
-  }
-  .transparent-caret {
-    caret-color: transparent !important;
-    cursor: default;
-  }
-  input::-webkit-calendar-picker-indicator {
-    display: none !important;
-  }
-  h5 {
-    margin-bottom: 25px !important;
-  }
-
-
-  .spinner {
-      display: none;
-      border: 8px solid #f3f3f3;
-      border-top: 8px solid #3498db;
-      border-radius: 50%;
-      width: 70px;
-      height: 70px;
-      animation: spin 2s linear infinite;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      margin-left: -35px;
-      margin-top: -50px;
-      z-index: 1001;
-  }
-
-
-  .overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.306);
-      z-index: 1000;
-      backdrop-filter: blur(5px);
-  }
-
-
-  .spinner-text {
-      display: none;
-      position: fixed;
-      top: 60%;
-      left: 50%;
-      transform: translateX(-50%);
-      color: #5a5a5a;
-      font-size: 20px !important;
-      text-align: center;
-      z-index: 1001;
-  }
-
-  @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-  }
-
-  .subInfo {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 16px;
-    margin-top: 0px;
-  }
-
-  #additionalInfo {
-    margin-top: 30px !important;
-  }
-
-  /* Style the tab links */
-  /* Style the tab links */
-  .tab {
-      display: inline-block;
-      cursor: pointer;
-      padding: 10px 20px;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-      font-size: .875rem;
-      font-weight: 600;
-      color: #9e9e9e;
-      letter-spacing: .0892857143em;
-      text-transform: uppercase;
-  }
-
-  .tab:hover {
-      background-color: #dddddda9;
-  }
-
-  .active-tab {
-      border-bottom: 2px solid #1976d2 ;
-      color: #1976d2;
-  }
-
-  .active-tab:hover {
-    background-color: #1976d24a ;
-  }
-
-  /* Hide all sections by default */
-  .tab-content {
-      display: none;
-      /* padding: 20px; */
-      border-top: none;
-  }
-
-  /* Style visible content */
-  .show-tab {
-      display: block;
-  }
-
-  /* Optional styling */
-  .tab-bar {
-      display: flex;
-      overflow-x: auto; /* Enables horizontal scrolling */
-      white-space: nowrap; /* Prevents breaking of text into new lines */
-      padding: 10px;
-  }
-
-  /* Hide scrollbar but allow scrolling */
-  .tab-bar::-webkit-scrollbar {
-      display: none; /* For Chrome, Safari, and Opera */
-  }
-
-  .tab-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      /* padding: 10px; */
-      margin-bottom: 0px;
-  }
-
-  .tab-bar {
-      display: flex;
-      overflow-x: auto;
-      white-space: nowrap; /* Prevents breaking of text into new lines */
-      flex-grow: 1;
-      margin: 0 10px; /* Space between the arrows and tabs */
-  }
-
-  .scroll-arrow {
-      cursor: pointer;
-      user-select: none;
-      padding: 10px;
-  }
-
-  /* buttons styling */
-  .metadata-btn-danger {
-    color: red !important;
-    border-color: red !important;
-  }
-
-  .metadata-btn-success {
-    color: #4CAF50 !important;
-    border-color: #4CAF50 !important;
-  }
-
-  .metadata-btn-info {
-    color: #1976d2 !important;
-    border-color: #1976d2 !important;
-  }
-</style>
-  
   {% endblock %} {% block localjavascript %}
   <script>
     
@@ -657,6 +659,7 @@
       // toggleOptions('wis2box');
     });
 
+    // radio buttons at the top of the page
     function toggleOptions(toggleName) {
       var toggleElement = document.querySelector('.' + toggleName + '-switch');
       var isActive = toggleElement.classList.toggle('active');
@@ -697,21 +700,24 @@
       var wmo_regionContainer = document.getElementById('id_wmo_region_container');
       var reporting_statusContainer = document.getElementById('id_reporting_status_container');
       var wmo_station_typeContainer = document.getElementById('id_wmo_station_type_container');
+      var oscar_settings_container = document.getElementById('oscar_specific_settings');
       if (oscarActive) {
         exportOptions.style.display = 'block';
         wmo_regionContainer.style.display = 'block';
         reporting_statusContainer.style.display = 'block';
         wmo_station_typeContainer.style.display = 'block';
+        oscar_settings_container.style.display = 'block';
       } else {
         exportOptions.style.display = 'none';
         wmo_regionContainer.style.display = 'none';
         reporting_statusContainer.style.display = 'none';
         wmo_station_typeContainer.style.display = 'none';
+        oscar_settings_container.style.display = 'none';
       }
 
       var tokenOption = document.getElementById('token_option');
       var tokenInput = document.getElementById('oscar_api_token');
-
+      
       if(exportActive) {
         tokenOption.style.display = 'block';
         // tokenInput.setAttribute('required', 'required');
@@ -719,17 +725,22 @@
         tokenOption.style.display = 'none';
         // tokenInput.removeAttribute('required');
       }
-
+      
       // WIS2BOX-specific containers
       var wis2boxContainer = document.getElementById('id_international_station_container');
+      var wis2box_settings_container = document.getElementById('wis2box_specific_settings');
+      
       if (wis2boxActive) {
         wis2boxContainer.style.display = 'block';
+        wis2box_settings_container.style.display = 'block';
       } else {
         wis2boxContainer.style.display = 'none';
+        wis2box_settings_container.style.display = 'none';
       }
     }
 
 
+    //-------------------------wigos fields control start---------------------------//
     // adding more information to the botton of the last 2 wigos sections
     //for wigos_part_3
     // Get the container div by its ID
@@ -768,7 +779,19 @@
 
     // Append the errorDiv as the last child of the container
     wigos4Container.appendChild(errorDivWigos4);
+//-------------------------wigos fields control end---------------------------//
 
+    // adding the an event listener to modify the parent div of additional options to work with tab options
+    document.addEventListener('DOMContentLoaded', function() {
+      const h5Element = document.getElementById('additional-requirements');
+      if (h5Element) {
+        const parentDiv = h5Element.closest('div');
+        if (parentDiv) {
+          parentDiv.id = 'additional-requirements-container';
+          parentDiv.classList.add('show-tab', 'tab-content');
+        }
+      }
+      });
 
 
     // control for tab options below map
@@ -788,8 +811,15 @@
         // Show the selected tab content and set active tab
         document.getElementById(tabId).classList.add("show-tab");
         event.currentTarget.classList.add("active-tab");
+
+        //show the additional options and oscar api upload option along with SURFACE REQUIREMENTS
+        if (tabId == 'option1') {
+          document.getElementById('exportOptionsContainer').classList.add("show-tab");
+          document.getElementById('additional-requirements-container').classList.add("show-tab");
+        }
     }
 
+    // scroll carets control for the tab bar
     function tabLeft() {
         document.querySelector('.tab-bar').scrollBy({
             left: -300, // Adjust the scroll amount

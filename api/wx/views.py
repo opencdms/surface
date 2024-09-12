@@ -2381,6 +2381,9 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         context['watersheds'] = Watershed.objects.all()
         context['regions'] = AdministrativeRegion.objects.all()
 
+        # to show station management buttons beneath the title
+        context['is_create'] = True
+
         return context
 
     def form_valid(self, form):
@@ -2499,7 +2502,7 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     # )
 
        
-    # passing required context for watershed and region autocomplete fields
+    # passing context to display menu buttons beneat the title
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
