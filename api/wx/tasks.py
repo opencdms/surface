@@ -40,7 +40,7 @@ from wx.decoders.toa5 import read_file as read_file_toa5
 from wx.models import DataFile
 from wx.models import Document
 from wx.models import NoaaDcp
-from wx.models import Station
+from wx.models import Station, Country, WMOReportingStatus, WMORegion, WMOStationType
 from wx.models import StationFileIngestion, StationDataFile
 from wx.models import HourlySummaryTask, DailySummaryTask
 from wx.models import HydroMLPredictionStation, HydroMLPredictionMapping
@@ -2050,38 +2050,35 @@ def export_station_to_oscar(request):
 
 # logic to submit station information to OSCAR given the wigos id and the api token
 @shared_task
-def export_station_to_oscar_wigos(selected_ids, api_token):
+def export_station_to_oscar_wigos(selected_ids, api_token, cleaned_data):
 
     # Log the wigos id
-    print(f"Selected IDs: {selected_ids}")
+    print(f"Selected IDs: {selected_ids[0]}")
     # print(f"Token entered: {api_token}")
 
-    if selected_ids:
-
-        stations = Station.objects.filter(wigos__in=selected_ids)
+    if selected_ids[0]:
 
         try:
-            for obj in stations:
-                station_info = []
-                
-                station_info.append(str(obj.wigos))
-                station_info.append(str(obj.name))
-                station_info.append(str(datetime.strptime(f'{obj.begin_date}', '%Y-%m-%d %H:%M:%S%z').strftime('%Y-%m-%dT%H:%M:%SZ')))
-                station_info.append(str(obj.latitude))
-                station_info.append(str(obj.longitude))
-                station_info.append(str(obj.elevation))
-                station_info.append(str(obj.wmo_region.notation))
-                station_info.append(str(obj.wmo_station_type.notation))
-                station_info.append(str(obj.reporting_status.notation))
-                station_info.append(str(datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')))
-                station_info.append(str(datetime.utcnow().strftime('%Y-%m-%dZ')))
-                station_info.append(str(obj.country.notation))
+            station_info = []
+            
+            station_info.append(str(selected_ids[0]))
+            station_info.append(str(cleaned_data['name']))
+            station_info.append(str(datetime.strptime(f"{cleaned_data['begin_date']}", '%Y-%m-%d %H:%M:%S%z').strftime('%Y-%m-%dT%H:%M:%SZ')))
+            station_info.append(str(cleaned_data['latitude']))
+            station_info.append(str(cleaned_data['longitude']))
+            station_info.append(str(cleaned_data['elevation']))
+            station_info.append(str(WMORegion.objects.filter(name=cleaned_data['wmo_region']).values_list('notation', flat=True).first()))
+            station_info.append(str(WMOStationType.objects.filter(name=cleaned_data['wmo_station_type']).values_list('notation', flat=True).first()))
+            station_info.append(str(WMOReportingStatus.objects.filter(name=cleaned_data['reporting_status']).values_list('notation', flat=True).first()))
+            station_info.append(str(datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')))
+            station_info.append(str(datetime.utcnow().strftime('%Y-%m-%dZ')))
+            station_info.append(str(Country.objects.filter(name=cleaned_data['country']).values_list('notation', flat=True).first()))
 
-                # export station information to OSCAR
-                exso.surface_to_oscar(station_info, api_token=api_token)
+            # export station information to OSCAR
+            return exso.surface_to_oscar(station_info, api_token=api_token)
 
         except Exception as e:
-            raise e
+            return {'code': 406, 'description': f'{e}'}
         
     else:
-        raise Exception("No WIGOS ID was provided")
+        return {'code': 412, 'description': 'No WIGOS ID was provided'}

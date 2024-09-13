@@ -10,10 +10,14 @@
       </a>
     </div>
   </div>
-  <div class="srf-layout flex-row" style="width:100%;">
+  
+  <div class="srf-layout" style="width:100%;">
     <form id="oscar-station-form">
+
+      <h6 style="color: #9e9e9e;"><span style="color: red;">**</span>Only stations meeting OSCAR minimum requirements are displayed</h6>
+
       {% csrf_token %} 
-      <table id="id_station_list" class="mdl-data-table" style="width:100%">
+      <table id="id_station_list" class="mdl-data-table" style="width:100%;">
         <thead>
           <tr>
             <th>Export</th>
@@ -190,6 +194,31 @@
       }
     });
   }
+  
+  // Check if the overlay and spinner are displayed when the page is loaded
+  window.onload = function() {
+      var overlay = document.getElementById('overlay');
+      
+      // Check if the overlay display is currently 'block'
+      if (overlay.style.display === 'block') {
+          // Hide the overlay and spinner if display is 'block'
+          overlay.style.display = 'none';
+          document.getElementById('spinner').style.display = 'none';
+          document.getElementById('spinner-text').style.display = 'none';
+      }
+  };
+  // Hide the spinner and overlay when the page is restored from cache (e.g., when pressing back button)
+  window.addEventListener('pageshow', function(event) {
+      var overlay = document.getElementById('overlay');
+      
+      // Check if the event is triggered from cache
+      if (event.persisted) {
+          overlay.style.display = 'none';
+          document.getElementById('spinner').style.display = 'none';
+          document.getElementById('spinner-text').style.display = 'none';
+      }
+  });
+
 
   // select all options and submit the form
   function selectAll() {
