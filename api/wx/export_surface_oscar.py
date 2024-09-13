@@ -100,10 +100,12 @@ def surface_to_oscar(station_info, api_token):
             result = upload_xml(station_xml_path, dev_client)
             print(f'Station {station_details["station_name"]} {station_details["wigos_id"]} - returned code {result}')
 
+            return result
+
         # else:
         #     return
         
     except Exception as e:
         print(f'surface to oscar failed on Station: {station_details["station_name"]}, WIGOS ID: {station_details["wigos_id"]}! error: {e}')
 
-        return
+        return {'code': 406, 'description': f'{e}'}

@@ -54,7 +54,7 @@ from wx.forms import StationForm
 from wx.models import AdministrativeRegion, StationFile, Decoder, QualityFlag, DataFile, DataFileStation, \
     DataFileVariable, StationImage, WMOStationType, WMORegion, WMOProgram, StationCommunication
 from wx.models import Country, Unit, Station, Variable, DataSource, StationVariable, \
-    StationProfile, Document, Watershed, Interval
+    StationProfile, Document, Watershed, Interval, CountryISOCode
 from wx.utils import get_altitude, get_watershed, get_district, get_interpolation_image, parse_float_value, \
     parse_int_value
 from .utils import get_raw_data, get_station_raw_data
@@ -2374,6 +2374,16 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         #          )
     )
 
+    # Override dispatch to initialize variables
+    def dispatch(self, request, *args, **kwargs):
+        # Initialize your instance variable oscar_error_message
+        self.oscar_error_msg = ""
+        self.is_oscar_error_msg = False
+        
+        # Call the parent class's dispatch method to ensure the default behavior is preserved
+        return super().dispatch(request, *args, **kwargs)
+    
+
     # passing required context for watershed and region autocomplete fields
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2386,24 +2396,80 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
         return context
 
+
+    # form_valid function
     def form_valid(self, form):
-        response = super().form_valid(form)
 
         # retrieve api token and wigos_id
         oscar_api_token = self.request.POST.get('oscar_api_token')
 
-        station_wigos_id = [Station.objects.filter(wigos_part_4=self.request.POST.get('wigos_part_4')).values_list('wigos', flat=True).first()]
+        station_wigos_id = [f"{str(form.cleaned_data['wigos_part_1'])}-{str(CountryISOCode.objects.filter(name=form.cleaned_data['wigos_part_2']).values_list('notation', flat=True).first())}-{str(form.cleaned_data['wigos_part_3'])}-{str(form.cleaned_data['wigos_part_4'])}"]
 
         if oscar_api_token:
             try:
                 # run station export task
-                export_station_to_oscar_wigos(station_wigos_id, oscar_api_token)
+                oscar_response_dict = export_station_to_oscar_wigos(station_wigos_id, oscar_api_token, form.cleaned_data)
+
+                # check if station was succesfully added to OSCAR or not
+                oscar_check = self.check_oscar_push(oscar_response_dict)
+
+                # if oscar push was unsuccessful
+                if not oscar_check[0]:
+
+                    # get the error message (why the oscar push failed)
+                    self.oscar_error_msg = oscar_check[1]['error_message']
+                    # oscar has recieved failed and therefore recieved an error message
+                    self.is_oscar_error_msg = True
+
+                    # execute the form_invalid option
+                    return self.form_invalid(form)
 
             except Exception as e:
 
                 print(f"An error occured when attempting to add a station to OSCAR during station create!\nError: {e}")
 
+                self.oscar_error_msg = f'An error occured when attempting to add a station to OSCAR during station creation!'
+
+                self.is_oscar_error_msg = True
+
+                return self.form_invalid(form)
+
+        return super().form_valid(form)
+
+
+    def form_invalid(self, form):
+        # default behavior catches form errors
+        response = super().form_invalid(form)
+
+        response.context_data['oscar_error_msg'] = self.oscar_error_msg
+        response.context_data['is_oscar_error_msg'] = self.is_oscar_error_msg
+
         return response
+
+
+    # fxn to check if station was successfully added to oscar
+    def check_oscar_push(self, oscar_response):
+        oscar_response_message = {'error_message': ""}
+
+        if oscar_response.get('code'):
+            if oscar_response['code'] == 401:
+                oscar_response_message['error_message'] = "Incorrect API token!\nTo be able to access OSCAR a valid API token is required.\nEnter the correct API token or please contact OSCAR service desk!"
+            elif oscar_response['code'] == 412:
+                oscar_response_message['error_message'] = oscar_response['description']
+            else:
+                oscar_response_message['error_message'] = "An error occured when attempting to add a station to OSCAR during station creation!"
+
+
+        # return true is oscar push was successful
+        elif oscar_response.get('xmlStatus'):
+
+            if  oscar_response['xmlStatus'] == 'SUCCESS':
+                return [True]
+            else:
+                oscar_response_message['error_message'] = oscar_response['logs']
+        
+        # otherwise return false
+        return [False, oscar_response_message]
 
 
 
