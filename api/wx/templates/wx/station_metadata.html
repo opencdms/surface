@@ -26,7 +26,7 @@
   .metadata-dropdown .metadata-dropdown-selected {
       padding: 10px;
       margin-top: 20px;
-      border-bottom: 1.5px solid #ccc;
+      border-bottom: 2px solid #000000;
       background-color: #fff;
       display: flex;
       justify-content: space-between;
@@ -66,7 +66,8 @@
   }
 
   .metadata-dropdown-items div:hover {
-      background-color: #f1f1f1;
+        background-color: #1976d238 !important;
+        color: #1976d2 !important;
   }
 
   /* Class for the selected item */
@@ -106,7 +107,7 @@
   <h4>Station Metadata</h4>
 
     <div class="metadata-dropdown-container">
-      <h6>Select station location on the map</h6>
+      <h6>Select a station to view metadata</h6>
       <div class="metadata-dropdown" id="metadata-dropdown">
           <div class="metadata-dropdown-selected" id="metadata-selected-item">
             Select Station
@@ -114,14 +115,10 @@
           </div>
 
           <div class="metadata-dropdown-items">
-            {% for id in primary_keys %}
-              <a href="{% url 'station-detail' id %}" class="no-style-link">
+            {% for station in station_name %}
+              <a href="{% url 'station-detail' station.pk %}" class="no-style-link" onclick="mainOverlayLoader()">
                 <div>
-                  {% for station in station_name %}
-                    {% if station.pk == id %}
-                      {{ station.name }}
-                    {% endif %}
-                  {% endfor %}
+                    {{ station.name }}
                 </div>
               </a>
             {% endfor %}

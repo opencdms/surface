@@ -26,6 +26,104 @@ form input[disabled], form textarea[disabled] {
     user-select: none;  /* Prevents text selection inside the div */
     opacity: 0.8;
 }
+
+
+  /* Metadata Styling Start */
+  .metadata-dropdown-container {
+      width: 30% !important;
+  }
+
+  .metadata-label {
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      display: block;
+  }
+
+  .metadata-dropdown {
+      position: relative;
+      width: 100%;
+      cursor: pointer;
+      font-size: 16px;
+  }
+
+  .metadata-dropdown .metadata-dropdown-selected {
+      padding: 10px;
+      margin-top: 20px;
+      border-bottom: 2px solid #000000;
+      background-color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+  }
+
+  .metadata-dropdown-selected i {
+      transition: transform 0.3s ease; /* Smooth rotation for the icon */
+  }
+
+  /* Initially hidden dropdown content */
+  .metadata-dropdown-items {
+      display: none;
+      position: absolute;
+      background-color: #fff;
+      width: 100%;
+      box-shadow: 0 4px 6px 0 rgba(32,33,36,.28);
+      z-index: 99;
+      overflow: hidden;
+      max-height: 0; /* Initially collapsed */
+      opacity: 0;
+      transition: max-height 0.3s ease, opacity 0.3s ease; /* Smooth open/close */
+  }
+
+  /* Show dropdown with animation */
+  .dropdown-open .metadata-dropdown-items {
+      display: block;
+      max-height: 400px; /* Set the max height to 50px */
+      opacity: 1;
+      overflow-y: auto; /* Allow scrolling */
+  }
+
+  .metadata-dropdown-items div {
+      padding: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s; /* Smooth color transition */
+  }
+
+  .metadata-dropdown-items div:hover {
+        background-color: #1976d238 !important;
+        color: #1976d2 !important;
+  }
+
+  /* Class for the selected item */
+  .selected-item {
+      background-color: #1976d238 !important;
+      color: #1976d2 !important;
+  }
+
+  .metadata-dropdown .metadata-dropdown-selected i {
+      transition: color 0.3s, transform 0.3s; /* Smooth transition for icon */
+  }
+
+  /* When the dropdown is active (clicked on) */
+  .metadata-dropdown.active {
+      border-color: #1976d2; /* Change border color */
+  }
+
+  .metadata-dropdown.active .metadata-dropdown-selected i {
+      color: #1976d2; /* Change icon color */
+  }
+
+  /* Override styles for the specific <a> tag inside this section */
+  a.no-style-link {
+      color: inherit;
+      text-decoration: none;
+  }
+
+  /* Optionally, you can style the div inside the link as needed */
+  a.no-style-link div {
+      padding: 10px;
+      background-color: #fff; /* Your styling */
+  }
 </style>
 
 <script>
@@ -42,6 +140,76 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+
+
+// metadata dropdown control. Note that the html and css are in station_base.html
+// Metadata dropdown control
+document.getElementById("metadata-dropdown").addEventListener("click", function () {
+    this.classList.toggle("dropdown-open");
+    this.classList.toggle("active");  // Toggle the active class for color change
+
+    // Toggle the icon between menu-down and menu-up with rotation
+    var icon = this.querySelector("i");
+    if (this.classList.contains("dropdown-open")) {
+        icon.classList.remove("mdi-menu-down");
+        icon.classList.add("mdi-menu-up");
+        icon.style.transform = "rotate(180deg)"; // Rotate up
+    } else {
+        icon.classList.remove("mdi-menu-up");
+        icon.classList.add("mdi-menu-down");
+        icon.style.transform = "rotate(0deg)"; // Rotate back to down
+    }
+});
+
+// Handle item selection
+document.querySelectorAll(".metadata-dropdown-items div").forEach(function (item) {
+    item.addEventListener("click", function () {
+        // Remove the 'selected-item' class from all items
+        document.querySelectorAll('.metadata-dropdown-items div').forEach(function (el) {
+            el.classList.remove('selected-item');
+        });
+
+        // Add the 'selected-item' class to the clicked item
+        this.classList.add('selected-item');
+
+        // Update the selected item text in the dropdown
+        var selectedItem = document.getElementById("metadata-selected-item");
+        selectedItem.firstChild.nodeValue = this.innerText + ' ';  // Update text only
+
+        // Close the dropdown
+        var dropdown = document.getElementById("metadata-dropdown");
+        dropdown.classList.remove("dropdown-open");
+        dropdown.classList.remove("active");  // Remove the active class after selection
+
+        // Ensure the icon changes back to menu-down and resets rotation after selection
+        var icon = dropdown.querySelector("i");
+        icon.classList.remove("mdi-menu-up");
+        icon.classList.add("mdi-menu-down");
+        icon.style.transform = "rotate(0deg)"; // Rotate back to down
+    });
+});
+
+// Close dropdown when clicking outside and reset border and icon color
+window.onclick = function(event) {
+    if (!event.target.closest('#metadata-dropdown')) {
+        var dropdowns = document.getElementsByClassName("metadata-dropdown");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('dropdown-open')) {
+                openDropdown.classList.remove('dropdown-open');
+                openDropdown.classList.remove('active');  // Remove active class on outside click
+
+                // Reset the icon to menu-down and rotation when closing
+                var icon = openDropdown.querySelector("i");
+                icon.classList.remove("mdi-menu-up");
+                icon.classList.add("mdi-menu-down");
+                icon.style.transform = "rotate(0deg)";
+            }
+        }
+    }
+};
+
 </script>
 
 {% endblock %}

@@ -63,6 +63,28 @@
         {% endif %}
 
           <a href="{% url 'stations-list' %}" class="btn-outline-default btn-small metadata-btn-info">Station List</a>
+        
+        
+
+          <div class="metadata-dropdown-container">
+            <div class="metadata-dropdown" id="metadata-dropdown">
+                <div class="metadata-dropdown-selected" id="metadata-selected-item">
+                  {{ station.name }}
+                  <i aria-hidden="true" class="v-icon notranslate mdi mdi-menu-down theme--light"></i>
+                </div>
+      
+                <div class="metadata-dropdown-items">
+                  {% for station in station_name %}
+                    <a href="{% url 'station-detail' station.pk %}" class="no-style-link" onclick="mainOverlayLoader()">
+                      <div>
+                          {{ station.name }}
+                      </div>
+                    </a>
+                  {% endfor %}
+                </div>            
+            </div>
+          </div>
+        
         </div>
     {% endif %}
 

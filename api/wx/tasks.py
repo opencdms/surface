@@ -2021,6 +2021,8 @@ def export_station_to_oscar(request):
 
         stations = Station.objects.filter(wigos__in=selected_ids)
 
+        oscar_status_msg_list = []
+
         try:
             for obj in stations:
                 station_info = []
@@ -2039,13 +2041,15 @@ def export_station_to_oscar(request):
                 station_info.append(str(obj.country.notation))
 
                 # export station information to OSCAR
-                exso.surface_to_oscar(station_info, api_token=api_token)
+                oscar_status_msg_list.append(exso.surface_to_oscar(station_info, api_token=api_token))
 
         except Exception as e:
-            raise e
+            oscar_status_msg_list.append({'code': 406, 'description': f'{e}'})
         
     else:
-        raise Exception("No WIGOS ID was provided")
+        oscar_status_msg_list.append({'code': 412, 'description': 'No WIGOS ID was provided'})
+
+    return  oscar_status_msg_list
 
 
 # logic to submit station information to OSCAR given the wigos id and the api token
