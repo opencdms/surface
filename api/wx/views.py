@@ -2201,7 +2201,7 @@ def capture_forms_values_patch(request):
     return JsonResponse({'message': 'Only the GET and PATCH methods is allowed.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class StationOscarExportView(LoginRequiredMixin, SuccessMessageMixin, ListView):
+class StationOscarExportView(LoginRequiredMixin, ListView):
     model = Station
     template_name = 'wx/station_oscar_export.html'
 
@@ -2230,27 +2230,33 @@ class StationOscarExportView(LoginRequiredMixin, SuccessMessageMixin, ListView):
 
         try:
             # run station export task
-            export_station_to_oscar(request)
-            
+            oscar_status_msg = export_station_to_oscar(request)
+
+            # run slight text formating on the status messages
+            for station_info in oscar_status_msg:
+                if station_info.get('logs'):
+                    station_info['logs'] = station_info['logs'].replace('\n', '<br/>')
+
+                elif station_info.get('description'):
+                    station_info['description'] = station_info['description'].replace('\n', '<br/>')
+
+            # get the names of the stations with status messages
+            status_station_names = list(Station.objects.filter(wigos__in=request.POST.getlist('selected_ids[]')).values_list('name', flat=True))
+
             response_data = {
                 'success': True,
-                'message': 'Selected station codes were successfully submitted to OSCAR.',
+                'oscar_status_msg': oscar_status_msg,
+                'status_station_names': status_station_names,
             }
-
-            # Set the success message
-            messages.success(request, 'Station information submitted to OSCAR!')
 
         except Exception as e:
             response_data = {
                 'success': False,
-                'message': f'An error occurred while submitting stations to OSCAR: {str(e)}',
+                'oscar_status_msg': [{'code': 406, 'description': 'An error occured when attempting to add stations to OSCAR'}],
+                'message': f'An error occured when attempting to add stations to OSCAR: {e}',
             }
-
-            messages.error(request, 'An error occured, unable to submit to OSCAR!')
             
         return JsonResponse(response_data)
-
-
 
     
 class StationListView(LoginRequiredMixin, ListView):
@@ -2308,14 +2314,17 @@ class StationDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
         # Disable all fields
         station_form = StationForm(instance=self.object)
         for field in station_form.fields:
             station_form.fields[field].widget.attrs['disabled'] = 'disabled'
             # Add a custom class to apply the dashed border via CSS
             station_form.fields[field].widget.attrs['class'] = 'dashed-border-field'
+
         context['form'] = station_form
-        context['layout'] = self.layout
+        context['station_name'] = Station.objects.values('pk', 'name')  # Fetch only pk and name
+        # context['layout'] = self.layout
         return context
 
 
@@ -2428,7 +2437,7 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
 
                 print(f"An error occured when attempting to add a station to OSCAR during station create!\nError: {e}")
 
-                self.oscar_error_msg = f'An error occured when attempting to add a station to OSCAR during station creation!'
+                self.oscar_error_msg = 'An error occured when attempting to add a station to OSCAR during station creation!'
 
                 self.is_oscar_error_msg = True
 
@@ -2528,9 +2537,6 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('casing_type', 'datum'),
                  Row('zone')
                  )
-        )
-
-    # layout = Layout(
     #     Fieldset('Editing station',
     #              Row('latitude', 'longitude'),
     #              Row('name', 'is_active'),
@@ -2564,8 +2570,7 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     #              Row('casing_type', 'datum'),
     #              Row('zone')
     #              )
-
-    # )
+        )
 
        
     # passing context to display menu buttons beneat the title
@@ -5257,8 +5262,6 @@ class StationMetadataView(LoginRequiredMixin, TemplateView):
     # passing required context for watershed and region autocomplete fields
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        context['primary_keys'] = Station.objects.values_list('pk', flat=True)
 
         context['station_name'] = Station.objects.values('pk', 'name')  # Fetch only pk and name
 
