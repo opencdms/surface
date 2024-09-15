@@ -3,7 +3,7 @@
     <gml:boundedBy xsi:nil="true"/>
     <wmdr:headerInformation>
         <wmdr:Header>
-            <wmdr:fileDateTime>2024-09-14T03:57:20Z</wmdr:fileDateTime>
+            <wmdr:fileDateTime>2024-09-15T00:25:07Z</wmdr:fileDateTime>
                 <wmdr:recordOwner>
                     <gmd:CI_ResponsibleParty id="wmo_meteoswiss">
 
@@ -56,8 +56,8 @@
     </wmdr:headerInformation>
     <wmdr:facility>
         <wmdr:ObservingFacility>
-            <gml:identifier codeSpace="0-84-45462-234">0-84-45462-234</gml:identifier>
-            <gml:name>Station-6</gml:name>
+            <gml:identifier codeSpace="0-84-5-OSCSURF31">0-84-5-OSCSURF31</gml:identifier>
+            <gml:name>OSCAR-SURFACE-31</gml:name>
             <gml:boundedBy xsi:nil="true"/>
             <wmdr:responsibleParty>
                 <wmdr:ResponsibleParty>
@@ -73,7 +73,7 @@
                     </wmdr:responsibleParty>
                     <wmdr:validPeriod xlink:type="simple">
                         <gml:TimePeriod gml:id="id-time_orga">
-                            <gml:beginPosition>2024-04-15T01:36:03Z</gml:beginPosition>
+                            <gml:beginPosition>2024-04-14T18:23:29Z</gml:beginPosition>
                             <gml:endPosition/>
                         </gml:TimePeriod>
                     </wmdr:validPeriod>
@@ -83,26 +83,26 @@
                 <wmdr:GeospatialLocation>
                     <wmdr:geoLocation>
                         <gml:Point gml:id="id-coord">
-                            <gml:pos>16.656654410720172 -88.94643742789677 2.0</gml:pos>
+                            <gml:pos>17.18625645791305 -88.61620246942381 3.0</gml:pos>
                         </gml:Point>
                     </wmdr:geoLocation>
                     <wmdr:validPeriod xlink:type="simple">
                         <gml:TimePeriod gml:id="id-time_coord">
-                            <gml:beginPosition>2024-04-15T01:36:03Z</gml:beginPosition>
+                            <gml:beginPosition>2024-04-14T18:23:29Z</gml:beginPosition>
                             <gml:endPosition/>
                         </gml:TimePeriod>
                     </wmdr:validPeriod>
                 </wmdr:GeospatialLocation>
             </wmdr:geospatialLocation>
             <wmdr:facilityType xlink:type="simple" xlink:href="http://codes.wmo.int/wmdr/FacilityType/landFixed"/>
-			<wmdr:dateEstablished>2024-09-14Z</wmdr:dateEstablished>
+			<wmdr:dateEstablished>2024-09-15Z</wmdr:dateEstablished>
             <wmdr:wmoRegion xlink:type="simple" xlink:href="http://codes.wmo.int/wmdr/WMORegion/northCentralAmericaCaribbean"/>
             <wmdr:territory>
                 <wmdr:Territory>
                     <wmdr:territoryName xlink:type="simple" xlink:href="http://codes.wmo.int/wmdr/TerritoryName/BLZ"/>
                     <wmdr:validPeriod xlink:type="simple">
                         <gml:TimePeriod gml:id="id-time_territory">
-                            <gml:beginPosition>2024-04-15T01:36:03Z</gml:beginPosition>
+                            <gml:beginPosition>2024-04-14T18:23:29Z</gml:beginPosition>
                             <gml:endPosition/>
                         </gml:TimePeriod>
                     </wmdr:validPeriod>
@@ -116,7 +116,7 @@
                             <wmdr:reportingStatus xlink:type="simple" xlink:href="http://codes.wmo.int/wmdr/ReportingStatus/operational"/>
                             <wmdr:validPeriod xlink:type="simple">
 							<gml:TimePeriod gml:id="id-time_prog">
-								<gml:beginPosition>2024-04-15T01:36:03Z</gml:beginPosition>
+								<gml:beginPosition>2024-04-14T18:23:29Z</gml:beginPosition>
 								<gml:endPosition/>
 							</gml:TimePeriod>
                             </wmdr:validPeriod>
@@ -127,7 +127,7 @@
             <wmdr:observation xlink:type="simple">
                 <wmdr:ObservingCapability>
                     <gml:boundedBy xsi:nil="true"/>
-                    <wmdr:facility xlink:type="simple" xlink:href="http://codes.wmo.int/wmdr/0-84-45462-234"/>
+                    <wmdr:facility xlink:type="simple" xlink:href="http://codes.wmo.int/wmdr/0-84-5-OSCSURF31"/>
                     <wmdr:programAffiliation xlink:type="simple" xlink:href="http://codes.wmo.int/wmdr/ProgramAffiliation/nonAffiliated"/>
                     <wmdr:observation xlink:type="simple">
                         <om:OM_Observation>
