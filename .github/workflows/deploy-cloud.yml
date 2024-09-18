@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:    
     - name: Deploy source code on cloud
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
@@ -17,7 +17,7 @@ jobs:
         script: |
           cd ${{ secrets.PATH }}
           git pull origin development
-          docker-compose exec -T api sh deploy_workflow_migrations.sh
+          docker-compose exec -T api bash deploy_workflow_migrations.sh
           docker-compose exec -T api python manage.py collectstatic --noinput
           docker-compose stop
           docker-compose up -d
