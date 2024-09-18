@@ -1665,8 +1665,8 @@ def daily_summary(daily_summary_tasks_ids, station_ids, s_datetime, e_datetime):
     try:
         DailySummaryTask.objects.filter(id__in=daily_summary_tasks_ids).update(started_at=datetime.now(tz=pytz.UTC))
         calculate_daily_summary(s_datetime, e_datetime, station_id_list=station_ids)
-        # for station_id in station_ids:
-        #    calculate_station_minimum_interval(s_datetime, e_datetime, station_id_list=(station_id,))
+        for station_id in station_ids:
+           calculate_station_minimum_interval(s_datetime, e_datetime, station_id_list=(station_id,))
     except Exception as err:
         logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))
         db_logger.error('Error calculation daily summary for day "{0}". '.format(daily_summary_date) + repr(err))

@@ -1,0 +1,667 @@
+{% extends "base.html" %} {% block content %} {% load static %} {% load material_form %}
+
+<div class="srf-container">
+  <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+    <span class="srf-display-1 text-uppercase">Data Capture</span><br /><br />
+    <span class="srf-display-2 text-uppercase">Synop Capture</span>
+  </div>
+
+  <div class="srf-flex justify-content-between srf-padding" id="app" v-cloak>
+    <v-app>
+      <v-dialog v-model="dialogs.del.open" width="35%" style="z-index:9999;">
+        <v-card>
+          <v-card-title class="text-h5">
+            Do you really want to delete all [[dialogs.del.row]]:00 data?
+          </v-card-title>              
+          <v-card-actions>
+            <v-btn width="50%" color="grey" @click="dialogs.del.open = false"> Cancel </v-btn>
+            <v-btn width="50%" color="error" @click="deleteRow(dialogs.del.row, dialogs.del.td); dialogs.del.open = false"> Delete </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+      <form enctype="multipart/form-data" method="POST" class="mb-10">
+        {% csrf_token %}
+        <div class="fieldWrapper">
+          <v-row>
+              <v-flex sm1 md3  lg3 class="d-flex justify-between mr-5">
+                  <v-autocomplete
+                      label="Synoptic Station"
+                      :items="stationList"
+                      item-value="id"
+                      item-text="name"
+                      v-model="requestData.stationId"
+                      :disabled="draft"
+                      required
+                      hint="*Required"
+                      persistent-hint
+                  ></v-autocomplete> 
+              </v-flex>               
+              <v-flex sm1 md3 lg3 class="d-flex justify-between">                
+                <v-menu
+                    :close-on-content-click="false"
+                    :disabled="draft"
+                    v-model="datepicker_menu"
+                    :nudge-right="40"
+                    transition="scale-transition"
+                    offset-y
+                    class="max-50"
+                >
+                    <template v-slot:activator="{ on }">
+                    <v-text-field
+                        :disabled="draft"
+                        v-model="requestData.date"
+                        label="Date"
+                        prepend-icon="event"
+                        v-on="on"
+                        required
+                        hint="*Required"
+                        persistent-hint
+                        :rules="textFieldsRules"
+                    ></v-text-field>
+                    </template>
+                    <v-date-picker
+                    name="date"
+                    v-model="requestData.date"
+                    @input="datepicker_menu = false"
+                    :allowed-dates="allowedDates"
+                    ></v-date-picker>
+                </v-menu>
+              </v-flex>
+              <v-btn
+                class="mt-3 ml-15"
+                @click="redirectToSynopForm"
+                outlined
+                class="btn-outline-default"
+                append-icon
+              > 
+                <span> Synoptic Message </span>
+                <v-icon  class="ml-2"> mdi-table </v-icon>          
+              </v-btn>
+              <v-btn
+                class="mt-3 ml-15"
+                @click="exportToCSV()"
+                outlined
+                class="btn-outline-default"
+                append-icon
+              >
+                <span> Download as CSV </span>
+                <v-icon  class="ml-2"> mdi-download </v-icon>                                 
+              </v-btn>  
+          </v-row>
+          <v-row class="mt-3">
+            <v-btn class="ml-1" :disabled="draft" outlined class="btn-outline-default" @click="fetchData()"> Load </v-btn>
+            <v-btn class="ml-1" :disabled="!draft" outlined class="btn-outline-default" @click="fetchData()"> Cancel </v-btn>
+            <v-btn class="ml-1" :disabled="!(draft && valid)" outlined class="btn-outline-default" @click="updateData"> Save </v-btn>
+            
+
+          </v-row>            
+        </div>
+      </form>
+      <div>
+        <v-list v-if="errors.length" >
+          <v-subheader>ERROR LIST</v-subheader>
+          <v-list-item-group>
+            <v-list-item v-for="(error, i) in errors" :key="i">
+              <v-list-item-content>
+                <v-list-item-title :style="{ color: 'red' }" v-text="error.message"></v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list-item-group>
+        </v-list> 
+        <hot-table
+          :hidden="hideTable"
+          :settings="hotSettings"
+          :data="hotData"
+          style="z-index: 0"
+          ref="synopTable"
+        ></hot-table>
+        <v-overlay absolute :value="loading">
+          <span>LOADING</span>
+          <v-progress-circular indeterminate color="primary"></v-progress-circular>
+        </v-overlay>
+      </div>
+    </v-app>
+  </div>
+</div>
+
+{% endblock %} {% block localjavascript %}
+
+<script>
+  Vue.component('hot-table',window.Handsontable.vue.HotTable );
+  Vue.use(window.vuelidate.default);
+  const { required, minLength } = window.validators;
+
+  new Vue({
+    el: "#app",
+    vuetify: new Vuetify(),
+    delimiters: ["[[", "]]"],
+    validations: {
+      requestData: {
+        date: { required },
+      }
+    },
+    data(){
+      return {
+        current_username: "{{ user.username }}",
+        stationList: [
+          {% for station in station_list %}
+            {id: {{station.id}}, name: "{{station.name | safe }} - {{station.code}}"},
+          {% endfor %}
+        ],      
+        requestData: {
+          date: "{{date|safe}}",
+          stationId: {{station_id}},
+          interval: 3600
+        },
+        requestedData: {},
+        MISSING_VALUE: {{ MISSING_VALUE }},
+        dialogs: {
+          del: {
+            open: false,
+            row: null,
+            td: null,
+          }
+        },
+        draft: false,
+        valid: true,
+        loading: false,
+        synopTable: true,      
+        hideTable: false,      
+        hotData: [],
+        codedvalues: {{ handsontable_config.wmocodevalue_dict|safe}},
+        hotSettings: {
+          licenseKey: 'non-commercial-and-evaluation',
+          maxRows: {{handsontable_config.number_of_rows}},
+          minRows: {{handsontable_config.number_of_rows}},
+          minCols: {{handsontable_config.number_of_columns}},
+          maxCols: {{handsontable_config.number_of_columns}},
+          colWidths: {{handsontable_config.col_widths}},
+          colHeaders: {{handsontable_config.nested_headers|safe}}[0],
+          preventOverflow: 'horizontal',
+          nestedHeaders: {{handsontable_config.nested_headers|safe}},
+          rowHeaders: {{handsontable_config.row_headers|safe}},
+          columns: {{handsontable_config.columns|safe}},
+          rowHeaderWidth: 60,
+          contextMenu: ['undo', 'redo', '---------', 'copy', 'cut', '---------', 'clear_column'],
+        },
+        columnRanges: {},
+        variableIds: {{handsontable_config.variable_ids|safe}},
+        datepicker_menu: false,
+        textFieldsRules: [v => (v !== undefined && v !== "") || "This field is required"],
+
+        errors: [],
+        validating:{
+          column: null,
+          row: null,
+        },
+        now: moment().format('YYYY-MM-DD'),
+        updatedHours: new Set(),
+      }
+    },
+    watch: {
+      'requestData.stationId': function (newValue, oldValue) {
+        this.hideTable = newValue==null
+        this.fetchData();
+      },
+      'errors.length': function (newValue, oldValue) {
+        this.valid = this.errors.length == 0;
+      },
+    },
+    methods: {
+      afterChange(changes, source) {
+        if(source != "calculateStatistics" && changes) {
+          changes.forEach(c => {
+            const changedHour = c[0];
+            const changedCol = c[1];
+
+            this.updatedHours.add(changedHour);
+
+            const exists = this.variableIds.find(col => col == changedCol)
+            if(exists != null){
+              this.calculateColumnStatistics(changedCol);
+            }
+          })
+          this.$refs.synopTable.hotInstance.render()
+        }
+      },
+
+      redirectToSynopForm(){
+          const { stationId, interval, date } = this.requestData;
+          const url = `/wx/reports/synop/form/?station_id=${stationId}&date=${date}`;
+
+          window.location.href = url;
+      },
+      allowedDates(date){
+        return this.now >= date;
+      },
+      beforeValidate(value, row, prop, source) {
+        this.draft = true;
+        this.validating.column = prop;
+        this.validating.row = row;
+        this.removeErrorMessage(row, prop);
+      },
+      fetchData() {
+        this.updatedHours = new Set();
+        this.loading = true;
+      
+        const { stationId, interval, date } = this.requestData;
+        if (stationId===null){
+          this.loading = false;
+          return
+        }
+
+        const url = `/wx/reports/synop/load/?station_id=${stationId}&date=${date}`
+        
+        axios.get(url).then(response => {
+          this.requestedData = Object.assign({}, this.requestData);
+          this.fetchRangeThresholds();
+
+          // Store loaded data in in table
+          hotInstance = this.$refs.synopTable.hotInstance
+          this.hotData = [];
+          hotInstance.loadData(this.hotData);
+          for(i=0; i< response.data.length; i++){
+            row = parseInt( response.data[i][0].substr(11, 2));
+            this.hotData[row][response.data[i][1]] =  response.data[i][2];
+            this.hotData[row]['remarks'] =  response.data[i][3];
+            this.hotData[row]['observer'] =  response.data[i][4];
+            this.hotData[row]['action'] = true
+          }
+          hotInstance.render();
+
+          // Update errors
+          this.errors = [];
+          this.calculateStatistics();
+          this.draft = false;
+          this.loading = false;
+        });
+      },  
+      updateData() {
+        if (!this.valid) {
+          return
+        }
+
+        this.loading = true;
+
+        const hourSet = new Set();
+    
+        // Iterate through hotData and populate the hourSet with valid hours
+        this.hotData.forEach(hour => {
+          if (Object.values(hour).some(value => value != null && value !== '')) {
+            hourSet.add(hour);
+          }
+        });
+    
+        // Update columns in the hours with missing values based on column type
+        hourSet.forEach(hour => {
+          this.hotSettings.columns.forEach(column => {
+            if (hour[column.data] == null) {
+              if (column.type == 'numeric'){
+                hour[column.data] = this.MISSING_VALUE;
+              } else if (column.type == 'dropdown'){
+                hour[column.data] = '/';
+              }
+            }
+          });
+        });
+    
+
+        // Format data based on updated hours
+        const formatedData = {};
+        this.hotData.forEach((row, index) => {
+          if (this.updatedHours.has(index)) {
+            formatedData[index] = row;
+          }
+        });
+
+        
+        let { stationId, interval, date } = this.requestedData;
+        const url = `/wx/reports/synop/update/?station_id=${stationId}&date=${date}`
+    
+        axios.post(url, {
+          date: this.requestData.date,
+          table: formatedData
+        })
+        .then(data => {
+          this.draft = false;
+          this.loading = false;
+          this.fetchData();
+        });
+      },        
+      fetchCodedValues() {
+        this.hotSettings.columns.forEach(column => {
+          if(column.codetable != null) {
+            column.source = this.codedvalues[column.codetable];
+          }
+        })
+      },
+      fetchRangeThresholds() {
+        const { stationId, interval, date } = this.requestedData;
+        const month = moment(date).month() + 1;
+        const url = `/api/range_threshold/?station_id=${stationId}&interval=${interval}&month=${month}`
+        axios.get(url).then(response => {
+          const processedRanges = {};
+          response.data.forEach(record => {
+            processedRanges[record.variable.id] = {
+              max: record.range_max,
+              min: record.range_min
+            };
+          });
+          this.columnRanges = processedRanges;
+        }).catch(error => {
+          console.error('Error fetching range thresholds:', error);
+        });
+      },
+      // HandsonTable utils
+      getRowHour(row){
+        return this.hotSettings.rowHeaders[row]
+      },
+      getColumnName(code) {
+        const column = this.hotSettings.columns.find(column => column.data == code);
+        return column ? column.name.toUpperCase() : null;
+      },
+      getColumnType(code){
+        const column = this.hotSettings.columns.find(column => column.data == code);
+        return column ? column.type : null;
+      },
+      getColumnIndex(code){
+        const columnIndex = this.hotSettings.columns.findIndex(column => column.data == code);
+        return columnIndex !== -1 ? columnIndex : null;
+      },      
+      // Statistics Calculation
+      calculateColumnStatistics(col) {
+        if (this.getColumnType(col) != 'numeric'){
+          return // Do no calculate statistics if column is not numeric
+        }
+  
+        // Get column data to be used in calculation
+        const data = this.$refs.synopTable.hotInstance.getDataAtProp(col).slice(0, 24)
+
+        // Cell value validation logic
+        const isValidValue = (value) => value != null && !isNaN(value) && value !== this.MISSING_VALUE;    
+
+        // Calculate SUM, MIN, MAX and COUNT
+        let sum = 0; min = null; max = null; valid_cells = 0;
+
+        data.forEach(value => {
+          value = parseFloat(value)
+          if(isValidValue(value)){
+            valid_cells += 1;
+            sum += value;
+            min = (min === null) ? value : Math.min(min, value);
+            max = (max === null) ? value : Math.max(max, value);
+          }
+        })
+
+        // Calculate AVG and STDDEV
+        let avg = null; stddev = null;
+
+        if(valid_cells>0){
+          avg = sum/valid_cells
+          stddev = 0
+          if(valid_cells>1){
+            variance = 0;
+            data.forEach(value => {
+              value = parseFloat(value);
+              if (isValidValue(value)){
+                variance += Math.pow(value - avg, 2)
+              }
+            })
+            stddev = Math.sqrt(variance / (valid_cells - 1))
+          }
+        }
+        
+        // Save statistics
+        this.hotData[24][col] = sum;
+        this.hotData[25][col] = avg;
+        this.hotData[26][col] = min;
+        this.hotData[27][col] = max;
+        this.hotData[28][col] = stddev;
+        this.hotData[29][col] = valid_cells;
+      },
+      calculateStatistics(){
+        this.variableIds.forEach(col => {
+          this.calculateColumnStatistics(col);
+        });
+        this.$refs.synopTable.hotInstance.render()
+      },  
+      // Delete button
+      deleteRow(row, td){
+        this.loading = true;
+
+        const { stationId, interval, date } = this.requestedData;
+        const hour = Number(row)
+        const url = `/wx/reports/synop/delete/?station_id=${stationId}&date=${date}&hour=${hour}`
+        axios.post(url,{
+          variable_ids: this.variableIds,
+        }).finally(() => {
+          this.loading = false;
+          this.fetchData();
+          Handsontable.dom.empty(td);
+        });
+      },                
+      deleteButtonRenderer(hotInstance, td, row, column, prop, value, cellProperties){
+        if(value) {
+          button = document.createElement('BUTTON');
+          button.onclick = (e) => {
+            e.preventDefault();
+            // this.deleteRow(row, td);
+            this.dialogs.del.row=row;
+            this.dialogs.del.td=td;
+            this.dialogs.del.open=true;
+          }
+          button.innerHTML = "Delete row"
+          button.type = "button"
+          button.setAttribute("style", "color:red;");
+          Handsontable.dom.empty(td);
+          td.appendChild(button);
+        }
+      },
+      // HandsonTable Validators
+      dropdownValidator(value, callback){
+        if(value == null) {
+          callback(true);
+          return
+        }
+
+        const requestedDateHour = moment(this.requestedData.date).set('hour', this.validating.row); 
+        const rowDatetime = requestedDateHour.format('YYYY-MM-DD HH:mm');
+        const nowDatetime = moment().format('YYYY-MM-DD HH:mm');
+       
+        // Compare the formatted dates
+        if (rowDatetime > nowDatetime) {
+          error = `Can not insert future data at "${rowDatetime}", current time is ${nowDatetime}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        }        
+        
+        const column_data = this.hotSettings.columns.find(column => column.data == this.validating.column)
+        if(column_data) {
+          const exists = column_data.source.find(v => v == value)
+          callback(!!exists);
+          return
+        }
+
+        callback(false);
+      },
+      textFieldValidator(value, callback) {
+        const requestedDateHour = moment(this.requestedData.date).set('hour', this.validating.row); 
+        const rowDatetime = requestedDateHour.format('YYYY-MM-DD HH:mm');
+        const nowDatetime = moment().format('YYYY-MM-DD HH:mm');
+       
+        // Compare the formatted dates
+        if (rowDatetime > nowDatetime) {
+          error = `Can not insert future data at "${rowDatetime}", current time is ${nowDatetime}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        }
+
+        callback(true)
+      },
+      numericFieldValidator(value, callback) {
+        if(value == null) {
+          callback(true);
+          return
+        }
+
+        const requestedDateHour = moment(this.requestedData.date).set('hour', this.validating.row); 
+        const rowDatetime = requestedDateHour.format('YYYY-MM-DD HH:mm');
+        const nowDatetime = moment().format('YYYY-MM-DD HH:mm');
+       
+        // Compare the formatted dates
+        if (rowDatetime > nowDatetime) {
+          error = `Can not insert future data at "${rowDatetime}", current time is ${nowDatetime}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        }
+
+
+        const numValue = Number(value)
+        if (isNaN(numValue)) {
+          error = `"${value}" is not a number.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        } 
+
+        
+        const ranges = this.columnRanges[this.validating.column];
+
+
+        if (ranges == null){
+          callback(true);
+          return
+        }
+
+
+        const isValid = ranges.min <= numValue && numValue <= ranges.max;
+        if (!isValid){
+          error = `Value must be between ${ranges.min} and ${ranges.max}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+        }
+        callback(isValid);
+      },
+      // Error message functions
+      addErrorMessage(row, prop, error=null) {
+        this.errors.push({
+          row: row,
+          prop: prop,
+          message: `${error} (${this.getColumnName(prop)}, ${this.getRowHour(row)})`
+        });
+      },   
+      removeErrorMessage(row, prop) {
+        this.errors = this.errors.filter(error => !(error.row === row && error.prop === prop));
+      },
+      // Export to csv
+      exportToCSV() {
+        const hot = this.$refs.synopTable.hotInstance;
+        const data = hot.getData().slice(0, 24);
+        
+        // Create a temporary Handsontable instance
+        const tempContainer = document.createElement('div');
+        document.body.appendChild(tempContainer);
+      
+        const tempHot = new Handsontable(tempContainer, {
+          data: data,
+          rowHeaders: hot.getRowHeader(),
+          colHeaders: this.variableIds,
+        });
+      
+        // Remove the last 3 columns from the temporary Handsontable instance
+        tempHot.alter('remove_col', this.variableIds.length, 3);
+      
+        // Export the data to CSV
+        tempHot.getPlugin('exportFile').downloadFile('csv', {
+          bom: false,
+          columnDelimiter: ',',
+          columnHeaders: true,
+          exportHiddenColumns: true,
+          exportHiddenRows: true,
+          fileExtension: 'csv',
+          filename: 'Synop-capture-file_[YYYY]-[MM]-[DD]',
+          mimeType: 'text/csv',
+          rowDelimiter: '\r\n',
+          rowHeaders: true,
+        });
+
+        // Clean up
+        tempHot.destroy();
+        document.body.removeChild(tempContainer);
+      }
+    },
+    beforeMount(){
+      Handsontable.validators.registerValidator('numericFieldValidator', this.numericFieldValidator);
+      Handsontable.validators.registerValidator('dropdownFieldValidator', this.dropdownFieldValidator);
+      Handsontable.validators.registerValidator('textFieldValidator', this.textFieldValidator);
+      Handsontable.renderers.registerRenderer('deleteButtonRenderer', this.deleteButtonRenderer);
+    },
+    mounted() {
+      // Check if user has permission to delete data
+      const userPermissions = {{USER_PERMISSIONS|safe}};
+      const dataInventoryPermissions = userPermissions['data-inventory'];
+      if(dataInventoryPermissions && !dataInventoryPermissions.includes("delete")){
+        this.hotSettings.columns.pop()
+      }
+
+      Handsontable.hooks.add('beforeValidate', this.beforeValidate, this.$refs.synopTable.hotInstance);
+      Handsontable.hooks.add('afterChange', this.afterChange, this.$refs.synopTable.hotInstance);
+
+      // Fetching coded values
+      this.fetchCodedValues();
+      this.fetchData();
+
+      this.$refs.synopTable.hotInstance.updateSettings({
+        cells: function (row, col) {
+          cellProperties = {};
+          if (row > 23) {
+            cellProperties.readOnly = true;
+            cellProperties.validator = null;
+            cellProperties.type = "numeric";
+            cellProperties.numericFormat = {
+              pattern: {
+                mantissa: row === 29 ? 0 : 2
+              }
+            };
+          }
+          return cellProperties;
+        }
+      })
+
+      this.hideTable = this.requestData.stationId==null
+
+      // const hot = this.$refs.synopTable.hotInstance
+      // const columnSizes = Array.from({length: hot.countCols()}, (_, i) => hot.getColWidth(i));
+      // console.log(columnSizes)
+      // console.log(this.hotSettings.nestedHeaders)
+    },
+    afterCreate(){
+      this.calculateStatistics();
+    }
+  });
+
+  $(document).ready(function(){
+    function getCookie(c_name) {
+        if(document.cookie.length > 0) {
+            c_start = document.cookie.indexOf(c_name + "=");
+            if(c_start != -1) {
+                c_start = c_start + c_name.length + 1;
+                c_end = document.cookie.indexOf(";", c_start);
+                if(c_end == -1) c_end = document.cookie.length;
+                return unescape(document.cookie.substring(c_start,c_end));
+            }
+        }
+        return "";
+    }
+    $(function () {
+      axios.defaults.headers.common["X-CSRFToken"] = getCookie("csrftoken");
+      axios.defaults.headers.common["Content-Type"] = 'application/json';
+    });
+  });
+</script>
+
+<style>
+</style>
+{% endblock %}

@@ -1,0 +1,224 @@
+{% extends "base.html" %} {% block content %} {% load static %} {% load material_form %}
+
+<div class="srf-container">
+    <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+      <span class="srf-display-1 text-uppercase">Synoptic Message</span><br /><br />
+    </div>
+    <div class="srf-flex justify-content-between srf-padding" id="app">
+      <v-app>
+        <form enctype="multipart/form-data" method="POST" class="mb-10">
+            {% csrf_token %}
+            <div>
+              <div class="fieldWrapper">
+                <v-row>
+                    <v-flex sm1 md3  lg3 class="d-flex justify-between mr-5">
+                        <v-autocomplete
+                            label="Synoptic Station"
+                            :items="stationList"
+                            item-value="id"
+                            item-text="name"
+                            v-model="requestData.stationId"
+                            required
+                            hint="*Required"
+                            persistent-hint
+                        ></v-autocomplete> 
+                    </v-flex>               
+                    <v-flex sm1 md3 lg3 class="d-flex justify-between">                
+                      <v-menu
+                          :close-on-content-click="false"
+                          v-model="datepicker_menu"
+                          :nudge-right="40"
+                          transition="scale-transition"
+                          offset-y
+                          class="max-50"
+                      >
+                          <template v-slot:activator="{ on }">
+                          <v-text-field
+                              v-model="requestData.date"
+                              label="Date"
+                              prepend-icon="event"
+                              v-on="on"
+                              required
+                              hint="*Required"
+                              persistent-hint
+                          ></v-text-field>
+                          </template>
+                          <v-date-picker
+                          name="date"
+                          v-model="requestData.date"
+                          @input="datepicker_menu = false"
+                          :allowed-dates="allowedDates"
+                          ></v-date-picker>
+                      </v-menu>
+                    </v-flex>
+                    <v-btn
+                      class="mt-3 ml-15"
+                      @click="redirectToSynopCaputre"
+                      outlined
+                      class="btn-outline-default"
+                      append-icon
+                    >
+                      <span> Synoptic Caputre </span>
+                      <v-icon  class="ml-2"> mdi-keyboard </v-icon>                                 
+                    </v-btn>
+                    <v-btn
+                      class="mt-3 ml-15"
+                      @click="exportToCSV()"
+                      outlined
+                      class="btn-outline-default"
+                      append-icon
+                    >
+                      <span> Download as CSV </span>
+                      <v-icon  class="ml-2"> mdi-download </v-icon>                                 
+                    </v-btn>                    
+                </v-row>
+              </v-row>            
+              </div>
+            </div>
+          </form>
+        <div>
+          <hot-table
+            v-if="synopTable"
+            :settings="hotSettings"
+            :data="hotData"
+            style="z-index: 0"
+            ref="synopTable"
+          >
+          </hot-table>
+          <v-overlay absolute :value="loading">
+            <v-progress-circular indeterminate color="primary">LOADING </v-progress-circular>
+          </v-overlay>
+        </div>
+      </v-app>
+    </div>
+  </div>
+  
+  {% endblock %} {% block localjavascript %}
+  
+  <script>
+    Vue.component('hot-table',window.Handsontable.vue.HotTable );
+    Vue.use(window.vuelidate.default);
+    const { required, minLength } = window.validators;
+
+    new Vue({
+      el: "#app",
+      vuetify: new Vuetify(),
+      delimiters: ["[[", "]]"],
+      validations: {
+        requestData: {
+          date: { required },
+        }
+      },
+      data: {
+        requestData: {
+          stationId: {{station_id}},
+          date: "{{date|safe}}",
+        },
+        stationList: [
+          {% for station in station_list %}
+            {id: {{station.id}}, name: "{{station.name | safe }} - {{station.code}}"},
+          {% endfor %}
+        ],
+        loading: false,
+        hotData: [],
+        hotSettings: {
+          licenseKey: 'non-commercial-and-evaluation',
+          maxRows: {{handsontable_config.number_of_rows}},
+          minRows: {{handsontable_config.number_of_rows}},
+          minCols: {{handsontable_config.number_of_columns}},
+          maxCols: {{handsontable_config.number_of_columns}},
+          preventOverflow: 'horizontal',
+          nestedHeaders: {{handsontable_config.nested_headers|safe}},
+          colHeaders: {{handsontable_config.nested_headers|safe}}[1],
+          columns: {{handsontable_config.columns|safe}},
+          contextMenu: ['undo', 'redo', '---------', 'copy', 'cut', '---------', 'clear_column'],
+        },
+        datepicker_menu: false,
+        synopTable: true,
+        now: moment().format('YYYY-MM-DD'),
+      },
+      watch: {
+        'requestData.date': 'fetchData',
+        'requestData.stationId': 'fetchData',
+      },      
+      methods: { 
+        allowedDates(date){
+          return this.now >= date;
+        },
+        redirectToSynopCaputre(){
+            const {stationId, date} = this.requestData; 
+            const url = `/wx/reports/synop/?station_id=${stationId}&date=${date}`;
+            window.location.href = url;
+        },
+        fetchData() {
+            const {stationId, date} = this.requestData; 
+            const url = `/wx/reports/synop/form/load/?station_id=${stationId}&date=${date}`;
+
+            if (!moment(date , 'YYYY-MM-DD').isValid() || stationId == null){
+                return
+            }
+
+            axios.get(url).then(response => {
+                this.hotData = response.data.hotData
+            }).catch(error => {
+                console.error('Error fetching data:', error);
+            });
+        },
+        flattenNestedHeaders(nestedHeaders) {
+          // Flattening function to convert nested headers into a single-level array
+          function flatten(headers, depth = 0) {
+            return headers.reduce((acc, header) => {
+              if (Array.isArray(header)) {
+                acc.push(...flatten(header, depth + 1));
+              } else {
+                acc.push({ header: header, depth: depth });
+              }
+              return acc;
+            }, []);
+          }
+          return flatten(nestedHeaders);
+        },
+        exportToCSV() {
+          const hot = this.$refs.synopTable.hotInstance
+          const exportPlugin = hot.getPlugin('exportFile');
+
+          exportPlugin.downloadFile('csv', {
+            bom: false,
+            columnDelimiter: ',',
+            columnHeaders: true,
+            exportHiddenColumns: true,
+            exportHiddenRows: true,
+            fileExtension: 'csv',
+            filename: 'Synop-message-file_[YYYY]-[MM]-[DD]',
+            mimeType: 'text/csv',
+            rowDelimiter: '\r\n',
+            rowHeaders: false,
+          });
+        }        
+      },
+      mounted(){
+        this.fetchData()
+      }
+    });
+  
+    
+    $(document).ready(function(){
+      function getCookie(c_name) {
+          if(document.cookie.length > 0) {
+              c_start = document.cookie.indexOf(c_name + "=");
+              if(c_start != -1) {
+                  c_start = c_start + c_name.length + 1;
+                  c_end = document.cookie.indexOf(";", c_start);
+                  if(c_end == -1) c_end = document.cookie.length;
+                  return unescape(document.cookie.substring(c_start,c_end));
+              }
+          }
+          return "";
+      }
+      $(function () {
+        axios.defaults.headers.common["X-CSRFToken"] = getCookie("csrftoken");
+        axios.defaults.headers.common["Content-Type"] = 'application/json';
+      });
+    });
+  </script>
+  {% endblock %}
