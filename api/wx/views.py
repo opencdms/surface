@@ -6911,7 +6911,6 @@ class IntervalViewSet(viewsets.ModelViewSet):
     queryset = Interval.objects.all().order_by('seconds')
     serializer_class = serializers.IntervalSerializer
 
-
 def get_synop_table_config():
     # List of variables, in order, for synoptic station input form
     variable_symbols = [
