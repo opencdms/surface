@@ -6488,7 +6488,425 @@ def delete_pgia_hourly_capture_row(request):
         conn.commit()
 
     return Response(result, status=status.HTTP_200_OK)
-    
+
+# Surface App updates:
+
+class UserInfo(views.APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        username = request.user.username
+        return Response({'username': username})
+
+class AvailableDataView(views.APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            json_data = json.loads(request.body)
+
+            initial_date = json_data['initial_date']
+            final_date = json_data['final_date']
+            data_source = json_data['data_source']
+            sv_list = [(row['station_id'], row['variable_id']) for row in json_data['series']]
+
+            if (data_source=="monthly_summary"):
+                initial_date = initial_date[:-2]+'01'
+                final_date = final_date[:-2]+'01'
+            elif (data_source=="yearly_summary"):
+                initial_date = initial_date[:-5]+'01-01'
+                final_date = final_date[:-5]+'01-01'
+
+            initial_datetime = datetime.datetime.strptime(initial_date, '%Y-%m-%d')
+            final_datetime = datetime.datetime.strptime(final_date, '%Y-%m-%d')
+
+            num_days = (final_datetime-initial_datetime).days + 1            
+
+            ret_data =  {
+                'initial_date': initial_date,
+                'final_date': final_date,
+                'data_source': data_source,
+                'sv_list': sv_list
+            }
+
+            query = f"""
+                WITH series AS (
+                    SELECT station_id, variable_id
+                    FROM UNNEST(ARRAY{sv_list}) AS t(station_id int, variable_id int)
+                ),
+                daily_summ AS(
+                    SELECT
+                        MIN(day) AS first_day
+                        ,MAX(day) AS last_day
+                        ,station_id
+                        ,variable_id
+                        ,100*COUNT(*)/{num_days}::float AS percentage
+                    FROM daily_summary
+                    WHERE day >= '{initial_date}'
+                      AND day <= '{final_date}'
+                      AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+                    GROUP BY station_id, variable_id
+                )
+                SELECT
+                    daily_summ.first_day 
+                    ,daily_summ.last_day
+                    ,series.station_id
+                    ,series.variable_id
+                    ,COALESCE(daily_summ.percentage, 0)
+                FROM series
+                LEFT JOIN daily_summ ON daily_summ.station_id = series.station_id AND daily_summ.variable_id = series.variable_id
+            """
+
+            result = []
+
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                for row in rows:
+                    new_entry = {
+                        'first_date': row[0],
+                        'last_date': row[1],
+                        'station_id': row[2],
+                        'variable_id': row[3],
+                        'percentage': round(row[4], 1)
+                    }
+
+                    result.append(new_entry)
+
+            return JsonResponse({'data': result}, status=status.HTTP_200_OK)
+        except json.JSONDecodeError:
+            return Response({'error': 'Invalid JSON format'}, status=status.HTTP_400_BAD_REQUEST)
+
+def DataExportQueryData(initial_datetime, final_datetime, data_source, series, interval):
+    DB_NAME=os.getenv('SURFACE_DB_NAME')
+    DB_USER=os.getenv('SURFACE_DB_USER')
+    DB_PASSWORD=os.getenv('SURFACE_DB_PASSWORD')
+    DB_HOST=os.getenv('SURFACE_DB_HOST')
+    config = f"dbname={DB_NAME} user={DB_USER} password={DB_PASSWORD} host={DB_HOST}"
+
+    config = settings.SURFACE_CONNECTION_STRING
+
+    series = [(row['station_id'], row['variable_id']) for row in series]
+
+    if (data_source=='raw_data'):
+      dfs = []
+      ini_day = initial_datetime;
+      while (ini_day <= final_datetime):
+        fin_day = ini_day + datetime.timedelta(days=1)
+        fin_day = fin_day.replace(hour=0, minute=0, second=0, microsecond=0) 
+
+        fin_day = min(fin_day, final_datetime)
+
+        query = f"""
+          WITH time_series AS(
+            SELECT 
+              timestamp AS datetime
+            FROM
+              GENERATE_SERIES(
+                '{ini_day}'::TIMESTAMP
+                ,'{fin_day}'::TIMESTAMP
+                ,'{interval} SECONDS'
+              ) AS timestamp
+            WHERE timestamp BETWEEN '{ini_day}' AND '{fin_day}'
+          )          
+          ,series AS (
+              SELECT station_id, variable_id
+              FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+          )
+          ,processed_data AS (
+            SELECT datetime
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
+            FROM raw_data data
+            LEFT JOIN wx_variable var ON data.variable_id = var.id
+            WHERE (data.datetime >= '{ini_day}')
+              AND ((data.datetime < '{fin_day}') OR (data.datetime='{fin_day}' AND {fin_day > final_datetime}))
+              AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+          )
+          SELECT 
+            ts.datetime AS datetime
+            ,series.variable_id AS variable_id
+            ,series.station_id AS station_id
+            ,COALESCE(data.value, '-99.9') AS value
+          FROM time_series ts
+          CROSS JOIN series
+          LEFT JOIN processed_data AS data
+            ON data.datetime = ts.datetime
+            AND data.variable_id = series.variable_id
+            AND data.station_id = series.station_id;
+        """
+        with psycopg2.connect(config) as conn:
+          with conn.cursor() as cursor:
+            logging.info(query)
+            cursor.execute(query)
+            data = cursor.fetchall()
+
+        dfs.append(pd.DataFrame(data))
+
+        ini_day += datetime.timedelta(days=1)
+        ini_day = ini_day.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if ini_day == final_datetime:
+          break
+
+      df = pd.concat(dfs)
+      return df
+    else:
+      if (data_source=='hourly_summary'):
+        query = f'''
+            WITH time_series AS(
+              SELECT 
+                timestamp AS datetime
+              FROM
+                GENERATE_SERIES(
+                  DATE_TRUNC('HOUR', '{initial_datetime}'::TIMESTAMP)
+                  ,DATE_TRUNC('HOUR', '{final_datetime}'::TIMESTAMP)
+                  ,'1 HOUR'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{initial_datetime}' AND '{final_datetime}'
+            )       
+            ,series AS (
+                SELECT station_id, variable_id
+                FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+            )
+            ,processed_data AS (
+              SELECT
+                datetime
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE 
+                  WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                  WHEN var.sampling_operation_id = 3      THEN data.min_value
+                  WHEN var.sampling_operation_id = 4      THEN data.max_value
+                  WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                  ELSE data.sum_value END, '-99.9') as value
+              FROM hourly_summary data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.datetime BETWEEN '{initial_datetime}' AND '{final_datetime}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.datetime AS datetime
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.datetime = ts.datetime
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;
+        '''    
+      elif (data_source=='daily_summary'):      
+        query = f'''
+            WITH time_series AS(
+              SELECT 
+                timestamp::DATE AS date
+              FROM
+                GENERATE_SERIES(
+                  DATE_TRUNC('DAY', '{initial_datetime}'::TIMESTAMP)
+                  ,DATE_TRUNC('DAY', '{final_datetime}'::TIMESTAMP)
+                  ,'1 DAY'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{initial_datetime}' AND '{final_datetime}'
+            )       
+            ,series AS (
+                SELECT station_id, variable_id
+                FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+            )
+            ,processed_data AS (
+              SELECT
+                day
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE 
+                  WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                  WHEN var.sampling_operation_id = 3      THEN data.min_value
+                  WHEN var.sampling_operation_id = 4      THEN data.max_value
+                  WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                  ELSE data.sum_value END, '-99.9') as value
+              FROM daily_summary data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.day BETWEEN '{initial_datetime}' AND '{final_datetime}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.date AS date
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.day = ts.date
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;
+        '''
+      elif (data_source=='monthly_summary'):
+        query = f'''
+            WITH time_series AS(
+              SELECT 
+                timestamp::DATE AS date
+              FROM
+                GENERATE_SERIES(
+                  DATE_TRUNC('MONTH', '{initial_datetime}'::TIMESTAMP)
+                  ,DATE_TRUNC('MONTH', '{final_datetime}'::TIMESTAMP)
+                  ,'1 MONTH'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{initial_datetime}' AND '{final_datetime}'
+            )       
+            ,series AS (
+                SELECT station_id, variable_id
+                FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+            )
+            ,processed_data AS (
+              SELECT
+                date
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE 
+                  WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                  WHEN var.sampling_operation_id = 3      THEN data.min_value
+                  WHEN var.sampling_operation_id = 4      THEN data.max_value
+                  WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                  ELSE data.sum_value END, '-99.9') as value
+              FROM monthly_summary data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.date BETWEEN '{initial_datetime}' AND '{final_datetime}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.date AS date
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.date = ts.date
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;        
+        '''
+      elif (data_source=='yearly_summary'):
+        query = f'''
+            WITH time_series AS(
+              SELECT 
+                timestamp::DATE AS date
+              FROM
+                GENERATE_SERIES(
+                  DATE_TRUNC('YEAR', '{initial_datetime}'::TIMESTAMP)
+                  ,DATE_TRUNC('YEAR', '{final_datetime}'::TIMESTAMP)
+                  ,'1 YEAR'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{initial_datetime}' AND '{final_datetime}'
+            )       
+            ,series AS (
+                SELECT station_id, variable_id
+                FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+            )
+            ,processed_data AS (
+              SELECT
+                date
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE 
+                  WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                  WHEN var.sampling_operation_id = 3      THEN data.min_value
+                  WHEN var.sampling_operation_id = 4      THEN data.max_value
+                  WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                  ELSE data.sum_value END, '-99.9') as value
+              FROM yearly_summary data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.date BETWEEN '{initial_datetime}' AND '{final_datetime}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.date AS date
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.date = ts.date
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;        
+        '''               
+
+      with psycopg2.connect(config) as conn:
+        with conn.cursor() as cursor:
+          logging.info(query)
+          cursor.execute(query)
+          data = cursor.fetchall()
+
+      df = pd.DataFrame(data)
+    return df
+
+class AppDataExportView(views.APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = serializers.DataExportSerializer(data=request.data)
+        if serializer.is_valid():
+            data_dict = {
+                key: [dict(item) for item in value] if key == 'series' else value
+                for key, value in serializer.validated_data.items()
+            }
+
+            initial_datetime = datetime.datetime.combine(data_dict['initial_date'],  data_dict['initial_time'])
+            final_datetime = datetime.datetime.combine(data_dict['final_date'],  data_dict['final_time'])
+
+            df = DataExportQueryData(initial_datetime, final_datetime, data_dict['data_source'], data_dict['series'], data_dict['interval'])
+
+            try:
+                file_format = data_dict.get('file_format')            
+                if(file_format == 'excel'):
+                    output = io.BytesIO()
+                    df.to_excel(output, index=False, engine='openpyxl')
+                    output.seek(0)
+
+                    return HttpResponse(
+                        output,
+                        content_type='application/vnd.ms-excel',
+                        headers={'Content-Disposition': 'attachment; filename="data.xlsx"'}
+                    )
+                elif(file_format == 'csv'):
+                    output = io.StringIO()
+                    df.to_csv(output, index=False)
+                    output.seek(0)
+
+                    return HttpResponse(
+                        output,
+                        content_type='text/csv',
+                        headers={'Content-Disposition': 'attachment; filename="data.csv"'}
+                    )                
+
+                elif(file_format == 'rinstat'):
+                    output = io.StringIO()
+                    df.to_csv(output, sep='\t', index=False)
+                    output.seek(0)
+                    
+                    return HttpResponse(
+                        output,
+                        content_type='text/tab-separated-values',
+                        headers={'Content-Disposition': 'attachment; filename="data.tsv"'}
+                    )
+                else:
+                    return HttpResponse('Unsupported file format', status=400)
+            except Exception as e:
+                return HttpResponse('An error occurred: {}'.format(e), status=500)
+        else:
+            return HttpResponse(
+                json.dumps({'message': 'Validation failed', 'errors': serializer.errors}),
+                content_type='application/json',
+                status=400
+            )
+
+class IntervalViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Interval.objects.all().order_by('seconds')
+    serializer_class = serializers.IntervalSerialize    
 
 def get_synop_table_config():
     # List of variables, in order, for synoptic station input form

@@ -265,3 +265,22 @@ class StationMetadataSerializer(serializers.ModelSerializer):
         'observer', 
         'organization',
         )
+
+class StationVariableSeriesSerializer(serializers.Serializer):
+    station_id = serializers.IntegerField()
+    variable_id = serializers.IntegerField()
+
+class DataExportSerializer(serializers.Serializer):
+    data_source = serializers.CharField(max_length=32)
+    file_format = serializers.CharField(max_length=16)
+    interval = serializers.IntegerField()
+    initial_date = serializers.DateField(format='%Y-%m-%d')
+    initial_time = serializers.TimeField(format='%H:%M')
+    final_date = serializers.DateField(format='%Y-%m-%d')
+    final_time = serializers.TimeField(format='%H:%M')
+    series = StationVariableSeriesSerializer(many=True)
+
+class IntervalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Interval
+        fields = '__all__'
