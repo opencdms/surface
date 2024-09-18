@@ -1,3 +1,4 @@
+numpy==1.21.2
 affine==2.3.0
 amqp==5.0.6
 appdirs==1.4.4
