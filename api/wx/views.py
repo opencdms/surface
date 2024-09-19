@@ -6916,7 +6916,7 @@ def get_synop_table_config():
     variable_symbols = [
         'WINDINDR', 'PRECIND', 'STATIND', 'LOWCLH', 'VISBY',
         'CLDTOT', 'WNDDIR', 'WNDSPD', 'TEMP', 'TDEWPNT', 'TEMPWB',
-        'RH', 'PRESSTN', 'PRESSEA', 'PRECSLR', 'PRSWX',
+        'RH', 'PRESSTN', 'PRESSEA', 'PRECSLR', 'PRECDUR', 'PRSWX',
         'W1', 'W2', 'Nh', 'CL', 'CM', 'CH', 'STSKY',
         'DL', 'DM', 'DH', 'TEMPMIN', 'TEMPMAX', 'N1', 'C1', 'hh1',
         'N2', 'C2', 'hh2', 'N3', 'C3', 'hh3', 'N4', 'C4', 'hh4', 'SpPhenom'
@@ -7237,17 +7237,12 @@ def synop_delete(request):
 
     with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
         with conn.cursor() as cursor:
-
-            logging.info(queries["delete_raw_data"])
             cursor.execute(queries["delete_raw_data"])
             # After deleting from raw_data, is necessary to update the daily and hourly summary tables.
-            logging.info(queries["create_daily_summary"])
             cursor.execute(queries["create_daily_summary"])
-            logging.info(queries["create_hourly_summary"])
             cursor.execute(queries["create_hourly_summary"])
             
             # If suceed in inserting new data, it's necessary to update the 'last data' columns in wx_stationvariable tabl.
-            logging.info(queries["create_hourly_summary"])
             cursor.execute(queries["get_last_updated"])
             
             last_data_datetime_row = cursor.fetchone()
@@ -7283,7 +7278,7 @@ def get_synop_form_config():
         ],
     ]
 
-    number_of_columns = len(nested_headers[0])+1 # Adding the 2 colspans
+    number_of_columns = len(nested_headers[0])+1 # Adding the colspan
 
     columns = []
     for i in range(number_of_columns):
@@ -7544,7 +7539,7 @@ def synop_load_form(request):
         {'type': 'Const', 'ref': 4},
         {'type': 'SpVar', 'ref': 'PRESSEA'},
         {'type': 'Const', 'ref': 6},
-        {'type': 'Func', 'ref': 'RainfallSLR'}, {'type': 'Func', 'ref': '6hPeriods'},
+        {'type': 'Func', 'ref': 'RainfallSLR'}, {'type': 'Var', 'ref': 'PRECDUR'},
         {'type': 'Const', 'ref': 7},
         {'type': 'Var', 'ref': 'PRSWX'}, {'type': 'Var', 'ref': 'W1'}, {'type': 'Var', 'ref': 'W2'},
         {'type': 'Const', 'ref': 8}, 

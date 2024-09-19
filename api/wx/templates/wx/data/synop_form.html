@@ -80,7 +80,6 @@
           <hot-table
             v-if="synopTable"
             :settings="hotSettings"
-            :data="hotData"
             style="z-index: 0"
             ref="synopTable"
           >
@@ -120,7 +119,6 @@
           {% endfor %}
         ],
         loading: false,
-        hotData: [],
         hotSettings: {
           licenseKey: 'non-commercial-and-evaluation',
           maxRows: {{handsontable_config.number_of_rows}},
@@ -159,7 +157,8 @@
             }
 
             axios.get(url).then(response => {
-                this.hotData = response.data.hotData
+                this.$refs.synopTable.hotInstance.loadData(response.data.hotData)
+                this.$refs.synopTable.hotInstance.render();
             }).catch(error => {
                 console.error('Error fetching data:', error);
             });
