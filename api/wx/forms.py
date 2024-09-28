@@ -21,18 +21,10 @@ class StationForm(forms.ModelForm):
     )
 
     # configured dropdown for watershed option
-    watershed_options = [('','---------')] # placeholder value
-    for x in Watershed.objects.values_list('watershed', flat=True):
-        watershed_options.append((x,x))
-
-    watershed = forms.ChoiceField(choices=watershed_options)
+    watershed = forms.ChoiceField()
 
     # configured dropdown for region option
-    region_options = [('','---------')] # placeholder value
-    for x in AdministrativeRegion.objects.values_list('name', flat=True):
-        region_options.append((x,x))
-
-    region = forms.ChoiceField(choices=region_options)
+    region = forms.ChoiceField()
 
     # configure wigos section options
     wigos_part_1 = forms.IntegerField(initial='0', disabled=True, required=False, label='WIGOS ID Series')
@@ -77,6 +69,15 @@ class StationForm(forms.ModelForm):
 
         if utc_offset_minutes_instance:
             self.fields['utc_offset_minutes'].initial = utc_offset_minutes_instance
+        
+
+        # Dynamically fetch watershed choices from the database
+        watershed_options = [('','---------')] + [(x, x) for x in Watershed.objects.values_list('watershed', flat=True)]
+        self.fields['watershed'].choices = watershed_options
+
+        # Dynamically fetch region choices from the database
+        region_options = [('','---------')] + [(x, x) for x in AdministrativeRegion.objects.values_list('name', flat=True)]
+        self.fields['region'].choices = region_options
         
 
     def clean(self):

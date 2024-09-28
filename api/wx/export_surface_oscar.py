@@ -91,13 +91,13 @@ def surface_to_oscar(station_info, api_token):
             modify_xml(station_details, station_xml_path)
 
             # instantiate client to OSCAR DEPL (default)
-            dev_client = pyoscar.OSCARClient(api_token=api_token)
+            # dev_client = pyoscar.OSCARClient(api_token=api_token)
 
             # instantiate client to OSCAR production
-            # prod_client = pyoscar.OSCARClient(api_token='foo', env='prod')
+            prod_client = pyoscar.OSCARClient(api_token=api_token, env='prod')
 
             # upload xml file to OSCAR
-            result = upload_xml(station_xml_path, dev_client)
+            result = upload_xml(station_xml_path, prod_client)
             print(f'Station {station_details["station_name"]} {station_details["wigos_id"]} - returned code {result}')
 
             return result
