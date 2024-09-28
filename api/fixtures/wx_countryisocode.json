@@ -5,7 +5,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Afghanistan",
+            "name": "Afghanistan (4)",
             "notation": "4",
             "description": "ISO 3166-1 numeric code for Afghanistan"
         }
@@ -16,7 +16,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Albania",
+            "name": "Albania (8)",
             "notation": "8",
             "description": "ISO 3166-1 numeric code for Albania"
         }
@@ -27,7 +27,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Algeria",
+            "name": "Algeria (12)",
             "notation": "12",
             "description": "ISO 3166-1 numeric code for Algeria"
         }
@@ -38,7 +38,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Andorra",
+            "name": "Andorra (20)",
             "notation": "20",
             "description": "ISO 3166-1 numeric code for Andorra"
         }
@@ -49,7 +49,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Angola",
+            "name": "Angola (24)",
             "notation": "24",
             "description": "ISO 3166-1 numeric code for Angola"
         }
@@ -60,7 +60,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Antigua and Barbuda",
+            "name": "Antigua and Barbuda (28)",
             "notation": "28",
             "description": "ISO 3166-1 numeric code for Antigua and Barbuda"
         }
@@ -71,7 +71,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Argentina",
+            "name": "Argentina (32)",
             "notation": "32",
             "description": "ISO 3166-1 numeric code for Argentina"
         }
@@ -82,7 +82,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Armenia",
+            "name": "Armenia (51)",
             "notation": "51",
             "description": "ISO 3166-1 numeric code for Armenia"
         }
@@ -93,7 +93,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Australia",
+            "name": "Australia (36)",
             "notation": "36",
             "description": "ISO 3166-1 numeric code for Australia"
         }
@@ -104,7 +104,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Austria",
+            "name": "Austria (40)",
             "notation": "40",
             "description": "ISO 3166-1 numeric code for Austria"
         }
@@ -115,7 +115,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Azerbaijan",
+            "name": "Azerbaijan (31)",
             "notation": "31",
             "description": "ISO 3166-1 numeric code for Azerbaijan"
         }
@@ -126,7 +126,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Bahamas",
+            "name": "Bahamas (44)",
             "notation": "44",
             "description": "ISO 3166-1 numeric code for Bahamas"
         }
@@ -137,7 +137,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Bahrain",
+            "name": "Bahrain (48)",
             "notation": "48",
             "description": "ISO 3166-1 numeric code for Bahrain"
         }
@@ -148,7 +148,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Bangladesh",
+            "name": "Bangladesh (50)",
             "notation": "50",
             "description": "ISO 3166-1 numeric code for Bangladesh"
         }
@@ -159,7 +159,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Barbados",
+            "name": "Barbados (52)",
             "notation": "52",
             "description": "ISO 3166-1 numeric code for Barbados"
         }
@@ -170,7 +170,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Belarus",
+            "name": "Belarus (112)",
             "notation": "112",
             "description": "ISO 3166-1 numeric code for Belarus"
         }
@@ -181,7 +181,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Belgium",
+            "name": "Belgium (56)",
             "notation": "56",
             "description": "ISO 3166-1 numeric code for Belgium"
         }
@@ -192,7 +192,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Belize",
+            "name": "Belize (84)",
             "notation": "84",
             "description": "ISO 3166-1 numeric code for Belize"
         }
@@ -203,7 +203,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Benin",
+            "name": "Benin (204)",
             "notation": "204",
             "description": "ISO 3166-1 numeric code for Benin"
         }
@@ -214,7 +214,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Bhutan",
+            "name": "Bhutan (64)",
             "notation": "64",
             "description": "ISO 3166-1 numeric code for Bhutan"
         }
@@ -225,7 +225,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Bolivia",
+            "name": "Bolivia (68)",
             "notation": "68",
             "description": "ISO 3166-1 numeric code for Bolivia"
         }
@@ -236,7 +236,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Bosnia and Herzegovina",
+            "name": "Bosnia and Herzegovina (70)",
             "notation": "70",
             "description": "ISO 3166-1 numeric code for Bosnia and Herzegovina"
         }
@@ -247,7 +247,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Botswana",
+            "name": "Botswana (72)",
             "notation": "72",
             "description": "ISO 3166-1 numeric code for Botswana"
         }
@@ -258,7 +258,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Brazil",
+            "name": "Brazil (76)",
             "notation": "76",
             "description": "ISO 3166-1 numeric code for Brazil"
         }
@@ -269,7 +269,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Brunei",
+            "name": "Brunei (96)",
             "notation": "96",
             "description": "ISO 3166-1 numeric code for Brunei"
         }
@@ -280,7 +280,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Bulgaria",
+            "name": "Bulgaria (100)",
             "notation": "100",
             "description": "ISO 3166-1 numeric code for Bulgaria"
         }
@@ -291,7 +291,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Burkina Faso",
+            "name": "Burkina Faso (854)",
             "notation": "854",
             "description": "ISO 3166-1 numeric code for Burkina Faso"
         }
@@ -302,7 +302,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Burundi",
+            "name": "Burundi (108)",
             "notation": "108",
             "description": "ISO 3166-1 numeric code for Burundi"
         }
@@ -313,7 +313,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Cabo Verde",
+            "name": "Cabo Verde (132)",
             "notation": "132",
             "description": "ISO 3166-1 numeric code for Cabo Verde"
         }
@@ -324,7 +324,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Cambodia",
+            "name": "Cambodia (116)",
             "notation": "116",
             "description": "ISO 3166-1 numeric code for Cambodia"
         }
@@ -335,7 +335,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Cameroon",
+            "name": "Cameroon (120)",
             "notation": "120",
             "description": "ISO 3166-1 numeric code for Cameroon"
         }
@@ -346,7 +346,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Canada",
+            "name": "Canada (124)",
             "notation": "124",
             "description": "ISO 3166-1 numeric code for Canada"
         }
@@ -357,7 +357,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Central African Republic",
+            "name": "Central African Republic (140)",
             "notation": "140",
             "description": "ISO 3166-1 numeric code for Central African Republic"
         }
@@ -368,7 +368,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Chad",
+            "name": "Chad (148)",
             "notation": "148",
             "description": "ISO 3166-1 numeric code for Chad"
         }
@@ -379,7 +379,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Chile",
+            "name": "Chile (152)",
             "notation": "152",
             "description": "ISO 3166-1 numeric code for Chile"
         }
@@ -390,7 +390,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "China",
+            "name": "China (156)",
             "notation": "156",
             "description": "ISO 3166-1 numeric code for China"
         }
@@ -401,7 +401,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Colombia",
+            "name": "Colombia (170)",
             "notation": "170",
             "description": "ISO 3166-1 numeric code for Colombia"
         }
@@ -412,7 +412,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Comoros",
+            "name": "Comoros (174)",
             "notation": "174",
             "description": "ISO 3166-1 numeric code for Comoros"
         }
@@ -423,7 +423,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Congo (Congo-Brazzaville)",
+            "name": "Congo (Congo-Brazzaville) (178)",
             "notation": "178",
             "description": "ISO 3166-1 numeric code for Congo (Congo-Brazzaville)"
         }
@@ -434,7 +434,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Congo (Democratic Republic)",
+            "name": "Congo (Democratic Republic) (180)",
             "notation": "180",
             "description": "ISO 3166-1 numeric code for Congo (Democratic Republic)"
         }
@@ -445,7 +445,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Costa Rica",
+            "name": "Costa Rica (188)",
             "notation": "188",
             "description": "ISO 3166-1 numeric code for Costa Rica"
         }
@@ -456,7 +456,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Croatia",
+            "name": "Croatia (191)",
             "notation": "191",
             "description": "ISO 3166-1 numeric code for Croatia"
         }
@@ -467,7 +467,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Cuba",
+            "name": "Cuba (192)",
             "notation": "192",
             "description": "ISO 3166-1 numeric code for Cuba"
         }
@@ -478,7 +478,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Cyprus",
+            "name": "Cyprus (196)",
             "notation": "196",
             "description": "ISO 3166-1 numeric code for Cyprus"
         }
@@ -489,7 +489,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Czech Republic",
+            "name": "Czech Republic (203)",
             "notation": "203",
             "description": "ISO 3166-1 numeric code for Czech Republic"
         }
@@ -500,7 +500,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Denmark",
+            "name": "Denmark (208)",
             "notation": "208",
             "description": "ISO 3166-1 numeric code for Denmark"
         }
@@ -511,7 +511,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Djibouti",
+            "name": "Djibouti (262)",
             "notation": "262",
             "description": "ISO 3166-1 numeric code for Djibouti"
         }
@@ -522,7 +522,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Dominica",
+            "name": "Dominica (212)",
             "notation": "212",
             "description": "ISO 3166-1 numeric code for Dominica"
         }
@@ -533,7 +533,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Dominican Republic",
+            "name": "Dominican Republic (214)",
             "notation": "214",
             "description": "ISO 3166-1 numeric code for Dominican Republic"
         }
@@ -544,7 +544,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Ecuador",
+            "name": "Ecuador (218)",
             "notation": "218",
             "description": "ISO 3166-1 numeric code for Ecuador"
         }
@@ -555,7 +555,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Egypt",
+            "name": "Egypt (818)",
             "notation": "818",
             "description": "ISO 3166-1 numeric code for Egypt"
         }
@@ -566,7 +566,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "El Salvador",
+            "name": "El Salvador (222)",
             "notation": "222",
             "description": "ISO 3166-1 numeric code for El Salvador"
         }
@@ -577,7 +577,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Equatorial Guinea",
+            "name": "Equatorial Guinea (226)",
             "notation": "226",
             "description": "ISO 3166-1 numeric code for Equatorial Guinea"
         }
@@ -588,7 +588,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Eritrea",
+            "name": "Eritrea (232)",
             "notation": "232",
             "description": "ISO 3166-1 numeric code for Eritrea"
         }
@@ -599,7 +599,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Estonia",
+            "name": "Estonia (233)",
             "notation": "233",
             "description": "ISO 3166-1 numeric code for Estonia"
         }
@@ -610,7 +610,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Eswatini",
+            "name": "Eswatini (748)",
             "notation": "748",
             "description": "ISO 3166-1 numeric code for Eswatini"
         }
@@ -621,7 +621,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Ethiopia",
+            "name": "Ethiopia (231)",
             "notation": "231",
             "description": "ISO 3166-1 numeric code for Ethiopia"
         }
@@ -632,7 +632,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Fiji",
+            "name": "Fiji (242)",
             "notation": "242",
             "description": "ISO 3166-1 numeric code for Fiji"
         }
@@ -643,7 +643,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Finland",
+            "name": "Finland (246)",
             "notation": "246",
             "description": "ISO 3166-1 numeric code for Finland"
         }
@@ -654,7 +654,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "France",
+            "name": "France (250)",
             "notation": "250",
             "description": "ISO 3166-1 numeric code for France"
         }
@@ -665,7 +665,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Gabon",
+            "name": "Gabon (266)",
             "notation": "266",
             "description": "ISO 3166-1 numeric code for Gabon"
         }
@@ -676,7 +676,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Gambia",
+            "name": "Gambia (270)",
             "notation": "270",
             "description": "ISO 3166-1 numeric code for Gambia"
         }
@@ -687,7 +687,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Georgia",
+            "name": "Georgia (268)",
             "notation": "268",
             "description": "ISO 3166-1 numeric code for Georgia"
         }
@@ -698,7 +698,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Germany",
+            "name": "Germany (276)",
             "notation": "276",
             "description": "ISO 3166-1 numeric code for Germany"
         }
@@ -709,7 +709,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Ghana",
+            "name": "Ghana (288)",
             "notation": "288",
             "description": "ISO 3166-1 numeric code for Ghana"
         }
@@ -720,7 +720,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Greece",
+            "name": "Greece (300)",
             "notation": "300",
             "description": "ISO 3166-1 numeric code for Greece"
         }
@@ -731,7 +731,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Grenada",
+            "name": "Grenada (308)",
             "notation": "308",
             "description": "ISO 3166-1 numeric code for Grenada"
         }
@@ -742,7 +742,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Guatemala",
+            "name": "Guatemala (320)",
             "notation": "320",
             "description": "ISO 3166-1 numeric code for Guatemala"
         }
@@ -753,7 +753,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Guinea",
+            "name": "Guinea (324)",
             "notation": "324",
             "description": "ISO 3166-1 numeric code for Guinea"
         }
@@ -764,7 +764,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Guinea-Bissau",
+            "name": "Guinea-Bissau (624)",
             "notation": "624",
             "description": "ISO 3166-1 numeric code for Guinea-Bissau"
         }
@@ -775,7 +775,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Guyana",
+            "name": "Guyana (328)",
             "notation": "328",
             "description": "ISO 3166-1 numeric code for Guyana"
         }
@@ -786,7 +786,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Haiti",
+            "name": "Haiti (332)",
             "notation": "332",
             "description": "ISO 3166-1 numeric code for Haiti"
         }
@@ -797,7 +797,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Honduras",
+            "name": "Honduras (340)",
             "notation": "340",
             "description": "ISO 3166-1 numeric code for Honduras"
         }
@@ -808,7 +808,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Hungary",
+            "name": "Hungary (348)",
             "notation": "348",
             "description": "ISO 3166-1 numeric code for Hungary"
         }
@@ -819,7 +819,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Iceland",
+            "name": "Iceland (352)",
             "notation": "352",
             "description": "ISO 3166-1 numeric code for Iceland"
         }
@@ -830,7 +830,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "India",
+            "name": "India (356)",
             "notation": "356",
             "description": "ISO 3166-1 numeric code for India"
         }
@@ -841,7 +841,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Indonesia",
+            "name": "Indonesia (360)",
             "notation": "360",
             "description": "ISO 3166-1 numeric code for Indonesia"
         }
@@ -852,7 +852,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Iran",
+            "name": "Iran (364)",
             "notation": "364",
             "description": "ISO 3166-1 numeric code for Iran"
         }
@@ -863,7 +863,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Iraq",
+            "name": "Iraq (368)",
             "notation": "368",
             "description": "ISO 3166-1 numeric code for Iraq"
         }
@@ -874,7 +874,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Ireland",
+            "name": "Ireland (372)",
             "notation": "372",
             "description": "ISO 3166-1 numeric code for Ireland"
         }
@@ -885,7 +885,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Israel",
+            "name": "Israel (376)",
             "notation": "376",
             "description": "ISO 3166-1 numeric code for Israel"
         }
@@ -896,7 +896,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Italy",
+            "name": "Italy (380)",
             "notation": "380",
             "description": "ISO 3166-1 numeric code for Italy"
         }
@@ -907,7 +907,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Jamaica",
+            "name": "Jamaica (388)",
             "notation": "388",
             "description": "ISO 3166-1 numeric code for Jamaica"
         }
@@ -918,7 +918,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Japan",
+            "name": "Japan (392)",
             "notation": "392",
             "description": "ISO 3166-1 numeric code for Japan"
         }
@@ -929,7 +929,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Jordan",
+            "name": "Jordan (400)",
             "notation": "400",
             "description": "ISO 3166-1 numeric code for Jordan"
         }
@@ -940,7 +940,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Kazakhstan",
+            "name": "Kazakhstan (398)",
             "notation": "398",
             "description": "ISO 3166-1 numeric code for Kazakhstan"
         }
@@ -951,7 +951,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Kenya",
+            "name": "Kenya (404)",
             "notation": "404",
             "description": "ISO 3166-1 numeric code for Kenya"
         }
@@ -962,7 +962,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Kiribati",
+            "name": "Kiribati (296)",
             "notation": "296",
             "description": "ISO 3166-1 numeric code for Kiribati"
         }
@@ -973,7 +973,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Korea (North)",
+            "name": "Korea (North) (408)",
             "notation": "408",
             "description": "ISO 3166-1 numeric code for Korea (North)"
         }
@@ -984,7 +984,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Korea (South)",
+            "name": "Korea (South) (410)",
             "notation": "410",
             "description": "ISO 3166-1 numeric code for Korea (South)"
         }
@@ -995,7 +995,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Kuwait",
+            "name": "Kuwait (414)",
             "notation": "414",
             "description": "ISO 3166-1 numeric code for Kuwait"
         }
@@ -1006,7 +1006,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Kyrgyzstan",
+            "name": "Kyrgyzstan (417)",
             "notation": "417",
             "description": "ISO 3166-1 numeric code for Kyrgyzstan"
         }
@@ -1017,7 +1017,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Laos",
+            "name": "Laos (418)",
             "notation": "418",
             "description": "ISO 3166-1 numeric code for Laos"
         }
@@ -1028,7 +1028,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Latvia",
+            "name": "Latvia (428)",
             "notation": "428",
             "description": "ISO 3166-1 numeric code for Latvia"
         }
@@ -1039,7 +1039,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Lebanon",
+            "name": "Lebanon (422)",
             "notation": "422",
             "description": "ISO 3166-1 numeric code for Lebanon"
         }
@@ -1050,7 +1050,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Lesotho",
+            "name": "Lesotho (426)",
             "notation": "426",
             "description": "ISO 3166-1 numeric code for Lesotho"
         }
@@ -1061,7 +1061,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Liberia",
+            "name": "Liberia (430)",
             "notation": "430",
             "description": "ISO 3166-1 numeric code for Liberia"
         }
@@ -1072,7 +1072,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Libya",
+            "name": "Libya (434)",
             "notation": "434",
             "description": "ISO 3166-1 numeric code for Libya"
         }
@@ -1083,7 +1083,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Liechtenstein",
+            "name": "Liechtenstein (438)",
             "notation": "438",
             "description": "ISO 3166-1 numeric code for Liechtenstein"
         }
@@ -1094,7 +1094,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Lithuania",
+            "name": "Lithuania (440)",
             "notation": "440",
             "description": "ISO 3166-1 numeric code for Lithuania"
         }
@@ -1105,7 +1105,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Luxembourg",
+            "name": "Luxembourg (442)",
             "notation": "442",
             "description": "ISO 3166-1 numeric code for Luxembourg"
         }
@@ -1116,7 +1116,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Madagascar",
+            "name": "Madagascar (450)",
             "notation": "450",
             "description": "ISO 3166-1 numeric code for Madagascar"
         }
@@ -1127,7 +1127,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Malawi",
+            "name": "Malawi (454)",
             "notation": "454",
             "description": "ISO 3166-1 numeric code for Malawi"
         }
@@ -1138,7 +1138,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Malaysia",
+            "name": "Malaysia (458)",
             "notation": "458",
             "description": "ISO 3166-1 numeric code for Malaysia"
         }
@@ -1149,7 +1149,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Maldives",
+            "name": "Maldives (462)",
             "notation": "462",
             "description": "ISO 3166-1 numeric code for Maldives"
         }
@@ -1160,7 +1160,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Mali",
+            "name": "Mali (466)",
             "notation": "466",
             "description": "ISO 3166-1 numeric code for Mali"
         }
@@ -1171,7 +1171,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Malta",
+            "name": "Malta (470)",
             "notation": "470",
             "description": "ISO 3166-1 numeric code for Malta"
         }
@@ -1182,7 +1182,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Marshall Islands",
+            "name": "Marshall Islands (584)",
             "notation": "584",
             "description": "ISO 3166-1 numeric code for Marshall Islands"
         }
@@ -1193,7 +1193,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Mauritania",
+            "name": "Mauritania (478)",
             "notation": "478",
             "description": "ISO 3166-1 numeric code for Mauritania"
         }
@@ -1204,7 +1204,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Mauritius",
+            "name": "Mauritius (480)",
             "notation": "480",
             "description": "ISO 3166-1 numeric code for Mauritius"
         }
@@ -1215,7 +1215,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Mexico",
+            "name": "Mexico (484)",
             "notation": "484",
             "description": "ISO 3166-1 numeric code for Mexico"
         }
@@ -1226,7 +1226,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Micronesia",
+            "name": "Micronesia (583)",
             "notation": "583",
             "description": "ISO 3166-1 numeric code for Micronesia"
         }
@@ -1237,7 +1237,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Moldova",
+            "name": "Moldova (498)",
             "notation": "498",
             "description": "ISO 3166-1 numeric code for Moldova"
         }
@@ -1248,7 +1248,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Monaco",
+            "name": "Monaco (492)",
             "notation": "492",
             "description": "ISO 3166-1 numeric code for Monaco"
         }
@@ -1259,7 +1259,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Mongolia",
+            "name": "Mongolia (496)",
             "notation": "496",
             "description": "ISO 3166-1 numeric code for Mongolia"
         }
@@ -1270,7 +1270,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Montenegro",
+            "name": "Montenegro (499)",
             "notation": "499",
             "description": "ISO 3166-1 numeric code for Montenegro"
         }
@@ -1281,7 +1281,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Morocco",
+            "name": "Morocco (504)",
             "notation": "504",
             "description": "ISO 3166-1 numeric code for Morocco"
         }
@@ -1292,7 +1292,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Mozambique",
+            "name": "Mozambique (508)",
             "notation": "508",
             "description": "ISO 3166-1 numeric code for Mozambique"
         }
@@ -1303,7 +1303,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Myanmar (Burma)",
+            "name": "Myanmar (Burma) (104)",
             "notation": "104",
             "description": "ISO 3166-1 numeric code for Myanmar (Burma)"
         }
@@ -1314,7 +1314,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Namibia",
+            "name": "Namibia (516)",
             "notation": "516",
             "description": "ISO 3166-1 numeric code for Namibia"
         }
@@ -1325,7 +1325,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Nauru",
+            "name": "Nauru (520)",
             "notation": "520",
             "description": "ISO 3166-1 numeric code for Nauru"
         }
@@ -1336,7 +1336,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Nepal",
+            "name": "Nepal (524)",
             "notation": "524",
             "description": "ISO 3166-1 numeric code for Nepal"
         }
@@ -1347,7 +1347,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Netherlands",
+            "name": "Netherlands (528)",
             "notation": "528",
             "description": "ISO 3166-1 numeric code for Netherlands"
         }
@@ -1358,7 +1358,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "New Zealand",
+            "name": "New Zealand (554)",
             "notation": "554",
             "description": "ISO 3166-1 numeric code for New Zealand"
         }
@@ -1369,7 +1369,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Nicaragua",
+            "name": "Nicaragua (558)",
             "notation": "558",
             "description": "ISO 3166-1 numeric code for Nicaragua"
         }
@@ -1380,7 +1380,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Niger",
+            "name": "Niger (562)",
             "notation": "562",
             "description": "ISO 3166-1 numeric code for Niger"
         }
@@ -1391,7 +1391,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Nigeria",
+            "name": "Nigeria (566)",
             "notation": "566",
             "description": "ISO 3166-1 numeric code for Nigeria"
         }
@@ -1402,7 +1402,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "North Macedonia",
+            "name": "North Macedonia (807)",
             "notation": "807",
             "description": "ISO 3166-1 numeric code for North Macedonia"
         }
@@ -1413,7 +1413,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Norway",
+            "name": "Norway (578)",
             "notation": "578",
             "description": "ISO 3166-1 numeric code for Norway"
         }
@@ -1424,7 +1424,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Oman",
+            "name": "Oman (512)",
             "notation": "512",
             "description": "ISO 3166-1 numeric code for Oman"
         }
@@ -1435,7 +1435,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Pakistan",
+            "name": "Pakistan (586)",
             "notation": "586",
             "description": "ISO 3166-1 numeric code for Pakistan"
         }
@@ -1446,7 +1446,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Palau",
+            "name": "Palau (585)",
             "notation": "585",
             "description": "ISO 3166-1 numeric code for Palau"
         }
@@ -1457,7 +1457,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Panama",
+            "name": "Panama (591)",
             "notation": "591",
             "description": "ISO 3166-1 numeric code for Panama"
         }
@@ -1468,7 +1468,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Papua New Guinea",
+            "name": "Papua New Guinea (598)",
             "notation": "598",
             "description": "ISO 3166-1 numeric code for Papua New Guinea"
         }
@@ -1479,7 +1479,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Paraguay",
+            "name": "Paraguay (600)",
             "notation": "600",
             "description": "ISO 3166-1 numeric code for Paraguay"
         }
@@ -1490,7 +1490,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Peru",
+            "name": "Peru (604)",
             "notation": "604",
             "description": "ISO 3166-1 numeric code for Peru"
         }
@@ -1501,7 +1501,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Philippines",
+            "name": "Philippines (608)",
             "notation": "608",
             "description": "ISO 3166-1 numeric code for Philippines"
         }
@@ -1512,7 +1512,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Poland",
+            "name": "Poland (616)",
             "notation": "616",
             "description": "ISO 3166-1 numeric code for Poland"
         }
@@ -1523,7 +1523,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Portugal",
+            "name": "Portugal (620)",
             "notation": "620",
             "description": "ISO 3166-1 numeric code for Portugal"
         }
@@ -1534,7 +1534,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Qatar",
+            "name": "Qatar (634)",
             "notation": "634",
             "description": "ISO 3166-1 numeric code for Qatar"
         }
@@ -1545,7 +1545,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Romania",
+            "name": "Romania (642)",
             "notation": "642",
             "description": "ISO 3166-1 numeric code for Romania"
         }
@@ -1556,7 +1556,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Russia",
+            "name": "Russia (643)",
             "notation": "643",
             "description": "ISO 3166-1 numeric code for Russia"
         }
@@ -1567,7 +1567,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Rwanda",
+            "name": "Rwanda (646)",
             "notation": "646",
             "description": "ISO 3166-1 numeric code for Rwanda"
         }
@@ -1578,7 +1578,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Saint Kitts and Nevis",
+            "name": "Saint Kitts and Nevis (659)",
             "notation": "659",
             "description": "ISO 3166-1 numeric code for Saint Kitts and Nevis"
         }
@@ -1589,7 +1589,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Saint Lucia",
+            "name": "Saint Lucia (662)",
             "notation": "662",
             "description": "ISO 3166-1 numeric code for Saint Lucia"
         }
@@ -1600,7 +1600,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Saint Vincent and the Grenadines",
+            "name": "Saint Vincent and the Grenadines (670)",
             "notation": "670",
             "description": "ISO 3166-1 numeric code for Saint Vincent and the Grenadines"
         }
@@ -1611,7 +1611,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Samoa",
+            "name": "Samoa (882)",
             "notation": "882",
             "description": "ISO 3166-1 numeric code for Samoa"
         }
@@ -1622,7 +1622,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "San Marino",
+            "name": "San Marino (674)",
             "notation": "674",
             "description": "ISO 3166-1 numeric code for San Marino"
         }
@@ -1633,7 +1633,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Sao Tome and Principe",
+            "name": "Sao Tome and Principe (678)",
             "notation": "678",
             "description": "ISO 3166-1 numeric code for Sao Tome and Principe"
         }
@@ -1644,7 +1644,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Saudi Arabia",
+            "name": "Saudi Arabia (682)",
             "notation": "682",
             "description": "ISO 3166-1 numeric code for Saudi Arabia"
         }
@@ -1655,7 +1655,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Senegal",
+            "name": "Senegal (686)",
             "notation": "686",
             "description": "ISO 3166-1 numeric code for Senegal"
         }
@@ -1666,7 +1666,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Serbia",
+            "name": "Serbia (688)",
             "notation": "688",
             "description": "ISO 3166-1 numeric code for Serbia"
         }
@@ -1677,7 +1677,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Seychelles",
+            "name": "Seychelles (690)",
             "notation": "690",
             "description": "ISO 3166-1 numeric code for Seychelles"
         }
@@ -1688,7 +1688,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Sierra Leone",
+            "name": "Sierra Leone (694)",
             "notation": "694",
             "description": "ISO 3166-1 numeric code for Sierra Leone"
         }
@@ -1699,7 +1699,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Singapore",
+            "name": "Singapore (702)",
             "notation": "702",
             "description": "ISO 3166-1 numeric code for Singapore"
         }
@@ -1710,7 +1710,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Slovakia",
+            "name": "Slovakia (703)",
             "notation": "703",
             "description": "ISO 3166-1 numeric code for Slovakia"
         }
@@ -1721,7 +1721,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Slovenia",
+            "name": "Slovenia (705)",
             "notation": "705",
             "description": "ISO 3166-1 numeric code for Slovenia"
         }
@@ -1732,7 +1732,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Solomon Islands",
+            "name": "Solomon Islands (90)",
             "notation": "90",
             "description": "ISO 3166-1 numeric code for Solomon Islands"
         }
@@ -1743,7 +1743,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Somalia",
+            "name": "Somalia (706)",
             "notation": "706",
             "description": "ISO 3166-1 numeric code for Somalia"
         }
@@ -1754,7 +1754,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "South Africa",
+            "name": "South Africa (710)",
             "notation": "710",
             "description": "ISO 3166-1 numeric code for South Africa"
         }
@@ -1765,7 +1765,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "South Sudan",
+            "name": "South Sudan (728)",
             "notation": "728",
             "description": "ISO 3166-1 numeric code for South Sudan"
         }
@@ -1776,7 +1776,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Spain",
+            "name": "Spain (724)",
             "notation": "724",
             "description": "ISO 3166-1 numeric code for Spain"
         }
@@ -1787,7 +1787,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Sri Lanka",
+            "name": "Sri Lanka (144)",
             "notation": "144",
             "description": "ISO 3166-1 numeric code for Sri Lanka"
         }
@@ -1798,7 +1798,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Sudan",
+            "name": "Sudan (729)",
             "notation": "729",
             "description": "ISO 3166-1 numeric code for Sudan"
         }
@@ -1809,7 +1809,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Suriname",
+            "name": "Suriname (740)",
             "notation": "740",
             "description": "ISO 3166-1 numeric code for Suriname"
         }
@@ -1820,7 +1820,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Sweden",
+            "name": "Sweden (752)",
             "notation": "752",
             "description": "ISO 3166-1 numeric code for Sweden"
         }
@@ -1831,7 +1831,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Switzerland",
+            "name": "Switzerland (756)",
             "notation": "756",
             "description": "ISO 3166-1 numeric code for Switzerland"
         }
@@ -1842,7 +1842,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Syria",
+            "name": "Syria (760)",
             "notation": "760",
             "description": "ISO 3166-1 numeric code for Syria"
         }
@@ -1853,7 +1853,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Taiwan",
+            "name": "Taiwan (158)",
             "notation": "158",
             "description": "ISO 3166-1 numeric code for Taiwan"
         }
@@ -1864,7 +1864,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Tajikistan",
+            "name": "Tajikistan (762)",
             "notation": "762",
             "description": "ISO 3166-1 numeric code for Tajikistan"
         }
@@ -1875,7 +1875,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Tanzania",
+            "name": "Tanzania (834)",
             "notation": "834",
             "description": "ISO 3166-1 numeric code for Tanzania"
         }
@@ -1886,7 +1886,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Thailand",
+            "name": "Thailand (764)",
             "notation": "764",
             "description": "ISO 3166-1 numeric code for Thailand"
         }
@@ -1897,7 +1897,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Timor-Leste",
+            "name": "Timor-Leste (626)",
             "notation": "626",
             "description": "ISO 3166-1 numeric code for Timor-Leste"
         }
@@ -1908,7 +1908,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Togo",
+            "name": "Togo (768)",
             "notation": "768",
             "description": "ISO 3166-1 numeric code for Togo"
         }
@@ -1919,7 +1919,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Tonga",
+            "name": "Tonga (776)",
             "notation": "776",
             "description": "ISO 3166-1 numeric code for Tonga"
         }
@@ -1930,7 +1930,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Trinidad and Tobago",
+            "name": "Trinidad and Tobago (780)",
             "notation": "780",
             "description": "ISO 3166-1 numeric code for Trinidad and Tobago"
         }
@@ -1941,7 +1941,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Tunisia",
+            "name": "Tunisia (788)",
             "notation": "788",
             "description": "ISO 3166-1 numeric code for Tunisia"
         }
@@ -1952,7 +1952,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Turkey",
+            "name": "Turkey (792)",
             "notation": "792",
             "description": "ISO 3166-1 numeric code for Turkey"
         }
@@ -1963,7 +1963,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Turkmenistan",
+            "name": "Turkmenistan (795)",
             "notation": "795",
             "description": "ISO 3166-1 numeric code for Turkmenistan"
         }
@@ -1974,7 +1974,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Tuvalu",
+            "name": "Tuvalu (798)",
             "notation": "798",
             "description": "ISO 3166-1 numeric code for Tuvalu"
         }
@@ -1985,7 +1985,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Uganda",
+            "name": "Uganda (800)",
             "notation": "800",
             "description": "ISO 3166-1 numeric code for Uganda"
         }
@@ -1996,7 +1996,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Ukraine",
+            "name": "Ukraine (804)",
             "notation": "804",
             "description": "ISO 3166-1 numeric code for Ukraine"
         }
@@ -2007,7 +2007,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "United Arab Emirates",
+            "name": "United Arab Emirates (784)",
             "notation": "784",
             "description": "ISO 3166-1 numeric code for United Arab Emirates"
         }
@@ -2018,7 +2018,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "United Kingdom",
+            "name": "United Kingdom (826)",
             "notation": "826",
             "description": "ISO 3166-1 numeric code for United Kingdom"
         }
@@ -2029,7 +2029,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "United States",
+            "name": "United States (840)",
             "notation": "840",
             "description": "ISO 3166-1 numeric code for United States"
         }
@@ -2040,7 +2040,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Uruguay",
+            "name": "Uruguay (858)",
             "notation": "858",
             "description": "ISO 3166-1 numeric code for Uruguay"
         }
@@ -2051,7 +2051,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Uzbekistan",
+            "name": "Uzbekistan (860)",
             "notation": "860",
             "description": "ISO 3166-1 numeric code for Uzbekistan"
         }
@@ -2062,7 +2062,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Vanuatu",
+            "name": "Vanuatu (548)",
             "notation": "548",
             "description": "ISO 3166-1 numeric code for Vanuatu"
         }
@@ -2073,7 +2073,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Vatican City (Holy See)",
+            "name": "Vatican City (Holy See) (336)",
             "notation": "336",
             "description": "ISO 3166-1 numeric code for Vatican City (Holy See)"
         }
@@ -2084,7 +2084,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Venezuela",
+            "name": "Venezuela (862)",
             "notation": "862",
             "description": "ISO 3166-1 numeric code for Venezuela"
         }
@@ -2095,7 +2095,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Vietnam",
+            "name": "Vietnam (704)",
             "notation": "704",
             "description": "ISO 3166-1 numeric code for Vietnam"
         }
@@ -2106,7 +2106,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Western Sahara",
+            "name": "Western Sahara (732)",
             "notation": "732",
             "description": "ISO 3166-1 numeric code for Western Sahara"
         }
@@ -2117,7 +2117,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Yemen",
+            "name": "Yemen (887)",
             "notation": "887",
             "description": "ISO 3166-1 numeric code for Yemen"
         }
@@ -2128,7 +2128,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Zambia",
+            "name": "Zambia (894)",
             "notation": "894",
             "description": "ISO 3166-1 numeric code for Zambia"
         }
@@ -2139,7 +2139,7 @@
         "fields": {
             "created_at": "2024-09-03T18:28:39.370Z",
             "updated_at": "2024-09-04T13:28:39.370Z",
-            "name": "Zimbabwe",
+            "name": "Zimbabwe (716)",
             "notation": "716",
             "description": "ISO 3166-1 numeric code for Zimbabwe"
         }

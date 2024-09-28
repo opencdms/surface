@@ -2393,12 +2393,12 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         return super().dispatch(request, *args, **kwargs)
     
 
-    # passing required context for watershed and region autocomplete fields
+    # ################
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context['watersheds'] = Watershed.objects.all()
-        context['regions'] = AdministrativeRegion.objects.all()
+        # context['watersheds'] = Watershed.objects.all()
+        # context['regions'] = AdministrativeRegion.objects.all()
 
         # to show station management buttons beneath the title
         context['is_create'] = True
