@@ -92,8 +92,6 @@
             <v-btn class="ml-1" :disabled="draft" outlined class="btn-outline-default" @click="fetchData()"> Load </v-btn>
             <v-btn class="ml-1" :disabled="!draft" outlined class="btn-outline-default" @click="fetchData()"> Cancel </v-btn>
             <v-btn class="ml-1" :disabled="!(draft && valid)" outlined class="btn-outline-default" @click="updateData"> Save </v-btn>
-            
-
           </v-row>            
         </div>
       </form>
@@ -108,13 +106,15 @@
             </v-list-item>
           </v-list-item-group>
         </v-list> 
-        <hot-table
-          :hidden="hideTable"
-          :settings="hotSettings"
-          :data="hotData"
-          style="z-index: 0"
-          ref="synopTable"
-        ></hot-table>
+        <div>
+          <hot-table
+            :hidden="hideTable"
+            :settings="hotSettings"
+            :data="hotData"
+            style="z-index: 0"
+            ref="synopTable"
+          ></hot-table>
+        </div>
         <v-overlay absolute :value="loading">
           <span>LOADING</span>
           <v-progress-circular indeterminate color="primary"></v-progress-circular>

@@ -6489,7 +6489,6 @@ def delete_pgia_hourly_capture_row(request):
 
     return Response(result, status=status.HTTP_200_OK)
 
-# Surface App updates:
 
 class UserInfo(views.APIView):
     permission_classes = (IsAuthenticated,)
@@ -6497,6 +6496,7 @@ class UserInfo(views.APIView):
     def get(self, request):
         username = request.user.username
         return Response({'username': username})
+
 
 class AvailableDataView(views.APIView):
     permission_classes = (IsAuthenticated,)
@@ -6576,6 +6576,7 @@ class AvailableDataView(views.APIView):
             return JsonResponse({'data': result}, status=status.HTTP_200_OK)
         except json.JSONDecodeError:
             return Response({'error': 'Invalid JSON format'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 def DataExportQueryData(initial_datetime, final_datetime, data_source, series, interval):
     DB_NAME=os.getenv('SURFACE_DB_NAME')
@@ -6843,6 +6844,7 @@ def DataExportQueryData(initial_datetime, final_datetime, data_source, series, i
       df = pd.DataFrame(data)
     return df
 
+
 class AppDataExportView(views.APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -6903,6 +6905,7 @@ class AppDataExportView(views.APIView):
                 status=400
             )
 
+
 class IntervalViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     queryset = Interval.objects.all().order_by('seconds')
@@ -6912,8 +6915,8 @@ def get_synop_table_config():
     # List of variables, in order, for synoptic station input form
     variable_symbols = [
         'WINDINDR', 'PRECIND', 'STATIND', 'LOWCLH', 'VISBY',
-        'CLDTOT', 'WNDDIR', 'WNDSPD', 'TEMP', 'TDEWPNT', 'RH',
-        'TEMPWB', 'PRESSTN', 'PRESSEA', 'PRECSLR', 'PRSWX',
+        'CLDTOT', 'WNDDIR', 'WNDSPD', 'TEMP', 'TDEWPNT', 'TEMPWB',
+        'RH', 'PRESSTN', 'PRESSEA', 'PRECSLR', 'PRECDUR', 'PRSWX',
         'W1', 'W2', 'Nh', 'CL', 'CM', 'CH', 'STSKY',
         'DL', 'DM', 'DH', 'TEMPMIN', 'TEMPMAX', 'N1', 'C1', 'hh1',
         'N2', 'C2', 'hh2', 'N3', 'C3', 'hh3', 'N4', 'C4', 'hh4', 'SpPhenom'
@@ -7114,8 +7117,8 @@ def synop_update(request):
     return HttpResponse(status=status.HTTP_200_OK)
 
 
-def get_synop_data(station, date):
-    datetime_offset = pytz.FixedOffset(station.utc_offset_minutes)
+def get_synop_data(station, date, utc_offset_minutes=0):
+    datetime_offset = pytz.FixedOffset(utc_offset_minutes)
     request_datetime = datetime_offset.localize(date)
 
     start_datetime = request_datetime
@@ -7125,7 +7128,7 @@ def get_synop_data(station, date):
         with conn.cursor() as cursor:
             query = f"""
                 SELECT 
-                    (datetime + INTERVAL '{station.utc_offset_minutes} MINUTES') AT TIME ZONE 'utc',
+                    (datetime + INTERVAL '{utc_offset_minutes} MINUTES') AT TIME ZONE 'utc',
                     variable_id,
                     CASE WHEN var.variable_type = 'Numeric' THEN measured::VARCHAR
                         ELSE code
@@ -7156,7 +7159,7 @@ def synop_load(request):
         logger.error(repr(e))
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    response = get_synop_data(station, date)
+    response = get_synop_data(station, date, station.utc_offset_minutes)
 
     return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
 
@@ -7234,17 +7237,12 @@ def synop_delete(request):
 
     with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
         with conn.cursor() as cursor:
-
-            logging.info(queries["delete_raw_data"])
             cursor.execute(queries["delete_raw_data"])
             # After deleting from raw_data, is necessary to update the daily and hourly summary tables.
-            logging.info(queries["create_daily_summary"])
             cursor.execute(queries["create_daily_summary"])
-            logging.info(queries["create_hourly_summary"])
             cursor.execute(queries["create_hourly_summary"])
             
             # If suceed in inserting new data, it's necessary to update the 'last data' columns in wx_stationvariable tabl.
-            logging.info(queries["create_hourly_summary"])
             cursor.execute(queries["get_last_updated"])
             
             last_data_datetime_row = cursor.fetchone()
@@ -7280,7 +7278,7 @@ def get_synop_form_config():
         ],
     ]
 
-    number_of_columns = len(nested_headers[0])+1 # Adding the 2 colspans
+    number_of_columns = len(nested_headers[0])+1 # Adding the colspan
 
     columns = []
     for i in range(number_of_columns):
@@ -7373,6 +7371,12 @@ def synop_load_form(request):
         return None if atm_pressure is None else f"{round(atm_pressure*10) % 10000:04}"
 
     def windSpeedToCode(wind_speed_val: float):
+        # It was requested by Akeisha and Dwayne to just use last two digits
+        if wind_speed_val is None or str(wind_speed_val)==str(settings.MISSING_VALUE):
+            return '/'
+        return str(round(wind_speed_val%100)).zfill(2)
+            
+        # Using WMO code 1200
         if wind_speed_val is None or str(wind_speed_val)==str(settings.MISSING_VALUE) :
             wind_speed_code = '/'
         elif 0 <= wind_speed_val < 90:
@@ -7385,10 +7389,17 @@ def synop_load_form(request):
         return wind_speed_code
 
     def windDirToCode(wind_dir: float):
+        # It was requested by Akeisha and Dwayne to just divide by 10
+        if wind_dir is None or str(wind_dir)==str(settings.MISSING_VALUE) : 
+            return None
+        return str(round((wind_dir%360)/10)).zfill(2)
+    
+        # Using WMO code 0877
         if wind_dir is None or str(wind_dir)==str(settings.MISSING_VALUE) : 
             return None
         elif 0 <= wind_dir<=360: 
             wind_dir_code = math.floor(((wind_dir-5)%360)/10)+1
+            print(wind_dir_code)
         else:
             wind_dir_code = 99
 
@@ -7497,7 +7508,7 @@ def synop_load_form(request):
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # Current Day Data
-    data =  get_synop_data(station, date)
+    data =  get_synop_data(station, date, utc_offset_minutes=0)
 
     # Previous Day Data
     pvd_data = get_synop_pvd_data(station, date)
@@ -7528,7 +7539,7 @@ def synop_load_form(request):
         {'type': 'Const', 'ref': 4},
         {'type': 'SpVar', 'ref': 'PRESSEA'},
         {'type': 'Const', 'ref': 6},
-        {'type': 'Func', 'ref': 'RainfallSLR'}, {'type': 'Func', 'ref': '6hPeriods'},
+        {'type': 'Func', 'ref': 'RainfallSLR'}, {'type': 'Var', 'ref': 'PRECDUR'},
         {'type': 'Const', 'ref': 7},
         {'type': 'Var', 'ref': 'PRSWX'}, {'type': 'Var', 'ref': 'W1'}, {'type': 'Var', 'ref': 'W2'},
         {'type': 'Const', 'ref': 8}, 
@@ -7645,9 +7656,9 @@ def synop_load_form(request):
                     elif variable.symbol in ['PRESSTN', 'PRESSEA']:
                         value = atmPressureCalc(value)
                     elif variable.symbol=='WNDDIR':
-                        value = windSpeedToCode(value)
+                        value = windDirToCode(value)
                     elif variable.symbol=='WNDSPD':
-                        value = windDirToCode(value)        
+                        value = windSpeedToCode(value)        
             elif column_type=='Func':
                 if reference[j]['ref']=='DateHour':
                     value=dayhour
