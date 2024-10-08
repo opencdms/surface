@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('wx', '0029_variable_synoptic_code_form'),
+        ('wx', '0029_auto_20240928_0243'),
     ]
 
     operations = [
