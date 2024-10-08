@@ -144,6 +144,9 @@ urlpatterns = [
     path('wx/reports/synop/delete/', views.synop_delete),
     path('wx/reports/synop/form/', views.SynopFormView.as_view()),
     path('wx/reports/synop/form/load/', views.synop_load_form),
+    path('wx/data/capture/monthly/', views.MonthlyFormView.as_view(), name='monthly-form'),
+    path('wx/data/capture/monthly/load/', views.MonthlyFormLoad),
+    path('wx/data/capture/monthly/update/', views.MonthlyFormUpdate),    
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
