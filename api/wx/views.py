@@ -7958,3 +7958,77 @@ def synop_load_form(request):
     response = {}
     response['hotData'] = hotData
     return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
+
+def get_monthly_form_config():
+    # List of variables, in order, for synoptic station input form
+    variable_symbols = {
+        'PRECIP': {'min': 'null', 'max': 'null'},
+        'TEMPMAX': {'min': -100, 'max': 500},
+        'TEMPMIN': {'min': -100, 'max': 500},
+        'TEMPAVG': {'min': -100, 'max': 500},
+        'WNDMIL': {'min': 'null', 'max': 'null'},
+        'WINDRUN': {'min': 'null', 'max': 'null'},
+        'SUNSHNHR': {'min': 0, 'max': 1440},
+        'EVAPINI': {'min': 'null', 'max': 'null'},
+        'EVAPRES': {'min': 'null', 'max': 'null'},
+        'EVAPPAN': {'min': 'null', 'max': 'null'},
+        'TEMP': {'min': 'null', 'max': 'null'},
+        'TEMPWB': {'min': 'null', 'max': 'null'},
+        'TSOIL1': {'min': 'null', 'max': 'null'},
+        'TSOIL4': {'min': 'null', 'max': 'null'},
+        'DYTHND': {'min': 'null', 'max': 'null'},
+        'DYFOG': {'min': 'null', 'max': 'null'},
+        'DYHAIL': {'min': 'null', 'max': 'null'},
+        'DYGAIL': {'min': 'null', 'max': 'null'},
+        'TOTRAD': {'min': 'null', 'max': 'null'},
+        'RH@TMAX': {'min': 'null', 'max': 'null'},
+        'RHMAX': {'min': 0, 'max': 100},
+        'RHMIN': {'min': 0, 'max': 100},
+    }
+    
+    # Get a variable list using the order of variable_ids list
+    variable_dict = {variable.symbol: variable for variable in Variable.objects.filter(symbol__in=variable_symbols.keys())}
+    variable_list = [variable_dict[variable_symbol] for variable_symbol in variable_symbols.keys()]
+
+    col_widths = [80]*len(variable_list)
+
+    columns = [
+        {
+            'data': str(variable.id),
+            'name': str(variable.symbol),
+            'type': 'numeric',
+            'numericFormat': {'pattern': '0.0'},
+            'validator': 'fieldValidator'
+        } for variable in variable_list
+    ]
+
+    row_headers = [str(i+1) for i in range(31)]+['SUM', 'AVG', 'MIN', 'MAX', 'STDDEV', 'COUNT']
+    number_of_columns = len(columns)
+    number_of_rows = len(row_headers)
+    
+    context = {
+        'col_widths': col_widths,
+        'col_headers': list(variable_symbols.keys()),
+        'row_headers': row_headers,
+        'columns': columns,
+        'variable_ids': [variable.id for variable in variable_list],
+        'number_of_columns': number_of_columns,
+        'number_of_rows': number_of_rows,
+        'limits': variable_symbols, 
+    }
+    return context
+
+
+class MonthlyFormView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/data/monthly_form.html"
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        context['station_list'] = Station.objects.filter(is_automatic=False, is_active=True).values('id', 'name', 'code')
+        context['handsontable_config'] = get_monthly_form_config()
+        
+        # Get parameters from request or set default values
+        context['station_id'] = request.GET.get('station_id', 'null')
+        context['date'] = request.GET.get('date', datetime.date.today().strftime('%Y-%m'))
+
+        return self.render_to_response(context)
