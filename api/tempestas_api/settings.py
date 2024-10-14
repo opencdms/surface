@@ -76,6 +76,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
+    'wx.middleware.user_permissions_middleware',
 ]
 
 ROOT_URLCONF = 'tempestas_api.urls'
