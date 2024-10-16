@@ -1,6 +1,11 @@
 {% extends "base.html" %} {% block content %} 
-<script src="https://cdn.ckeditor.com/4.20.2/full/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/4.22.1/full/ckeditor.js"></script>
 <script src="/static/js/ckeditor-vue.js"></script>
+
+<style>
+  .cke_notifications_area { display: none; }
+</style>
+
 <div class="srf-container">
   <div id="app" v-cloak> 
     <v-app>    
