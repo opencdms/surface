@@ -5,13 +5,10 @@
       <v-card>
         <v-card-title>History Chart</v-card-title>
         <v-card-text>
-          <div v-if="loading_chart">
-            <span class="headline font-weight-thin" v-if="loading">Loading...</span><br>
-            <span class="headline font-weight-thin" v-if="rendering">Rendering...</span><br>
-            <v-progress-linear
-            indeterminate
-            ></v-progress-linear>
-          </div>
+          <v-layout v-if="loading_chart" class="align-center justify-center" column> 
+            <span class="headline font-weight-thin" v-if="loading_chart">Loading Chart...</span><br>
+            <v-progress-circular indeterminate ></v-progress-circular>
+          </v-layout>
           <highcharts v-if="!loading_chart" :options="chartOptions"></highcharts>
         </v-card-text>
         <v-card-actions>
@@ -35,15 +32,12 @@
         <h4> STATIONS MONITORING</h4>
       </v-flex>
 
-      <v-layout> 
-        <v-flex lg8>    
-            <div v-if="loading_map">
-              <span class="headline font-weight-thin" v-if="loading">Loading...</span><br>
-              <span class="headline font-weight-thin" v-if="rendering">Rendering...</span><br>
-              <v-progress-linear
-              indeterminate
-              ></v-progress-linear>
-            </div>
+      <v-layout > 
+        <v-flex lg8 class="align-center">
+            <v-layout v-if="loading_map" class="align-center justify-center" column>
+              <span class="headline font-weight-thin" v-if="loading_map">Loading Map...</span><br>
+              <v-progress-circular indeterminate ></v-progress-circular>
+            </v-layout>
             <l-map v-if="!loading_map" ref="myMap" :zoom="zoom" :center="center" :options="options" :double-click-zoom = "false">
               <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
               <l-control position="bottomleft">
@@ -210,13 +204,10 @@
             </v-btn>                    
           </div>
 
-          <div v-if="loading_station">
-            <span class="headline font-weight-thin" v-if="loading">Loading...</span><br>
-            <span class="headline font-weight-thin" v-if="rendering">Rendering...</span><br>
-            <v-progress-linear
-            indeterminate
-            ></v-progress-linear>
-          </div>
+          <v-layout v-if="loading_station" class="align-center justify-center" column>
+            <span class="headline font-weight-thin" v-if="loading_station">Loading...</span><br>
+            <v-progress-circular indeterminate ></v-progress-circular>
+          </v-layout>
 
           <div v-if="!loading_station"> 
             <v-tabs v-if="data_type=='Communication'" v-model="selectedTab" fixed-tabs >
