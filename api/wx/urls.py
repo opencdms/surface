@@ -40,6 +40,7 @@ urlpatterns = [
     path('capture_forms_values/', views.capture_forms_values_get),
     path('capture_forms_values_patch/', views.capture_forms_values_patch),
     path('wx/stations/', views.StationListView.as_view(), name='stations-list'),
+    path('wx/stations/oscar_export/', views.StationOscarExportView.as_view(), name='station-oscar-export'),
     path('wx/stations/map/', views.StationsMapView.as_view(), name='stations-map'),
     path('wx/stations/<int:pk>/', views.StationDetailView.as_view(), name='station-detail'),
     path('wx/stations/metadata/', views.StationMetadataView.as_view(), name='station-metadata'),
@@ -144,6 +145,9 @@ urlpatterns = [
     path('wx/reports/synop/delete/', views.synop_delete),
     path('wx/reports/synop/form/', views.SynopFormView.as_view()),
     path('wx/reports/synop/form/load/', views.synop_load_form),
+    path('wx/data/capture/monthly/', views.MonthlyFormView.as_view(), name='monthly-form'),
+    path('wx/data/capture/monthly/load/', views.MonthlyFormLoad),
+    path('wx/data/capture/monthly/update/', views.MonthlyFormUpdate),    
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
