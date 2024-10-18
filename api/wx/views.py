@@ -7184,7 +7184,7 @@ def get_synop_table_config():
         'CLDTOT', 'WNDDIR', 'WNDSPD', 'TEMP', 'TDEWPNT', 'TEMPWB',
         'RH', 'PRESSTN', 'PRESSEA', 'PRECSLR', 'PRECDUR', 'PRSWX',
         'W1', 'W2', 'Nh', 'CL', 'CM', 'CH', 'STSKY',
-        'DL', 'DM', 'DH', 'TEMPMIN', 'TEMPMAX', 'N1', 'C1', 'hh1',
+        'DL', 'DM', 'DH', 'TEMPMAX', 'TEMPMIN', 'PREC24H', 'N1', 'C1', 'hh1',
         'N2', 'C2', 'hh2', 'N3', 'C3', 'hh3', 'N4', 'C4', 'hh4', 'SpPhenom'
     ]
     
@@ -7537,7 +7537,7 @@ def get_synop_form_config():
         ],
         ["Land Station-no distinction AAXX", "GGggYYGG", "iW", "IIiii", "iR", "iX", "h", "(VV) VV", "N",
             "ddd dd", "(fmfm) f f", "1sn", "T'T' TTT", "2sn", "T'dT'd Td TdTd", "UUU", "",
-            "3", "POPOPOPO", "4", "PHPHPHPH PPPP", "6", "RRR", "tR", "7", "ww", "W1", "W2", "8", "Nh", "CL",
+            "3", "POPOPOPO", "4", "PHPHPHPH PPPP", "6", "RRR", "Tr", "7", "ww", "W1", "W2", "8", "Nh", "CL",
             "CM", "CH", "333", "0", "CS", "DL", "DM", "DH", "1sn", "TXTXTX", "2sn", "TnTnTn", "5j1",
             "P24P24P24", "7", "R24R24R24R24", "8", "NS", "C", "hShS", "8", "NS", "C", "hShS", "8", "NS",
             "C", "hShS", "8", "NS", "C", "hShS", "9SPSPsPsP", "", ""
@@ -7674,6 +7674,30 @@ def synop_load_form(request):
         wind_dir_code = str(wind_dir_code).zfill(2)
         return wind_dir_code
 
+    def lowestCloutHightToCode(lowest_ch: float):
+        if lowest_ch is None or str(lowest_ch)==str(settings.MISSING_VALUE) :
+            return '/'
+        elif 0 <= lowest_ch < 50:
+            return 0
+        elif 50 <= lowest_ch < 100:
+            return 1
+        elif 100 <= lowest_ch < 200:
+            return 2
+        elif 200 <= lowest_ch < 300:
+            return 3
+        elif 300 <= lowest_ch < 600:
+            return 4
+        elif 600 <= lowest_ch < 1000:
+            return 5
+        elif 1000 <= lowest_ch < 1500:
+            return 6
+        elif 1500 <= lowest_ch < 2000:
+            return 7
+        elif 2000 <= lowest_ch < 2500:
+            return 8
+        elif 2500 <= lowest_ch:
+            return 9
+
     def reinfallToCode(rainfall:float):
         # Rainfall in mm.
         if rainfall is None or rainfall < 0:
@@ -7794,7 +7818,7 @@ def synop_load_form(request):
         {'type': 'Const', 'ref': station.synoptic_type}, {'type': 'Func', 'ref': 'DateHour'},
         {'type': 'Var', 'ref': 'WINDINDR'}, {'type': 'Const', 'ref': station.synoptic_code},
         {'type': 'Var', 'ref': 'PRECIND'}, {'type': 'Var', 'ref': 'STATIND'},
-        {'type': 'Var', 'ref': 'LOWCLH'}, {'type': 'Var', 'ref': 'VISBY'}, {'type': 'Var', 'ref': 'CLDTOT'},
+        {'type': 'SpVar', 'ref': 'LOWCLH'}, {'type': 'Var', 'ref': 'VISBY'}, {'type': 'Var', 'ref': 'CLDTOT'},
         {'type': 'SpVar', 'ref': 'WNDDIR'}, {'type': 'SpVar', 'ref': 'WNDSPD'},
         {'type': '1sn', 'ref': 'TEMP'}, {'type': 'SpVar', 'ref': 'TEMP'},
         {'type': '2sn', 'ref': 'TDEWPNT'},
@@ -7814,11 +7838,12 @@ def synop_load_form(request):
         {'type': 'Const', 'ref': 0},
         {'type': 'Var', 'ref': 'STSKY'},
         {'type': 'Var', 'ref': 'DL'}, {'type': 'Var', 'ref': 'DM'}, {'type': 'Var', 'ref': 'DH'},
-        {'type': '1sn', 'ref': 'TEMPMIN'}, {'type': 'SpVar', 'ref': 'TEMPMIN'},
-        {'type': '2sn', 'ref': 'TEMPMAX'}, {'type': 'SpVar', 'ref': 'TEMPMAX'},
+        {'type': '1sn', 'ref': 'TEMPMAX'}, {'type': 'SpVar', 'ref': 'TEMPMAX'},
+        {'type': '2sn', 'ref': 'TEMPMIN'}, {'type': 'SpVar', 'ref': 'TEMPMIN'},
         {'type': '5j1', 'ref': None}, {'type': 'Func', 'ref': 'BarometricChange'},
         {'type': 'Const', 'ref': 7},
-        {'type': 'Func', 'ref': '24hRainfall'},
+        # {'type': 'Func', 'ref': '24hRainfall'},
+        {'type': 'SpVar', 'ref': 'PREC24H'},
         {'type': 'Const', 'ref': 8},
         {'type': 'Var', 'ref': 'N1'}, {'type': 'Var', 'ref': 'C1'}, {'type': 'Var', 'ref': 'hh1'},
         {'type': 'Const', 'ref': 8},
@@ -7926,7 +7951,10 @@ def synop_load_form(request):
                         value = windSpeedToCode(value)
                     elif variable.symbol=='PRECSLR':
                         value = reinfallToCode(value)
-
+                    elif variable.symbol=='PREC24H':
+                        value = reinfall24hToCode(value)
+                    elif variable.symbol=='LOWCLH':
+                        value = lowestCloutHightToCode(value)
             elif column_type=='Func':
                 if reference[j]['ref']=='DateHour':
                     value=dayhour
@@ -7938,8 +7966,8 @@ def synop_load_form(request):
                     value = airTempCalc(dew_point)
                 elif reference[j]['ref']=='BarometricChange':
                     value =  f"{abs(barometric_change_24h):04}" if barometric_change_24h is not None else None
-                elif reference[j]['ref']=='24hRainfall':
-                    value = reinfallLast24h(datetime_row, rainfall_data, rainfall_dur_data) if i in [0,6,12,18] else None
+                # elif reference[j]['ref']=='24hRainfall':
+                #     value = reinfallLast24h(datetime_row, rainfall_data, rainfall_dur_data) if i in [0,6,12,18] else None
                 else:
                     value = 'Func'    
             elif column_type=='Text':
