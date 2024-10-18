@@ -458,7 +458,7 @@
         }
       },
       // HandsonTable Validators
-      dropdownValidator(value, callback){
+      dropdownFieldValidator(value, callback){
         if(value == null) {
           callback(true);
           return
@@ -476,6 +476,13 @@
           return
         }        
         
+        const column = this.hotSettings.columns.find(column => column.data == this.validating.column);
+        if (!this.codedvalues[column.codetable].includes(value)) {
+          error = `Value ${value} not in dropdown value list`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);       
+          callback(false);
+        }
+
         const column_data = this.hotSettings.columns.find(column => column.data == this.validating.column)
         if(column_data) {
           const exists = column_data.source.find(v => v == value)
@@ -527,15 +534,12 @@
           return
         } 
 
-        
         const ranges = this.columnRanges[this.validating.column];
-
 
         if (ranges == null){
           callback(true);
           return
         }
-
 
         const isValid = ranges.min <= numValue && numValue <= ranges.max;
         if (!isValid){
