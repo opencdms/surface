@@ -7729,7 +7729,7 @@ def synop_load_form(request):
             return '9998'
         
     def precdurCodeToValue(code: str):
-        print(code)
+        # This dictionary must match WMO vlues for code 4019
         code_table = {
             '1': 6,
             '2': 12,
@@ -7743,8 +7743,6 @@ def synop_load_form(request):
         }
         if code not in code_table.keys():
             return None
-        print(code_table[code])
-
         return code_table[code]
         
     def reinfallLast24h(curr_datetime:datetime, rainfall_data:list, rainfall_dur_data:list ):
