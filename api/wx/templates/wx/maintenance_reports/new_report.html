@@ -997,7 +997,7 @@
           axios({
             method: 'post',
             url: '/wx/maintenance_report/equipmenttype_data/update/',
-            params: {
+            data: {
               'maintenance_report_id': this.maintenance_report.id,
               'equipment_order': equipment_order,
               'equipment_type_id': equipment_type.id,
