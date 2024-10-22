@@ -141,15 +141,20 @@
             <v-row v-for="equipment_record in {{equipment_records}}" column>
               <v-col cols="12">
                 <v-row style="background-color: #CCC">
+                  <v-col cols="12" class="text-center">
+                    <span class="text-h6"> [[equipment_record.name]] </span>                
+                  </v-col>
+                </v-row>
+                <v-row style="background-color: #DDD">
                   <v-col cols="12">  <span> Component Condition </span> </v-col>
                 </v-row>
-                <v-row>
+                <v-row style="background-color: #EEE">
                   <v-col cols="12"> <span v-html="equipment_record.condition"></span> </v-col>
                 </v-row>
-                <v-row style="background-color: #CCC">
+                <v-row style="background-color: #DDD">
                   <v-col cols="12">  <span> Component Classification </span> </v-col>
                 </v-row>
-                <v-row>
+                <v-row style="background-color: #EEE">
                   <v-col cols="12">
                     <div class="py-2">
                       <v-row>
@@ -193,7 +198,7 @@
     const { createVuetify } = Vuetify;
     const vuetify = createVuetify();
     const {jsPDF} = window.jspdf
-    createApp({
+    const app = createApp({
       data() {
         return {
           maintenance_report_id: "{{ visit_summary_information.report_number }}",
@@ -227,7 +232,11 @@
           });
         },
       },
-    }).use(vuetify).mount("#app");
+      delimiters: ["[[", "]]"],
+    })
+    
+    {% comment %} app.config.delimiters = ['[[', ']]']; {% endcomment %}
+    app.use(vuetify).mount("#app");
   </script>
 </body>
 </html>
