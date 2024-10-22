@@ -4628,16 +4628,31 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
     profile = StationProfile.objects.get(pk=station.profile_id)
     responsible_technician = Technician.objects.get(pk=maintenance_report.responsible_technician_id)
     visit_type = VisitType.objects.get(pk=maintenance_report.visit_type_id)
-    maintenance_report_station_components = MaintenanceReportStationComponent.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    # maintenance_report_station_component_list = []    
-    # for maintenance_report_station_component in maintenance_report_station_components:
-    #     dictionary = {'condition': maintenance_report_station_component.condition,
-    #                   'component_classification': maintenance_report_station_component.component_classification,
-    #                  }
-    #     maintenance_report_station_component_list.append(dictionary)
+    maintenance_report_station_equipments = MaintenanceReportEquipment.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    maintenance_report_station_component_list = get_component_list(maintenance_report)
+    maintenance_report_station_equipment_list = []
+
+    for maintenance_report_station_equipment in maintenance_report_station_equipments:
+        dictionary = {'condition': maintenance_report_station_equipment.condition,
+                      'component_classification': maintenance_report_station_equipment.classification,
+                     }
+        maintenance_report_station_equipment_list.append(dictionary)
+
+    print(maintenance_report_station_equipments)
+    print(maintenance_report_station_equipment_list)
+
+
+    # maintenance_report_station_components = MaintenanceReportStationComponent.objects.filter(maintenance_report_id=maintenance_report.id)
+
+    # # maintenance_report_station_component_list = []    
+    # # for maintenance_report_station_component in maintenance_report_station_components:
+    # #     dictionary = {'condition': maintenance_report_station_component.condition,
+    # #                   'component_classification': maintenance_report_station_component.component_classification,
+    # #                  }
+    # #     maintenance_report_station_component_list.append(dictionary)
+
+    # maintenance_report_station_component_list = get_component_list(maintenance_report)
 
 
     other_technicians_ids = [maintenance_report.other_technician_1_id,
@@ -4695,7 +4710,8 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
 
     context['contact_information'] = maintenance_report.contacts  
 
-    context['equipment_records'] = maintenance_report_station_component_list
+    context['equipment_records'] = maintenance_report_station_equipment_list
+    # context['equipment_records'] = maintenance_report_station_component_list
 
     # JSON
     # return JsonResponse(context, status=status.HTTP_200_OK)
