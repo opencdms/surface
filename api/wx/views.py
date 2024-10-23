@@ -3793,10 +3793,111 @@ def query_stationsmonitoring_map(data_type, time_type, date_picked):
                 LEFT JOIN qf ON s.id = qf.station_id
                 WHERE s.is_active
             """
+        elif data_type=='Visits':
+            query = """
+                WITH ordered_reports AS (
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                    FROM wx_maintenancereport
+                    WHERE status='A'
+                )
+                ,latest_reports AS(
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,rn
+                    FROM ordered_reports
+                    WHERE rn=1    
+                )
+                SELECT 
+                    s.id
+                    ,s.name
+                    ,s.code
+                    ,s.latitude
+                    ,s.longitude                    
+                    ,q.color AS color
+                FROM wx_station s
+                LEFT JOIN latest_reports l ON l.station_id = s.id
+                LEFT JOIN wx_qualityflag q ON
+                    CASE
+                        WHEN l.next_visit_date IS NULL THEN q.symbol = '-'
+                        WHEN l.next_visit_date > NOW() THEN q.symbol = 'G'
+                        WHEN l.next_visit_date >= NOW() - INTERVAL '1 month' AND l.next_visit_date <= NOW() THEN q.symbol = 'S'
+                        WHEN l.next_visit_date < NOW() - INTERVAL '1 month' THEN q.symbol = 'B'
+                    END
+                WHERE s.is_active
+            """
+        elif data_type == 'Components':
+            query = """
+                WITH ordered_reports AS (
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                    FROM wx_maintenancereport
+                    WHERE status='A'
+                )
+                ,latest_reports AS(
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,rn
+                    FROM ordered_reports
+                    WHERE rn=1    
+                )
+                ,station_equipments AS (
+                    SELECT 
+                        r.station_id
+                        ,COUNT(*) AS count_eq
+                        ,COUNT(re.classification='F') AS count_f
+                        ,COUNT(re.classification='P') AS count_p
+                        ,COUNT(re.classification='N') AS count_n
+                    FROM latest_reports r
+                    LEFT JOIN wx_maintenancereportequipment re 
+                        ON  re.maintenance_report_id = r.id
+                    GROUP BY r.station_id
+                )
+                SELECT
+                    s.id,
+                    s.name,
+                    s.code,
+                    s.latitude,
+                    s.longitude,
+                    q.color AS color
+                FROM
+                    wx_station s
+                LEFT JOIN
+                    station_equipments se ON se.station_id = s.id
+                LEFT JOIN
+                    wx_qualityflag q ON 
+                    CASE
+                        WHEN se.count_eq IS NULL THEN q.symbol = '-'
+                        WHEN se.count_n > 0 THEN q.symbol = 'B'
+                        WHEN se.count_p > 0 THEN q.symbol = 'S'
+                        ELSE q.symbol = 'G'
+                    END
+                WHERE
+                    s.is_active
+            """            
+            
 
         if data_type in ['Communication', 'Quality Control']:
             with connection.cursor() as cursor:
                 cursor.execute(query, (datetime_picked, datetime_picked, ))
+                results = cursor.fetchall()
+        elif data_type in ['Visits', 'Components']:
+            with connection.cursor() as cursor:
+                cursor.execute(query)
                 results = cursor.fetchall()
     else:
         if data_type=='Communication':
