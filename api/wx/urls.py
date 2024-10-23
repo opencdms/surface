@@ -122,7 +122,7 @@ urlpatterns = [
     path('wx/maintenance_report/<int:id>/update/datalogger/', login_required(views.update_maintenance_report_datalogger)),    
     path('wx/maintenance_report/<int:id>/delete/', login_required(views.delete_maintenance_report)),
     path('wx/maintenance_report/<int:id>/approve/', login_required(views.approve_maintenance_report)),
-    # path('wx/maintenance_report/<int:id>/view/<int:source>/', login_required(views.get_maintenance_report_view), name='view-maintenance-report'),
+    path('wx/maintenance_report/<int:id>/view/<int:source>/', login_required(views.get_maintenance_report_view), name='view-maintenance-report'),
     path('wx/products/wave_data/', login_required(views.get_wave_data_analysis), name='wave-data'),
     path('wx/products/wave_data/get/', login_required(views.get_wave_data), name="get-wave-data"),
     path('wx/stations/stations_monitoring/', views.stationsmonitoring_form, name="stations-monitoring"),

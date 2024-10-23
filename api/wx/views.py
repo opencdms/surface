@@ -4628,17 +4628,19 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
     profile = StationProfile.objects.get(pk=station.profile_id)
     responsible_technician = Technician.objects.get(pk=maintenance_report.responsible_technician_id)
     visit_type = VisitType.objects.get(pk=maintenance_report.visit_type_id)
-    maintenance_report_station_components = MaintenanceReportStationComponent.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    # maintenance_report_station_component_list = []    
-    # for maintenance_report_station_component in maintenance_report_station_components:
-    #     dictionary = {'condition': maintenance_report_station_component.condition,
-    #                   'component_classification': maintenance_report_station_component.component_classification,
-    #                  }
-    #     maintenance_report_station_component_list.append(dictionary)
+    maintenance_report_station_equipments = MaintenanceReportEquipment.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    maintenance_report_station_component_list = get_component_list(maintenance_report)
+    maintenance_report_station_equipment_list = []
 
+    for maintenance_report_station_equipment in maintenance_report_station_equipments:
+        new_equipment_id =  maintenance_report_station_equipment.new_equipment_id
+        new_equipment = Equipment.objects.get(id=new_equipment_id)
+        dictionary = {'condition': maintenance_report_station_equipment.condition,
+                      'component_classification': maintenance_report_station_equipment.classification,
+                      'name': ' '.join([new_equipment.model, new_equipment.serial_number])
+                     }
+        maintenance_report_station_equipment_list.append(dictionary)
 
     other_technicians_ids = [maintenance_report.other_technician_1_id,
                              maintenance_report.other_technician_2_id,
@@ -4695,7 +4697,8 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
 
     context['contact_information'] = maintenance_report.contacts  
 
-    context['equipment_records'] = maintenance_report_station_component_list
+    context['equipment_records'] = maintenance_report_station_equipment_list
+    # context['equipment_records'] = maintenance_report_station_component_list
 
     # JSON
     # return JsonResponse(context, status=status.HTTP_200_OK)
@@ -4963,27 +4966,25 @@ def update_maintenance_report_equipment_type(maintenance_report, equipment_type,
 
 @require_http_methods(["POST"])
 def update_maintenance_report_equipment_type_data(request):
-    maintenance_report_id = request.GET.get('maintenance_report_id', None)
-    equipment_type_id = request.GET.get('equipment_type_id', None)
-    equipment_order = request.GET.get('equipment_order', None),
+    form_data = json.loads(request.body.decode())
 
-    if type(equipment_order) is tuple:
+    maintenance_report_id = form_data['maintenance_report_id'] 
+    equipment_type_id = form_data['equipment_type_id'] 
+    equipment_order = form_data['equipment_order'] 
+    if isinstance(equipment_order, tuple):
         equipment_order = equipment_order[0]
-    elif not type(equipment_order) is str:
+    elif not isinstance(equipment_order, str):
         logger.error("Error in equipment order during maintenance report equipment update")
-
     equipment_data = {
-        'new_equipment_id': request.GET.get('new_equipment_id', None),
-        'old_equipment_id': request.GET.get('old_equipment_id', None),
-        'condition': request.GET.get('condition', None),
-        'classification': request.GET.get('classification', None),
+        'new_equipment_id': form_data['new_equipment_id'], 
+        'old_equipment_id': form_data['old_equipment_id'], 
+        'condition': form_data['condition'], 
+        'classification': form_data['classification'], 
     }
 
     maintenance_report = MaintenanceReport.objects.get(id=maintenance_report_id)
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
-
     update_maintenance_report_equipment_type(maintenance_report, equipment_type, equipment_order, equipment_data)
-
     response = {}
     return JsonResponse(response, status=status.HTTP_200_OK)
 

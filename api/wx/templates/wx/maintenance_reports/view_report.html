@@ -1,275 +1,242 @@
-<!-- templates/base.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.1.0/material.min.css"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/vuetify@2.5.4/dist/vuetify.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/@mdi/font@3.x/css/materialdesignicons.min.css"
-      rel="stylesheet"
-    /> 
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@3.7.3/dist/vuetify.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.12/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@3.7.3/dist/vuetify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    .srf-display-1 {font-size: 2em;}
+    .srf-display-2 {font-size: 1.3em; color: #4d4d4d;}
+    #download-area {
+      width: 210mm; /* A4 width */
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="app">
+      <v-app>
+        <v-container>
+          <div id="download-area">
+            <v-row class="text-center">
+              <v-col cols="12"> <img src="{% static "images/nms_logo.png" %}" alt="Logo"> </v-col>
+              <v-col cols="12"> <span class="srf-display-1 text-uppercase">Manual Weather Station Maintenance Report</span> </v-col>
+              <v-col cols="12"> <span class="srf-display-1 text-uppercase font-weight-bold">{{ station_information.station_name }}</span> </v-col>
+            </v-row>
 
-    <style>
-      .srf-display-1 {
-        font-size: 2em;
-      }
-      .srf-display-2 {
-        font-size: 1.3em;
-        color: #4d4d4d;
-      }
-    </style>
-  </head>
-  <body>
-    <script src="https://unpkg.com/vue2-leaflet@1.2.3/dist/vue2-leaflet.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.1.0/dist/vuetify.js"></script>
-    <script src="https://unpkg.com/vuelidate@0.7.4/dist/vuelidate.min.js"></script>
-    <script src="https://unpkg.com/vuelidate@0.7.4/dist/validators.min.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/handsontable@7.1.1/dist/handsontable.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@handsontable/vue@4.0.0/dist/vue-handsontable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <main style="height: 100vh; width: 100%">
-      <div id="app" v-cloak>
-        <v-app>
-          <v-content fluid fill-height style="background: white">
-            <v-layout ma-10 column>
-
-              <center> <img class="center" src="/static/images/nms_logo.png" >  </center>
-
-              <v-layout column>
-                <div style="text-align:center" class="srf-flex flex-row align-items-center justify-content-between srf-padding">
-                  <span class="srf-display-1 text-uppercase center">Manual Weather Station Maintenance Report</span>
-                  <br /><br />
-                  <span style="font-weight:bold;" class="srf-display-1 text-uppercase center text-bold"> {{station_information.station_name}}</span>
-                </div>
-              </v-layout>
-
-              <v-layout mt-10>
-                <span class="srf-display-2 text-uppercase">Visit Summary Information</span>
-              </v-layout>        
-              <hr>
-
-              <v-layout style="background-color: #CCC" fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Report #:</v-flex> 
-                  <v-flex lg3> {{visit_summary_information.report_number}} </v-flex>
-                  <v-flex lg3> Responsible Technicians: </v-flex>
-                  <v-flex lg3> {{visit_summary_information.responsible_technician}} </v-flex>
-                </v-layout>                      
-              </v-layout>
-              <v-layout fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Date of Visit: </v-flex>
-                  <v-flex lg3> {{visit_summary_information.date_of_visit}} </v-flex>
-                  <v-flex lg3> Date of Next Visit </v-flex>
-                  <v-flex lg3> {{visit_summary_information.date_of_next_visit}} </v-flex>
-                </v-layout>
-              </v-layout>
-              <v-layout  style="background-color: #CCC"  fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Start Time: </v-flex>
-                  <v-flex lg3> {{visit_summary_information.start_time}} </v-flex>
-                  <v-flex lg3> Other Technicians: </v-flex>
-                  <v-flex lg3> {{visit_summary_information.other_technicians}} </v-flex>
-                </v-layout>                                    
-              </v-layout>
-              <v-layout fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> End Time: </v-flex>
-                  <v-flex lg3> {{visit_summary_information.end_time}} </v-flex>
-                  <v-flex lg3> Type of Visit: </v-flex>
-                  <v-flex lg3> {{visit_summary_information.type_of_visit}} </v-flex>
-                </v-layout>                                 
-              </v-layout>
-              <v-layout  style="background-color: #CCC"  fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Description of Station Upon Arrival: </v-flex>
-                  <v-flex lg9> {{visit_summary_information.station_on_arrival_conditions | safe}} </v-flex>
-                </v-layout>                               
-              </v-layout>
-              <v-layout fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                    <v-flex lg3> Summary of Work Done at Station: </v-flex>
-                    <v-flex lg9> {{visit_summary_information.current_visit_summary | safe}} </v-flex>
-                </v-layout>
-              </v-layout>                               
-              <v-layout style="background-color: #CCC"  fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Work To Be Done On Next Visit: </v-flex>
-                  <v-flex lg9> {{visit_summary_information.next_visit_summary | safe}} </v-flex>
-                </v-layout>                                  
-              </v-layout>
+            </br></br> </br></br>  <hr>
+            <v-row>
+              <v-col cols="12"> <span class="srf-display-2 text-uppercase">Visit Summary Information</span> </v-col>
+            </v-row>
+            <v-row style="background-color: #CCC">
+                <v-col cols="3"> Report #:</v-col>
+                <v-col cols="3"> {{ visit_summary_information.report_number }}" </v-col>
+                <v-col cols="3"> Responsible Technicians:</v-col>
+                <v-col cols="3"> {{ visit_summary_information.responsible_technician }} </v-col>
+            </v-row>
+            <v-row>
+                <v-col cols="3"> Date of Visit:</v-col>
+                <v-col cols="3"> {{ visit_summary_information.date_of_visit }} </v-col>
+                <v-col cols="3"> Date of Next Visit:</v-col>
+                <v-col cols="3"> {{ visit_summary_information.date_of_next_visit }} </v-col>
+            </v-row>
+            <v-row style="background-color: #CCC">
+                <v-col cols="3"> Start Time:</v-col>
+                <v-col cols="3"> {{ visit_summary_information.start_time }} </v-col>
+                <v-col cols="3"> Other Technicians:</v-col>
+                <v-col cols="3"> {{ visit_summary_information.other_technicians }} </v-col>
+            </v-row>
+            <v-row>
+                <v-col cols="3"> End Time:</v-col>
+                <v-col cols="3"> {{ visit_summary_information.end_time }} </v-col>
+                <v-col cols="3"> Type of Visit:</v-col>
+                <v-col cols="3"> {{ visit_summary_information.type_of_visit }} </v-col>
+            </v-row>
+            <v-row style="background-color: #CCC">
+                <v-col cols="3"> Description of Station Upon Arrival:</v-col>
+                <v-col cols="9"> {{ visit_summary_information.station_on_arrival_conditions | safe }} </v-col>
+            </v-row>
+            <v-row>     
+                <v-col cols="3"> Summary of Work Done at Station:</v-col>
+                <v-col cols="9"> {{ visit_summary_information.current_visit_summary | safe }} </v-col>
+            </v-row>
+            <v-row style="background-color: #CCC">    
+                <v-col cols="3"> Work To Be Done On Next Visit:</v-col>
+                <v-col cols="9"> {{ visit_summary_information.next_visit_summary | safe }}</v-col>
+            </v-row>
               
-              <v-layout mt-10>
-                <span class="srf-display-2 text-uppercase">Station Information</span>
-              </v-layout>
-              <hr>
+            </br></br> </br></br>  <hr>
+            <v-row>
+              <v-col cols="12"> <span class="srf-display-2 text-uppercase">Station Information</span> </v-col>
+            </v-row>
 
-              <v-layout style="background-color: #CCC"   fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Station Name: </v-flex>
-                  <v-flex lg3> {{station_information.station_name}} </v-flex>
-                  <v-flex lg3> Station Host Name: </v-flex>
-                  <v-flex lg3> {{station_information.station_host_name}} </v-flex>
-                </v-layout>                                 
-              </v-layout>  
-              <v-layout fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Sttion ID: </v-flex>
-                  <v-flex lg3> {{station_information.station_ID}} </v-flex>
-                  <v-flex lg3> WIGOS ID: </v-flex>
-                  <v-flex lg3> {{station_information.wigos_ID}} </v-flex>
-                </v-layout>
-              </v-layout>
-              <v-layout style="background-color: #CCC"   fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Sttion Type: </v-flex>
-                  <v-flex lg3> {{station_information.station_type}} </v-flex>
-                  <v-flex lg3> Sttion Profile: </v-flex>
-                  <v-flex lg3> {{station_information.station_profile}} </v-flex>
-                </v-layout>                                 
-              </v-layout>  
-              <v-layout fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Latitude: </v-flex>
-                  <v-flex lg3> {{station_information.latitude}} </v-flex>
-                  <v-flex lg3> Elevation (m): </v-flex>
-                  <v-flex lg3> {{station_information.elevation}} </v-flex>
-                </v-layout>
-              </v-layout>
-              <v-layout style="background-color: #CCC"   fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Longitude: </v-flex>
-                  <v-flex lg3> {{station_information.longitude}} </v-flex>
-                  <v-flex lg3> District: </v-flex>
-                  <v-flex lg3> {{station_information.district}} </v-flex>
-                </v-layout>                                 
-              </v-layout>  
-              <v-layout fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Transmission Type: </v-flex>
-                  <v-flex lg3> {{station_information.transmission_type}} </v-flex>
-                  <v-flex lg3> Transmission ID: </v-flex>
-                  <v-flex lg3> {{station_information.transmission_ID}} </v-flex>
-                </v-layout>
-              </v-layout>
-              <v-layout style="background-color: #CCC"   fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Transmission Interval: </v-flex>
-                  <v-flex lg3> {{station_information.transmission_interval}} </v-flex>
-                  <v-flex lg3> Measurement Interval: </v-flex>
-                  <v-flex lg3> {{station_information.measurement_interval}} </v-flex>
-                </v-layout>                                 
-              </v-layout>  
-              <v-layout fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <v-flex lg3> Date of First Operation: </v-flex>
-                  <v-flex lg3> {{station_information.data_of_first_operation}}</v-flex>
-                  <v-flex lg3> Date(s) of Relocation: </v-flex>
-                  <v-flex lg3> {{station_information.data_of_relocation}} </v-flex>
-                </v-layout>
-              </v-layout>
+            <v-row style="background-color: #CCC">
+                <v-col cols="3"> Station Name: </v-col>
+                <v-col cols="3"> {{station_information.station_name}} </v-col>
+                <v-col cols="3"> Station Host Name: </v-col>
+                <v-col cols="3"> {{station_information.station_host_name}} </v-col>
+            </v-row>  
+            <v-row style="background-color: #FFF">
+                <v-col cols="3"> Sttion ID: </v-col>
+                <v-col cols="3"> {{station_information.station_ID}} </v-col>
+                <v-col cols="3"> WIGOS ID: </v-col>
+                <v-col cols="3"> {{station_information.wigos_ID}} </v-col>
+            </v-row>
+            <v-row style="background-color: #CCC">
+                <v-col cols="3"> Sttion Type: </v-col>
+                <v-col cols="3"> {{station_information.station_type}} </v-col>
+                <v-col cols="3"> Sttion Profile: </v-col>
+                <v-col cols="3"> {{station_information.station_profile}} </v-col>
+            </v-row>  
+            <v-row style="background-color: #FFF">
+                <v-col cols="3"> Latitude: </v-col>
+                <v-col cols="3"> {{station_information.latitude}} </v-col>
+                <v-col cols="3"> Elevation (m): </v-col>
+                <v-col cols="3"> {{station_information.elevation}} </v-col>
+            </v-row>
+            <v-row style="background-color: #CCC">
+                <v-col cols="3"> Longitude: </v-col>
+                <v-col cols="3"> {{station_information.longitude}} </v-col>
+                <v-col cols="3"> District: </v-col>
+                <v-col cols="3"> {{station_information.district}} </v-col>
+            </v-row>  
+            <v-row style="background-color: #FFF">
+                <v-col cols="3"> Transmission Type: </v-col>
+                <v-col cols="3"> {{station_information.transmission_type}} </v-col>
+                <v-col cols="3"> Transmission ID: </v-col>
+                <v-col cols="3"> {{station_information.transmission_ID}} </v-col>
+            </v-row>
+            <v-row style="background-color: #CCC">
+                <v-col cols="3"> Transmission Interval: </v-col>
+                <v-col cols="3"> {{station_information.transmission_interval}} </v-col>
+                <v-col cols="3"> Measurement Interval: </v-col>
+                <v-col cols="3"> {{station_information.measurement_interval}} </v-col>
+            </v-row>  
+            <v-row style="background-color: #FFF">
+                <v-col cols="3"> Date of First Operation: </v-col>
+                <v-col cols="3"> {{station_information.data_of_first_operation}}</v-col>
+                <v-col cols="3"> Date(s) of Relocation: </v-col>
+                <v-col cols="3"> {{station_information.data_of_relocation}} </v-col>
+            </v-row>
 
-              <v-layout mt-10>
-                <span class="srf-display-2 text-uppercase">Contact Information</span>
-              </v-layout>
-              <hr>
+            </br></br> </br></br>  <hr>
+            <v-row>
+              <v-col cols="12"> <span class="srf-display-2 text-uppercase">Contact Information</span> </v-col>
+            </v-row>
 
-              <v-layout fluid>
-                <v-layout ml-2 mr-2 mt-2 mb-2>
-                  <span> {{ contact_information | safe }} </span>
-                </v-layout>
-              </v-layout>
+            <v-row>
+              <v-col cols="12"> <span> {{ contact_information | safe }} </span> </v-col>
+            </v-row>
 
-              <v-layout mt-10>
-                <span class="srf-display-2 text-uppercase">Equipment Record</span>
-              </v-layout>
-              <hr>
+            </br></br> </br></br>  <hr>
+            <v-row>
+              <v-col cols="12"> <span class="srf-display-2 text-uppercase">Equipment Record</span> </v-col>
+            </v-row>
 
-              <v-layout mt-5 mb-5 v-for="equipment_record in {{equipment_records}}" column>
-                <v-card outlined>
-                  <v-layout style="background-color: #38444c">
-                    <v-layout justify-center mt-2 mb-2 >
-                      <span style="color: #FFF" class="srf-display-2 text-uppercase">
-                        [[equipment_record.component_name]]
-                      </span>
-                    </v-layout>
-                  </v-layout>
-
-                  <v-layout style="background-color: #CCC">
-                    <v-layout ml-5 mr-5 mt-2 mb-2> 
-                      Component Condition
-                    </v-layout>
-                  </v-layout>  
-
-                  <v-layout justify-center mt-5>
-                    <span v-html="equipment_record.condition"></span>
-                  </v-layout>
-
-                  <v-layout style="background-color: #CCC">
-                    <v-layout ml-5 mr-5 mt-2 mb-2> 
-                      Component Classification
-                    </v-layout>
-                  </v-layout>  
-
-                  <v-layout ml-5>
-                    <v-radio-group disabled v-model=equipment_record.component_classification>
-                      <v-radio label="Fully Functional" value="F" ></v-radio>
-                      <v-radio label="Partially Functional" value="P" ></v-radio>
-                      <v-radio label="Not Functional" value="N" ></v-radio>
-                    </v-radio-group>
-                  </v-layout>
-                </v-card>      
-              </v-layout>
-
-              <v-layout mt-5 justify-center >
-                <v-btn color="primary" :href="updateMaintenanceReport()">
-                  Close Preview
-                </v-btn>
-              </v-layout>
-            </v-layout>
-          </v-content>
-        </v-app>
-      </div>
-    </main>
-  </body>
+            <v-row v-for="equipment_record in {{equipment_records}}" column>
+              <v-col cols="12">
+                <v-row style="background-color: #CCC">
+                  <v-col cols="12" class="text-center">
+                    <span class="text-h6"> [[equipment_record.name]] </span>                
+                  </v-col>
+                </v-row>
+                <v-row style="background-color: #DDD">
+                  <v-col cols="12">  <span> Component Condition </span> </v-col>
+                </v-row>
+                <v-row style="background-color: #EEE">
+                  <v-col cols="12"> <span v-html="equipment_record.condition"></span> </v-col>
+                </v-row>
+                <v-row style="background-color: #DDD">
+                  <v-col cols="12">  <span> Component Classification </span> </v-col>
+                </v-row>
+                <v-row style="background-color: #EEE">
+                  <v-col cols="12">
+                    <div class="py-2">
+                      <v-row>
+                        <v-col cols="12" class="d-flex align-center">
+                          <input type="radio" disabled :checked="equipment_record.component_classification==='F'" style="width: 20px; height: 20px;">
+                          <span class="text-subtitle-1 ml-2"> Fully Functional </span>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12" class="d-flex align-center">
+                          <input type="radio" disabled :checked="equipment_record.component_classification==='P'" style="width: 20px; height: 20px;">
+                          <span class="text-subtitle-1 ml-2"> Partially Functional </span>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12" class="d-flex align-center">
+                          <input type="radio" disabled :checked="equipment_record.component_classification==='N'" style="width: 20px; height: 20px;">
+                          <span class="text-subtitle-1 ml-2"> Not Functional </span>
+                        </v-col>
+                      <v-row>
+                    </div>                    
+                  </v-col>
+                </v-row>
+              <v-col>
+            </v-row>
+          </div>
+          <v-row class="mt-5 justify-center">
+            <v-col cols="3"  class="text-center">
+              <v-btn color="primary" :href="updateMaintenanceReport()">Close Preview</v-btn>
+            </v-col>
+            <v-col cols="3" class="text-center">
+                <v-btn color="primary" @click="downloadPDF" append-icon="mdi-download">Download PDF</v-btn>
+            </v-col>         
+          </v-row>
+        </v-container>
+      </v-app>
+    </div>
+  </main>
+  <script>
+    const { createApp } = Vue;
+    const { createVuetify } = Vuetify;
+    const vuetify = createVuetify();
+    const {jsPDF} = window.jspdf
+    const app = createApp({
+      data() {
+        return {
+          maintenance_report_id: "{{ visit_summary_information.report_number }}",
+          maintenance_report_status: "{{ visit_summary_information.maintenance_report_status }}",
+          source: "{{ source }}",
+        };
+      },
+      methods: {
+        updateMaintenanceReport() {
+          return (this.maintenance_report_status === "A" || this.source === "list") 
+            ? `/wx/maintenance_report/` 
+            : `/wx/maintenance_report/${this.maintenance_report_id}/update/`;
+        },
+        downloadPDF() {
+          const filename = `Maintenance_Report_${this.maintenance_report_id}.pdf`;
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+        
+          pdf.html(document.getElementById('download-area'), {
+            callback: function (doc) {
+              doc.save(filename);
+            },
+            x: 10,
+            y: 10,
+            width: 190, // A4 width is 210mm, leaving 10mm margins on each side
+            windowWidth: document.getElementById('download-area').scrollWidth,
+            autoPaging: 'text'
+          });
+        },
+      },
+      delimiters: ["[[", "]]"],
+    })
+    
+    {% comment %} app.config.delimiters = ['[[', ']]']; {% endcomment %}
+    app.use(vuetify).mount("#app");
+  </script>
+</body>
 </html>
-
-<script>
-  var element = document.getElementById('element-to-print');
-  
-  Vue.use(window.vuelidate.default);
-  new Vue({
-    el: "#app",
-    vuetify: new Vuetify(),
-    delimiters: ["[[", "]]"],    
-    data: {
-      maintenance_report_id: "{{visit_summary_information.report_number}}",
-      maintenance_report_status: "{{visit_summary_information.maintenance_report_status}}",
-      source: "{{source}}",
-    },
-    methods: {
-      updateMaintenanceReport(){
-        if (this.maintenance_report_status === "A" || this.source === "list"){
-          return `/wx/maintenance_report/`
-        }
-        else {
-          return `/wx/maintenance_report/${this.maintenance_report_id}/update/`
-        }
-      },  
-    },
-  });
-</script>

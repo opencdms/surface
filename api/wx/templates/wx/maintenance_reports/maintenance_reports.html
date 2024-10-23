@@ -131,7 +131,7 @@
                 </template>
                 <span>Download Maintenance Report</span>
               </v-tooltip>              
-              <!-- <v-tooltip bottom>
+              <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
                   <v-btn icon :href="viewMaintenanceReport(item.maintenance_report_id)">
                     <v-icon v-on="on" small>
@@ -140,7 +140,7 @@
                   </v-btn>
                 </template>
                 <span>View Maintenance Report</span>
-              </v-tooltip> -->
+              </v-tooltip>
               {% if perms.wx.delete_maintenancereport %}     
               <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
