@@ -131,7 +131,7 @@
                 </template>
                 <span>Download Maintenance Report</span>
               </v-tooltip>              
-              <!-- <v-tooltip bottom>
+              <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
                   <v-btn icon :href="viewMaintenanceReport(item.maintenance_report_id)">
                     <v-icon v-on="on" small>
@@ -140,7 +140,7 @@
                   </v-btn>
                 </template>
                 <span>View Maintenance Report</span>
-              </v-tooltip> -->
+              </v-tooltip>
               {% if perms.wx.delete_maintenancereport %}     
               <v-tooltip bottom>
                 <template v-slot:activator="{ on }">
@@ -222,7 +222,7 @@
         today: moment().format('YYYY-MM-DD'),
         today_lm: moment().add(-1, 'M').format('YYYY-MM-DD'),
         start_date_menu: false,
-        start_date: moment().subtract(3, 'months').format('YYYY-MM-DD'),
+        start_date: moment().subtract(1, 'years').format('YYYY-MM-DD'),
         end_date_menu: false,
         end_date: moment().format('YYYY-MM-DD'),
         filter: {isAutomatic: true},
@@ -366,6 +366,7 @@
       mounted() {
         axios.defaults.xsrfHeaderName = "X-CSRFToken";
         axios.defaults.xsrfCookieName = "csrftoken";
+        this.getMaintenanceReportList()
       },
     });
   </script>

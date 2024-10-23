@@ -4628,17 +4628,19 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
     profile = StationProfile.objects.get(pk=station.profile_id)
     responsible_technician = Technician.objects.get(pk=maintenance_report.responsible_technician_id)
     visit_type = VisitType.objects.get(pk=maintenance_report.visit_type_id)
-    maintenance_report_station_components = MaintenanceReportStationComponent.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    # maintenance_report_station_component_list = []    
-    # for maintenance_report_station_component in maintenance_report_station_components:
-    #     dictionary = {'condition': maintenance_report_station_component.condition,
-    #                   'component_classification': maintenance_report_station_component.component_classification,
-    #                  }
-    #     maintenance_report_station_component_list.append(dictionary)
+    maintenance_report_station_equipments = MaintenanceReportEquipment.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    maintenance_report_station_component_list = get_component_list(maintenance_report)
+    maintenance_report_station_equipment_list = []
 
+    for maintenance_report_station_equipment in maintenance_report_station_equipments:
+        new_equipment_id =  maintenance_report_station_equipment.new_equipment_id
+        new_equipment = Equipment.objects.get(id=new_equipment_id)
+        dictionary = {'condition': maintenance_report_station_equipment.condition,
+                      'component_classification': maintenance_report_station_equipment.classification,
+                      'name': ' '.join([new_equipment.model, new_equipment.serial_number])
+                     }
+        maintenance_report_station_equipment_list.append(dictionary)
 
     other_technicians_ids = [maintenance_report.other_technician_1_id,
                              maintenance_report.other_technician_2_id,
@@ -4695,7 +4697,8 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
 
     context['contact_information'] = maintenance_report.contacts  
 
-    context['equipment_records'] = maintenance_report_station_component_list
+    context['equipment_records'] = maintenance_report_station_equipment_list
+    # context['equipment_records'] = maintenance_report_station_component_list
 
     # JSON
     # return JsonResponse(context, status=status.HTTP_200_OK)
@@ -4963,27 +4966,25 @@ def update_maintenance_report_equipment_type(maintenance_report, equipment_type,
 
 @require_http_methods(["POST"])
 def update_maintenance_report_equipment_type_data(request):
-    maintenance_report_id = request.GET.get('maintenance_report_id', None)
-    equipment_type_id = request.GET.get('equipment_type_id', None)
-    equipment_order = request.GET.get('equipment_order', None),
+    form_data = json.loads(request.body.decode())
 
-    if type(equipment_order) is tuple:
+    maintenance_report_id = form_data['maintenance_report_id'] 
+    equipment_type_id = form_data['equipment_type_id'] 
+    equipment_order = form_data['equipment_order'] 
+    if isinstance(equipment_order, tuple):
         equipment_order = equipment_order[0]
-    elif not type(equipment_order) is str:
+    elif not isinstance(equipment_order, str):
         logger.error("Error in equipment order during maintenance report equipment update")
-
     equipment_data = {
-        'new_equipment_id': request.GET.get('new_equipment_id', None),
-        'old_equipment_id': request.GET.get('old_equipment_id', None),
-        'condition': request.GET.get('condition', None),
-        'classification': request.GET.get('classification', None),
+        'new_equipment_id': form_data['new_equipment_id'], 
+        'old_equipment_id': form_data['old_equipment_id'], 
+        'condition': form_data['condition'], 
+        'classification': form_data['classification'], 
     }
 
     maintenance_report = MaintenanceReport.objects.get(id=maintenance_report_id)
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
-
     update_maintenance_report_equipment_type(maintenance_report, equipment_type, equipment_order, equipment_data)
-
     response = {}
     return JsonResponse(response, status=status.HTTP_200_OK)
 
@@ -7184,7 +7185,7 @@ def get_synop_table_config():
         'CLDTOT', 'WNDDIR', 'WNDSPD', 'TEMP', 'TDEWPNT', 'TEMPWB',
         'RH', 'PRESSTN', 'PRESSEA', 'PRECSLR', 'PRECDUR', 'PRSWX',
         'W1', 'W2', 'Nh', 'CL', 'CM', 'CH', 'STSKY',
-        'DL', 'DM', 'DH', 'TEMPMIN', 'TEMPMAX', 'N1', 'C1', 'hh1',
+        'DL', 'DM', 'DH', 'TEMPMAX', 'TEMPMIN', 'PREC24H', 'N1', 'C1', 'hh1',
         'N2', 'C2', 'hh2', 'N3', 'C3', 'hh3', 'N4', 'C4', 'hh4', 'SpPhenom'
     ]
     
@@ -7525,7 +7526,7 @@ def get_synop_form_config():
             "6-Group Ind.", "7-Group Ind.", "Lowest Cloud height", "Visibility", "Total cloud", "Wind Direction",
             "Wind Speed", "Indicator and sign", "Air Temperature", "Indicator and sign", "Dew Point", 
             "V.P.", "R.H.", "Indicator", "QNH", "Indicator", "QNH",
-            "Indicator", "Rainfall since Last Report", "6-hr periods", "Indicator", "Present Weather",
+            "Indicator", "Rainfall Since Last Report", "6-hr periods", "Indicator", "Present Weather",
             { 'label': "Past Weather", 'colspan': 2 }, "Indicator", "Amt. CL/CM", "CL Clouds", "CM Clouds", "CH Clouds",
             "SECTION 3 Indicator", "Indicator", "State of sky", "CL Direction", "CM Direction", "CH Direction",
             "Indicator and sign", "Maximum Temperature", "Indicator and sign", "Minimum Temperature", "Indicator",
@@ -7537,7 +7538,7 @@ def get_synop_form_config():
         ],
         ["Land Station-no distinction AAXX", "GGggYYGG", "iW", "IIiii", "iR", "iX", "h", "(VV) VV", "N",
             "ddd dd", "(fmfm) f f", "1sn", "T'T' TTT", "2sn", "T'dT'd Td TdTd", "UUU", "",
-            "3", "POPOPOPO", "4", "PHPHPHPH PPPP", "6", "RRR", "tR", "7", "ww", "W1", "W2", "8", "Nh", "CL",
+            "3", "POPOPOPO", "4", "PHPHPHPH PPPP", "6", "RRR", "Tr", "7", "ww", "W1", "W2", "8", "Nh", "CL",
             "CM", "CH", "333", "0", "CS", "DL", "DM", "DH", "1sn", "TXTXTX", "2sn", "TnTnTn", "5j1",
             "P24P24P24", "7", "R24R24R24R24", "8", "NS", "C", "hShS", "8", "NS", "C", "hShS", "8", "NS",
             "C", "hShS", "8", "NS", "C", "hShS", "9SPSPsPsP", "", ""
@@ -7595,13 +7596,15 @@ def get_synop_pvd_data(station, date):
                 SELECT
                     (datetime + INTERVAL '{station.utc_offset_minutes} MINUTES') AT TIME ZONE 'utc',
                     variable_id,
-                    measured 
+                    CASE WHEN var.variable_type = 'Numeric' THEN measured::VARCHAR
+                        ELSE code
+                    END AS value
                 FROM raw_data
                 INNER JOIN wx_variable var ON raw_data.variable_id=var.id
                 WHERE datetime >='{request_datetime-datetime.timedelta(days=1)}'
                   AND datetime < '{request_datetime}'
                   AND station_id={station.id}
-                  AND var.symbol IN ('PRECSLR', 'PRESSTN')
+                  AND var.symbol IN ('PRECSLR', 'PRECDUR', 'PRESSTN')
             """
             
             cursor.execute(query)
@@ -7672,6 +7675,30 @@ def synop_load_form(request):
         wind_dir_code = str(wind_dir_code).zfill(2)
         return wind_dir_code
 
+    def lowestCloutHightToCode(lowest_ch: float):
+        if lowest_ch is None or str(lowest_ch)==str(settings.MISSING_VALUE) :
+            return '/'
+        elif 0 <= lowest_ch < 50:
+            return 0
+        elif 50 <= lowest_ch < 100:
+            return 1
+        elif 100 <= lowest_ch < 200:
+            return 2
+        elif 200 <= lowest_ch < 300:
+            return 3
+        elif 300 <= lowest_ch < 600:
+            return 4
+        elif 600 <= lowest_ch < 1000:
+            return 5
+        elif 1000 <= lowest_ch < 1500:
+            return 6
+        elif 1500 <= lowest_ch < 2000:
+            return 7
+        elif 2000 <= lowest_ch < 2500:
+            return 8
+        elif 2500 <= lowest_ch:
+            return 9
+
     def reinfallToCode(rainfall:float):
         # Rainfall in mm.
         if rainfall is None or rainfall < 0:
@@ -7701,67 +7728,60 @@ def synop_load_form(request):
             return f'{rainfall:04}'
         else:
             return '9998'
-
-    def last6hPeriods(curr_datetime:datetime, rainfall_data:list):
-        curr_datetime = curr_datetime
-        last6h_datetime = curr_datetime-datetime.timedelta(hours=6)
-        last12h_datetime = curr_datetime-datetime.timedelta(hours=12)
-        last18h_datetime = curr_datetime-datetime.timedelta(hours=18)
-        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
-
-        if curr_datetime not in [row[0] for row in rainfall_data]:
-            return None
-        elif last6h_datetime in [row[0] for row in rainfall_data]:
-            return 1
-        elif last12h_datetime in [row[0] for row in rainfall_data]:
-            return 2
-        elif last18h_datetime in [row[0] for row in rainfall_data]:
-            return 3
-        elif last24h_datetime in [row[0] for row in rainfall_data]:
-            return 4
-        else:
-            return None
-
-    def rainfallSinceLastReport(curr_datetime:datetime, rainfall_data:list):
-        curr_datetime = curr_datetime
-        last6h_datetime = curr_datetime-datetime.timedelta(hours=6)
-        last12h_datetime = curr_datetime-datetime.timedelta(hours=12)
-        last18h_datetime = curr_datetime-datetime.timedelta(hours=18)
-        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
-
-        if curr_datetime not in [row[0] for row in rainfall_data]:
-            return None
-
-        elif last6h_datetime in [row[0] for row in rainfall_data]:
-            rainfall = sum([float(row[2]) for row in rainfall_data if last6h_datetime < row[0] <= curr_datetime])
-            return reinfallToCode(rainfall)
-
-        elif last12h_datetime in [row[0] for row in rainfall_data]:
-            rainfall = sum([float(row[2]) for row in rainfall_data if last12h_datetime < row[0] <= curr_datetime])
-            return reinfallToCode(rainfall)
-
-        elif last18h_datetime in [row[0] for row in rainfall_data]:
-            rainfall = sum([float(row[2]) for row in rainfall_data if last18h_datetime < row[0] <= curr_datetime])
-            return reinfallToCode(rainfall)
         
-        elif last24h_datetime in [row[0] for row in rainfall_data]:
-            rainfall = sum([float(row[2]) for row in rainfall_data if last24h_datetime < row[0] <= curr_datetime])
-            return reinfallToCode(rainfall)
-        
-        else:
-            return None    
-
-    def sumRainfallPeriod(curr_datetime:datetime, rainfall_data:list):
-        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
-
-        # If there is no measurement at the current datetime, precipitation may not have been measured.
-        # If there is no measurement at the last 24h datetime, the last measurment may have data from previous datetimes.
-        if len([row for row in rainfall_data if row[0] in [last24h_datetime, curr_datetime]]) < 2:
+    def precdurCodeToValue(code: str):
+        # This dictionary must match WMO vlues for code 4019
+        code_table = {
+            '1': 6,
+            '2': 12,
+            '3': 18,
+            '4': 24,
+            '5': 1,
+            '6': 2,
+            '7': 3,
+            '8': 9,
+            '9': 15
+        }
+        if code not in code_table.keys():
             return None
+        return code_table[code]
         
-        rainfall = sum([float(row[2]) for row in rainfall_data if last24h_datetime < row[0] <= curr_datetime])
+    def reinfallLast24h(curr_datetime:datetime, rainfall_data:list, rainfall_dur_data:list ):
+        # If there is precipitation was not measured at the exact datetime we can not infere what was the last 24h
+        if (len([row for row in rainfall_data if row[0] == curr_datetime])!=1):
+            return None
 
-        return reinfall24hToCode(rainfall)
+        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
+        
+        prec24h_data = [row for row in rainfall_data if (last24h_datetime < row[0] <= curr_datetime)]
+        prec24h_data = sorted(prec24h_data, key=lambda x: x[0], reverse=True)
+
+        prec_sum = 0; precdur_sum = 0
+        for prec_row in prec24h_data:
+            prec_value = prec_row[2]
+
+            if prec_value in [str(settings.MISSING_VALUE), settings.MISSING_VALUE_CODE]:
+                prec_value = None
+            
+            if prec_value is not None:
+                prec_value = float(prec_value)
+                precdur_code = next((precdur_row[2] for precdur_row in rainfall_dur_data if precdur_row[0] == prec_row[0]),None)
+
+                # If there is precipitation and no duration then we can not infere what was the last 24h
+                if precdur_code is None or precdur_code==settings.MISSING_VALUE_CODE:
+                    return None
+                
+                precdur_sum+=precdurCodeToValue(precdur_code)
+                prec_sum+=prec_value
+                if precdur_sum==24:
+                    return reinfall24hToCode(prec_sum)
+                
+                # If duration exceeds 24h we can not infere what was the last 24h
+                elif precdur_sum>24:
+                    return None
+            
+        # If duration is below 24h we can not infere what was the last 24h
+        return None
 
     try:
         date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
@@ -7783,6 +7803,8 @@ def synop_load_form(request):
 
     # Precipitation Measurements
     rainfall_data = [row for row in pvd_data + data if row[1] == variables.get(symbol='PRECSLR').id and str(row[2]) != str(settings.MISSING_VALUE)]
+    # Precipitation Duration Measurements
+    rainfall_dur_data = [row for row in pvd_data + data if row[1] == variables.get(symbol='PRECDUR').id and str(row[2]) != str(settings.MISSING_VALUE)]
 
     # This is a table reference that is usedd to identify what is the type of the data.
     # Const is used for constant values.
@@ -7795,7 +7817,7 @@ def synop_load_form(request):
         {'type': 'Const', 'ref': station.synoptic_type}, {'type': 'Func', 'ref': 'DateHour'},
         {'type': 'Var', 'ref': 'WINDINDR'}, {'type': 'Const', 'ref': station.synoptic_code},
         {'type': 'Var', 'ref': 'PRECIND'}, {'type': 'Var', 'ref': 'STATIND'},
-        {'type': 'Var', 'ref': 'LOWCLH'}, {'type': 'Var', 'ref': 'VISBY'}, {'type': 'Var', 'ref': 'CLDTOT'},
+        {'type': 'SpVar', 'ref': 'LOWCLH'}, {'type': 'Var', 'ref': 'VISBY'}, {'type': 'Var', 'ref': 'CLDTOT'},
         {'type': 'SpVar', 'ref': 'WNDDIR'}, {'type': 'SpVar', 'ref': 'WNDSPD'},
         {'type': '1sn', 'ref': 'TEMP'}, {'type': 'SpVar', 'ref': 'TEMP'},
         {'type': '2sn', 'ref': 'TDEWPNT'},
@@ -7805,7 +7827,7 @@ def synop_load_form(request):
         {'type': 'Const', 'ref': 4},
         {'type': 'SpVar', 'ref': 'PRESSEA'},
         {'type': 'Const', 'ref': 6},
-        {'type': 'Func', 'ref': 'RainfallSLR'}, {'type': 'Var', 'ref': 'PRECDUR'},
+        {'type': 'SpVar', 'ref': 'PRECSLR'}, {'type': 'Var', 'ref': 'PRECDUR'},
         {'type': 'Const', 'ref': 7},
         {'type': 'Var', 'ref': 'PRSWX'}, {'type': 'Var', 'ref': 'W1'}, {'type': 'Var', 'ref': 'W2'},
         {'type': 'Const', 'ref': 8}, 
@@ -7815,11 +7837,12 @@ def synop_load_form(request):
         {'type': 'Const', 'ref': 0},
         {'type': 'Var', 'ref': 'STSKY'},
         {'type': 'Var', 'ref': 'DL'}, {'type': 'Var', 'ref': 'DM'}, {'type': 'Var', 'ref': 'DH'},
-        {'type': '1sn', 'ref': 'TEMPMIN'}, {'type': 'SpVar', 'ref': 'TEMPMIN'},
-        {'type': '2sn', 'ref': 'TEMPMAX'}, {'type': 'SpVar', 'ref': 'TEMPMAX'},
+        {'type': '1sn', 'ref': 'TEMPMAX'}, {'type': 'SpVar', 'ref': 'TEMPMAX'},
+        {'type': '2sn', 'ref': 'TEMPMIN'}, {'type': 'SpVar', 'ref': 'TEMPMIN'},
         {'type': '5j1', 'ref': None}, {'type': 'Func', 'ref': 'BarometricChange'},
         {'type': 'Const', 'ref': 7},
-        {'type': 'Func', 'ref': '24hRainfall'},
+        # {'type': 'Func', 'ref': '24hRainfall'},
+        {'type': 'SpVar', 'ref': 'PREC24H'},
         {'type': 'Const', 'ref': 8},
         {'type': 'Var', 'ref': 'N1'}, {'type': 'Var', 'ref': 'C1'}, {'type': 'Var', 'ref': 'hh1'},
         {'type': 'Const', 'ref': 8},
@@ -7924,7 +7947,13 @@ def synop_load_form(request):
                     elif variable.symbol=='WNDDIR':
                         value = windDirToCode(value)
                     elif variable.symbol=='WNDSPD':
-                        value = windSpeedToCode(value)        
+                        value = windSpeedToCode(value)
+                    elif variable.symbol=='PRECSLR':
+                        value = reinfallToCode(value)
+                    elif variable.symbol=='PREC24H':
+                        value = reinfall24hToCode(value)
+                    elif variable.symbol=='LOWCLH':
+                        value = lowestCloutHightToCode(value)
             elif column_type=='Func':
                 if reference[j]['ref']=='DateHour':
                     value=dayhour
@@ -7936,12 +7965,8 @@ def synop_load_form(request):
                     value = airTempCalc(dew_point)
                 elif reference[j]['ref']=='BarometricChange':
                     value =  f"{abs(barometric_change_24h):04}" if barometric_change_24h is not None else None
-                elif reference[j]['ref']=='24hRainfall':
-                    value = sumRainfallPeriod(datetime_row, rainfall_data) if i in [0,6,12,18] else None
-                elif reference[j]['ref']=='6hPeriods':
-                    value = last6hPeriods(datetime_row, rainfall_data) if i in [0,6,12,18] else None
-                elif reference[j]['ref']=='RainfallSLR':
-                    value = rainfallSinceLastReport(datetime_row, rainfall_data) if i in [0,6,12,18] else None
+                # elif reference[j]['ref']=='24hRainfall':
+                #     value = reinfallLast24h(datetime_row, rainfall_data, rainfall_dur_data) if i in [0,6,12,18] else None
                 else:
                     value = 'Func'    
             elif column_type=='Text':
