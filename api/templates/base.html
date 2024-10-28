@@ -631,20 +631,12 @@
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
-                      {% if 'daily-form' in request.user_permissions or request.user.is_staff or request.user.is_superuser%}
-                        <a id="daily-form" href="{% url 'daily-form' %}" class="hide-menu collection-item left-space" onclick="mainOverlayLoader()">Daily Capture Form<i class="material-icons secondary-content">keyboard</i></a>
-                      {% endif %}
-
                       {% if 'monthly-form' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
-                        <a id="monthly-form" href="{% url 'monthly-form' %}" class="collection-item left-space" onclick="mainOverlayLoader()">New Monthly Capture<i class="material-icons secondary-content">keyboard</i></a>
+                        <a id="monthly-form" href="{% url 'monthly-form' %}" class="collection-item left-space" onclick="mainOverlayLoader()">Monthly Capture Form<i class="material-icons secondary-content">keyboard</i></a>
                       {% endif %}
-            
+                                  
                       {% if 'synop-capture' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
-                        <a id="synop-capture" href="{% url 'synop-capture' %}" class="collection-item left-space" onclick="mainOverlayLoader()">SYNOP Capture Form<i class="material-icons secondary-content">keyboard</i></a>
-                      {% endif %}
-                      
-                      {% if 'synop-capture-update' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
-                        <a id="synop-capture-update" href="{% url 'synop-capture-update' %}" class="collection-item left-space" onclick="mainOverlayLoader()">New SYNOP Capture<i class="material-icons secondary-content">keyboard</i></a>
+                        <a id="synop-capture" href="{% url 'synop-capture' %}" class="collection-item left-space" onclick="mainOverlayLoader()">Synop Capture<i class="material-icons secondary-content">keyboard</i></a>
                       {% endif %}
                       
                       {% if 'data-export' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
@@ -856,10 +848,8 @@
           'station-metadata',
           'station-oscar-export',
           'stations-monitoring',
-          'daily-form',
           'monthly-form',
           'synop-capture',
-          'synop-capture-update',
           'data-export',
           'instrumentlogs-list',
           'station-report',
