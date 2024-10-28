@@ -3690,7 +3690,114 @@ def query_stationsmonitoring_station(data_type, time_type, date_picked, station_
                          'suspicious': r[3],
                          'bad': r[4],
                          'not_checked': r[5]} for r in results]
-    
+    elif data_type=='Visits':
+        query = """
+            WITH ordered_reports AS (
+                SELECT 
+                    id
+                    ,station_id
+                    ,visit_type_id
+                    ,visit_date
+                    ,initial_time
+                    ,end_time
+                    ,responsible_technician_id
+                    ,next_visit_date
+                    ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                FROM wx_maintenancereport
+                WHERE status='A'AND station_id=%s
+            )
+            ,latest_report AS(
+                SELECT 
+                    *
+                FROM ordered_reports
+                WHERE rn=1    
+            )
+            SELECT 
+                r.id
+                ,p.name
+                ,s.is_automatic
+                ,r.visit_date
+                ,v.name
+                ,r.initial_time
+                ,r.end_time
+                ,t.name
+                ,r.next_visit_date
+            FROM latest_report r
+            LEFT JOIN wx_station s ON r.station_id = s.id
+            LEFT JOIN wx_stationprofile p ON p.id=s.profile_id
+            LEFT JOIN wx_technician t ON r.responsible_technician_id = t.id
+            LEFT JOIN wx_visittype v ON r.visit_type_id = v.id
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (station_id,))
+            results = cursor.fetchall()
+        
+        station_data = [{'Maintenance Report ID': r[0],
+                         'Station Profile': r[1],
+                         'Station Type': 'Automatic' if r[2] else 'Manual',
+                         'Visit Date': r[3],
+                         'Visit Type': r[4],
+                         'Initial Time': r[5],
+                         'End Time': r[6],
+                         'Responsible Technician': r[7],
+                         'Next Visit Date': r[8]} for r in results]
+        
+        if len(station_data)>0:
+            station_data = station_data[0]
+        else:
+            station_data = {}
+    elif data_type=='Equipment':
+        query = """
+            WITH ordered_reports AS (
+                SELECT 
+                    id
+                    ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                FROM wx_maintenancereport
+                WHERE status='A'AND station_id=%s
+            )
+            ,latest_report AS(
+                SELECT 
+                    id
+                FROM ordered_reports
+                WHERE rn=1    
+            )
+            SELECT 
+                e.model
+                ,e.serial_number
+                ,et.name
+                ,se.classification
+                ,q.color
+            FROM latest_report r
+            LEFT JOIN wx_maintenancereportequipment se ON se.maintenance_report_id=r.id
+            LEFT JOIN wx_equipment e ON e.id = se.new_equipment_id
+            LEFT JOIN wx_equipmenttype et ON et.id = se.equipment_type_id
+            LEFT JOIN
+                    wx_qualityflag q ON 
+                    CASE
+                        WHEN se.classification='N' THEN q.symbol = 'B'
+                        WHEN se.classification='P' THEN q.symbol = 'S'
+                        WHEN se.classification='F' THEN q.symbol = 'G'
+                        ELSE q.symbol = '-'
+                    END
+            ORDER BY se.equipment_type_id, se.equipment_order
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (station_id,))
+            results = cursor.fetchall()
+
+        classification_dict = {
+            'F':  'Fully Functional',
+            'P':  'Partially Functional',
+            'N':  'Not Functional'
+        }
+        
+        station_data = [{'model': r[0],
+                         'serial_number': r[1],
+                         'equipment_type': r[2],
+                         'classification': classification_dict[r[3]],
+                         'color': r[4]} for r in results]        
     return station_data
 
 
@@ -3793,10 +3900,111 @@ def query_stationsmonitoring_map(data_type, time_type, date_picked):
                 LEFT JOIN qf ON s.id = qf.station_id
                 WHERE s.is_active
             """
+        elif data_type=='Visits':
+            query = """
+                WITH ordered_reports AS (
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                    FROM wx_maintenancereport
+                    WHERE status='A'
+                )
+                ,latest_reports AS(
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,rn
+                    FROM ordered_reports
+                    WHERE rn=1    
+                )
+                SELECT 
+                    s.id
+                    ,s.name
+                    ,s.code
+                    ,s.latitude
+                    ,s.longitude                    
+                    ,q.color AS color
+                FROM wx_station s
+                LEFT JOIN latest_reports l ON l.station_id = s.id
+                LEFT JOIN wx_qualityflag q ON
+                    CASE
+                        WHEN l.next_visit_date IS NULL THEN q.symbol = '-'
+                        WHEN l.next_visit_date > NOW() THEN q.symbol = 'G'
+                        WHEN l.next_visit_date >= NOW() - INTERVAL '1 month' AND l.next_visit_date <= NOW() THEN q.symbol = 'S'
+                        WHEN l.next_visit_date < NOW() - INTERVAL '1 month' THEN q.symbol = 'B'
+                    END
+                WHERE s.is_active
+            """
+        elif data_type == 'Equipment':
+            query = """
+                WITH ordered_reports AS (
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                    FROM wx_maintenancereport
+                    WHERE status='A'
+                )
+                ,latest_reports AS(
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,rn
+                    FROM ordered_reports
+                    WHERE rn=1    
+                )
+                ,station_equipment AS (
+                    SELECT 
+                        r.station_id
+                        ,COUNT(*) AS count_eq
+                        ,SUM(CASE WHEN re.classification = 'F' THEN 1 ELSE 0 END) AS count_f
+                        ,SUM(CASE WHEN re.classification = 'P' THEN 1 ELSE 0 END) AS count_p
+                        ,SUM(CASE WHEN re.classification = 'N' THEN 1 ELSE 0 END) AS count_n
+                    FROM latest_reports r
+                    LEFT JOIN wx_maintenancereportequipment re 
+                        ON  re.maintenance_report_id = r.id
+                    GROUP BY r.station_id
+                )
+                SELECT
+                    s.id,
+                    s.name,
+                    s.code,
+                    s.latitude,
+                    s.longitude,
+                    q.color AS color
+                FROM
+                    wx_station s
+                LEFT JOIN
+                    station_equipment se ON se.station_id = s.id
+                LEFT JOIN
+                    wx_qualityflag q ON 
+                    CASE
+                        WHEN se.count_eq IS NULL THEN q.symbol = '-'
+                        WHEN se.count_n > 0 THEN q.symbol = 'B'
+                        WHEN se.count_p > 0 THEN q.symbol = 'S'
+                        ELSE q.symbol = 'G'
+                    END
+                WHERE
+                    s.is_active
+            """            
+            
 
         if data_type in ['Communication', 'Quality Control']:
             with connection.cursor() as cursor:
                 cursor.execute(query, (datetime_picked, datetime_picked, ))
+                results = cursor.fetchall()
+        elif data_type in ['Visits', 'Equipment']:
+            with connection.cursor() as cursor:
+                cursor.execute(query)
                 results = cursor.fetchall()
     else:
         if data_type=='Communication':
@@ -4379,7 +4587,7 @@ def get_equipment_inventory_data(request):
                      'id': station.id} for station in stations]
 
     response = {
-        'equipments': equipment_list,
+        'equipment': equipment_list,
         'equipment_types': list(equipment_types.values()),
         'manufacturers': list(manufacturers.values()),
         'funding_sources': list(funding_sources.values()),
@@ -4628,17 +4836,19 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
     profile = StationProfile.objects.get(pk=station.profile_id)
     responsible_technician = Technician.objects.get(pk=maintenance_report.responsible_technician_id)
     visit_type = VisitType.objects.get(pk=maintenance_report.visit_type_id)
-    maintenance_report_station_components = MaintenanceReportStationComponent.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    # maintenance_report_station_component_list = []    
-    # for maintenance_report_station_component in maintenance_report_station_components:
-    #     dictionary = {'condition': maintenance_report_station_component.condition,
-    #                   'component_classification': maintenance_report_station_component.component_classification,
-    #                  }
-    #     maintenance_report_station_component_list.append(dictionary)
+    maintenance_report_station_equipments = MaintenanceReportEquipment.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    maintenance_report_station_component_list = get_component_list(maintenance_report)
+    maintenance_report_station_equipment_list = []
 
+    for maintenance_report_station_equipment in maintenance_report_station_equipments:
+        new_equipment_id =  maintenance_report_station_equipment.new_equipment_id
+        new_equipment = Equipment.objects.get(id=new_equipment_id)
+        dictionary = {'condition': maintenance_report_station_equipment.condition,
+                      'component_classification': maintenance_report_station_equipment.classification,
+                      'name': ' '.join([new_equipment.model, new_equipment.serial_number])
+                     }
+        maintenance_report_station_equipment_list.append(dictionary)
 
     other_technicians_ids = [maintenance_report.other_technician_1_id,
                              maintenance_report.other_technician_2_id,
@@ -4695,7 +4905,8 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
 
     context['contact_information'] = maintenance_report.contacts  
 
-    context['equipment_records'] = maintenance_report_station_component_list
+    context['equipment_records'] = maintenance_report_station_equipment_list
+    # context['equipment_records'] = maintenance_report_station_component_list
 
     # JSON
     # return JsonResponse(context, status=status.HTTP_200_OK)
@@ -4963,27 +5174,25 @@ def update_maintenance_report_equipment_type(maintenance_report, equipment_type,
 
 @require_http_methods(["POST"])
 def update_maintenance_report_equipment_type_data(request):
-    maintenance_report_id = request.GET.get('maintenance_report_id', None)
-    equipment_type_id = request.GET.get('equipment_type_id', None)
-    equipment_order = request.GET.get('equipment_order', None),
+    form_data = json.loads(request.body.decode())
 
-    if type(equipment_order) is tuple:
+    maintenance_report_id = form_data['maintenance_report_id'] 
+    equipment_type_id = form_data['equipment_type_id'] 
+    equipment_order = form_data['equipment_order'] 
+    if isinstance(equipment_order, tuple):
         equipment_order = equipment_order[0]
-    elif not type(equipment_order) is str:
+    elif not isinstance(equipment_order, str):
         logger.error("Error in equipment order during maintenance report equipment update")
-
     equipment_data = {
-        'new_equipment_id': request.GET.get('new_equipment_id', None),
-        'old_equipment_id': request.GET.get('old_equipment_id', None),
-        'condition': request.GET.get('condition', None),
-        'classification': request.GET.get('classification', None),
+        'new_equipment_id': form_data['new_equipment_id'], 
+        'old_equipment_id': form_data['old_equipment_id'], 
+        'condition': form_data['condition'], 
+        'classification': form_data['classification'], 
     }
 
     maintenance_report = MaintenanceReport.objects.get(id=maintenance_report_id)
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
-
     update_maintenance_report_equipment_type(maintenance_report, equipment_type, equipment_order, equipment_data)
-
     response = {}
     return JsonResponse(response, status=status.HTTP_200_OK)
 

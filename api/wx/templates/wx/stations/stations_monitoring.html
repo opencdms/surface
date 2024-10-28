@@ -58,7 +58,7 @@
                       </v-btn>
                       <span v-if="['Communication', 'Quality Control'].includes(data_type)" class="mr-2 "> Observations from <br/>the pass 24 hours </span>
                       <span v-if="data_type=='Visits'" class="mr-2"> Next visit </span>
-                      <span v-if="data_type=='Components'" class="mr-2"> Component classification </span>
+                      <span v-if="data_type=='Equipment'" class="mr-2"> Equipment classification </span>
 
                     </v-card-title>
                     <v-card-text class="px-2 pb-2">
@@ -93,7 +93,7 @@
                         </span>
                         <span style="padding-left: 10px"> [[getPercentageColor(flags.bad)]]%</span>
                       </div>
-                      <div class="legend-item" style="display: flex; justify-content: space-between;" v-if="data_type!='Components'">
+                      <div class="legend-item" style="display: flex; justify-content: space-between;">
                         <span style="display: flex; align-items: center;">
                         <span
                           class="legend-color circle-lg"
@@ -169,7 +169,7 @@
                                 <v-radio label="Quality Control" value="Quality Control"></v-radio>
                                 <span class="mb-1"> Maintenance </span>
                                 <v-radio class="ml-5" label="Visits" value="Visits"></v-radio>
-                                <v-radio class="ml-5" label="Components" value="Components"></v-radio>
+                                <v-radio class="ml-5" label="Equipment" value="Equipment"></v-radio>
                               </v-radio-group>
                             </v-layout>
                           </v-card-actions>
@@ -342,7 +342,65 @@
                   </v-layout>
                 </v-layout>
               </v-tab-item>
-            </v-tabs>                
+            </v-tabs>
+            
+            <v-tabs v-if="data_type=='Visits'" fixed-tabs >
+              <v-tab>
+                Latest Maintenance Report Information
+              </v-tab>
+
+              <v-tab-item>
+                <v-layout column ma-2>
+                  <v-card class="text-center" v-if="selected.station.name">
+                    <v-card-title class="justify-center">
+                      <div v-if="Object.keys(selected.data).length > 0">
+                        Maintenance Report [[ selected.data['Maintenance Report ID'] ]]
+                      </div>
+                      <div v-else>
+                          Station does not have any approved maintenance report
+                      </div>
+                    </v-card-title>
+                    <v-row v-for="(item, key) in selected.data" :key="key">
+                        <template v-if="key !== 'Maintenance Report ID'">
+                            <v-col cols="6" class="text-center">[[key]]</v-col>
+                            <v-col cols="6" class="text-center">
+                                <v-chip v-if="key === 'Next Visit Date'" label :color="selected.color">
+                                    [[item]]
+                                </v-chip>
+                                <div v-else>[[item]]</div>
+                            </v-col>
+                        </template>
+                    </v-row>
+                  </v-card>
+                </v-layout>
+              </v-tab-item>
+            </v-tabs>
+
+            <v-tabs v-if="data_type=='Equipment'" fixed-tabs >
+              <v-tab>
+                Station Equipment
+              </v-tab>
+
+              <v-tab-item>
+                <v-layout column ma-2>
+                  <v-layout ma-2 >
+                    <v-data-table
+                      :headers="headers()"
+                      :items="selected.data"
+                      item-key="name"
+                      :items-per-page="5"
+                      class="elevation-1"
+                    >
+                    <template v-slot:item.classification="{ item }">
+                        <v-chip :color="item.color">
+                          [[item.classification]]
+                        </v-chip>  
+                    </template>
+                    </v-data-table>
+                  </v-layout>
+                </v-layout>
+              </v-tab-item>
+            </v-tabs>               
           </div>  
 
         </v-flex> 
@@ -427,7 +485,7 @@
         dialog_chart: false,
         dialog_info: false,
         selected: {
-          station: {name: null, lastupdate: null},
+          station: {name: null, lastupdate: null, color: null},
           data: [],
         },
         station_list: [],
@@ -470,6 +528,12 @@
         else if (this.data_type=="Quality Control"){
           this.goToDataValidation();
         }
+        else if (this.data_type=="Visits"){
+          this.goToMaintenanceReports();
+        }
+        else if (this.data_type=="Equipment"){
+          this.goToEquipmentInventory();
+        }                
       },
       goToDataValidation() {
         const url = `/wx/quality_control/validation`;
@@ -479,11 +543,18 @@
         const url = `/wx/data/inventory/`;
         window.open(url, '_blank');
       },
+      goToEquipmentInventory(){
+        const url = `/wx/maintenance_reports/equipment_inventory/`;
+        window.open(url, '_blank');
+      },
+      goToMaintenanceReports(){
+        const url = `/wx/maintenance_report/`;
+        window.open(url, '_blank');
+      },          
       changeTimeType(){
         this.getGlobalData()
       },
       updateLegendData(){
-        console.log('Data Type', this.data_type)
         if (this.data_type === 'Communication'){
           this.legend_data.information = 'Information of communication'
           this.legend_data.flags = {
@@ -511,19 +582,24 @@
             not_checked: 'No date / No report',
           }
         } 
-        else if (this.data_type === 'Components'){
-          this.legend_data.information = 'Information of components'
+        else if (this.data_type === 'Equipment'){
+          this.legend_data.information = 'Information of equipment'
           this.legend_data.flags = {
             good: 'Funcional',
             suspicious: 'Partial',
             bad: 'Not Funcional',
-            not_checked: '---',
+            not_checked: 'No equipment / No report',
           }
         } 
       },
       headers(){
         if (this.isMaintenance(this.data_type)){
-          return []
+          return [
+            { text: 'Equipment Type', align: 'center', sortable: false, value: 'equipment_type'},
+            { text: 'Classification', align: 'center', sortable: false, value: 'classification'},
+            { text: 'Model', align: 'center', sortable: false, value: 'model'},
+            { text: 'Serial Number', align: 'center', sortable: false, value: 'serial_number'},
+          ]             
         }
         else{
           if (this.selectedTab==1){
@@ -586,6 +662,7 @@
           this.loading_station = false;          
           this.selected.station.lastupdate = response.data['lastupdate'];
           this.selected.data = response.data['station_data'];
+          this.selected.color = station.color
         })
         .catch(error => {
           console.log(error);
@@ -604,7 +681,6 @@
         }) 
         .then(response => {
           this.loading_chart = false;          
-          console.log(this.chartOptions)
           this.chartOptions = response.data['chartOptions']
           // this.chartOptions.chart = response.data['chartOptions']['chart']
           // this.chartOptions.title = response.data['chartOptions']['title']
@@ -612,14 +688,13 @@
           // this.chartOptions.yAxis = response.data['chartOptions']['yAxis']
           // this.chartOptions.title = response.data['chartOptions']['title']
           // this.chartOptions.series = response.data['chartOptions']['series']
-          console.log(response.data['chartOptions'])
         })
         .catch(error => {
           console.log(error);
         });           
       },      
       isMaintenance(data_type){
-        return ['Visits', 'Components'].includes(data_type)
+        return ['Visits', 'Equipment'].includes(data_type)
       },
       changeRadio(){
         console.log('Debug:', this.legend_data)
