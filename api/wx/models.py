@@ -17,7 +17,10 @@ from wx.enums import FlashTypeEnum
 from timescale.db.models.models import TimescaleModel
 from timescale.db.models.fields import TimescaleDateTimeField
 from timescale.db.models.managers import TimescaleManager
-
+from simple_history.models import HistoricalRecords
+from django.utils.translation import gettext_lazy # Enumaretor
+from datetime import date
+from ckeditor.fields import RichTextField
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -342,11 +345,19 @@ class WMOProgram(BaseModel):
     def __str__(self):
         return self.name
 
+class Watershed(models.Model):
+    watershed = models.CharField(max_length=128)
+    size = models.CharField(max_length=16)
+    acres = models.FloatField()
+    hectares = models.FloatField()
+    shape_leng = models.FloatField()
+    shape_area = models.FloatField()
+    geom = models.MultiPolygonField(srid=4326)
 
 class Station(BaseModel):    
     name = models.CharField(max_length=256)
     alias_name = models.CharField(max_length=256, null=True, blank=True)
-    begin_date = models.DateTimeField(null=True, blank=True)
+    begin_date = models.DateTimeField(null=True)
     relocation_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
     network = models.CharField(max_length=256, null=True, blank=True)
@@ -357,7 +368,7 @@ class Station(BaseModel):
         MinValueValidator(-90.),
         MaxValueValidator(90.)
     ])
-    elevation = models.FloatField(null=True, blank=True)
+    elevation = models.FloatField(null=True)
     code = models.CharField(max_length=64)
     reference_station = models.ForeignKey('self',
         on_delete=models.SET_NULL,
@@ -387,8 +398,7 @@ class Station(BaseModel):
     )
     watershed = models.CharField(
         max_length=256,
-        null=True,
-        blank=True
+        null=True
     )
     z = models.FloatField(
         null=True,
@@ -579,13 +589,11 @@ class Station(BaseModel):
     country = models.ForeignKey(
         Country,
         on_delete=models.DO_NOTHING,
-        null=True,
-        blank=True
-    )    
+        null=True
+    )
     region = models.CharField(
         max_length=256,
-        null=True,
-        blank=True
+        null=True
     )
     data_source = models.ForeignKey(
         DataSource,
@@ -596,14 +604,14 @@ class Station(BaseModel):
     communication_type = models.ForeignKey(
         StationCommunication,
         on_delete=models.DO_NOTHING,
-        null=True,
-        blank=True
+        null=True
     )
     utc_offset_minutes = models.IntegerField(
         validators=[
             MaxValueValidator(720),
             MinValueValidator(-720)
-        ])
+        ]
+    )
     alternative_names = models.CharField(
         max_length=256,
         null=True,
@@ -639,7 +647,7 @@ class Station(BaseModel):
         ordering = ('name',)
 
     def get_absolute_url(self):
-        """Returns the url to access a particular instance of MyModelName."""
+        """Returns the url to access a particular instance of Station."""
         return reverse('station-detail', args=[str(self.id)])
 
     def __str__(self):
@@ -806,15 +814,6 @@ class PeriodicJob(BaseModel):
     class Meta:
         ordering = ('station', 'periodic_job_type',)
 
-
-class Watershed(models.Model):
-    watershed = models.CharField(max_length=128)
-    size = models.CharField(max_length=16)
-    acres = models.FloatField()
-    hectares = models.FloatField()
-    shape_leng = models.FloatField()
-    shape_area = models.FloatField()
-    geom = models.MultiPolygonField(srid=4326)
 
 
 class District(models.Model):
@@ -1279,3 +1278,146 @@ class HFSummaryTask(BaseModel):
 
     class Meta:
         unique_together = ('station', 'variable', 'start_datetime', 'end_datetime')
+
+
+class Manufacturer(BaseModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+ 
+
+class FundingSource(BaseModel):
+    name = models.CharField(max_length=128)
+
+    def __str__(self):
+        return self.name    
+
+
+class EquipmentType(BaseModel):
+    name = models.CharField(max_length=64)
+    description = models.CharField(max_length=256)
+    report_template = RichTextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "equipment type"
+        verbose_name_plural = "equipment types"
+
+    def __str__(self):
+        return self.name  
+
+
+class Equipment(BaseModel):
+    class EquipmentClassification(models.TextChoices):
+        FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
+        PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
+        NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
+
+    equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
+    manufacturer = models.ForeignKey(Manufacturer, on_delete=models.DO_NOTHING)
+    funding_source = models.ForeignKey(FundingSource, on_delete=models.DO_NOTHING)
+    model = models.CharField(max_length=64)
+    serial_number = models.CharField(max_length=64)
+    acquisition_date = models.DateField()
+    first_deploy_date = models.DateField(blank=True, null=True)
+    last_deploy_date = models.DateField(blank=True, null=True)
+    last_calibration_date = models.DateField(blank=True, null=True)
+    next_calibration_date = models.DateField(blank=True, null=True)
+    decommission_date = models.DateField(blank=True, null=True)
+    classification = models.CharField(max_length=1, choices=EquipmentClassification.choices, null=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        unique_together = ("equipment_type", "serial_number")
+        verbose_name = "equipment"
+        verbose_name_plural = "equipment"
+
+    def __str__(self):
+        return ' '.join((self.equipment_type.name, self.model, self.serial_number))        
+
+
+class VisitType(BaseModel):
+    name = models.CharField(max_length=64, unique=True, blank=False, null=False)
+    description = models.CharField(max_length=256, blank=True, null=True)
+
+
+class Technician(BaseModel): # Singular
+    name = models.CharField(max_length=64, unique=True, blank=False, null=False)
+
+
+def no_future(value):
+    today = date.today()
+    if value > today:
+        raise ValidationError('Visit date cannot be in the future.')
+
+
+class MaintenanceReport(BaseModel):
+    class Status(models.TextChoices):
+        APPROVED = 'A', gettext_lazy('Approved')
+        DRAFT = 'D', gettext_lazy('Draft')
+        PUBLISHED = 'P', gettext_lazy('Published')
+        DELETED = '-', gettext_lazy('Deleted')
+
+    # New Maintenace Report
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    # https://stackoverflow.com/questions/49882526/validation-for-datefield-so-it-doesnt-take-future-dates-in-django
+    visit_type = models.ForeignKey(VisitType, on_delete=models.DO_NOTHING)
+    responsible_technician = models.ForeignKey(Technician, related_name='responsible_technician', on_delete=models.DO_NOTHING)
+    visit_date = models.DateField(help_text="Enter the date of the visit", validators=[no_future])
+    initial_time = models.TimeField() # Sem timezone
+
+    status = models.CharField(max_length=1, choices=Status.choices, default=Status.DRAFT)
+    
+    # First Snippet
+    station_on_arrival_conditions = RichTextField(blank=True, null=True)
+
+    # Penultimate Snippet
+    contacts = RichTextField(blank=True, null=True)
+
+    # Last Snippet
+    other_technician_1 = models.ForeignKey(Technician, related_name='other_technician_1', on_delete=models.DO_NOTHING, blank=True, null=True)
+    other_technician_2 = models.ForeignKey(Technician, related_name='other_technician_2', on_delete=models.DO_NOTHING, blank=True, null=True)
+    other_technician_3 = models.ForeignKey(Technician, related_name='other_technician_3', on_delete=models.DO_NOTHING, blank=True, null=True)
+
+    next_visit_date = models.DateField(blank=True, null=True)
+    end_time = models.TimeField(blank=True, null=True) # Sem timezone
+
+    current_visit_summary = RichTextField(blank=True, null=True)
+    next_visit_summary = RichTextField(blank=True, null=True)
+
+    data_logger_file = models.TextField(blank=True, null=True)
+    data_logger_file_name = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('station', 'visit_date')    
+
+
+class StationProfileEquipmentType(BaseModel):
+    station_profile = models.ForeignKey(StationProfile, on_delete=models.DO_NOTHING)
+    equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
+    equipment_type_order = models.IntegerField(validators=[MinValueValidator(1)])
+
+    class Meta:
+        unique_together = (('station_profile', 'equipment_type'), ('station_profile', 'equipment_type_order'))
+
+
+class MaintenanceReportEquipment(BaseModel):
+    class EquipmentClassification(models.TextChoices):
+        FULLY_FUNCTIONAL = 'F', gettext_lazy('Fully Functional')
+        PARTIALLY_FUNCTIONAL = 'P', gettext_lazy('Partially Functional')
+        NOT_FUNCTIONAL = 'N', gettext_lazy('Not Functional')
+
+    class EquipmentOrder(models.TextChoices):
+        PRIMARY_EQUIPMENT = 'P', gettext_lazy('Primary Equipment')
+        SECONDARY_EQUIPMENT = 'S', gettext_lazy('Secondary Equipment')
+    
+    maintenance_report = models.ForeignKey(MaintenanceReport, on_delete=models.CASCADE)
+    equipment_type = models.ForeignKey(EquipmentType, on_delete=models.DO_NOTHING)
+    equipment_order = models.CharField(max_length=1, choices=EquipmentOrder.choices, default=EquipmentClassification.FULLY_FUNCTIONAL)
+    old_equipment = models.ForeignKey(Equipment, on_delete=models.DO_NOTHING, related_name='old_equipment', null=True)
+    new_equipment = models.ForeignKey(Equipment, on_delete=models.DO_NOTHING, related_name='new_equipment', null=True)
+    condition = RichTextField()
+    classification = models.CharField(max_length=1, choices=EquipmentClassification.choices, default=EquipmentClassification.FULLY_FUNCTIONAL, null=True)
+
+    class Meta:
+        unique_together = (('maintenance_report', 'new_equipment'), ('maintenance_report', 'equipment_type', 'equipment_order'))

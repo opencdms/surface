@@ -23,7 +23,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.getenv('SURFACE_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.getenv('SURFACE_DJANGO_DEBUG', False)
 DEBUG = os.getenv('SURFACE_DJANGO_DEBUG', False)
 
 ALLOWED_HOSTS = ['*']
@@ -42,13 +41,30 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'django_celery_beat',
+    'ckeditor',
     'wx',
     'rest_framework',
     'corsheaders',
     'rest_framework.authtoken',
     'colorfield',
     'import_export',
+    'simple_history',
 ]
+
+CKEDITOR_CONFIGS = {
+   'default': {
+       'toolbar_Full': [
+            ['Bold', 'Italic', 'Font'],
+            ['Format', 'Styles', 'TextColor', 'BGColor', 'RemoveFormat'],
+            ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock', 'Indent', 'Outdent'],
+            ['HorizontalRule', 'BulletedList', '-'],
+            ['Blockquote', 'Source', 'Link', 'Unlink', 'Table', '-', 'Print']
+        ],
+        'removeButtons': 'Image',
+        'extraAllowedContent' : 'img(*){*}[*]', 
+        'extraPlugins': 'justify,liststyle,indent',
+   },
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -59,6 +75,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'tempestas_api.urls'
@@ -201,6 +218,8 @@ LOGGING = {
     }
 }
 
+
+
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
@@ -226,7 +245,7 @@ ENTL_SECONDARY_SERVER_PORT = os.getenv('ENTL_SECONDARY_SERVER_PORT')
 ENTL_PARTNER_ID = os.getenv('ENTL_PARTNER_ID')
 
 TIMEZONE_NAME = os.getenv('TIMEZONE_NAME')
-MISSING_VALUE = -99999
+MISSING_VALUE = -99.9
 MISSING_VALUE_CODE = '/'
 TIMEZONE_OFFSET = int(os.getenv('TIMEZONE_OFFSET'))
 

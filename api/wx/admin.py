@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from import_export.admin import ExportMixin, ImportMixin
 
 from wx import models, forms
-
+from simple_history.utils import update_change_reason
 
 @admin.register(models.AdministrativeRegion)
 class AdministrativeRegionAdmin(admin.ModelAdmin):
@@ -354,4 +354,63 @@ class BackupLogAdmin(admin.ModelAdmin):
     def backup_duration(self, obj):
         if obj.finished_at is not None:
             return obj.finished_at - obj.started_at
+
         return None
+
+@admin.register(models.ElementDecoder)
+class ElementDecoder(admin.ModelAdmin):
+    search_fields = ("element_name", "variable__name", "decoder__name")
+    list_display = ("element_name", "variable_id", "decoder")
+
+@admin.register(models.VisitType)
+class VisitTypeAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+@admin.register(models.Technician)
+class TechnicianAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+
+@admin.register(models.Manufacturer)
+class ManufacturerAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+
+@admin.register(models.FundingSource)
+class FundingSourceAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+from simple_history.admin import SimpleHistoryAdmin
+
+@admin.register(models.EquipmentType)
+class EquipmentTypeAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+@admin.register(models.Equipment)
+class EquipmentAdmin(SimpleHistoryAdmin):
+    def changed_fields(self, obj):
+        if obj.prev_record:
+            delta = obj.diff_against(obj.prev_record)
+            return delta.changed_fields
+        return None
+
+    def list_changes(self, obj):
+        fields = ""
+        if obj.prev_record:
+            delta = obj.diff_against(obj.prev_record)
+
+            for change in delta.changes:
+                fields += str("<strong>{}</strong> changed from <span style='background-color:#ffb5ad'>{}</span> to <span style='background-color:#b3f7ab'>{}</span> . <br/>".format(change.field, change.old, change.new))
+            return format_html(fields)
+        return None
+    
+    list_display = ("equipment_type", "manufacturer", "model", "serial_number", "acquisition_date", "first_deploy_date", "last_calibration_date")
+    history_list_display = ["changed_fields","list_changes"]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        update_change_reason(obj, 'Source of change: Admin page')
+
+@admin.register(models.StationProfileEquipmentType)
+class StationProfileEquipmentTypeAdmin(admin.ModelAdmin):
+    list_display = ("station_profile", "equipment_type", "equipment_type_order")

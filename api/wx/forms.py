@@ -4,7 +4,6 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from wx.models import Station, FTPServer, WxGroupPermission, WxPermission
 
-
 class FTPServerForm(forms.ModelForm):
     password = forms.CharField(widget=forms.TextInput(attrs={"type": "password"}))
 

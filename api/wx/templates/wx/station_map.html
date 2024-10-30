@@ -455,6 +455,19 @@
       <div>Last update: [[ lastUpdate || '-']]</div>
     </div>
 
+    <!-- mouse coordinate display box -->
+    <div class="mouse-coordinates-box">
+
+      <div class="d-flex flex-row justify-center pt-2">
+        Latitude:&nbsp&nbsp<span class="mouse-lat"></span>
+      </div>
+
+      <div>
+        Longitude:&nbsp&nbsp<span class="mouse-lng"></span>
+      </div>
+
+    </div>
+
     <div
       class="overlays-filter"
       v-bind:class="{ 'options-menu-opened': drawer === true }"
@@ -540,11 +553,33 @@
 
 {% endblock %} {% block localjavascript %}
 <script src="{% static 'js/leaflet-windbarb.js' %}"></script>
+
+<!-- leaflet measure script -->
+<script src="{% static 'js/leaflet-measure.js' %}"></script>
+
 <script>
-    $(function () {
+
+  $(function () {
     $('[data-toggle="tooltip"]').tooltip()
   })
-    var {
+
+  var {
+    LMap,
+    LTileLayer,
+    LControlZoom,
+    LMarker,
+    LTooltip,
+    LControlLayers,
+    LPopup,
+    LGeoJson,
+    LIcon
+  } = Vue2Leaflet;
+
+  var vm = new Vue({
+    el: "#app",
+    vuetify: new Vuetify(),
+    delimiters: ["[[", "]]"],
+    components: {
       LMap,
       LTileLayer,
       LControlZoom,
@@ -554,831 +589,1121 @@
       LPopup,
       LGeoJson,
       LIcon
-    } = Vue2Leaflet;
-
-    var vm = new Vue({
-      el: "#app",
-      vuetify: new Vuetify(),
-      delimiters: ["[[", "]]"],
-      components: {
-        LMap,
-        LTileLayer,
-        LControlZoom,
-        LMarker,
-        LTooltip,
-        LControlLayers,
-        LPopup,
-        LGeoJson,
-        LIcon
-      },
-      filters: {
-        truncate(text, value) {
-          return (text || "").toString().substring(0, value);
+    },
+    filters: {
+      truncate(text, value) {
+        return (text || "").toString().substring(0, value);
+      }
+    },
+    data: {
+      defaultIcon: L.icon({
+        iconUrl: "{% static 'images/placeholder.png' %}",
+        iconSize:      [32, 32],
+        iconAnchor:    [16, 32],
+        popupAnchor:   [0, 0],
+        tooltipAnchor: [0, -34]
+      }),
+      showWindBarbs: true,
+      popupOptions: { closeButton: false, className: 'windbarbPopup', autoClose: false, closeOnClick: false },
+      tooltipOptions: { permanent: false, direction: 'top', className: '' },
+      menu: false,
+      lastUpdate: null,
+      expansionFilters: 0,
+      closeOnContentClick: false,
+      selectedBasemap: null,
+      timeToggle: 1, //Current day
+      basemaps: [
+        {
+          displayName: 'Open Street Map',
+          name: 'Mapnik',
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        },
+        {
+          displayName: 'World Imagery',
+          name: 'WorldImagery',
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        },
+        {
+          displayName: 'World Street Map',
+          name: 'WorldStreetMap',
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
         }
+      ],
+      timezone: "{{ TIMEZONE_NAME|escapejs }}",
+      zoom: "{{ MAP_ZOOM|safe }}",
+      center: L.latLng("{{ MAP_LATITUDE|safe }}", "{{ MAP_LONGITUDE|safe }}"),
+      url: "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
+      attribution:
+        '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      options: { zoomControl: false },
+      zoomPosition: "topleft",
+      menuDatePicker: false,
+
+      // LAYERS
+
+      Watersheds_geojson: null,
+      Groundwater_geojson: null,
+      Basemap_geojson: null,
+      River_geojson: null,
+      NationalWaters_geojson: null,
+
+      showWatershed: false,
+      showGroundwater: false,
+      showBasemap: false,
+      showRiver: false,
+      showNationalWaters: false,
+
+      selectedLayers: null,
+
+      getGeoJson: {
+        watershed: () => {return axios.get("{% static 'Watersheds_4326.geojson' %}")},
+        districts: () => {return axios.get("{% static 'Basemap.geojson' %}")},
+        nationalWaters: () => {return axios.get("{% static 'NationalWaters.geojson' %}")},
+        river: () => {return axios.get("{% static 'Rivers.geojson' %}")},
+        groundwater: () => {return axios.get("{% static 'GWP_Campur.geojson' %}")},
       },
-      data: {
-        defaultIcon: L.icon({
-          iconUrl: "{% static 'images/placeholder.png' %}",
-          iconSize:      [32, 32],
-          iconAnchor:    [16, 32],
-          popupAnchor:   [0, 0],
-          tooltipAnchor: [0, -34]
-        }),
-        showWindBarbs: true,
-        popupOptions: { closeButton: false, className: 'windbarbPopup', autoClose: false, closeOnClick: false },
-        tooltipOptions: { permanent: false, direction: 'top', className: '' },
-        menu: false,
-        lastUpdate: null,
-        expansionFilters: 0,
-        closeOnContentClick: false,
-        selectedBasemap: null,
-        timeToggle: 1, //Current day
-        basemaps: [
-          {
-            displayName: 'Open Street Map',
-            name: 'Mapnik',
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-          },
-          {
-            displayName: 'World Imagery',
-            name: 'WorldImagery',
-            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-          },
-          {
-            displayName: 'World Street Map',
-            name: 'WorldStreetMap',
-            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
-            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
-          }
-        ],
-        timezone: "{{ TIMEZONE_NAME|escapejs }}",
-        zoom: {{ MAP_ZOOM|safe }},
-        center: L.latLng({{ MAP_LATITUDE|safe }}, {{ MAP_LONGITUDE|safe }}),
-        url: "https://{s}.tile.osm.org/{z}/{x}/{y}.png",
-        attribution:
-          '&copy, <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-        options: { zoomControl: false },
-        zoomPosition: "topleft",
-        menuDatePicker: false,
 
-        // LAYERS
+      // SUMMARIES
+      showMarkerValues: true,
+      requestObject: {
+        currentDate: moment(new Date()).format('YYYY-MM-DD'),
+        summaryId: -1
+      },
 
-        Watersheds_geojson: null,
-        Groundwater_geojson: null,
-        Basemap_geojson: null,
-        River_geojson: null,
-        NationalWaters_geojson: null,
-
-        showWatershed: false,
-        showGroundwater: false,
-        showBasemap: false,
-        showRiver: false,
-        showNationalWaters: false,
-
-        selectedLayers: null,
-
-        getGeoJson: {
-          watershed: () => {return axios.get("{% static 'Belize_Watersheds_4326.geojson' %}")},
-          districts: () => {return axios.get("{% static 'Belize_Basemap.geojson' %}")},
-          nationalWaters: () => {return axios.get("{% static 'Belize_NationalWaters.geojson' %}")},
-          river: () => {return axios.get("{% static 'Belize_Rivers.geojson' %}")},
-          groundwater: () => {return axios.get("{% static 'GWP_Campur.geojson' %}")},
-        },
-
-        // SUMMARIES
-        showMarkerValues: true,
-        requestObject: {
-          currentDate: moment(new Date()).format('YYYY-MM-DD'),
-          summaryId: -1
-        },
-
-        drawer: false,
-        right: true,
-        stations: [],
-        markers: [],
-        customIcon: L.icon({
-          iconUrl: "{% static 'images/placeholder.png' %}",
-          iconSize: [32, 32],
-          iconAnchor: [16, 32],
-          popupAnchor: [0, -32]
-        }),
-        iconSize: 16,
-        iconSizeTest: [32, 32],
+      drawer: false,
+      right: true,
+      stations: [],
+      markers: [],
+      customIcon: L.icon({
+        iconUrl: "{% static 'images/placeholder.png' %}",
+        iconSize: [32, 32],
         iconAnchor: [16, 32],
-        enableTooltip: true,
+        popupAnchor: [0, -32]
+      }),
+      iconSize: 16,
+      iconSizeTest: [32, 32],
+      iconAnchor: [16, 32],
+      enableTooltip: true,
 
-        // FILTER
-        defaultFilter: {
-          is_active: true,
-          is_inactive: false,
-          is_automatic: true,
-          is_manual: false,
-          profile: [],
-          region: [],
-          watershed: [],
-          station_communications: [],
-          inputSearch: "",
-        },
-
-        profiles: [],
-        regions: [],
-        elements: [],
-        variables: [],
-        layers: [],
-        watersheds: [],
+      // FILTER
+      defaultFilter: {
+        is_active: true,
+        is_inactive: false,
+        is_automatic: true,
+        is_manual: false,
+        profile: [],
+        region: [],
+        watershed: [],
         station_communications: [],
-
-        // SANDBOX
-        sandbox: null,
-        stationsDetail: false,
-        popupContent: "",
-        popupVariable: "",
-        lastUpdateMessage: "",
-        tabsLastUpdate: [
-          "latest_last_update",
-          "past24h_last_update",
-          "currentday_last_update"
-        ],
-        selectedTab: 0,
-
-        // VARIABLE IDS
-        STATION_MAP_WIND_SPEED_ID: {{ STATION_MAP_WIND_SPEED_ID|safe }},
-        STATION_MAP_WIND_GUST_ID:  {{ STATION_MAP_WIND_GUST_ID|safe }},
-        STATION_MAP_WIND_DIRECTION_ID:  {{ STATION_MAP_WIND_DIRECTION_ID|safe }},
-        STATION_MAP_TEMP_MAX_ID:  {{ STATION_MAP_TEMP_MAX_ID|safe }},
-        STATION_MAP_TEMP_MIN_ID:  {{ STATION_MAP_TEMP_MIN_ID|safe }},
-        STATION_MAP_TEMP_AVG_ID:  {{ STATION_MAP_TEMP_AVG_ID|safe }},
-        STATION_MAP_ATM_PRESSURE_ID:  {{ STATION_MAP_ATM_PRESSURE_ID|safe }},
-        STATION_MAP_PRECIPITATION_ID:  {{ STATION_MAP_PRECIPITATION_ID|safe }},
-        STATION_MAP_RELATIVE_HUMIDITY_ID:  {{ STATION_MAP_RELATIVE_HUMIDITY_ID|safe }},
-        STATION_MAP_SOLAR_RADIATION_ID:  {{ STATION_MAP_SOLAR_RADIATION_ID|safe }},
-        STATION_MAP_FILTER_WATERSHED:  {{ STATION_MAP_FILTER_WATERSHED|safe }},
-        STATION_MAP_FILTER_REGION:  {{ STATION_MAP_FILTER_REGION|safe }},
-        STATION_MAP_FILTER_PROFILE:  {{ STATION_MAP_FILTER_PROFILE|safe }},
-        STATION_MAP_FILTER_COMMUNICATION:  {{ STATION_MAP_FILTER_COMMUNICATION|safe }},
+        inputSearch: "",
       },
-      computed: {
-        filteredMarkers() {
-          return this.markers.filter(marker =>
-            (
-              this.defaultFilter.is_active === true || this.defaultFilter.is_inactive === true
-            ) &&
-            (
-              (marker.is_active === this.defaultFilter.is_active) === true ||
-              (marker.is_active === !this.defaultFilter.is_inactive) === true
-            ) &&
-            (
-              this.defaultFilter.is_automatic === true || this.defaultFilter.is_manual === true
-            ) &&
-            (
-              (marker.is_automatic === this.defaultFilter.is_automatic) === true ||
-              (marker.is_automatic === !this.defaultFilter.is_manual) === true
-            ) &&
-            (this.defaultFilter.profile.includes(marker.profile) || this.STATION_MAP_FILTER_PROFILE == 0) &&
-            (this.defaultFilter.region.includes(marker.region) || this.STATION_MAP_FILTER_REGION == 0) &&
-            (this.defaultFilter.watershed.includes(marker.watershed) || this.STATION_MAP_FILTER_WATERSHED == 0) &&
-            (this.defaultFilter.station_communications.includes(marker.communication_type) || this.STATION_MAP_FILTER_COMMUNICATION == 0) &&
-            (this.defaultFilter.inputSearch === "" || marker.name.toUpperCase().includes(this.defaultFilter.inputSearch.toUpperCase()))
-          )
-        },
-        SelectedVariable() {
-          if (this.requestObject.summaryId === null && this.variables.length > 0) {
-            this.requestObject.summaryId = this.variables[0].id;
-          }
-          return this.variables.find(item => item.id === this.requestObject.summaryId) || this.variables[0]
-        },
-        Attribution() {
-          return this.attribution
-        },
-        Url() {
-          return this.url
-        },
-        Sandbox() {
-          return this.sandbox;
-        },
-        // Watershed() {
-        //   if (this.showWatershed === true) {
-        //     return true;
-        //   }
-        //   return false;
-        // },
-        Groundwater() {
-          if (this.showGroundwater === true) {
-            return true;
-          }
-          return false;
-        },
-        Basemap() {
-          if (this.showBasemap === true) {
-            return true;
-          }
-          return false;
-        },
-        River() {
-          if (this.showRiver === true) {
-            return true;
-          }
-          return false;
-        },
-        NationalWaters() {
-          if (this.showNationalWaters === true) {
-            return true;
-          }
-          return false;
-        },
-        styleFunctionWatershed() {
-          return {
-            fillColor: "transparent",
-            weight: 2,
-            opacity: 1,
-            color: "#7a34eb",
-            fillOpacity: 0.3
-          };
-        },
-        styleFunctionGroundwater() {
-          return {
-            fillColor: "transparent",
-            weight: 2,
-            opacity: 1,
-            color: "#32908F",
-            fillOpacity: 0.3
-          };
-        },
-        styleFunctionBasemap() {
-          return {
-            fillColor: "transparent",
-            weight: 2,
-            opacity: 1,
-            color: "#787878",
-            fillOpacity: 0.3
-          };
-        },
-        styleFunctionRiver() {
-          return {
-            fillColor: "transparent",
-            weight: 2,
-            opacity: 1,
-            color: "#5bb9d6",
-            fillOpacity: 0.3
-          };
-        },
-        styleFunctionNationalWaters() {
-          return {
-            fillColor: "transparent",
-            weight: 2,
-            opacity: 1,
-            color: "#2965a7",
-            fillOpacity: 0.3
-          };
-        },
-        geoOptionsWatershed() {
-          return {
-            onEachFeature: this.onEachFeatureFunctionWatershed
-          };
-        },
-        geoOptionsGroundwater() {
-          return {
-            onEachFeature: this.onEachFeatureFunctionGroundwater
-          };
-        },
-        geoOptionsBasemap() {
-          return {
-            onEachFeature: this.onEachFeatureFunctionBasemap
-          };
-        },
-        geoOptionsRivers() {
-          return {
-            onEachFeature: this.onEachFeatureFunctionRivers
-          };
-        },
-        geoOptionsNationalWaters() {
-          return {
-            onEachFeature: this.onEachFeatureNationalWaters
-          };
-        },
-        onEachFeatureFunctionWatershed() {
-          if (!this.enableTooltip) {
-            return;
-          }
-          return (feature, layer) => {
-            layer.bindPopup(
-              "<div>Name: " +
-                feature.properties.WATERSHED +
-                "</div><div>Area: " +
-                feature.properties.HECTARES +
-                " ha" +
-                "</div>",
-              { permanent: false, sticky: true }
-            );
-          };
-        },
-        onEachFeatureFunctionGroundwater() {
-          if (!this.enableTooltip) {
-            return;
-          }
-          return (feature, layer) => {
-            layer.bindPopup("</div><div>Name: " + feature.properties.name, {
-              permanent: false,
-              sticky: true
-            });
-          };
-        },
-        onEachFeatureFunctionBasemap() {
-          if (!this.enableTooltip) {
-            return;
-          }
-          return (feature, layer) => {
-            layer.bindPopup("<div>Name: " +
-                feature.properties.DISTRICT +
-                "</div><div>Area: " +
-                feature.properties.HECTARES +
-                " ha" +
-                "</div>",
-              { permanent: false, sticky: true }
-            );
-          };
-        },
-        onEachFeatureFunctionRivers() {
-          if (!this.enableTooltip) {
-            return;
-          }
-          return (feature, layer) => {
-            layer.bindPopup("<div>Name: " +
-                feature.properties.Name +
-                "</div><div>Notes: " +
-                feature.properties.Notes +
-                "</div>",
-              { permanent: false, sticky: true }
-            );
-          };
-        },
-        onEachFeatureNationalWaters() {
-          if (!this.enableTooltip) {
-            return;
-          }
-          return (feature, layer) => {
-            layer.bindPopup("<div>Status: " +
-                feature.properties.STATUS +
-                "</div><div>Area: " +
-                feature.properties.HECTARES +
-                " ha" +
-                "</div>",
-              { permanent: false, sticky: true }
-            );
-          };
+
+      profiles: [],
+      regions: [],
+      elements: [],
+      variables: [],
+      layers: [],
+      watersheds: [],
+      station_communications: [],
+
+      // SANDBOX
+      sandbox: null,
+      stationsDetail: false,
+      popupContent: "",
+      popupVariable: "",
+      lastUpdateMessage: "",
+      tabsLastUpdate: [
+        "latest_last_update",
+        "past24h_last_update",
+        "currentday_last_update"
+      ],
+      selectedTab: 0,
+
+      // VARIABLE IDS
+      STATION_MAP_WIND_SPEED_ID: "{{ STATION_MAP_WIND_SPEED_ID|safe }}",
+      STATION_MAP_WIND_GUST_ID:  "{{ STATION_MAP_WIND_GUST_ID|safe }}",
+      STATION_MAP_WIND_DIRECTION_ID:  "{{ STATION_MAP_WIND_DIRECTION_ID|safe }}",
+      STATION_MAP_TEMP_MAX_ID:  "{{ STATION_MAP_TEMP_MAX_ID|safe }}",
+      STATION_MAP_TEMP_MIN_ID:  "{{ STATION_MAP_TEMP_MIN_ID|safe }}",
+      STATION_MAP_TEMP_AVG_ID:  "{{ STATION_MAP_TEMP_AVG_ID|safe }}",
+      STATION_MAP_ATM_PRESSURE_ID:  "{{ STATION_MAP_ATM_PRESSURE_ID|safe }}",
+      STATION_MAP_PRECIPITATION_ID:  "{{ STATION_MAP_PRECIPITATION_ID|safe }}",
+      STATION_MAP_RELATIVE_HUMIDITY_ID:  "{{ STATION_MAP_RELATIVE_HUMIDITY_ID|safe }}",
+      STATION_MAP_SOLAR_RADIATION_ID:  "{{ STATION_MAP_SOLAR_RADIATION_ID|safe }}",
+      STATION_MAP_FILTER_WATERSHED:  "{{ STATION_MAP_FILTER_WATERSHED|safe }}",
+      STATION_MAP_FILTER_REGION:  "{{ STATION_MAP_FILTER_REGION|safe }}",
+      STATION_MAP_FILTER_PROFILE:  "{{ STATION_MAP_FILTER_PROFILE|safe }}",
+      STATION_MAP_FILTER_COMMUNICATION:  "{{ STATION_MAP_FILTER_COMMUNICATION|safe }}",
+    },
+    computed: {
+      filteredMarkers() {
+        return this.markers.filter(marker =>
+          (
+            this.defaultFilter.is_active === true || this.defaultFilter.is_inactive === true
+          ) &&
+          (
+            (marker.is_active === this.defaultFilter.is_active) === true ||
+            (marker.is_active === !this.defaultFilter.is_inactive) === true
+          ) &&
+          (
+            this.defaultFilter.is_automatic === true || this.defaultFilter.is_manual === true
+          ) &&
+          (
+            (marker.is_automatic === this.defaultFilter.is_automatic) === true ||
+            (marker.is_automatic === !this.defaultFilter.is_manual) === true
+          ) &&
+          (this.defaultFilter.profile.includes(marker.profile) || this.STATION_MAP_FILTER_PROFILE == 0) &&
+          (this.defaultFilter.region.includes(marker.region) || this.STATION_MAP_FILTER_REGION == 0) &&
+          (this.defaultFilter.watershed.includes(marker.watershed) || this.STATION_MAP_FILTER_WATERSHED == 0) &&
+          (this.defaultFilter.station_communications.includes(marker.communication_type) || this.STATION_MAP_FILTER_COMMUNICATION == 0) &&
+          (this.defaultFilter.inputSearch === "" || marker.name.toUpperCase().includes(this.defaultFilter.inputSearch.toUpperCase()))
+        )
+      },
+      SelectedVariable() {
+        if (this.requestObject.summaryId === null && this.variables.length > 0) {
+          this.requestObject.summaryId = this.variables[0].id;
         }
+        return this.variables.find(item => item.id === this.requestObject.summaryId) || this.variables[0]
       },
-      methods: {
-        openPopup: function (event) {
-  				this.$nextTick(() => {
-  					event.target.openPopup();
-  				})
-  			},
-        getVariableValue(marker, variable) {
-          if (marker !== null)
-            return marker[variable]
-          else
-            return ''
-        },
-        async getWindBards(timeToggle, date) {
-          let wsUrl = null;
-          let wdUrl = null;
-          let tempMaxUrl = null;
-          let tempMinUrl = null;
-          let atmPressureUrl = null;
-          let precipitationUrl = null;
-
-          if (timeToggle === 0) {
-            // 24hSummary
-            wsUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_WIND_SPEED_ID;
-            wdUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_WIND_DIRECTION_ID;
-            tempMaxUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_TEMP_MAX_ID;
-            tempMinUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_TEMP_MIN_ID;
-            atmPressureUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_ATM_PRESSURE_ID;
-            precipitationUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_PRECIPITATION_ID;
-          } else {
-            // dailySummary
-            const today = date;
-            const tomorrow = moment(date).add(1, 'days').format('YYYY-MM-DD');
-            wsUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_WIND_SPEED_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
-            wdUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_WIND_DIRECTION_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
-            tempMaxUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_TEMP_MAX_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
-            tempMinUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_TEMP_MIN_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
-            atmPressureUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_ATM_PRESSURE_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
-            precipitationUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_PRECIPITATION_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
-          }
-
-          let [ws, wd, tempMax, tempMin, atmPressure, precipitation] = await Promise.all([this.getAll(wsUrl), this.getAll(wdUrl), this.getAll(tempMaxUrl), this.getAll(tempMinUrl), this.getAll(atmPressureUrl), this.getAll(precipitationUrl)]);
-          return ([ws, wd, tempMax, tempMin, atmPressure, precipitation]);
-        },
-        toggleWatershedOverlay() {
-          if (!this.Watersheds_geojson) {
-            this.getGeoJson.watershed().then(data => {
-              this.Watersheds_geojson = data.data;
-            });
-          }
-          this.showWatershed = !this.showWatershed;
-        },
-        toggleDistrictsOverlay() {
-          if (!this.Basemap_geojson) {
-            this.getGeoJson.districts().then(data => {
-              this.Basemap_geojson = data.data;
-            });
-          }
-          this.showBasemap = !this.showBasemap;
-        },
-        toggleGroundwaterOverlay() {
-          if (!this.Groundwater_geojson) {
-            this.getGeoJson.groundwater().then(data => {
-              this.Groundwater_geojson = data.data;
-            });
-          }
-          this.showGroundwater = !this.showGroundwater;
-        },
-        toggleRiverOverlay() {
-          if (!this.River_geojson) {
-            this.getGeoJson.river().then(data => {
-              this.River_geojson = data.data;
-            });
-          }
-          this.showRiver = !this.showRiver;
-        },
-        toggleNationalWatersOverlay() {
-          if (!this.NationalWaters_geojson) {
-            this.getGeoJson.nationalWaters().then(data => {
-              this.NationalWaters_geojson = data.data;
-            });
-          }
-          this.showNationalWaters = !this.showNationalWaters;
-        },
-        changeTimeToggle() {
-          if (this.timeToggle === 1) {
-              this.requestObject.currentDate = moment(new Date()).tz(this.timezone).format('YYYY-MM-DD');
-          }
-          this.getSummaries();
-        },
-        setBasemap() {
-          this.url = this.selectedBasemap.url;
-        },
-        changeCurrentDate(date) {
-          localStorage.setItem("currentDate", date);
-        },
-        toggleSidenav() {
-          this.drawer = !this.drawer;
-        },
-        getProfiles() {
-          this.getAll("api/station_profiles/").then(data => {
-            this.profiles = data;
-            data.forEach(profile => {
-              this.defaultFilter.profile.push(profile.name);
-            });
-          });
-        },
-        getRegions() {
-          this.getAll("api/administrative_regions/").then(data => {
-            this.regions = data;
-            data.forEach(region => {
-              this.defaultFilter.region.push(region.name);
-            });
-          });
-        },
-        getWatershed() {
-          this.getAll("api/watersheds/").then(data => {
-            this.watersheds = data;
-            data.forEach(watershed => {
-              this.defaultFilter.watershed.push(watershed.name);
-            });
-          });
-        },
-        getStationCommunications() {
-          this.getAll("api/station_communications/").then(data => {
-            this.station_communications = data;
-            data.forEach(station_communication => {
-              if(station_communication.name != 'None')
-                this.defaultFilter.station_communications.push(station_communication.name);
-            });
-          });
-        },
-        getVariables() {
-          // this.getAll("api/variables/").then(data => {
-          //   this.variables = data;
-          // });
-          this.variables = [
-            {name: 'Synoptic', id: -1},
-            {name: 'Precipitation', id: this.STATION_MAP_PRECIPITATION_ID},
-            // {name: 'Temperature (instant)', id: 10}, // ultima leitura, vai ser inserido qnd selecionar 'current day'
-            {name: 'Temperature (avg)', id: this.STATION_MAP_TEMP_AVG_ID},
-            {name: 'Temperature (max)', id: this.STATION_MAP_TEMP_MAX_ID},
-            {name: 'Temperature (min)', id: this.STATION_MAP_TEMP_MIN_ID},
-            {name: 'Relative Humidity', id: this.STATION_MAP_RELATIVE_HUMIDITY_ID},
-            {name: 'Solar Radiation', id: this.STATION_MAP_SOLAR_RADIATION_ID},
-            {name: 'ATM Pressure', id: this.STATION_MAP_ATM_PRESSURE_ID},
-            {name: 'Wind Speed', id: this.STATION_MAP_WIND_SPEED_ID},
-            {name: 'Wind Direction', id: this.STATION_MAP_WIND_DIRECTION_ID},
-            {name: 'Wind Gust', id: this.STATION_MAP_WIND_GUST_ID}
-          ];
-        },
-        getElements() {
-          this.getAll("api/elements/").then(data => {
-            this.elements = data;
-          });
-        },
-        getSummaries() {
-          if (this.timeToggle === 0) { //0 === Last 24h
-            this.getLast24Summaries(this.requestObject.summaryId)
-          } else {
-            if (this.requestObject.summaryId !== null && this.requestObject.currentDate) {
-              this.getDailySummaries(
-                this.requestObject.summaryId,
-                this.requestObject.currentDate
-              );
-              localStorage.setItem("summaryId", this.requestObject.summaryId);
-            } else {
-              return;
-            }
-          }
-        },
-        getDailySummaries(id, date) {
-          if (id === -1) {
-            this.showWindBarbSummaries(this.timeToggle, date);
-          } else {
-            this.showWindBarbs = false;
-
-            const today = date;
-            const tomorrow = moment(date).add(1, 'days').format('YYYY-MM-DD');
-            const params = `api/dailysummaries/?search_type=variable&search_value=${id}&search_date_start=${today}&search_date_end=${tomorrow}`;
-
-            return this.getAll(params).then(res => {
-              this.lastUpdate = moment(new Date()).format('L LT');
-
-              this.markers = this.markers.map(e => {
-                const summary = res.find(data => data.station === e.id);
-
-                e.icon = this.defaultIcon;
-
-                if (!summary) {
-                  e.popupContent = null;
-                  e.popupVariable = null;
-                  e.windDirection = null;
-                  e.windSpeed = null;
-                  e.tempMax = null;
-                  e.tempMin = null;
-                  e.atmPressure = null;
-                  e.precipitation = null;
-                  return e;
-                }
-
-                e.popupContent = `${summary.value.toFixed(1)}`;
-                e.popupVariable = summary.variable.unit_symbol || "";
-                e.windDirection = null;
-                e.windSpeed = null;
-                e.tempMax = null;
-                e.tempMin = null;
-                e.atmPressure = null;
-                e.precipitation = null;
-                return e;
-              });
-            });
-          }
-        },
-        getLast24Summaries(id) {
-          if (id === -1) {
-            this.showWindBarbSummaries(this.timeToggle, null);
-          } else {
-            this.showWindBarbs = false;
-            const params = `api/last24hrsummaries/?search_type=variable&search_value=${id}`;
-
-            return this.getAll(params).then(res => {
-              this.lastUpdate = moment(new Date()).format('L LT') ;
-
-              this.markers = this.markers.map(e => {
-                const summary = res.find(data => data.station === e.id);
-
-                e.icon = this.defaultIcon;
-
-                if (!summary) {
-                  e.popupContent = null;
-                  e.popupVariable = null;
-                  e.windDirection = null;
-                  e.windSpeed = null;
-                  e.tempMax = null;
-                  e.tempMin = null;
-                  e.atmPressure = null;
-                  e.precipitation = null;
-                  return e;
-                }
-
-                e.popupContent = `${summary.value.toFixed(1)}`;
-                e.popupVariable = summary.variable.unit_symbol || "";
-                e.windDirection = null;
-                e.windSpeed = null;
-                e.tempMax = null;
-                e.tempMin = null;
-                e.atmPressure = null;
-                e.precipitation = null;
-                return e;
-              });
-            });
-          }
-        },
-        showWindBarbSummaries(timeToggle, date) {
-          this.showWindBarbs = true;
-          this.getWindBards(timeToggle, date).then((wind) => {
-            this.lastUpdate = moment(new Date()).format('L LT') ;
-
-            this.markers.forEach(marker => {
-              //marker.icon = L.WindBarb.icon();
-              marker.windSpeed = null;
-              marker.windDirection = null;
-              marker.tempMax = null;
-              marker.tempMin = null;
-              marker.atmPressure = null;
-              marker.precipitation = null;
-
-              // proceed only IF Marker have windSpeed and windDirection
-              // if (wind[0].find(el => el.station === marker.id && wind[1].find(el => el.station === marker.id))) {
-
-                windSpeed = wind[0].find(el => el.station === marker.id);
-                windDirection = wind[1].find(el => el.station === marker.id);
-                tempMax = wind[2].find(el => el.station === marker.id);
-                tempMin = wind[3].find(el => el.station === marker.id);
-                atmPressure = wind[4].find(el => el.station === marker.id);
-                precipitation = wind[5].find(el => el.station === marker.id);
-
-                marker.windSpeed = windSpeed ? windSpeed : null;
-                marker.windDirection = windDirection ? windDirection : null;
-                marker.tempMax = tempMax ? tempMax.value.toFixed(1) : null;
-                marker.tempMin = tempMin ? tempMin.value.toFixed(1) : null;
-                marker.atmPressure = atmPressure ? atmPressure.value.toFixed(1) : null;
-                marker.precipitation = precipitation ? precipitation.value.toFixed(1) : null;
-
-                if (windSpeed && windDirection) {
-                  marker.icon = L.WindBarb.icon({fillColor: 'black', pointRadius: 1, deg: marker.windDirection.value, speed: marker.windSpeed.value, iconAnchor: [16, 32],forceDir: true, autoClose: false, closeOnClick: false, closePopupOnClick: false});
-                } else {
-                  marker.icon = L.icon({
-                    iconUrl: "{% static 'images/close.png' %}",
-                    iconSize: [8, 8],
-                  });
-                }
-            });
-          });
-        },
-        getStations() {
-          return this.getAll("api/stations_simple/").then(data => {
-            const stationMarkers = data.map(station => ({
-              id: station.id,
-              tooltip: station.name,
-              position: {
-                lat: station.position.latitude,
-                lng: station.position.longitude
-              },
-              visible: true,
-              draggable: false,
-              name: station.name,
-              profile: station.profile,
-              is_automatic: station.is_automatic,
-              is_active: station.is_active,
-              region: station.region,
-              watershed: station.watershed,
-              communication_type: station.communication_type,
-              popupContent: null,
-              popupVariable: null,
-              windDirection: null,
-              windSpeed: null,
-              tempMax: '',
-              tempMin: '',
-              atmPressure: '',
-              precipitation: ''
-            }));
-
-            const markersWIcons = stationMarkers.map(e =>
-              Object.assign({}, e, {
-                icon: this.defaultIcon
-              })
-            );
-            this.markers = markersWIcons;
-          });
-        },
-        formatDatetime(datetime){
-          return datetime ? moment.utc(datetime).tz(this.timezone).format('YYYY-MM-DD HH:mm:ss'): 'Not available'
-        },
-        openStationsDetailDialog(marker, event) {
-          this.getById("api/livedata", marker.id).then(data => {
-
-            data.past24h_last_update = this.formatDatetime(data.past24h_last_update)
-            data.latest_last_update = this.formatDatetime(data.latest_last_update)
-            data.currentday_last_update = this.formatDatetime(data.currentday_last_update)
-
-            this.sandbox = data;
-            this.sandbox.station_url = `{% url 'stations-list' %}${this.sandbox.station_id}`
-            this.sandbox.stationReport = `{% url 'station-report' %}?station_id=${this.sandbox.station_id}`
-            this.selectedTab = 0;
-            this.handleTabUpdate(this.selectedTab);
-          });
-          // });
-          this.stationsDetail = true;
-          event.target.closePopup();
-        },
-        closeDialog() {
-          this.stationsDetail = false;
-        },
-        getById(path, id, oldData = []) {
-          return fetch(`/${path}/${id}/`).then(res => {
-            if (!res.body) {
-              return { next: null, results: [] };
-            }
-
-            return res.json();
-          });
-        },
-        getAll(path, url, oldData = []) {
-          return fetch(`/${path}`)
-            .then(res => {
-              if (!res.body) {
-                return { next: null, results: [] };
-              }
-              if (res.status === 500) {
-                console.error('Internal Server Error');
-                return { next: null, results: [] };
-              }
-              if (res.status === 404) {
-                console.error('Not Found');
-                return { next: null, results: [] };
-              }
-              return res.json();
-            })
-            .then(async data => {
-              const values = [...oldData, ...data.results];
-              if (!!data.next) {
-                return await getAll(
-                  context,
-                  path,
-                  `/${path}/${data.next.substr(
-                    data.next.indexOf(`/${path}`)
-                  )}`,
-                  values
-                );
-              }
-              return values;
-            }).catch((err) => {
-              console.log('err', err);
-            });
-        },
-        handleTabUpdate(selectedTab) {
-          const lastUpdateDate = this.sandbox[this.tabsLastUpdate[selectedTab]];
-          this.lastUpdateMessage = `Last updated: ${lastUpdateDate}`;
+      Attribution() {
+        return this.attribution
+      },
+      Url() {
+        return this.url
+      },
+      Sandbox() {
+        return this.sandbox;
+      },
+      // Watershed() {
+      //   if (this.showWatershed === true) {
+      //     return true;
+      //   }
+      //   return false;
+      // },
+      Groundwater() {
+        if (this.showGroundwater === true) {
+          return true;
         }
+        return false;
       },
-      beforeMount() {
-        this.getVariables();
+      Basemap() {
+        if (this.showBasemap === true) {
+          return true;
+        }
+        return false;
       },
-      mounted() {
-        window.mapReference = this.$refs.myMap.mapObject;
-        this.getProfiles();
-        this.getRegions();
-        this.getWatershed();
-        this.getStationCommunications();
-        // this.getElements();
-        // this.getGeoJson();
-        this.getStations().then(res => {
-          this.requestObject.currentDate = moment(new Date()).tz(this.timezone).format('YYYY-MM-DD');
-          if (this.requestObject.summaryId && this.requestObject.currentDate) {
+      River() {
+        if (this.showRiver === true) {
+          return true;
+        }
+        return false;
+      },
+      NationalWaters() {
+        if (this.showNationalWaters === true) {
+          return true;
+        }
+        return false;
+      },
+      styleFunctionWatershed() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#7a34eb",
+          fillOpacity: 0.3
+        };
+      },
+      styleFunctionGroundwater() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#32908F",
+          fillOpacity: 0.3
+        };
+      },
+      styleFunctionBasemap() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#787878",
+          fillOpacity: 0.3
+        };
+      },
+      styleFunctionRiver() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#5bb9d6",
+          fillOpacity: 0.3
+        };
+      },
+      styleFunctionNationalWaters() {
+        return {
+          fillColor: "transparent",
+          weight: 2,
+          opacity: 1,
+          color: "#2965a7",
+          fillOpacity: 0.3
+        };
+      },
+      geoOptionsWatershed() {
+        return {
+          onEachFeature: this.onEachFeatureFunctionWatershed
+        };
+      },
+      geoOptionsGroundwater() {
+        return {
+          onEachFeature: this.onEachFeatureFunctionGroundwater
+        };
+      },
+      geoOptionsBasemap() {
+        return {
+          onEachFeature: this.onEachFeatureFunctionBasemap
+        };
+      },
+      geoOptionsRivers() {
+        return {
+          onEachFeature: this.onEachFeatureFunctionRivers
+        };
+      },
+      geoOptionsNationalWaters() {
+        return {
+          onEachFeature: this.onEachFeatureNationalWaters
+        };
+      },
+      onEachFeatureFunctionWatershed() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup(
+            "<div>Name: " +
+              feature.properties.WATERSHED +
+              "</div><div>Area: " +
+              feature.properties.HECTARES +
+              " ha" +
+              "</div>",
+            { permanent: false, sticky: true }
+          );
+        };
+      },
+      onEachFeatureFunctionGroundwater() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup("</div><div>Name: " + feature.properties.name, {
+            permanent: false,
+            sticky: true
+          });
+        };
+      },
+      onEachFeatureFunctionBasemap() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup("<div>Name: " +
+              feature.properties.DISTRICT +
+              "</div><div>Area: " +
+              feature.properties.HECTARES +
+              " ha" +
+              "</div>",
+            { permanent: false, sticky: true }
+          );
+        };
+      },
+      onEachFeatureFunctionRivers() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup("<div>Name: " +
+              feature.properties.Name +
+              "</div><div>Notes: " +
+              feature.properties.Notes +
+              "</div>",
+            { permanent: false, sticky: true }
+          );
+        };
+      },
+      onEachFeatureNationalWaters() {
+        if (!this.enableTooltip) {
+          return;
+        }
+        return (feature, layer) => {
+          layer.bindPopup("<div>Status: " +
+              feature.properties.STATUS +
+              "</div><div>Area: " +
+              feature.properties.HECTARES +
+              " ha" +
+              "</div>",
+            { permanent: false, sticky: true }
+          );
+        };
+      }
+    },
+    methods: {
+      openPopup: function (event) {
+        this.$nextTick(() => {
+          event.target.openPopup();
+        })
+      },
+      
+      getVariableValue(marker, variable) {
+        if (marker !== null)
+          return marker[variable]
+        else
+          return ''
+      },
+      
+      async getWindBards(timeToggle, date) {
+        let wsUrl = null;
+        let wdUrl = null;
+        let tempMaxUrl = null;
+        let tempMinUrl = null;
+        let atmPressureUrl = null;
+        let precipitationUrl = null;
+
+        if (timeToggle === 0) {
+          // 24hSummary
+          wsUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_WIND_SPEED_ID;
+          wdUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_WIND_DIRECTION_ID;
+          tempMaxUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_TEMP_MAX_ID;
+          tempMinUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_TEMP_MIN_ID;
+          atmPressureUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_ATM_PRESSURE_ID;
+          precipitationUrl = 'api/last24hrsummaries/?search_type=variable&search_value=' + this.STATION_MAP_PRECIPITATION_ID;
+        } else {
+          // dailySummary
+          const today = date;
+          const tomorrow = moment(date).add(1, 'days').format('YYYY-MM-DD');
+          wsUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_WIND_SPEED_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+          wdUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_WIND_DIRECTION_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+          tempMaxUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_TEMP_MAX_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+          tempMinUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_TEMP_MIN_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+          atmPressureUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_ATM_PRESSURE_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+          precipitationUrl = `api/dailysummaries/?search_type=variable&search_value=${this.STATION_MAP_PRECIPITATION_ID}&search_date_start=${today}&search_date_end=${tomorrow}`;
+        }
+
+        let [ws, wd, tempMax, tempMin, atmPressure, precipitation] = await Promise.all([this.getAll(wsUrl), this.getAll(wdUrl), this.getAll(tempMaxUrl), this.getAll(tempMinUrl), this.getAll(atmPressureUrl), this.getAll(precipitationUrl)]);
+        return ([ws, wd, tempMax, tempMin, atmPressure, precipitation]);
+      },
+      
+      toggleWatershedOverlay() {
+        if (!this.Watersheds_geojson) {
+          this.getGeoJson.watershed().then(data => {
+            this.Watersheds_geojson = data.data;
+          });
+
+        }
+
+        this.showWatershed = !this.showWatershed;
+      },
+      
+      toggleDistrictsOverlay() {
+        if (!this.Basemap_geojson) {
+          this.getGeoJson.districts().then(data => {
+            this.Basemap_geojson = data.data;
+          });
+        }
+        this.showBasemap = !this.showBasemap;
+      },
+      
+      toggleGroundwaterOverlay() {
+        if (!this.Groundwater_geojson) {
+          this.getGeoJson.groundwater().then(data => {
+            this.Groundwater_geojson = data.data;
+          });
+        }
+        this.showGroundwater = !this.showGroundwater;
+      },
+      
+      toggleRiverOverlay() {
+        if (!this.River_geojson) {
+          this.getGeoJson.river().then(data => {
+            this.River_geojson = data.data;
+          });
+        }
+        this.showRiver = !this.showRiver;
+      },
+      
+      toggleNationalWatersOverlay() {
+        if (!this.NationalWaters_geojson) {
+          this.getGeoJson.nationalWaters().then(data => {
+            this.NationalWaters_geojson = data.data;
+          });
+        }
+        this.showNationalWaters = !this.showNationalWaters;
+      },
+      
+      changeTimeToggle() {
+        if (this.timeToggle === 1) {
+            this.requestObject.currentDate = moment(new Date()).tz(this.timezone).format('YYYY-MM-DD');
+        }
+        this.getSummaries();
+      },
+      
+      setBasemap() {
+        this.url = this.selectedBasemap.url;
+      },
+      
+      changeCurrentDate(date) {
+        localStorage.setItem("currentDate", date);
+      },
+      
+      toggleSidenav() {
+        this.drawer = !this.drawer;
+      },
+      
+      getProfiles() {
+        this.getAll("api/station_profiles/").then(data => {
+          this.profiles = data;
+          data.forEach(profile => {
+            this.defaultFilter.profile.push(profile.name);
+          });
+        });
+      },
+      
+      getRegions() {
+        this.getAll("api/administrative_regions/").then(data => {
+          this.regions = data;
+          data.forEach(region => {
+            this.defaultFilter.region.push(region.name);
+          });
+        });
+      },
+      
+      getWatershed() {
+        this.getAll("api/watersheds/").then(data => {
+          this.watersheds = data;
+          data.forEach(watershed => {
+            this.defaultFilter.watershed.push(watershed.name);
+          });
+        });
+      },
+      
+      getStationCommunications() {
+        this.getAll("api/station_communications/").then(data => {
+          this.station_communications = data;
+          data.forEach(station_communication => {
+            if(station_communication.name != 'None')
+              this.defaultFilter.station_communications.push(station_communication.name);
+          });
+        });
+      },
+      
+      getVariables() {
+        // this.getAll("api/variables/").then(data => {
+        //   this.variables = data;
+        // });
+        this.variables = [
+          {name: 'Synoptic', id: -1},
+          {name: 'Precipitation', id: this.STATION_MAP_PRECIPITATION_ID},
+          // {name: 'Temperature (instant)', id: 10}, // ultima leitura, vai ser inserido qnd selecionar 'current day'
+          {name: 'Temperature (avg)', id: this.STATION_MAP_TEMP_AVG_ID},
+          {name: 'Temperature (max)', id: this.STATION_MAP_TEMP_MAX_ID},
+          {name: 'Temperature (min)', id: this.STATION_MAP_TEMP_MIN_ID},
+          {name: 'Relative Humidity', id: this.STATION_MAP_RELATIVE_HUMIDITY_ID},
+          {name: 'Solar Radiation', id: this.STATION_MAP_SOLAR_RADIATION_ID},
+          {name: 'ATM Pressure', id: this.STATION_MAP_ATM_PRESSURE_ID},
+          {name: 'Wind Speed', id: this.STATION_MAP_WIND_SPEED_ID},
+          {name: 'Wind Direction', id: this.STATION_MAP_WIND_DIRECTION_ID},
+          {name: 'Wind Gust', id: this.STATION_MAP_WIND_GUST_ID}
+        ];
+      },
+      
+      getElements() {
+        this.getAll("api/elements/").then(data => {
+          this.elements = data;
+        });
+      },
+      
+      getSummaries() {
+        if (this.timeToggle === 0) { //0 === Last 24h
+          this.getLast24Summaries(this.requestObject.summaryId)
+        } else {
+          if (this.requestObject.summaryId !== null && this.requestObject.currentDate) {
             this.getDailySummaries(
               this.requestObject.summaryId,
               this.requestObject.currentDate
             );
+            localStorage.setItem("summaryId", this.requestObject.summaryId);
+          } else {
             return;
           }
-          this.getSummaries();
+        }
+      },
+      
+      getDailySummaries(id, date) {
+        if (id === -1) {
+          this.showWindBarbSummaries(this.timeToggle, date);
+        } else {
+          this.showWindBarbs = false;
 
+          const today = date;
+          const tomorrow = moment(date).add(1, 'days').format('YYYY-MM-DD');
+          const params = `api/dailysummaries/?search_type=variable&search_value=${id}&search_date_start=${today}&search_date_end=${tomorrow}`;
+
+          return this.getAll(params).then(res => {
+            this.lastUpdate = moment(new Date()).format('L LT');
+
+            this.markers = this.markers.map(e => {
+              const summary = res.find(data => data.station === e.id);
+
+              e.icon = this.defaultIcon;
+
+              if (!summary) {
+                e.popupContent = null;
+                e.popupVariable = null;
+                e.windDirection = null;
+                e.windSpeed = null;
+                e.tempMax = null;
+                e.tempMin = null;
+                e.atmPressure = null;
+                e.precipitation = null;
+                return e;
+              }
+
+              e.popupContent = `${summary.value.toFixed(1)}`;
+              e.popupVariable = summary.variable.unit_symbol || "";
+              e.windDirection = null;
+              e.windSpeed = null;
+              e.tempMax = null;
+              e.tempMin = null;
+              e.atmPressure = null;
+              e.precipitation = null;
+              return e;
+            });
+          });
+        }
+      },
+      
+      getLast24Summaries(id) {
+        if (id === -1) {
+          this.showWindBarbSummaries(this.timeToggle, null);
+        } else {
+          this.showWindBarbs = false;
+          const params = `api/last24hrsummaries/?search_type=variable&search_value=${id}`;
+
+          return this.getAll(params).then(res => {
+            this.lastUpdate = moment(new Date()).format('L LT') ;
+
+            this.markers = this.markers.map(e => {
+              const summary = res.find(data => data.station === e.id);
+
+              e.icon = this.defaultIcon;
+
+              if (!summary) {
+                e.popupContent = null;
+                e.popupVariable = null;
+                e.windDirection = null;
+                e.windSpeed = null;
+                e.tempMax = null;
+                e.tempMin = null;
+                e.atmPressure = null;
+                e.precipitation = null;
+                return e;
+              }
+
+              e.popupContent = `${summary.value.toFixed(1)}`;
+              e.popupVariable = summary.variable.unit_symbol || "";
+              e.windDirection = null;
+              e.windSpeed = null;
+              e.tempMax = null;
+              e.tempMin = null;
+              e.atmPressure = null;
+              e.precipitation = null;
+              return e;
+            });
+          });
+        }
+      },
+      
+      showWindBarbSummaries(timeToggle, date) {
+        this.showWindBarbs = true;
+        this.getWindBards(timeToggle, date).then((wind) => {
+          this.lastUpdate = moment(new Date()).format('L LT') ;
+
+          this.markers.forEach(marker => {
+            //marker.icon = L.WindBarb.icon();
+            marker.windSpeed = null;
+            marker.windDirection = null;
+            marker.tempMax = null;
+            marker.tempMin = null;
+            marker.atmPressure = null;
+            marker.precipitation = null;
+
+            // proceed only IF Marker have windSpeed and windDirection
+            // if (wind[0].find(el => el.station === marker.id && wind[1].find(el => el.station === marker.id))) {
+
+              windSpeed = wind[0].find(el => el.station === marker.id);
+              windDirection = wind[1].find(el => el.station === marker.id);
+              tempMax = wind[2].find(el => el.station === marker.id);
+              tempMin = wind[3].find(el => el.station === marker.id);
+              atmPressure = wind[4].find(el => el.station === marker.id);
+              precipitation = wind[5].find(el => el.station === marker.id);
+
+              marker.windSpeed = windSpeed ? windSpeed : null;
+              marker.windDirection = windDirection ? windDirection : null;
+              marker.tempMax = tempMax ? tempMax.value.toFixed(1) : null;
+              marker.tempMin = tempMin ? tempMin.value.toFixed(1) : null;
+              marker.atmPressure = atmPressure ? atmPressure.value.toFixed(1) : null;
+              marker.precipitation = precipitation ? precipitation.value.toFixed(1) : null;
+
+              if (windSpeed && windDirection) {
+                marker.icon = L.WindBarb.icon({fillColor: 'black', pointRadius: 1, deg: marker.windDirection.value, speed: marker.windSpeed.value, iconAnchor: [16, 32],forceDir: true, autoClose: false, closeOnClick: false, closePopupOnClick: false});
+              } else {
+                marker.icon = L.icon({
+                  iconUrl: "{% static 'images/close.png' %}",
+                  iconSize: [8, 8],
+                });
+              }
+          });
         });
-        /*
-        this.markers = this.markers.map(e => {
-          const summary = state.stationSummaries.find(
-            data => data.station === e.id
-          );
+      },
+      
+      getStations() {
+        return this.getAll("api/stations_simple/").then(data => {
+          const stationMarkers = data.map(station => ({
+            id: station.id,
+            tooltip: station.name,
+            position: {
+              lat: station.position.latitude,
+              lng: station.position.longitude
+            },
+            visible: true,
+            draggable: false,
+            name: station.name,
+            profile: station.profile,
+            is_automatic: station.is_automatic,
+            is_active: station.is_active,
+            region: station.region,
+            watershed: station.watershed,
+            communication_type: station.communication_type,
+            popupContent: null,
+            popupVariable: null,
+            windDirection: null,
+            windSpeed: null,
+            tempMax: '',
+            tempMin: '',
+            atmPressure: '',
+            precipitation: ''
+          }));
 
-          if (!summary) {
-            e.popupContent = null;
-            e.popupVariable = null;
-            return e;
+          const markersWIcons = stationMarkers.map(e =>
+            Object.assign({}, e, {
+              icon: this.defaultIcon
+            })
+          );
+          this.markers = markersWIcons;
+        });
+      },
+      
+      formatDatetime(datetime){
+        return datetime ? moment.utc(datetime).tz(this.timezone).format('YYYY-MM-DD HH:mm:ss'): 'Not available'
+      },
+      
+      openStationsDetailDialog(marker, event) {
+        this.getById("api/livedata", marker.id).then(data => {
+
+          data.past24h_last_update = this.formatDatetime(data.past24h_last_update)
+          data.latest_last_update = this.formatDatetime(data.latest_last_update)
+          data.currentday_last_update = this.formatDatetime(data.currentday_last_update)
+
+          this.sandbox = data;
+          this.sandbox.station_url = `{% url 'stations-list' %}${this.sandbox.station_id}`
+          this.sandbox.stationReport = `{% url 'station-report' %}?station_id=${this.sandbox.station_id}`
+          this.selectedTab = 0;
+          this.handleTabUpdate(this.selectedTab);
+        });
+        // });
+        this.stationsDetail = true;
+        event.target.closePopup();
+      },
+      
+      closeDialog() {
+        this.stationsDetail = false;
+      },
+      
+      getById(path, id, oldData = []) {
+        return fetch(`/${path}/${id}/`).then(res => {
+          if (!res.body) {
+            return { next: null, results: [] };
           }
 
-          const popupContent = `${summary.value.toFixed(1)}`;
-          e.popupContent = popupContent;
-          e.popupVariable = summary.variable.unit_symbol || "";
-          return e;
-        });*/
-        setInterval(() => {
-          this.getSummaries();
-        }, 60000); // 1 minute
+          return res.json();
+        });
+      },
+      
+      getAll(path, url, oldData = []) {
+        return fetch(`/${path}`)
+          .then(res => {
+            if (!res.body) {
+              return { next: null, results: [] };
+            }
+            if (res.status === 500) {
+              console.error('Internal Server Error');
+              return { next: null, results: [] };
+            }
+            if (res.status === 404) {
+              console.error('Not Found');
+              return { next: null, results: [] };
+            }
+            return res.json();
+          })
+          .then(async data => {
+            const values = [...oldData, ...data.results];
+            if (!!data.next) {
+              return await getAll(
+                context,
+                path,
+                `/${path}/${data.next.substr(
+                  data.next.indexOf(`/${path}`)
+                )}`,
+                values
+              );
+            }
+            return values;
+          }).catch((err) => {
+            console.log('err', err);
+          });
+      },
+      
+      handleTabUpdate(selectedTab) {
+        const lastUpdateDate = this.sandbox[this.tabsLastUpdate[selectedTab]];
+        this.lastUpdateMessage = `Last updated: ${lastUpdateDate}`;
       }
-    });
+    },
+    beforeMount() {
+      this.getVariables();
+    },
+    mounted() {
+      // showing lat/lng coordinates when mouse moves
+      this.$refs.myMap.mapObject.on('mousemove',function(e){
+        $('.mouse-lat').html(`${e.latlng.lat}`)
+
+        $('.mouse-lng').html(`${e.latlng.lng}`)
+      })
+
+      // adding leaflet measure
+      this.$nextTick(() => {
+
+        const measureMap = this.$refs.myMap.mapObject;
+
+        const measureControl = new window.L.Control.Measure({
+          position: "topleft",
+          primaryLengthUnit: "kilometers",
+          secondaryLengthUnit: "meters",
+          primaryAreaUnit: "sqkilometers",
+          secondaryAreaUnit: "sqmeters",
+          activeColor: "#3972f7",
+          completedColor: "#3972f7",
+        });
+
+        measureMap.addControl(measureControl);
+
+      });
+
+      window.mapReference = this.$refs.myMap.mapObject;
+      this.getProfiles();
+      this.getRegions();
+      this.getWatershed();
+      this.getStationCommunications();
+      // this.getElements();
+      // this.getGeoJson();
+      this.getStations().then(res => {
+        this.requestObject.currentDate = moment(new Date()).tz(this.timezone).format('YYYY-MM-DD');
+        if (this.requestObject.summaryId && this.requestObject.currentDate) {
+          this.getDailySummaries(
+            this.requestObject.summaryId,
+            this.requestObject.currentDate
+          );
+          return;
+        }
+        this.getSummaries();
+
+      });
+      /*
+      this.markers = this.markers.map(e => {
+        const summary = state.stationSummaries.find(
+          data => data.station === e.id
+        );
+
+        if (!summary) {
+          e.popupContent = null;
+          e.popupVariable = null;
+          return e;
+        }
+
+        const popupContent = `${summary.value.toFixed(1)}`;
+        e.popupContent = popupContent;
+        e.popupVariable = summary.variable.unit_symbol || "";
+        return e;
+      });*/
+      setInterval(() => {
+        this.getSummaries();
+      }, 60000); // 1 minute
+    }
+  });
+
 </script>
 
 <style>
+  /* leaflet measure css start */
+    .leaflet-control-measure h6,.leaflet-measure-resultpopup h6{
+        margin:0 0 12px;
+        padding-bottom:10px;
+        border-bottom:1px solid #ddd;
+        font-weight: bolder;
+    }
+
+    .leaflet-control-measure p,.leaflet-measure-resultpopup p{
+        margin:10px 0 0;
+        line-height:1.5em;
+    }
+
+    .leaflet-control-measure p:first-child,.leaflet-measure-resultpopup p:first-child{
+        margin-top:0
+    }
+
+    .leaflet-control-measure .tasks,.leaflet-measure-resultpopup .tasks{
+        margin:12px 0 0;
+        padding:10px 0 0;
+        border-top:1px solid #ddd;
+        text-align:right;
+        list-style:none;
+        list-style-image:none;
+    }
+
+    .leaflet-control-measure .tasks li,.leaflet-measure-resultpopup .tasks li{
+        display:inline;
+        margin:0 10px 0 0;
+    }
+
+    .leaflet-control-measure .tasks li:last-child,.leaflet-measure-resultpopup .tasks li:last-child{
+        margin-right:0;
+    }
+
+    .leaflet-control-measure .coorddivider,.leaflet-measure-resultpopup .coorddivider{
+        color:#999;
+    }
+
+    .leaflet-control-measure{
+        max-width:280px;
+        background:#fff;
+    }
+
+    .leaflet-control-measure .leaflet-control-measure-toggle,.leaflet-control-measure .leaflet-control-measure-toggle:hover{
+        background-image: url('data:image/svg+xml;utf8,<svg t="1599643864260" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="26869" width="32" height="32"><path d="M910.623 777.748h-79.725V325.977l-53.15 53.149v398.622H282.715l580.416-605.875-37.58-37.578-579.299 604.707v-492.75h672.591l48.92-53.149H246.252v-79.725c0-14.688-11.886-26.575-26.575-26.575-14.688 0-26.575 11.886-26.575 26.575v79.725h-79.724c-14.689 0-26.575 11.886-26.575 26.575s11.886 26.575 26.575 26.575h79.724v584.646h584.646v79.725c0 14.688 11.887 26.574 26.574 26.574 14.689 0 26.576-11.887 26.576-26.574v-79.725h79.725c14.688 0 26.574-11.887 26.574-26.576 0-14.688-11.886-26.575-26.574-26.575z"></path></svg>');
+        border: 0;
+        border-radius: 4px;
+        background-size: 32px 32px;
+        text-indent: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        box-shadow: none;
+        border-radius: 4px;
+    }
+
+    .leaflet-touch .leaflet-control-measure .leaflet-control-measure-toggle,.leaflet-touch .leaflet-control-measure .leaflet-control-measure-toggle:hover{
+        border-radius:2px;
+    }
+
+    .leaflet-retina .leaflet-control-measure .leaflet-control-measure-toggle,.leaflet-retina .leaflet-control-measure .leaflet-control-measure-toggle:hover{
+        background-image: url('data:image/svg+xml;utf8,<svg t="1599643864260" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="26869" width="32" height="32"><path d="M910.623 777.748h-79.725V325.977l-53.15 53.149v398.622H282.715l580.416-605.875-37.58-37.578-579.299 604.707v-492.75h672.591l48.92-53.149H246.252v-79.725c0-14.688-11.886-26.575-26.575-26.575-14.688 0-26.575 11.886-26.575 26.575v79.725h-79.724c-14.689 0-26.575 11.886-26.575 26.575s11.886 26.575 26.575 26.575h79.724v584.646h584.646v79.725c0 14.688 11.887 26.574 26.574 26.574 14.689 0 26.576-11.887 26.576-26.574v-79.725h79.725c14.688 0 26.574-11.887 26.574-26.576 0-14.688-11.886-26.575-26.574-26.575z"></path></svg>');
+    }
+
+    .leaflet-touch .leaflet-control-measure .leaflet-control-measure-toggle,.leaflet-touch .leaflet-control-measure .leaflet-control-measure-toggle:hover{
+        background-size:16px 16px;
+    }
+
+    .leaflet-control-measure .startprompt h6{
+        margin-bottom:10px;
+    }
+
+    .leaflet-control-measure .startprompt .tasks{
+        margin-top:0;
+        padding-top:0;
+        border-top:0;
+        text-align:left;
+    }
+
+    .leaflet-control-measure .leaflet-control-measure-interaction{
+        padding:10px 12px;
+    }
+
+    .leaflet-control-measure .results .group{
+        margin-top:10px;
+        padding-top:10px;
+        border-top:1px dotted #eaeaea;
+    }
+
+    .leaflet-control-measure .results .group:first-child{
+        margin-top:0;
+        padding-top:0;
+        border-top:0;
+    }
+
+    .leaflet-control-measure .results .heading{
+        margin-right:5px;
+        color:#999;
+    }
+
+    .leaflet-control-measure a.start{
+        display:inline;
+        width:auto;
+        height:auto;
+        padding-left:20px;
+        margin-right:4px;
+        line-height:1em;
+        border:0;
+        text-align:left;
+        background-image: url('data:image/svg+xml;utf8,<svg t="1599647825038" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8356" width="16" height="16"><path fill="blue" d="M113.777778 682.666667H0v227.555555c0 62.577778 51.2 113.777778 113.777778 113.777778h227.555555v-113.777778H113.777778v-227.555555zM113.777778 113.777778h227.555555V0H113.777778C51.2 0 0 51.2 0 113.777778v227.555555h113.777778V113.777778z m796.444444-113.777778h-227.555555v113.777778h227.555555v227.555555h113.777778V113.777778c0-62.577778-51.2-113.777778-113.777778-113.777778z m0 910.222222h-227.555555v113.777778h227.555555c62.577778 0 113.777778-51.2 113.777778-113.777778v-227.555555h-113.777778v227.555555zM512 284.444444C386.275556 284.444444 284.444444 386.275556 284.444444 512s101.831111 227.555556 227.555556 227.555556 227.555556-101.831111 227.555556-227.555556-101.831111-227.555556-227.555556-227.555556z m0 341.333334c-62.577778 0-113.777778-51.2-113.777778-113.777778s51.2-113.777778 113.777778-113.777778 113.777778 51.2 113.777778 113.777778-51.2 113.777778-113.777778 113.777778z" p-id="8357"></path></svg>');
+        background-repeat:no-repeat;
+        background-position:0 50%;
+        background-size:16px 16px;
+        color:#5e66cc;
+        text-decoration:none;
+    }
+
+    .leaflet-control-measure a.start,.leaflet-control-measure a.start:hover{
+        background-color:transparent;
+    }
+
+    .leaflet-retina .leaflet-control-measure a.start{
+        background-image: url('data:image/svg+xml;utf8,<svg t="1599647825038" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8356" width="16" height="16"><path fill="blue" d="M113.777778 682.666667H0v227.555555c0 62.577778 51.2 113.777778 113.777778 113.777778h227.555555v-113.777778H113.777778v-227.555555zM113.777778 113.777778h227.555555V0H113.777778C51.2 0 0 51.2 0 113.777778v227.555555h113.777778V113.777778z m796.444444-113.777778h-227.555555v113.777778h227.555555v227.555555h113.777778V113.777778c0-62.577778-51.2-113.777778-113.777778-113.777778z m0 910.222222h-227.555555v113.777778h227.555555c62.577778 0 113.777778-51.2 113.777778-113.777778v-227.555555h-113.777778v227.555555zM512 284.444444C386.275556 284.444444 284.444444 386.275556 284.444444 512s101.831111 227.555556 227.555556 227.555556 227.555556-101.831111 227.555556-227.555556-101.831111-227.555556-227.555556-227.555556z m0 341.333334c-62.577778 0-113.777778-51.2-113.777778-113.777778s51.2-113.777778 113.777778-113.777778 113.777778 51.2 113.777778 113.777778-51.2 113.777778-113.777778 113.777778z" p-id="8357"></path></svg>');
+    }
+
+    .leaflet-control-measure a.start:hover{
+        opacity:.5;text-decoration:none;
+    }
+
+    .leaflet-control-measure a.cancel{
+        display:inline;
+        width:auto;
+        height:auto;
+        padding-left:20px;
+        margin-right:4px;
+        line-height:1em;
+        border:0;
+        text-align:left;
+        background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path fill="red" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896zm0 393.664L407.936 353.6a38.4 38.4 0 1 0-54.336 54.336L457.664 512 353.6 616.064a38.4 38.4 0 1 0 54.336 54.336L512 566.336 616.064 670.4a38.4 38.4 0 1 0 54.336-54.336L566.336 512 670.4 407.936a38.4 38.4 0 1 0-54.336-54.336L512 457.664z"/></svg>');
+        background-repeat:no-repeat;
+        background-position:0 50%;
+        background-size:16px 16px;
+        color:#5e66cc;
+        text-decoration:none;
+    }
+
+    .leaflet-control-measure a.cancel,.leaflet-control-measure a.cancel:hover{
+        background-color:transparent;
+    }
+
+    .leaflet-retina .leaflet-control-measure a.cancel{
+        background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path fill="red" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896zm0 393.664L407.936 353.6a38.4 38.4 0 1 0-54.336 54.336L457.664 512 353.6 616.064a38.4 38.4 0 1 0 54.336 54.336L512 566.336 616.064 670.4a38.4 38.4 0 1 0 54.336-54.336L566.336 512 670.4 407.936a38.4 38.4 0 1 0-54.336-54.336L512 457.664z"/></svg>');
+    }
+
+    .leaflet-control-measure a.cancel:hover{
+        opacity:.5;
+        text-decoration:none;
+    }
+
+    .leaflet-control-measure a.finish{
+        display:inline;
+        width:auto;
+        height:auto;
+        padding-left:20px;
+        margin-right:4px;
+        line-height:1em;
+        border:0;
+        text-align:left;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="green" class="bi bi-check-circle-fill" viewBox="0 0 16 16"> <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/> </svg>');
+        background-repeat:no-repeat;
+        background-position:0 50%;
+        background-size:16px 16px;
+        color:#5e66cc;
+        text-decoration:none;
+    }
+
+    .leaflet-control-measure a.finish,.leaflet-control-measure a.finish:hover{
+        background-color:transparent;
+    }
+
+    .leaflet-retina .leaflet-control-measure a.finish{
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="green" class="bi bi-check-circle-fill" viewBox="0 0 16 16"> <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/> </svg>');
+    }
+
+    .leaflet-control-measure a.finish:hover{
+        opacity:.5;
+        text-decoration:none;
+    }
+
+    .leaflet-measure-resultpopup a.zoomto{
+        display:inline;
+        width:auto;
+        height:auto;
+        padding-left:20px;
+        margin-right:4px;
+        line-height:1em;
+        border:0;
+        text-align:left;
+        background-image: url('data:image/svg+xml;utf8,<svg t="1599647825038" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8356" width="16" height="16"><path fill="blue" d="M113.777778 682.666667H0v227.555555c0 62.577778 51.2 113.777778 113.777778 113.777778h227.555555v-113.777778H113.777778v-227.555555zM113.777778 113.777778h227.555555V0H113.777778C51.2 0 0 51.2 0 113.777778v227.555555h113.777778V113.777778z m796.444444-113.777778h-227.555555v113.777778h227.555555v227.555555h113.777778V113.777778c0-62.577778-51.2-113.777778-113.777778-113.777778z m0 910.222222h-227.555555v113.777778h227.555555c62.577778 0 113.777778-51.2 113.777778-113.777778v-227.555555h-113.777778v227.555555zM512 284.444444C386.275556 284.444444 284.444444 386.275556 284.444444 512s101.831111 227.555556 227.555556 227.555556 227.555556-101.831111 227.555556-227.555556-101.831111-227.555556-227.555556-227.555556z m0 341.333334c-62.577778 0-113.777778-51.2-113.777778-113.777778s51.2-113.777778 113.777778-113.777778 113.777778 51.2 113.777778 113.777778-51.2 113.777778-113.777778 113.777778z" p-id="8357"></path></svg>');
+        background-repeat:no-repeat;
+        background-position:0 50%;
+        background-size:16px 16px;
+        color:#5e66cc;
+        text-decoration:none;
+    }
+
+    .leaflet-measure-resultpopup a.zoomto,.leaflet-measure-resultpopup a.zoomto:hover{
+      background-color:transparent;
+    }
+
+    .leaflet-retina .leaflet-measure-resultpopup a.zoomto{
+      background-image: url('data:image/svg+xml;utf8,<svg t="1599647825038" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="8356" width="16" height="16"><path fill="blue" d="M113.777778 682.666667H0v227.555555c0 62.577778 51.2 113.777778 113.777778 113.777778h227.555555v-113.777778H113.777778v-227.555555zM113.777778 113.777778h227.555555V0H113.777778C51.2 0 0 51.2 0 113.777778v227.555555h113.777778V113.777778z m796.444444-113.777778h-227.555555v113.777778h227.555555v227.555555h113.777778V113.777778c0-62.577778-51.2-113.777778-113.777778-113.777778z m0 910.222222h-227.555555v113.777778h227.555555c62.577778 0 113.777778-51.2 113.777778-113.777778v-227.555555h-113.777778v227.555555zM512 284.444444C386.275556 284.444444 284.444444 386.275556 284.444444 512s101.831111 227.555556 227.555556 227.555556 227.555556-101.831111 227.555556-227.555556-101.831111-227.555556-227.555556-227.555556z m0 341.333334c-62.577778 0-113.777778-51.2-113.777778-113.777778s51.2-113.777778 113.777778-113.777778 113.777778 51.2 113.777778 113.777778-51.2 113.777778-113.777778 113.777778z" p-id="8357"></path></svg>');
+    }
+
+    .leaflet-measure-resultpopup a.zoomto:hover{
+        opacity:.5;text-decoration:none;
+    }
+
+    .leaflet-measure-resultpopup a.deletemarkup{
+        display:inline;
+        width:auto;
+        height:auto;
+        padding-left:20px;
+        margin-right:4px;
+        line-height:1em;
+        border:0;
+        text-align:left;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="red" d="M9 19c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm4 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm4 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5-17v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.315c0 .901.73 2 1.631 2h5.712zm-3 4v16h-14v-16h-2v18h18v-18h-2z"/></svg>');
+        background-repeat:no-repeat;
+        background-position:0 50%;
+        background-size:16px 16px;
+        color:#5e66cc;
+        text-decoration:none;
+    }
+
+    .leaflet-measure-resultpopup a.deletemarkup,.leaflet-measure-resultpopup a.deletemarkup:hover{
+        background-color:transparent;
+    }
+
+    .leaflet-retina .leaflet-measure-resultpopup a.deletemarkup{
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="red" d="M9 19c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm4 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm4 0c0 .552-.448 1-1 1s-1-.448-1-1v-10c0-.552.448-1 1-1s1 .448 1 1v10zm5-17v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.315c0 .901.73 2 1.631 2h5.712zm-3 4v16h-14v-16h-2v18h18v-18h-2z"/></svg>');
+    }
+
+    .leaflet-measure-resultpopup a.deletemarkup:hover{
+        opacity:.5;
+        text-decoration:none;
+        /* z-index: 1000 !important; */
+    }
+  /* leaflet measure end */
   [v-cloak] {
     visibility: hidden !important;
     display: block !important;
@@ -1386,8 +1711,14 @@
   .leaflet-interactive svg {
     margin-top: -14px !important;
   }
+  /* .leaflet-marker-pane{
+    z-index: 600 !important;
+  } */
   .leaflet-popup-pane {
-    z-index: 200;
+    z-index: 500 !important;
+  }
+  .leaflet-popup-close-button {
+    color: red !important;
   }
   .windbarbPopup {
     left: -50px !important;
@@ -1649,6 +1980,25 @@
     position: absolute;
     bottom: 16px;
     left: 330px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    background-color: white;
+    padding: 12px;
+    width: 100%;
+    height: 48px;
+    max-width: 250px;
+    font-size: 14px;
+    z-index: 995;
+    border-radius: 2px;
+    box-shadow: 0px 3px 10px -2px rgba(0, 0, 0, 0.2),
+      0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+  }
+  .mouse-coordinates-box {
+    position: absolute;
+    bottom: 16px;
+    left: 595px;
     display: flex;
     flex-direction: column;
     justify-content: center;

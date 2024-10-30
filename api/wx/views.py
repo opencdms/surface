@@ -55,6 +55,24 @@ from wx.models import Country, Unit, Station, Variable, DataSource, StationVaria
 from wx.utils import get_altitude, get_watershed, get_district, get_interpolation_image, parse_float_value, \
     parse_int_value
 from .utils import get_raw_data, get_station_raw_data
+from wx.models import MaintenanceReport, VisitType, Technician
+from django.views.decorators.http import require_http_methods
+from base64 import b64encode
+
+from wx.models import QualityFlag
+import time
+from wx.models import HighFrequencyData, MeasurementVariable
+from wx.tasks import fft_decompose
+import math
+import numpy as np
+
+from wx.models import Equipment, EquipmentType, Manufacturer, FundingSource, StationProfileEquipmentType
+from django.core.serializers import serialize
+from wx.models import MaintenanceReportEquipment
+from wx.models import QcRangeThreshold, QcStepThreshold, QcPersistThreshold
+from simple_history.utils import update_change_reason
+from django.db.models.functions import Cast
+from django.db.models import IntegerField
 
 logger = logging.getLogger('surface.urls')
 
@@ -553,13 +571,9 @@ def GetImage(request):
         return response
 
 
-from django.db.models.functions import Cast
-from django.db.models import IntegerField
-
-
 @permission_classes([IsAuthenticated])
-def MonthlyFormView(request):
-    template = loader.get_template('wx/monthly_form.html')
+def DailyFormView(request):
+    template = loader.get_template('wx/daily_form.html')
 
     station_list = Station.objects.filter(is_automatic=False, is_active=True)
     station_list = station_list.values('id', 'name', 'code')
@@ -572,8 +586,8 @@ def MonthlyFormView(request):
     return HttpResponse(template.render(context, request))
 
 
-class PGIAReportView(LoginRequiredMixin, TemplateView):
-    template_name = "wx/pgiareport.html"
+class SynopCaptureView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/synopcapture.html"
 
 
 @permission_classes([IsAuthenticated])
@@ -623,6 +637,7 @@ class VariableViewSet(viewsets.ModelViewSet):
     queryset = Variable.objects.all().order_by("name")
     serializer_class = serializers.VariableSerializer
 
+
 class StationMetadataViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     queryset = Station.objects.all()
@@ -632,6 +647,7 @@ class StationMetadataViewSet(viewsets.ModelViewSet):
         if self.request.method in ['GET']:
             return serializers.StationSerializerRead
         return serializers.StationMetadataSerializer
+
 
 class StationViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -2192,11 +2208,13 @@ class StationDetailView(LoginRequiredMixin, DetailView):
 
 class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Station
+
     success_message = "%(name)s was created successfully"
     form_class = StationForm
 
     layout = Layout(
-        Fieldset('Registering a new station',
+        Fieldset('Editing station',
+                 Row('latitude', 'longitude'),
                  Row('name'),
                  Row('is_active', 'is_automatic'),
                  Row('alias_name'),
@@ -2204,33 +2222,42 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  Row('wmo', 'organization'),
                  Row('wigos', 'observer'),
                  Row('begin_date', 'data_source'),
-                 Row('end_date')
+                 Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
-                 Row('latitude', 'longitude'),
                  Row('elevation', 'watershed'),
                  Row('country', 'region'),
                  Row('utc_offset_minutes', 'local_land_use'),
                  Row('soil_type', 'station_details'),
                  Row('site_description', 'alternative_names')
                  ),
-        Fieldset('Hydrology information',
-                 Row('hydrology_station_type', 'ground_water_province'),
-                 Row('existing_gauges', 'flow_direction_at_station'),
-                 Row('flow_direction_above_station', 'flow_direction_below_station'),
-                 Row('bank_full_stage', 'bridge_level'),
-                 Row('temporary_benchmark', 'mean_sea_level'),
-                 Row('river_code', 'river_course'),
-                 Row('catchment_area_station', 'river_origin'),
-                 Row('easting', 'northing'),
-                 Row('river_outlet', 'river_length'),
-                 Row('z', 'land_surface_elevation'),
-                 Row('top_casing_land_surface', 'casing_diameter'),
-                 Row('screen_length', 'depth_midpoint'),
-                 Row('casing_type', 'datum'),
-                 Row('zone')
-                 )
+        # Fieldset('Hydrology information',
+        #          Row('hydrology_station_type', 'ground_water_province'),
+        #          Row('existing_gauges', 'flow_direction_at_station'),
+        #          Row('flow_direction_above_station', 'flow_direction_below_station'),
+        #          Row('bank_full_stage', 'bridge_level'),
+        #          Row('temporary_benchmark', 'mean_sea_level'),
+        #          Row('river_code', 'river_course'),
+        #          Row('catchment_area_station', 'river_origin'),
+        #          Row('easting', 'northing'),
+        #          Row('river_outlet', 'river_length'),
+        #          Row('z', 'land_surface_elevation'),
+        #          Row('top_casing_land_surface', 'casing_diameter'),
+        #          Row('screen_length', 'depth_midpoint'),
+        #          Row('casing_type', 'datum'),
+        #          Row('zone')
+        #          )
     )
+
+    # passing required context for watershed and region autocomplete fields
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['watersheds'] = Watershed.objects.all()
+        context['regions'] = AdministrativeRegion.objects.all()
+
+        return context
+
 
 
 class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -2240,6 +2267,7 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     layout = Layout(
         Fieldset('Editing station',
+                 Row('latitude', 'longitude'),
                  Row('name', 'is_active'),
                  Row('alias_name', 'is_automatic'),
                  Row('code', 'profile'),
@@ -2249,7 +2277,6 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('end_date', 'communication_type')
                  ),
         Fieldset('Other information',
-                 Row('latitude', 'longitude'),
                  Row('elevation', 'watershed'),
                  Row('country', 'region'),
                  Row('utc_offset_minutes', 'local_land_use'),
@@ -2986,7 +3013,6 @@ class StationVariableStationViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-
 def last24_summary_list(request):
     search_type = request.GET.get('search_type', None)
     search_value = request.GET.get('search_value', None)
@@ -3067,9 +3093,1824 @@ def last24_summary_list(request):
     return JsonResponse(data={"message": "No data found."}, status=status.HTTP_404_NOT_FOUND)
 
 
+def query_stationsmonintoring_chart(station_id, variable_id, data_type, datetime_picked):
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(id=variable_id)
+
+    date_start = str((datetime_picked - datetime.timedelta(days=6)).date())
+    date_end = str(datetime_picked.date())
+
+    if data_type=='Communication':
+        query = """
+            WITH
+                date_range AS (
+                    SELECT GENERATE_SERIES(%s::DATE - '6 day'::INTERVAL, %s::DATE, '1 day')::DATE AS date
+                ),
+                hs AS (
+                    SELECT
+                        datetime::date AS date,
+                        COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS amount
+                    FROM
+                        hourly_summary
+                    WHERE
+                        datetime >= %s::DATE - '7 day'::INTERVAL AND datetime < %s::DATE + '1 day'::INTERVAL
+                        AND station_id = %s
+                        AND variable_id = %s
+                    GROUP BY 1
+                )
+            SELECT
+                date_range.date,
+                COALESCE(hs.amount, 0) AS amount,
+                COALESCE((
+                    SELECT color FROM wx_qualityflag
+                    WHERE 
+                        CASE 
+                            WHEN COALESCE(hs.amount, 0) >= 20 THEN name = 'Good'
+                            WHEN COALESCE(hs.amount, 0) >= 8 AND COALESCE(hs.amount, 0) <= 19 THEN name = 'Suspicious'
+                            WHEN COALESCE(hs.amount, 0) >= 1 AND COALESCE(hs.amount, 0) <= 7 THEN name = 'Bad'
+                            ELSE name = 'Not checked'
+                        END
+                ), '') AS color
+            FROM
+                date_range
+                LEFT JOIN hs ON date_range.date = hs.date
+            ORDER BY date_range.date;
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, datetime_picked, datetime_picked, station_id, variable_id,))
+            results = cursor.fetchall()
+
+        chart_options = {
+            'chart': {
+                'type': 'column'
+            },
+            'title': {
+                'text': " ".join(['Delay Data Track -',date_start,'to',date_end]) 
+            },
+            'subtitle': {
+                'text': " ".join([station.name, station.code, '-', variable.name])
+            },  
+            'xAxis': {
+                'categories': [r[0] for r in results]
+            },
+            'yAxis': {
+                'title': None,
+                'categories': [str(i)+'h' for i in range(25)],      
+                'tickInterval': 2,
+                'min': 0,
+                'max': 24,
+            },
+            'series': [
+                {
+                    'name': 'Max comunication',
+                    'data': [{'y': r[1], 'color': r[2]} for r in results],
+                    'showInLegend': False
+                }
+            ],
+            'plotOptions': {
+                'column': {
+                    'minPointLength': 10,
+                    'pointPadding': 0.01,
+                    'groupPadding': 0.05
+                }
+            }            
+        }
+
+    elif data_type=='Quality Control':
+        flags = {
+          'good': QualityFlag.objects.get(name='Good').color,
+          'suspicious': QualityFlag.objects.get(name='Suspicious').color,
+          'bad': QualityFlag.objects.get(name='Bad').color,
+          'not_checked': QualityFlag.objects.get(name='Not checked').color,
+        }        
+
+        query = """
+            WITH
+              date_range AS (
+                SELECT GENERATE_SERIES(%s::DATE - '6 day'::INTERVAL, %s::DATE, '1 day')::DATE AS date
+              ),
+              hs AS(              
+                SELECT 
+                    rd.datetime::DATE AS date
+                    ,EXTRACT(hour FROM rd.datetime) AS hour
+                    ,CASE
+                      WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN('Bad')
+                      WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN('Suspicious')
+                      WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN('Good')
+                      ELSE ('Not checked')
+                    END AS quality_flag
+                FROM raw_data AS rd
+                    LEFT JOIN wx_qualityflag qf ON rd.quality_flag = qf.id
+                WHERE 
+                    datetime >= %s::DATE - '7 day'::INTERVAL AND datetime < %s::DATE + '1 day'::INTERVAL
+                    AND rd.station_id = %s
+                    AND rd.variable_id = %s
+                GROUP BY 1,2
+                ORDER BY 1,2
+              )
+            SELECT
+                date_range.date
+                ,COUNT(CASE WHEN hs.quality_flag='Good' THEN 1 END) AS good
+                ,COUNT(CASE WHEN hs.quality_flag='Suspicious' THEN 1 END) AS suspicious
+                ,COUNT(CASE WHEN hs.quality_flag='Bad' THEN 1 END) AS bad
+                ,COUNT(CASE WHEN hs.quality_flag='Not checked' THEN 1 END) AS not_checked
+            FROM date_range
+                LEFT JOIN hs ON date_range.date = hs.date
+            GROUP BY 1
+            ORDER BY 1;
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, datetime_picked, datetime_picked, station_id, variable_id,))
+            results = cursor.fetchall()
+
+        series = [] 
+        for i, flag in enumerate(flags):
+            data = [r[i+1] for r in results]
+            series.append({'name': flag.capitalize(), 'data': data, 'color': flags[flag]})
+
+        chart_options = {
+            'chart': {
+                'type': 'column'
+            },
+            'title': {
+                'text': " ".join(['Amount of Flags - ',date_start,'to',date_end]) 
+            },
+            'subtitle': {
+                'text': " ".join([station.name, station.code, '-', variable.name])
+            },            
+            'xAxis': {
+                'categories': [r[0] for r in results]
+            },
+            'yAxis': {
+                'title': None,
+                'categories': [str(i)+'h' for i in range(25)],      
+                'tickInterval': 2,
+                'min': 0,
+                'max': 24,
+            },
+            'series': series,
+            'plotOptions': {
+                'column': {
+                    'minPointLength': 10, 
+                    'pointPadding': 0.01,
+                    'groupPadding': 0.05
+                }
+            }            
+        }            
+
+    return chart_options
+
+
+@require_http_methods(["GET"])    
+def get_stationsmonitoring_chart_data(request, station_id, variable_id):
+    time_type = request.GET.get('time_type', 'Last 24h')
+    data_type = request.GET.get('data_type', 'Communication')
+    date_picked = request.GET.get('date_picked', None)
+
+    if time_type=='Last 24h':
+        datetime_picked = datetime.datetime.now()
+    else:
+        datetime_picked = datetime.datetime.strptime(date_picked, '%Y-%m-%d')    
+
+    # Fix a date to test
+    # datetime_picked = datetime.datetime.strptime('2023-01-01', '%Y-%m-%d')
+
+    chart_data = query_stationsmonintoring_chart(station_id, variable_id, data_type, datetime_picked)
+
+    response = {
+        "chartOptions": chart_data
+    }
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+def get_station_lastupdate(station_id):
+    stationvariables = StationVariable.objects.filter(station_id=station_id)
+    
+    last_data_datetimes = [sv.last_data_datetime for sv in stationvariables if sv.last_data_datetime is not None]
+
+    if last_data_datetimes:
+        lastupdate = max(last_data_datetimes)
+        lastupdate = lastupdate.strftime("%Y-%m-%d %H:%M")
+    else:
+        lastupdate = None
+
+    return lastupdate
+
+
+def query_stationsmonitoring_station(data_type, time_type, date_picked, station_id):
+    if time_type=='Last 24h':
+        datetime_picked = datetime.datetime.now()
+    else:
+        datetime_picked = datetime.datetime.strptime(date_picked, '%Y-%m-%d')
+
+
+    station_data = []
+
+    if data_type=='Communication':
+        query = """
+            WITH hs AS (
+                SELECT
+                    station_id,
+                    variable_id,
+                    COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS number_hours
+                FROM
+                    hourly_summary
+                WHERE
+                    datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL AND station_id = %s
+                GROUP BY 1, 2
+            )
+            SELECT
+                v.id,
+                v.name,
+                hs.number_hours,
+                ls.latest_value,
+                u.symbol,                    
+                CASE
+                    WHEN hs.number_hours >= 20 THEN (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                    )
+                    WHEN hs.number_hours >= 8 AND hs.number_hours <= 19 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                    )
+                    WHEN hs.number_hours >= 1 AND hs.number_hours <= 7 THEN(
+                        SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                    )
+                    ELSE (
+                        SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                    )
+                END AS color                     
+            FROM
+                wx_stationvariable sv
+                LEFT JOIN hs ON sv.station_id = hs.station_id AND sv.variable_id = hs.variable_id
+                LEFT JOIN last24h_summary ls ON sv.station_id = ls.station_id AND sv.variable_id = ls.variable_id
+                LEFT JOIN wx_variable v ON sv.variable_id = v.id
+                LEFT JOIN wx_unit u ON v.unit_id = u.id
+            WHERE
+                sv.station_id = %s
+            ORDER BY 1;
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, station_id, station_id))
+            results = cursor.fetchall()
+
+        station_data = [{'id': r[0], 
+                         'name': r[1], 
+                         'amount': r[2] if r[2] is not None else 0, 
+                         'latestvalue': " ".join([str(r[3]), r[4]]) if r[3] is not None else '---', 
+                         'color': r[5]} for r in results]
+
+    elif data_type=='Quality Control':
+        query = """
+            WITH h AS(
+                SELECT 
+                    rd.station_id
+                    ,rd.variable_id
+                    ,EXTRACT(hour FROM rd.datetime) AS hour
+                    ,CASE
+                      WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN('Bad')
+                      WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN('Suspicious')
+                      WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN('Good')
+                      ELSE ('Not checked')
+                    END AS quality_flag
+                FROM raw_data AS rd
+                    LEFT JOIN wx_qualityflag qf ON rd.quality_flag = qf.id
+                WHERE 
+                    datetime <= %s
+                    AND datetime >= %s - '24 hour'::INTERVAL
+                    AND rd.station_id = %s
+                GROUP BY 1,2,3
+                ORDER BY 1,2,3
+            )
+            SELECT
+                v.id
+                ,v.name
+                ,COUNT(CASE WHEN h.quality_flag='Good' THEN 1 END) AS good
+                ,COUNT(CASE WHEN h.quality_flag='Suspicious' THEN 1 END) AS suspicious
+                ,COUNT(CASE WHEN h.quality_flag='Bad' THEN 1 END) AS bad
+                ,COUNT(CASE WHEN h.quality_flag='Not checked' THEN 1 END) AS not_checked
+            FROM wx_stationvariable AS sv
+                LEFT JOIN wx_variable AS v ON sv.variable_id = v.id
+                LEFT JOIN h ON sv.station_id = h.station_id AND sv.variable_id = h.variable_id
+            WHERE sv.station_id = %s
+            GROUP BY 1,2
+            ORDER BY 1,2
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (datetime_picked, datetime_picked, station_id, station_id))
+            results = cursor.fetchall()
+
+        station_data = [{'id': r[0], 
+                         'name': r[1], 
+                         'good': r[2],
+                         'suspicious': r[3],
+                         'bad': r[4],
+                         'not_checked': r[5]} for r in results]
+    
+    return station_data
+
+
+@require_http_methods(["GET"])
+def get_stationsmonitoring_station_data(request, id):
+    data_type = request.GET.get('data_type', 'Communication')
+    time_type = request.GET.get('time_type', 'Last 24h')
+    date_picked = request.GET.get('date_picked', None)
+
+    response = {
+        'lastupdate': get_station_lastupdate(id),
+        'station_data': query_stationsmonitoring_station(data_type, time_type, date_picked, id),
+    }
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+def query_stationsmonitoring_map(data_type, time_type, date_picked):
+    if time_type=='Last 24h':
+        datetime_picked = datetime.datetime.now()
+    else:
+        datetime_picked = datetime.datetime.strptime(date_picked, '%Y-%m-%d')
+
+    results = []
+
+    if time_type=='Last 24h':
+        if data_type=='Communication':
+            query = """
+                WITH hs AS (
+                    SELECT
+                        station_id
+                        ,variable_id
+                        ,COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS number_hours
+                    FROM
+                        hourly_summary
+                    WHERE
+                        datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL
+                    GROUP BY 1, 2
+                )
+                SELECT
+                    s.id
+                    ,s.name
+                    ,s.code
+                    ,s.latitude
+                    ,s.longitude
+                    ,CASE
+                        WHEN MAX(number_hours) >= 20 THEN (
+                            SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                        )
+                        WHEN MAX(number_hours) >= 8 AND MAX(number_hours) <= 19 THEN(
+                            SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                        )
+                        WHEN MAX(number_hours) >= 1 AND MAX(number_hours) <= 7 THEN(
+                            SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                        )
+                        ELSE (
+                            SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                        )
+                    END AS color    
+                FROM wx_station AS s
+                    LEFT JOIN wx_stationvariable AS sv ON s.id = sv.station_id
+                    LEFT JOIN hs ON sv.station_id = hs.station_id AND sv.variable_id = hs.variable_id
+                WHERE s.is_active
+                GROUP BY 1, 2, 3, 4, 5;
+            """
+        elif data_type=='Quality Control':
+            query = """
+                WITH qf AS (
+                  SELECT
+                    station_id
+                    ,CASE
+                      WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN(
+                          SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                      )
+                      WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN(
+                          SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                      )   
+                      WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN(
+                          SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                      )
+                      ELSE (
+                          SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                      )
+                    END AS color
+                  FROM
+                    raw_data AS rd
+                    LEFT JOIN wx_qualityflag AS qf ON rd.quality_flag = qf.id
+                  WHERE
+                        datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL                
+                  GROUP BY 1
+                )
+                SELECT
+                  s.id
+                  ,s.name
+                  ,s.code
+                  ,s.latitude
+                  ,s.longitude
+                  ,COALESCE(qf.color, (SELECT color FROM wx_qualityflag WHERE name = 'Not checked')) AS color
+                FROM wx_station AS s
+                LEFT JOIN qf ON s.id = qf.station_id
+                WHERE s.is_active
+            """
+
+        if data_type in ['Communication', 'Quality Control']:
+            with connection.cursor() as cursor:
+                cursor.execute(query, (datetime_picked, datetime_picked, ))
+                results = cursor.fetchall()
+    else:
+        if data_type=='Communication':
+            query = """
+                WITH hs AS (
+                    SELECT
+                        station_id
+                        ,variable_id
+                        ,COUNT(DISTINCT EXTRACT(hour FROM datetime)) AS number_hours
+                    FROM
+                        hourly_summary
+                    WHERE
+                        datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL
+                    GROUP BY 1, 2
+                )
+                SELECT
+                    s.id
+                    ,s.name
+                    ,s.code
+                    ,s.latitude
+                    ,s.longitude
+                    ,CASE
+                        WHEN MAX(number_hours) >= 20 THEN (
+                            SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                        )
+                        WHEN MAX(number_hours) >= 8 AND MAX(number_hours) <= 19 THEN(
+                            SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                        )
+                        WHEN MAX(number_hours) >= 1 AND MAX(number_hours) <= 7 THEN(
+                            SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                        )
+                        ELSE (
+                            SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                        )
+                    END AS color    
+                FROM wx_station AS s
+                    LEFT JOIN wx_stationvariable AS sv ON s.id = sv.station_id
+                    LEFT JOIN hs ON sv.station_id = hs.station_id AND sv.variable_id = hs.variable_id
+                WHERE s.begin_date <= %s AND (s.end_date IS NULL OR s.end_date >= %s)
+                GROUP BY 1, 2, 3, 4, 5;
+            """
+        elif data_type=='Quality Control':
+            query = """
+                WITH qf AS (
+                  SELECT
+                    station_id
+                    ,CASE
+                      WHEN COUNT(CASE WHEN name='Bad' THEN 1 END) > 0 THEN(
+                          SELECT color FROM wx_qualityflag WHERE name = 'Bad'
+                      )
+                      WHEN COUNT(CASE WHEN name='Suspicious' THEN 1 END) > 0 THEN(
+                          SELECT color FROM wx_qualityflag WHERE name = 'Suspicious'
+                      )   
+                      WHEN COUNT(CASE WHEN name='Good' THEN 1 END) > 0 THEN(
+                          SELECT color FROM wx_qualityflag WHERE name = 'Good'
+                      )
+                      ELSE (
+                          SELECT color FROM wx_qualityflag WHERE name = 'Not checked'
+                      )
+                    END AS color
+                  FROM
+                    raw_data AS rd
+                    LEFT JOIN wx_qualityflag AS qf ON rd.quality_flag = qf.id
+                  WHERE
+                        datetime <= %s AND datetime >= %s - '24 hour'::INTERVAL                
+                  GROUP BY 1
+                )
+                SELECT
+                  s.id
+                  ,s.name
+                  ,s.code
+                  ,s.latitude
+                  ,s.longitude
+                  ,COALESCE(qf.color, (SELECT color FROM wx_qualityflag WHERE name = 'Not checked')) AS color
+                FROM wx_station AS s
+                LEFT JOIN qf ON s.id = qf.station_id
+                WHERE s.begin_date <= %s AND (s.end_date IS NULL OR s.end_date >= %s)
+            """
+
+        if data_type in ['Communication', 'Quality Control']:
+            with connection.cursor() as cursor:
+                cursor.execute(query, (datetime_picked, datetime_picked, datetime_picked, datetime_picked, ))
+                results = cursor.fetchall()
+
+    return results
+
+
+@require_http_methods(["GET"])
+def get_stationsmonitoring_map_data(request):
+    time_type = request.GET.get('time_type', 'Last 24h')
+    data_type = request.GET.get('data_type', 'Communication')
+    date_picked = request.GET.get('date_picked', None)
+
+    results = query_stationsmonitoring_map(data_type, time_type, date_picked)
+
+    response = {
+        'stations': [{'id': r[0],
+                      'name': r[1],
+                      'code': r[2],
+                      'position': [r[3], r[4]],
+                      'color': r[5]} for r in results ],
+    }
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+def stationsmonitoring_form(request):
+    template = loader.get_template('wx/stations/stations_monitoring.html')
+
+    flags = {
+      'good': QualityFlag.objects.get(name='Good').color,
+      'suspicious': QualityFlag.objects.get(name='Suspicious').color,
+      'bad': QualityFlag.objects.get(name='Bad').color,
+      'not_checked': QualityFlag.objects.get(name='Not checked').color,
+    }
+
+    context = {'flags': flags}
+
+    return HttpResponse(template.render(context, request))
+
+
 class ComingSoonView(LoginRequiredMixin, TemplateView):
     template_name = "coming-soon.html"
 
+def get_wave_data_analysis(request):
+    template = loader.get_template('wx/products/wave_data.html')
+
+
+    variable = Variable.objects.get(name="Sea Level") # Sea Level
+    station_ids = HighFrequencyData.objects.filter(variable_id=variable.id).values('station_id').distinct()
+
+    station_list = Station.objects.filter(id__in=station_ids)
+
+    context = {'station_list': station_list}
+
+    return HttpResponse(template.render(context, request))
+
+def format_wave_data_var(variable_id, data):
+    variable = Variable.objects.get(id=variable_id)
+    measurement_variable = MeasurementVariable.objects.get(id=variable.measurement_variable_id)
+    unit = Unit.objects.get(id=variable.unit_id)
+
+    formated_data = []
+    for entry in data:
+        if type(entry) is not dict:
+            entry = entry.__dict__
+
+        formated_entry = {
+            "station": entry['station_id'],
+            "date": entry['datetime'].timestamp()*1000,
+            "measurementvariable": measurement_variable.name,
+            "value": entry['measured'],
+            "quality_flag": "Not checked",
+            "flag_color": "#FFFFFF",            
+        }
+        formated_data.append(formated_entry)
+
+    final_data = {
+        "color": variable.color,
+        "default_representation": variable.default_representation,
+        "data": formated_data,
+        "unit": unit.symbol,
+    }
+    return final_data
+
+def get_wave_components(data_slice, component_number):
+    wave_list = fft_decompose(data_slice)    
+    wave_list.sort(key=lambda W: abs(W.height), reverse=True)
+    wave_components = wave_list[:component_number]
+    return wave_components
+
+def get_wave_component_ref_variables(i):
+    SYSTEM_COMPONENT_NUMBER = 5 # Number of wave components in the system
+
+    ref_number = i % SYSTEM_COMPONENT_NUMBER
+    ref_number += 1
+
+    amp_ref_name = 'Wave Component ' + str(ref_number) + ' Amplitude'
+    amp_ref = Variable.objects.get(name=amp_ref_name)
+
+    frq_ref_name = 'Wave Component ' + str(ref_number) + ' Frequency'
+    frq_ref = Variable.objects.get(name=frq_ref_name)
+
+    pha_ref_name = 'Wave Component ' + str(ref_number) + ' Phase'
+    pha_ref = Variable.objects.get(name=pha_ref_name)
+
+    return amp_ref, frq_ref, pha_ref
+
+def get_wave_component_name_and_symbol(i, component_type):
+    if component_type=='Amplitude':
+        name = 'Wave Component ' + str(i) + ' Amplitude'
+        symbol = 'WV'+str(i)+'AMP'
+    elif component_type=='Frequency':
+        name = 'Wave Component ' + str(i) + ' Frequency'
+        symbol = 'WV'+str(i)+'FRQ'
+    elif component_type=='Phase':
+        name = 'Wave Component ' + str(i) + ' Phase'
+        symbol = 'WV'+str(i)+'PHA'
+    else:
+        name = 'Component Type Error'
+        symbol = 'Component Type Error'
+
+    return name, symbol
+
+def create_aggregated_data(component_number):
+    wv_amp_mv = MeasurementVariable.objects.get(name='Wave Amplitude')
+    wv_frq_mv = MeasurementVariable.objects.get(name='Wave Frequency')
+    wv_pha_mv = MeasurementVariable.objects.get(name='Wave Phase')
+    sl_mv = MeasurementVariable.objects.get(name='Sea Level')
+
+    sl_min = Variable.objects.get(name = 'Sea Level [MIN]')
+    sl_max = Variable.objects.get(name = 'Sea Level [MAX]')
+    sl_avg = Variable.objects.get(name = 'Sea Level [AVG]')
+    sl_std = Variable.objects.get(name = 'Sea Level [STDV]')
+    sl_swh = Variable.objects.get(name = 'Significant Wave Height')
+
+    sl_variables = [sl_min, sl_max, sl_avg, sl_std, sl_swh]
+
+
+    aggregated_data = {
+        wv_amp_mv.name: {},
+        wv_frq_mv.name: {},
+        wv_pha_mv.name: {},
+        sl_mv.name: {}
+    }
+
+    for sl_variable in sl_variables:
+        aggregated_data[sl_mv.name][sl_variable.name] = {
+            'ref_variable_id': sl_variable.id,         
+            'symbol': sl_variable.symbol,
+            'data': []    
+        }    
+
+    for i in range(component_number):
+        amp_ref, frq_ref, pha_ref = get_wave_component_ref_variables(i)
+
+        amp_name, amp_symbol = get_wave_component_name_and_symbol(i+1, 'Amplitude')
+        frq_name, frq_symbol = get_wave_component_name_and_symbol(i+1, 'Frequency')
+        pha_name, pha_symbol = get_wave_component_name_and_symbol(i+1, 'Phase')
+
+        aggregated_data[wv_amp_mv.name][amp_name] = {
+            'ref_variable_id': amp_ref.id,         
+            'symbol': amp_symbol,
+            'data': []            
+        }
+        aggregated_data[wv_frq_mv.name][frq_name] = {        
+            'ref_variable_id': frq_ref.id,         
+            'symbol': frq_symbol,
+            'data': []
+        }
+        aggregated_data[wv_pha_mv.name][pha_name] = {
+            'ref_variable_id': pha_ref.id,         
+            'symbol': pha_symbol,
+            'data': []            
+        }
+
+    return aggregated_data
+
+def append_in_aggregated_data(aggregated_data, datetime, station_id, mv_name, var_name, value):
+    entry = {
+        'measured': value,
+        'datetime': datetime,
+        'station_id': station_id,
+    }
+
+    aggregated_data[mv_name][var_name]['data'].append(entry)
+
+    return aggregated_data
+
+def get_wave_aggregated_data(station_id, data, initial_datetime, range_interval, calc_interval, component_number):
+    wv_amp_mv = MeasurementVariable.objects.get(name='Wave Amplitude')
+    wv_frq_mv = MeasurementVariable.objects.get(name='Wave Frequency')
+    wv_pha_mv = MeasurementVariable.objects.get(name='Wave Phase')
+    sl_mv = MeasurementVariable.objects.get(name='Sea Level')
+
+    sl_min = Variable.objects.get(name = 'Sea Level [MIN]')
+    sl_max = Variable.objects.get(name = 'Sea Level [MAX]')
+    sl_avg = Variable.objects.get(name = 'Sea Level [AVG]')
+    sl_std = Variable.objects.get(name = 'Sea Level [STDV]')
+    sl_swh = Variable.objects.get(name = 'Significant Wave Height')
+
+    aggregated_data = create_aggregated_data(component_number)
+
+    for i in range(math.floor(range_interval/calc_interval)):
+        ini_datetime_slc = initial_datetime+datetime.timedelta(minutes=i*calc_interval)
+        end_datetime_slc = initial_datetime+datetime.timedelta(minutes=(i+1)*calc_interval)
+
+        data_slice = [entry.measured for entry in data if ini_datetime_slc < entry.datetime <= end_datetime_slc]
+
+        if len(data_slice) > 0:
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_min.name, np.min(data_slice))
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_max.name, np.max(data_slice))
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_avg.name, np.mean(data_slice))
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_std.name, np.std(data_slice))
+            aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, sl_mv.name, sl_swh.name, 4*np.std(data_slice))
+
+            wave_components = get_wave_components(data_slice, component_number)
+            for j, wave_component in enumerate(wave_components):
+                amp_name, amp_symbol = get_wave_component_name_and_symbol(j+1, 'Amplitude')
+                frq_name, frq_symbol = get_wave_component_name_and_symbol(j+1, 'Frequency')
+                pha_name, pha_symbol = get_wave_component_name_and_symbol(j+1, 'Phase')
+
+                amp_value = wave_component.height
+                frq_value = wave_component.frequency
+                pha_value = math.degrees(wave_component.phase_rad) % 360
+
+                aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, wv_amp_mv.name, amp_name, amp_value)
+                aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, wv_frq_mv.name, frq_name, frq_value)
+                aggregated_data = append_in_aggregated_data(aggregated_data, end_datetime_slc, station_id, wv_pha_mv.name, pha_name, pha_value)
+
+    return aggregated_data
+
+def add_wave_aggregated_data(dataset, aggregated_data):
+    for mv_name in aggregated_data.keys():
+        dataset['results'][mv_name] = {}
+        for var_name in aggregated_data[mv_name].keys():
+            variable_id = aggregated_data[mv_name][var_name]['ref_variable_id']
+            variable_data = aggregated_data[mv_name][var_name]['data']
+            variable_symbol = aggregated_data[mv_name][var_name]['symbol']
+
+            dataset['results'][mv_name][variable_symbol] = format_wave_data_var(variable_id, variable_data)
+
+    return dataset    
+
+def create_wave_dataset(station_id, sea_data, initial_datetime, range_interval, calc_interval, component_number):
+    sea_level = Variable.objects.get(name='Sea Level')
+    sea_level_mv = MeasurementVariable.objects.get(name='Sea Level')
+
+    dataset  = {
+        "results": {
+            sea_level_mv.name+' Raw': {
+                sea_level.symbol: format_wave_data_var(sea_level.id, sea_data),
+            }
+        },
+        "messages": [],
+    }
+
+    wave_component_data = get_wave_aggregated_data(station_id,
+                                                  sea_data,
+                                                  initial_datetime,
+                                                  range_interval,
+                                                  calc_interval,
+                                                  component_number)
+
+ 
+    dataset = add_wave_aggregated_data(dataset, wave_component_data)
+
+    return dataset
+
+def create_wave_chart(dataset):
+    charts = {}
+
+    for element_name, element_data in dataset['results'].items():
+
+        chart = {
+            'chart': {
+                'type': 'pie',
+                'zoomType': 'xy'
+            },
+            'title': {'text': element_name},
+            'xAxis': {
+                'type': 'datetime',
+                'dateTimeLabelFormats': {
+                    'month': '%e. %b',
+                    'year': '%b'
+                },
+                'title': {
+                    'text': 'Date'
+                }
+            },
+            'yAxis': [],
+            'exporting': {
+                'showTable': True
+            },
+            'series': []
+        }
+
+        opposite = False
+        y_axis_unit_dict = {}
+        for variable_name, variable_data in element_data.items():
+            current_unit = variable_data['unit']
+            if current_unit not in y_axis_unit_dict.keys():
+                chart['yAxis'].append({
+                    'labels': {
+                        'format': '{value} ' + variable_data['unit']
+                    },
+                    'title': {
+                        'text': None
+                    },
+                    'opposite': opposite
+                })
+                y_axis_unit_dict[current_unit] = len(chart['yAxis']) - 1
+                opposite = not opposite
+
+            current_y_axis_index = y_axis_unit_dict[current_unit]
+            data = []
+            for record in variable_data['data']:
+                data.append({
+                    'x': record['date'],
+                    'y': record['value'],
+                })
+
+            chart['series'].append({
+                'name': variable_name,
+                'color': variable_data['color'],
+                'type': variable_data['default_representation'],
+                'unit': variable_data['unit'],
+                'data': data,
+                'yAxis': current_y_axis_index
+            })
+            chart['chart']['type'] = variable_data['default_representation'],
+
+        charts[slugify(element_name)] = chart
+
+    return charts
+
+@require_http_methods(["GET"])
+def get_wave_data(request):
+    station_id = request.GET.get('station_id', None)
+    initial_date = request.GET.get('initial_date', None)
+    initial_time = request.GET.get('initial_time', None)
+    range_interval = request.GET.get('range_interval', None)
+    calc_interval = request.GET.get('calc_interval', None)
+    component_number = request.GET.get('component_number', None)
+
+    tz_client = request.GET.get('tz_client', None)
+    tz_settings = pytz.timezone(settings.TIMEZONE_NAME)
+
+    initial_datetime_str = initial_date+' '+initial_time
+    initial_datetime = datetime_constructor.strptime(initial_datetime_str, '%Y-%m-%d %H:%M')
+    initial_datetime = pytz.timezone(tz_client).localize(initial_datetime)
+    initial_datetime = initial_datetime.astimezone(tz_settings)
+
+    range_intervals = {'30min': 30, "1h": 60, "3h": 180,}
+
+    if range_interval in range_intervals.keys():
+        range_interval = range_intervals[range_interval]
+    else:
+        response = {"message": "Not valid interval."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    calc_intervals = {'1min': 1, '5min': 5, '10min': 10, '15min': 15,}
+
+    if calc_interval in calc_intervals.keys():
+        calc_interval = calc_intervals[calc_interval]
+    else:
+        response = {"message": "Not valid calc interval."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    station_id = int(station_id)
+    component_number = int(component_number)
+
+    final_datetime = initial_datetime + datetime.timedelta(minutes=range_interval)
+
+    variable = Variable.objects.get(name="Sea Level") # Sea Level
+    sea_data = HighFrequencyData.objects.filter(variable_id=variable.id,
+                                                station_id=station_id,
+                                                datetime__gt=initial_datetime,
+                                                datetime__lte=final_datetime).order_by('datetime')
+
+    dataset  = {"results": {}, "messages": []}
+
+    if len(sea_data) > 0:
+        dataset = create_wave_dataset(station_id, sea_data, initial_datetime,
+                                      range_interval, calc_interval, component_number)
+
+    charts = create_wave_chart(dataset)
+
+    return JsonResponse(charts)
+
+
+@require_http_methods(["GET"])
+def get_equipment_inventory(request):
+    template = loader.get_template('wx/maintenance_reports/equipment_inventory.html')
+    context = {}
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_value(variable):
+    if variable is None:
+        return '---'
+    return variable
+
+
+def equipment_classification(classification):
+    if classification == 'F':
+        return 'Fully Functional'
+    elif classification == 'P':
+        return 'Partially Functional'
+    elif classification == 'N':
+        return 'Not Functional'
+    return None
+
+
+def is_equipment_available(equipment, station):
+    new_maintenance_report_eqs = MaintenanceReportEquipment.objects.filter(new_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    old_maintenance_report_eqs = MaintenanceReportEquipment.objects.filter(old_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+
+    new_maintenance_report_eq = new_maintenance_report_eqs.first()
+    old_maintenance_report_eq = old_maintenance_report_eqs.first()
+
+    new_maintenance_report = new_maintenance_report_eq.maintenance_report if new_maintenance_report_eq else None
+    old_maintenance_report = old_maintenance_report_eq.maintenance_report if old_maintenance_report_eq else None
+
+    if old_maintenance_report:
+        if old_maintenance_report.status != 'A' and old_maintenance_report.station_id != station.id:
+            return False
+    if new_maintenance_report and old_maintenance_report:
+        if new_maintenance_report.visit_date >= old_maintenance_report.visit_date:
+            return False
+    elif new_maintenance_report:
+        return False
+    return True
+
+
+def get_equipment_location(equipment):
+    maintenance_reports_new = MaintenanceReportEquipment.objects.filter(new_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    maintenance_reports_old = MaintenanceReportEquipment.objects.filter(old_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    
+    new_maintenance_report = maintenance_reports_new.first()
+    old_maintenance_report = maintenance_reports_old.first()
+
+    if new_maintenance_report and old_maintenance_report:
+        if new_maintenance_report.maintenance_report.visit_date >= old_maintenance_report.maintenance_report.visit_date:
+            return new_maintenance_report.maintenance_report.station
+    elif new_maintenance_report:
+        return new_maintenance_report.maintenance_report.station
+    return None
+
+
+@require_http_methods(["GET"])
+def get_equipment_inventory_data(request):
+    equipment_types = EquipmentType.objects.all()
+    manufacturers = Manufacturer.objects.all()
+    equipments = Equipment.objects.all().order_by('equipment_type', 'serial_number')
+    funding_sources = FundingSource.objects.all()
+    stations = Station.objects.all()
+
+    equipment_list = []
+    for equipment in equipments:
+        try:
+            equipment_type = equipment_types.get(id=equipment.equipment_type_id)
+            funding_source = funding_sources.get(id=equipment.funding_source_id)
+            manufacturer = manufacturers.get(id=equipment.manufacturer_id)
+            station = get_equipment_location(equipment)
+
+            equipment_dict = {
+                'equipment_id': equipment.id,
+                'equipment_type': equipment_type.name,
+                'equipment_type_id': equipment_type.id,
+                'funding_source': funding_source.name,
+                'funding_source_id': funding_source.id,            
+                'manufacturer': manufacturer.name,
+                'manufacturer_id': manufacturer.id,
+                'model': equipment.model,
+                'serial_number': equipment.serial_number,
+                'acquisition_date': equipment.acquisition_date,
+                'first_deploy_date': equipment.first_deploy_date,
+                'last_calibration_date': equipment.last_calibration_date,
+                'next_calibration_date': equipment.next_calibration_date,
+                'decommission_date': equipment.decommission_date,
+                'last_deploy_date': equipment.last_deploy_date,
+                'location': f"{station.name} - {station.code}" if station else 'Office',
+                'location_id': station.id if station else None,
+                'classification': equipment_classification(equipment.classification),
+                'classification_id': equipment.classification,
+            }
+            equipment_list.append(equipment_dict)            
+        except ObjectDoesNotExist:
+            pass
+
+    equipment_classifications = [
+        {'name': 'Fully Functional', 'id': 'F'},
+        {'name': 'Partially Functional', 'id': 'P'},
+        {'name': 'Not Functional', 'id': 'N'},
+    ]
+
+    station_list = [{'name': f"{station.name} - {station.code}",
+                     'id': station.id} for station in stations]
+
+    response = {
+        'equipments': equipment_list,
+        'equipment_types': list(equipment_types.values()),
+        'manufacturers': list(manufacturers.values()),
+        'funding_sources': list(funding_sources.values()),
+        'stations': station_list,
+        'equipment_classifications': equipment_classifications,
+    }
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def create_equipment(request):
+    equipment_type_id = request.GET.get('equipment_type', None)
+    manufacturer_id = request.GET.get('manufacturer', None)
+    funding_source_id = request.GET.get('funding_source', None)
+    model = request.GET.get('model', None)
+    serial_number = request.GET.get('serial_number', None)
+    acquisition_date = request.GET.get('acquisition_date', None)
+    first_deploy_date = request.GET.get('first_deploy_date', None)
+    last_calibration_date = request.GET.get('last_calibration_date', None)
+    next_calibration_date = request.GET.get('next_calibration_date', None)
+    decommission_date = request.GET.get('decommission_date', None)
+    location_id = request.GET.get('location', None)
+    classification = request.GET.get('classification', None)
+    last_deploy_date = request.GET.get('last_deploy_date', None)  
+
+    equipment_type = EquipmentType.objects.get(id=equipment_type_id)
+    manufacturer = Manufacturer.objects.get(id=manufacturer_id)   
+    funding_source = FundingSource.objects.get(id=funding_source_id)
+
+    location = None
+    if location_id:
+        location = Station.objects.get(id=location_id)
+
+    try:
+        equipment = Equipment.objects.get(
+            equipment_type=equipment_type,
+            serial_number = serial_number,
+        )
+
+        message = 'Already exist an equipment of equipment type '
+        message += equipment_type.name
+        message += ' and serial number '
+        message += equipment.serial_number
+
+        response = {'message': message}
+
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)   
+
+    except ObjectDoesNotExist:
+        now = datetime.datetime.now()
+
+        equipment = Equipment.objects.create(
+                created_at = now,
+                updated_at = now,
+                equipment_type = equipment_type,
+                manufacturer = manufacturer,
+                funding_source = funding_source,
+                model = model,
+                serial_number = serial_number,
+                acquisition_date = acquisition_date,
+                first_deploy_date = first_deploy_date,
+                last_calibration_date = last_calibration_date,
+                next_calibration_date = next_calibration_date,
+                decommission_date = decommission_date,
+                # location = location,
+                classification = classification,
+                last_deploy_date = last_deploy_date,
+            )
+
+        response = {'equipment_id': equipment.id}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)   
+
+
+@require_http_methods(["POST"])
+def update_equipment(request):
+    equipment_id = request.GET.get('equipment_id', None)
+    equipment_type_id = request.GET.get('equipment_type', None)
+    manufacturer_id = request.GET.get('manufacturer', None)
+    funding_source_id = request.GET.get('funding_source', None)
+    serial_number = request.GET.get('serial_number', None)
+
+    equipment_type = EquipmentType.objects.get(id=equipment_type_id)
+    manufacturer = Manufacturer.objects.get(id=manufacturer_id)   
+    funding_source = FundingSource.objects.get(id=funding_source_id)
+
+    try:
+        equipment = Equipment.objects.get(equipment_type=equipment_type, serial_number=serial_number)
+
+        if int(equipment_id) != equipment.id:
+            message = f"Could not update. Already exist an equipment of \
+                        equipment type {equipment_type.name} and serial \
+                        number {equipment.serial_number}"
+
+            response = {'message': message}
+
+            return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    except ObjectDoesNotExist:
+        pass
+
+    try:
+        equipment = Equipment.objects.get(id=equipment_id)
+
+        now = datetime.datetime.now()
+
+        equipment.updated_at = now
+        equipment.equipment_type = equipment_type
+        equipment.manufacturer = manufacturer
+        equipment.funding_source = funding_source         
+        equipment.serial_number = serial_number
+        equipment.model = request.GET.get('model', None)
+        equipment.acquisition_date = request.GET.get('acquisition_date', None)
+        equipment.first_deploy_date = request.GET.get('first_deploy_date', None)
+        equipment.last_calibration_date = request.GET.get('last_calibration_date', None)
+        equipment.next_calibration_date = request.GET.get('next_calibration_date', None)
+        equipment.decommission_date = request.GET.get('decommission_date', None)
+        equipment.classification = request.GET.get('classification', None)
+        equipment.last_deploy_date = request.GET.get('last_deploy_date', None)
+        equipment.save()
+        update_change_reason(equipment, f"Source of change: Front end")
+
+
+        response = {}
+        return JsonResponse(response, status=status.HTTP_200_OK)             
+
+    except ObjectDoesNotExist:
+        message =  "Object not found"
+        response = {'message': message}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)   
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK) 
+
+
+@require_http_methods(["POST"])
+def delete_equipment(request):
+    equipment_id = request.GET.get('equipment_id', None)
+    try:
+        equipment = Equipment.objects.get(id=equipment_id)
+        equipment.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["GET"])
+def get_maintenance_reports(request): # Maintenance report page
+    template = loader.get_template('wx/maintenance_reports/maintenance_reports.html')
+    context = {}
+    return HttpResponse(template.render(context, request))
+
+
+@require_http_methods(["PUT"])
+def get_maintenance_report_list(request):
+    form_data = json.loads(request.body.decode())
+
+    maintenance_reports = MaintenanceReport.objects.filter(visit_date__gte = form_data['start_date'], visit_date__lte = form_data['end_date'])
+
+    response = {}
+    response['maintenance_report_list'] = []
+
+    for maintenance_report in maintenance_reports:
+        if maintenance_report.status != '-':
+            station, station_profile, technician, visit_type = get_maintenance_report_obj(maintenance_report)
+
+            if station.is_automatic == form_data['is_automatic']:
+                if maintenance_report.status == 'A':
+                    maintenance_report_status = 'Approved'
+                elif maintenance_report.status == 'P':
+                    maintenance_report_status = 'Published'
+                else:
+                    maintenance_report_status = 'Draft'
+
+                maintenance_report_object = {
+                    'maintenance_report_id': maintenance_report.id,
+                    'station_name': station.name,
+                    'station_profile': station_profile.name,
+                    'station_type': 'Automatic' if station.is_automatic else 'Manual',
+                    'visit_date': maintenance_report.visit_date,
+                    'next_visit_date': maintenance_report.next_visit_date,
+                    'technician': technician.name,
+                    'type_of_visit': visit_type.name,
+                    'status': maintenance_report_status,
+                }
+
+                response['maintenance_report_list'].append(maintenance_report_object)
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["GET"]) # Update maintenance report from existing report
+def update_maintenance_report(request, id):
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+    if maintenance_report.status == 'A':
+        response={'message': "Approved reports can not be editable."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    elif maintenance_report.status == '-':
+        response={'message': "This report is deleated."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    template = loader.get_template('wx/maintenance_reports/new_report.html')
+
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['visit_type_list'] = VisitType.objects.all()
+    context['technician_list'] = Technician.objects.all()
+
+    context['maintenance_report_id'] = id
+
+    return HttpResponse(template.render(context, request))
+
+
+@require_http_methods(["PUT"])
+def delete_maintenance_report(request, id):
+    now = datetime.datetime.now()
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+    maintenance_report.status = '-'
+    maintenance_report.save()
+
+    response={}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["PUT"])
+def approve_maintenance_report(request, id):
+    now = datetime.datetime.now()
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+    maintenance_report.status = 'A'
+    maintenance_report.save()
+
+    response={}
+    return JsonResponse(response, status=status.HTTP_200_OK)    
+
+
+@require_http_methods(["GET"])
+def get_maintenance_report_view(request, id, source): # Maintenance report view
+    template = loader.get_template('wx/maintenance_reports/view_report.html')
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+
+    station = Station.objects.get(pk=maintenance_report.station_id)
+    profile = StationProfile.objects.get(pk=station.profile_id)
+    responsible_technician = Technician.objects.get(pk=maintenance_report.responsible_technician_id)
+    visit_type = VisitType.objects.get(pk=maintenance_report.visit_type_id)
+    maintenance_report_station_components = MaintenanceReportStationComponent.objects.filter(maintenance_report_id=maintenance_report.id)
+
+    # maintenance_report_station_component_list = []    
+    # for maintenance_report_station_component in maintenance_report_station_components:
+    #     dictionary = {'condition': maintenance_report_station_component.condition,
+    #                   'component_classification': maintenance_report_station_component.component_classification,
+    #                  }
+    #     maintenance_report_station_component_list.append(dictionary)
+
+    maintenance_report_station_component_list = get_component_list(maintenance_report)
+
+
+    other_technicians_ids = [maintenance_report.other_technician_1_id,
+                             maintenance_report.other_technician_2_id,
+                             maintenance_report.other_technician_3_id]
+    other_technicians = []
+    for other_technician_id in other_technicians_ids:
+        if other_technician_id:
+            other_technician = Technician.objects.get(id=other_technician_id)
+            other_technicians.append(other_technician.name)
+
+    other_technicians = ", ".join(other_technicians)
+
+
+    context = {}
+
+    if source == 0:
+        context['source'] = 'edit'
+    else:
+        context['source'] = 'list'
+
+    context['visit_summary_information'] = {
+        "report_number": maintenance_report.id,
+        "responsible_technician": responsible_technician.name,
+        "date_of_visit": maintenance_report.visit_date,
+        "date_of_next_visit": maintenance_report.next_visit_date,
+        "start_time": maintenance_report.initial_time,
+        "other_technicians": other_technicians,
+        "end_time": maintenance_report.end_time,
+        "type_of_visit": visit_type.name,
+        "station_on_arrival_conditions": maintenance_report.station_on_arrival_conditions,
+        "current_visit_summary": maintenance_report.current_visit_summary,
+        "next_visit_summary": maintenance_report.next_visit_summary,
+        "maintenance_report_status": maintenance_report.status,
+    }
+
+    context['station_information'] = {
+        "station_name": station.name,
+        "station_host_name": "---",
+        "station_ID": station.code,
+        "wigos_ID": station.wigos,
+        "station_type": 'Automatic' if station.is_automatic else 'Manual',
+        "station_profile": profile.name,
+        "latitude": station.latitude,
+        "elevation": station.elevation,
+        "longitude": station.longitude,
+        "district": station.region,
+        "transmission_type": "---",
+        "transmission_ID": "---",
+        "transmission_interval": "---",
+        "measurement_interval": "---",
+        "data_of_first_operation": station.begin_date,
+        "data_of_relocation": station.relocation_date,
+    }
+
+    context['contact_information'] = maintenance_report.contacts  
+
+    context['equipment_records'] = maintenance_report_station_component_list
+
+    # JSON
+    # return JsonResponse(context, status=status.HTTP_200_OK)
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_ckeditor_config():
+    ckeditor_config = {
+        'toolbar': [
+                ['Bold', 'Italic', 'Font'],
+                ['Format', 'Styles', 'TextColor', 'BGColor', 'RemoveFormat'],
+                ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock', 'Indent', 'Outdent'],
+                ['HorizontalRule', 'BulletedList'],
+                ['Blockquote', 'Source', 'Link', 'Unlink', 'Image', 'Table', 'Print']
+            ],
+        'removeButtons': 'Image',
+        'extraAllowedContent' : 'img(*){*}[*]',              
+        'editorplaceholder': 'Description of station upon arribal:',
+        'language': 'en',            
+    }
+    return ckeditor_config
+
+
+def get_maintenance_report_obj(maintenance_report):
+    station = Station.objects.get(id=maintenance_report.station_id)
+    station_profile = StationProfile.objects.get(id=station.profile_id)
+    technician = Technician.objects.get(id=maintenance_report.responsible_technician_id)
+    visit_type = VisitType.objects.get(id=maintenance_report.visit_type_id)
+
+    return station, station_profile, technician, visit_type
+
+
+def get_maintenance_report_form(request): # New maintenance report form page
+    template = loader.get_template('wx/maintenance_reports/new_report.html')
+
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['visit_type_list'] = VisitType.objects.all()
+    context['technician_list'] = Technician.objects.all()
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_station_contacts(station_id):
+    maintenance_report_list = MaintenanceReport.objects.filter(station_id=station_id).order_by('visit_date')
+
+    for maintenance_report in maintenance_report_list:
+        if maintenance_report.contacts != '':
+            return maintenance_report.contacts
+
+    return None
+
+
+def get_maintenance_report_equipment_data(maintenance_report, equipment_type, equipment_order):
+    equipment_data = {
+        'active_tab': 0,
+        'old_equipment_id': None,
+        'old_equipment_name': None,
+        'new_equipment_id': None,
+        'new_equipment_name': None,
+        'condition': equipment_type.report_template,
+        'classification': "F",
+        'ckeditor_config': get_ckeditor_config()
+    }
+
+    try:
+        maintenancereport_equipment = MaintenanceReportEquipment.objects.get(
+                                        maintenance_report_id=maintenance_report.id,
+                                        equipment_type_id=equipment_type.id,
+                                        equipment_order=equipment_order)
+
+        equipment_data['old_equipment_id'] = maintenancereport_equipment.old_equipment_id
+        equipment_data['new_equipment_id'] = maintenancereport_equipment.new_equipment_id
+        equipment_data['condition'] = maintenancereport_equipment.condition
+        equipment_data['classification'] = maintenancereport_equipment.classification
+
+        if maintenancereport_equipment.old_equipment_id:
+            equipment = Equipment.objects.get(id=maintenancereport_equipment.old_equipment_id)
+            equipment_data['old_equipment_name'] = ' '.join([equipment.model, equipment.serial_number]) 
+
+        if maintenancereport_equipment.new_equipment_id:
+            equipment = Equipment.objects.get(id=maintenancereport_equipment.new_equipment_id)
+            equipment_data['new_equipment_name'] = ' '.join([equipment.model, equipment.serial_number]) 
+    except ObjectDoesNotExist:
+        pass
+
+    equipment_data['active_tab'] = get_acitve_tab(equipment_data['old_equipment_id'], equipment_data['new_equipment_id'])
+
+    return equipment_data
+
+
+def get_available_equipments(equipment_type_id):
+    equipments = Equipment.objects.filter(equipment_type_id=equipment_type_id)
+    available_equipments = [{'id': equipment.id, 'name': ' '.join([equipment.model, equipment.serial_number])}
+        for equipment in equipments if get_equipment_location(equipment) is None]
+
+    return available_equipments
+
+
+def get_available_equipments(equipment_type_id, station):
+    equipments = Equipment.objects.filter(equipment_type_id=equipment_type_id)
+
+    available_equipments = []
+    for equipment in equipments:
+        if is_equipment_available(equipment, station):
+            available_equipments.append({'id': equipment.id, 'name': ' '.join([equipment.model, equipment.serial_number])})
+
+    return available_equipments
+
+
+def get_maintenance_report_equipment_types(maintenance_report):
+    station = Station.objects.get(id=maintenance_report.station_id)
+    station_profile_equipment_types = StationProfileEquipmentType.objects.filter(station_profile=station.profile_id).distinct('equipment_type')
+    equipment_type_ids = station_profile_equipment_types.distinct('equipment_type').values_list('equipment_type_id', flat=True)
+    equipment_types = EquipmentType.objects.filter(id__in=equipment_type_ids)
+
+    equipment_type_list = []
+
+    for equipment_type in equipment_types:
+        dictionary = {'key':equipment_type.id,
+                      'id':equipment_type.id,
+                      'name': equipment_type.name,
+                      'available_equipments': get_available_equipments(equipment_type.id, station),
+                      'primary_equipment': get_maintenance_report_equipment_data(maintenance_report, equipment_type, 'P'),
+                      'secondary_equipment': get_maintenance_report_equipment_data(maintenance_report, equipment_type, 'S'),
+                      }
+
+        equipment_type_list.append(dictionary)
+
+    return equipment_type_list
+
+
+def get_last_maintenance_report(maintenance_report):
+    station_id = maintenance_report.station_id
+    visit_date = maintenance_report.visit_date
+
+    try:
+        return MaintenanceReport.objects.filter(station_id=station_id,visit_date__lt=visit_date).latest('visit_date')
+    except ObjectDoesNotExist:
+        return None
+
+    return last_maintenance_report    
+
+
+def copy_last_maintenance_report_equipments(maintenance_report):
+    last_maintenance_report = get_last_maintenance_report(maintenance_report)
+
+    if last_maintenance_report:
+        last_maintenance_report_equipments = MaintenanceReportEquipment.objects.filter(maintenance_report=last_maintenance_report)
+        for maintenance_report_equipment in last_maintenance_report_equipments:
+            now = datetime.datetime.now()
+
+            equipment = Equipment.objects.get(id=maintenance_report_equipment.new_equipment_id)
+            equipment_type = EquipmentType.objects.get(id=equipment.equipment_type_id)
+
+            created_object = MaintenanceReportEquipment.objects.create(
+                                created_at = now,
+                                updated_at = now,                
+                                maintenance_report = maintenance_report,
+                                equipment_type = equipment_type,
+                                equipment_order = maintenance_report_equipment.equipment_order,
+                                old_equipment = equipment,
+                                new_equipment = equipment,
+                                condition = equipment_type.report_template,
+                                classification = equipment.classification,
+                            )
+
+def get_acitve_tab(old_equipment_id, new_equipment_id):
+    if old_equipment_id is None:
+        return 0 #Add
+    elif new_equipment_id is None:
+        return 2 #Remove
+    elif old_equipment_id != new_equipment_id:
+        return 1 #Change
+    else:
+        return 0 #Update
+
+
+def get_equipment_last_location(maintenance_report, equipment):
+    new_maintenance_report_eqs = MaintenanceReportEquipment.objects.filter(new_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    old_maintenance_report_eqs = MaintenanceReportEquipment.objects.filter(old_equipment_id=equipment.id).order_by('-maintenance_report__visit_date')
+    
+    new_maintenance_report_eq = new_maintenance_report_eqs.exclude(maintenance_report_id=maintenance_report.id).first()
+    old_maintenance_report_eq = old_maintenance_report_eqs.exclude(maintenance_report_id=maintenance_report.id).first()
+
+    new_maintenance_report = new_maintenance_report_eq.maintenance_report if new_maintenance_report_eq else None
+    old_maintenance_report = old_maintenance_report_eq.maintenance_report if old_maintenance_report_eq else None
+
+    if new_maintenance_report and old_maintenance_report:
+        if new_maintenance_report.visit_date >= old_maintenance_report.visit_date:
+            return new_maintenance_report.station
+    elif new_maintenance_report:
+        return new_maintenance_report.station
+
+    return None
+
+
+def update_maintenance_report_equipment(maintenance_report, equipment, new_classification):
+    today = datetime.date.today()
+
+    changed = False
+    
+    if equipment.first_deploy_date:
+        last_location = get_equipment_last_location(maintenance_report, equipment)
+        if last_location == maintenance_report.station:
+            equipment.last_deploy_date = today
+    else:
+        equipment.first_deploy_date = today
+
+    if equipment.classification != new_classification:
+        equipment.classification = new_classification
+    
+    # equipment.changeReason = 
+    # equipment.changeReason = "Source of change: Maintenance Report"
+    equipment.save()
+    update_change_reason(equipment, f"Source of change: Maintenance Report {maintenance_report.id}, {maintenance_report.station.name} - {maintenance_report.visit_date}")
+
+
+def update_maintenance_report_equipment_type(maintenance_report, equipment_type, equipment_order, equipment_data):
+    new_equipment = None
+    old_equipment = None
+
+    if equipment_data['new_equipment_id']:
+        new_equipment = Equipment.objects.get(id=equipment_data['new_equipment_id'])
+
+    if equipment_data['old_equipment_id']:
+        old_equipment = Equipment.objects.get(id=equipment_data['old_equipment_id'])
+
+    condition = equipment_data['condition']
+    classification = equipment_data['classification']
+
+    try:
+        maintenance_report_equipment = MaintenanceReportEquipment.objects.get(
+            maintenance_report=maintenance_report,
+            equipment_type_id=equipment_type.id,
+            equipment_order=equipment_order,
+        )
+        if old_equipment is None and new_equipment is None:
+            maintenance_report_equipment.delete()
+        else:
+            maintenance_report_equipment.condition = condition
+            maintenance_report_equipment.classification = classification
+            maintenance_report_equipment.old_equipment = old_equipment
+            maintenance_report_equipment.new_equipment = new_equipment
+            maintenance_report_equipment.save()
+            update_maintenance_report_equipment(maintenance_report, new_equipment, classification)
+
+    except ObjectDoesNotExist:
+        if old_equipment is None and new_equipment is None:
+            pass
+        elif old_equipment is None and new_equipment:
+            maintenance_report_equipment = MaintenanceReportEquipment.objects.create(
+                maintenance_report=maintenance_report,
+                equipment_type=equipment_type,
+                equipment_order=equipment_order,
+                condition = condition,
+                classification = classification,
+                new_equipment = new_equipment,
+                old_equipment = old_equipment,
+            )
+        else:
+            logger.error("Error updating maintenance report equipment")
+
+
+@require_http_methods(["POST"])
+def update_maintenance_report_equipment_type_data(request):
+    maintenance_report_id = request.GET.get('maintenance_report_id', None)
+    equipment_type_id = request.GET.get('equipment_type_id', None)
+    equipment_order = request.GET.get('equipment_order', None),
+
+    if type(equipment_order) is tuple:
+        equipment_order = equipment_order[0]
+    elif not type(equipment_order) is str:
+        logger.error("Error in equipment order during maintenance report equipment update")
+
+    equipment_data = {
+        'new_equipment_id': request.GET.get('new_equipment_id', None),
+        'old_equipment_id': request.GET.get('old_equipment_id', None),
+        'condition': request.GET.get('condition', None),
+        'classification': request.GET.get('classification', None),
+    }
+
+    maintenance_report = MaintenanceReport.objects.get(id=maintenance_report_id)
+    equipment_type = EquipmentType.objects.get(id=equipment_type_id)
+
+    update_maintenance_report_equipment_type(maintenance_report, equipment_type, equipment_order, equipment_data)
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"]) # Create maintenance report from sratch
+def create_maintenance_report(request):
+    now = datetime.datetime.now()
+    form_data = json.loads(request.body.decode())
+
+    station = Station.objects.get(id=form_data['station_id'])
+    if not StationProfileEquipmentType.objects.filter(station_profile=station.profile):
+        response = {"message": f"Station profile {station.profile.name} is not associated with any equipment type."}        
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+    # Check if a maintenance report with status '-' exists and hard delete it
+    maintenance_report = MaintenanceReport.objects.filter(station_id=form_data['station_id'], visit_date=form_data['visit_date'], status='-').first()
+    if maintenance_report:
+        maintenance_report.delete()
+
+    # Check if a previous maintenance report is not approved
+    maintenance_report = MaintenanceReport.objects.filter(station_id=form_data['station_id']).exclude(status__in=['A', '-']).first()
+    if maintenance_report:
+        response = {"message": f"Previous maintenance reports of {station.name} - {station.code} require approval to create a new one."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if a more recent maintenance report exists
+    maintenance_report = MaintenanceReport.objects.filter(station_id=form_data['station_id'], visit_date__gt=form_data['visit_date']).first()
+    if maintenance_report:
+        response = {"message": "A more recent maintenance report already exists, and the new report must be the latest."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create a new maintenance report if it doesn't already exist
+    try:
+        maintenance_report = MaintenanceReport.objects.get(station_id=form_data['station_id'], visit_date=form_data['visit_date'])
+        response = {"message": "Maintenance report already exists for chosen station and date."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    except ObjectDoesNotExist:
+        maintenance_report = MaintenanceReport.objects.create(
+            created_at=now,
+            updated_at=now,
+            station_id=form_data['station_id'],
+            responsible_technician_id=form_data['responsible_technician_id'],
+            visit_type_id=form_data['visit_type_id'],
+            visit_date=form_data['visit_date'],
+            initial_time=form_data['initial_time'],
+            contacts=get_station_contacts(form_data['station_id']),
+        )
+
+        copy_last_maintenance_report_equipments(maintenance_report)
+
+        response = {"maintenance_report_id": maintenance_report.id}
+        return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["GET"]) # Ok
+def get_maintenance_report(request, id):
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+
+    station, station_profile, technician, visit_type = get_maintenance_report_obj(maintenance_report)
+
+    response = {}
+    response['station_information'] = {
+        "station_name": station.name,
+        "station_host_name": "---",
+        "station_ID": station.code,
+        "wigos_ID": station.wigos,
+        "station_type": 'Automatic' if station.is_automatic else 'Manual',
+        "station_profile": station_profile.name,
+        "latitude": station.latitude,
+        "elevation": station.elevation,
+        "longitude": station.longitude,
+        "district": station.region,
+        "transmission_type": "---",
+        "transmission_ID": "---",
+        "transmission_interval": "---",
+        "measurement_interval": "---",
+        "data_of_first_operation": station.begin_date,
+        "data_of_relocation": station.relocation_date,
+    }
+
+    response["station_id"] = station.id
+    response["responsible_technician"] = technician.name
+    response["responsible_technician_id"] = maintenance_report.responsible_technician_id
+    response["visit_date"] = maintenance_report.visit_date
+    response["next_visit_date"] = maintenance_report.next_visit_date
+    response["initial_time"] = maintenance_report.initial_time
+    response["end_time"] = maintenance_report.end_time
+    response["visit_type"] = visit_type.name
+    response["visit_type_id"] = visit_type.id
+    response["station_on_arrival_conditions"] = maintenance_report.station_on_arrival_conditions
+    response["current_visit_summary"] = maintenance_report.current_visit_summary
+    response["next_visit_summary"] = maintenance_report.next_visit_summary
+    response["other_technician_1"] = maintenance_report.other_technician_1_id
+    response["other_technician_2"] = maintenance_report.other_technician_2_id
+    response["other_technician_3"] = maintenance_report.other_technician_3_id
+
+    response['contacts'] = maintenance_report.contacts  
+    response['equipment_types'] = get_maintenance_report_equipment_types(maintenance_report)
+    response['steps'] = len(response['equipment_types'])
+
+    if maintenance_report.data_logger_file_name is None:
+        response['data_logger_file_name'] = "Upload latest data logger program"
+    else:
+        response['data_logger_file_name'] = maintenance_report.data_logger_file_name
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["PUT"]) # Ok
+def update_maintenance_report_condition(request, id):
+    now = datetime.datetime.now()
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+    
+    form_data = json.loads(request.body.decode())
+    
+    maintenance_report.station_on_arrival_conditions = form_data['conditions']
+
+    maintenance_report.updated_at = now
+    maintenance_report.save()
+
+    response={}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["PUT"]) # Ok
+def update_maintenance_report_contacts(request, id):
+    now = datetime.datetime.now()
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+
+    form_data = json.loads(request.body.decode())
+
+    maintenance_report.contacts = form_data['contacts']
+
+    maintenance_report.updated_at = now
+    maintenance_report.save()
+
+    response={}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"]) # Ok
+def update_maintenance_report_datalogger(request, id):
+    # print(request.FILES)
+    if 'data_logger_file' in request.FILES:
+        maintenance_report = MaintenanceReport.objects.get(id=id)
+
+        data_logger_file = request.FILES['data_logger_file'].file
+        data_logger_file_name = str(request.FILES['data_logger_file'])
+        data_logger_file_content = b64encode(data_logger_file.read()).decode('utf-8')
+
+        maintenance_report.data_logger_file = data_logger_file_content
+        maintenance_report.data_logger_file_name = data_logger_file_name
+        maintenance_report.updated_at = datetime.datetime.now()
+        maintenance_report.save()
+
+        response = {'data_logger_file_name', data_logger_file_name}
+
+        return JsonResponse(response, status=status.HTTP_200_OK)
+
+    # print("Data logger file not uploaded.")
+    response={'message': "Data logger file not uploaded."}
+    return JsonResponse(response, status=status.HTTP_206_PARTIAL_CONTENT)
+
+
+@require_http_methods(["PUT"]) # Ok
+def update_maintenance_report_summary(request, id):
+    now = datetime.datetime.now()
+
+    maintenance_report = MaintenanceReport.objects.get(id=id)
+
+    form_data = json.loads(request.body.decode())
+
+    if form_data['other_technician_1']:
+        other_technician_1 = Technician.objects.get(id=form_data['other_technician_1'])
+    else:
+        other_technician_1 = None
+
+    if form_data['other_technician_2']:
+        other_technician_2 = Technician.objects.get(id=form_data['other_technician_2'])
+    else:
+        other_technician_2 = None
+
+    if form_data['other_technician_3']:
+        other_technician_3 = Technician.objects.get(id=form_data['other_technician_3'])    
+    else:
+        other_technician_3 = None
+
+    maintenance_report.other_technician_1 = other_technician_1
+    maintenance_report.other_technician_2 = other_technician_2
+    maintenance_report.other_technician_3 = other_technician_3
+    maintenance_report.next_visit_date = form_data['next_visit_date']
+    maintenance_report.end_time = form_data['end_time']
+    maintenance_report.current_visit_summary = form_data['current_visit_summary']
+    maintenance_report.next_visit_summary = form_data['next_visit_summary']
+    maintenance_report.status = form_data['status']
+
+    maintenance_report.updated_at = now
+    maintenance_report.save()
+
+    response={}
+
+    return JsonResponse(response, status=status.HTTP_200_OK)
 
 class SpatialAnalysisView(LoginRequiredMixin, TemplateView):
     template_name = "wx/spatial_analysis.html"
@@ -3235,8 +5076,8 @@ class StationFileViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class DailyMeansView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/products/daily_means.html'
+class ExtremesMeansView(LoginRequiredMixin, TemplateView):
+    template_name = 'wx/products/extremes_means.html'
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
@@ -3245,22 +5086,93 @@ class DailyMeansView(LoginRequiredMixin, TemplateView):
         return self.render_to_response(context)
 
 
-class RangeThresholdView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/quality_control/range_threshold.html'
+def get_months():
+    months = {
+      1: 'January',
+      2: 'February',
+      3: 'March',
+      4: 'April',
+      5: 'May',
+      6: 'June',
+      7: 'July',
+      8: 'August',
+      9: 'September',
+      10: 'October',
+      11: 'November',
+      12: 'December',
+    }
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['station_list'] = Station.objects.select_related('profile').all()
+    return months
 
-        context['station_profile_list'] = StationProfile.objects.all()
-        context['station_watershed_list'] = Watershed.objects.all()
-        context['station_district_list'] = AdministrativeRegion.objects.all()
 
-        return self.render_to_response(context)
+def get_interval_in_seconds(interval_id):
+    if interval_id is None:
+        return None
+    interval = Interval.objects.get(id=int(interval_id))
+    return interval.seconds
+
+
+@require_http_methods(["POST"])
+def update_reference_station(request):
+    station_id = request.GET.get('station_id', None)
+    new_reference_station_id = request.GET.get('new_reference_station_id', None)
+
+    station = Station.objects.get(id=station_id)
+    station.reference_station_id = new_reference_station_id
+    station.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def update_global_threshold(request):
+    qc_method = request.GET.get('qc_method', None)
+    is_automatic = request.GET.get('is_automatic', None)
+    variable_name = request.GET.get('variable_name', None)
+    variable = Variable.objects.get(name=variable_name)
+
+    is_automatic = is_automatic == "true"
+
+    if qc_method=='range':
+        range_min = request.GET.get('range_min', None)    
+        range_max = request.GET.get('range_max', None)
+
+        if is_automatic:
+            variable.range_min_hourly = range_min
+            variable.range_max_hourly = range_max
+        else:
+            variable.range_min = range_min
+            variable.range_max = range_max
+
+    elif qc_method=='step':
+        step = request.GET.get('step', None)
+
+        if is_automatic:
+            variable.step_hourly = step
+        else:
+            variable.step = step
+
+    elif qc_method=='persist':
+        minimum_variance = request.GET.get('minimum_variance', None)    
+        window = request.GET.get('window', None)
+
+        if is_automatic:
+            variable.persistence_hourly = minimum_variance
+            variable.persistence_window_hourly = window
+        else:
+            variable.persistence = minimum_variance
+            variable.persistence_window = window
+
+    variable.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
 
 
 @api_view(['GET', 'POST', 'PATCH', 'DELETE'])
-def range_threshold_view(request):
+def range_threshold_view(request): # For synop and daily data captures
     if request.method == 'GET':
 
         station_id = request.GET.get('station_id', None)
@@ -3289,7 +5201,7 @@ def range_threshold_view(request):
                 ,range_threshold.station_id
                 ,range_threshold.range_min
                 ,range_threshold.range_max
-                ,range_threshold.interval	
+                ,range_threshold.interval   
                 ,range_threshold.month
                 ,TO_CHAR(TO_DATE(range_threshold.month::text, 'MM'), 'Month')
                 ,range_threshold.id
@@ -3443,362 +5355,568 @@ def range_threshold_view(request):
     return Response([], status=status.HTTP_200_OK)
 
 
-class StepThresholdView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/quality_control/step_threshold.html'
+def get_range_threshold_form(request):
+    template = loader.get_template('wx/quality_control/range_threshold.html')
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['station_list'] = Station.objects.select_related('profile').all()
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['station_profile_list'] = StationProfile.objects.all()
+    context['station_watershed_list'] = Watershed.objects.all()
+    context['station_district_list'] = AdministrativeRegion.objects.all()
+    context['interval_list'] = Interval.objects.filter(seconds__gt=1).order_by('seconds')    
 
-        context['station_profile_list'] = StationProfile.objects.all()
-        context['station_watershed_list'] = Watershed.objects.all()
-        context['station_district_list'] = AdministrativeRegion.objects.all()
-
-        return self.render_to_response(context)
+    return HttpResponse(template.render(context, request))
 
 
-@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
-def step_threshold_view(request):
-    if request.method == 'GET':
-
-        station_id = request.GET.get('station_id', None)
-        variable_id_list = request.GET.get('variable_id_list', None)
-
-        variable_query_statement = ""
-        query_parameters = {"station_id": station_id, }
-
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if variable_id_list is not None:
-            variable_id_list = tuple(json.loads(variable_id_list))
-            variable_query_statement = "AND variable_id IN %(variable_id_list)s"
-            query_parameters['variable_id_list'] = variable_id_list
-
-        get_step_threshold_query = f"""
-            SELECT variable.id
-                ,variable.name
-                ,step_threshold.station_id
-                ,step_threshold.step_min
-                ,step_threshold.step_max
-                ,step_threshold.interval	
-                ,step_threshold.id
-            FROM wx_qcstepthreshold step_threshold
-            JOIN wx_variable variable on step_threshold.variable_id = variable.id 
-            WHERE station_id = %(station_id)s
-            {variable_query_statement}
-            ORDER BY variable.name
-        """
-
-        result = []
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(get_step_threshold_query, query_parameters)
-
-                rows = cursor.fetchall()
-                for row in rows:
-                    obj = {
-                        'variable': {
-                            'id': row[0],
-                            'name': row[1]
-                        },
-                        'station_id': row[2],
-                        'step_min': row[3],
-                        'step_max': row[4],
-                        'interval': row[5],
-                        'id': row[6],
-
+def get_range_threshold_list(station_id, variable_id, interval, is_reference=False):
+    threshold_list = []
+    months = get_months()
+    for month_id in sorted(months.keys()):
+        month = months[month_id]
+        try:
+            threshold = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval, month=month_id)
+            threshold_entry = {
+                'month': month_id,
+                'min': str(threshold.range_min) if threshold.range_min is not None else '---',
+                'max': str(threshold.range_max) if threshold.range_max is not None else '---',
+            }
+        except ObjectDoesNotExist:
+            if is_reference:
+                try:
+                    threshold = QcRangeThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=None, month=month_id)
+                    threshold_entry = {
+                        'month': month_id,
+                        'min': str(threshold.range_min)+'*' if threshold.range_min is not None else '---',
+                        'max': str(threshold.range_max)+'*' if threshold.range_max is not None else '---',
                     }
-                    result.append(obj)
-
-        return Response(result, status=status.HTTP_200_OK)
-
-
-    elif request.method == 'POST':
-
-        station_id = request.data['station_id']
-        variable_id = request.data['variable_id']
-        interval = request.data['interval']
-        step_min = request.data['step_min']
-        step_max = request.data['step_max']
-
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if variable_id is None:
-            JsonResponse(data={"message": "'variable_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if step_min is None:
-            JsonResponse(data={"message": "'step_min' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if step_max is None:
-            JsonResponse(data={"message": "'step_max' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        post_step_threshold_query = f"""
-            INSERT INTO wx_qcstepthreshold (created_at, updated_at, step_min, step_max, station_id, variable_id, interval) 
-            VALUES (now(), now(), %(step_min)s, %(step_max)s , %(station_id)s, %(variable_id)s, %(interval)s)
-        """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(post_step_threshold_query,
-                                   {'station_id': station_id, 'variable_id': variable_id, 'interval': interval,
-                                    'step_min': step_min, 'step_max': step_max, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-
-    elif request.method == 'PATCH':
-        step_threshold_id = request.GET.get('id', None)
-        interval = request.data['interval']
-        step_min = request.data['step_min']
-        step_max = request.data['step_max']
-
-        if step_threshold_id is None:
-            JsonResponse(data={"message": "'id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if step_min is None:
-            JsonResponse(data={"message": "'step_min' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if step_max is None:
-            JsonResponse(data={"message": "'step_max' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        patch_step_threshold_query = f"""
-            UPDATE wx_qcstepthreshold
-            SET interval = %(interval)s
-               ,step_min = %(step_min)s
-               ,step_max = %(step_max)s
-            WHERE id = %(step_threshold_id)s
-        """
-
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(patch_step_threshold_query,
-                                   {'step_threshold_id': step_threshold_id, 'interval': interval, 'step_min': step_min,
-                                    'step_max': step_max, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-
-    elif request.method == 'DELETE':
-        step_threshold_id = request.GET.get('id', None)
-
-        if step_threshold_id is None:
-            JsonResponse(data={"message": "'step_threshold_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        delete_step_threshold_query = f""" DELETE FROM wx_qcstepthreshold WHERE id = %(step_threshold_id)s """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(delete_step_threshold_query, {'step_threshold_id': step_threshold_id})
-                except:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Error on delete threshold"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
-
-    return Response([], status=status.HTTP_200_OK)
-
-
-class PersistThresholdView(LoginRequiredMixin, TemplateView):
-    template_name = 'wx/quality_control/persist_threshold.html'
-
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['station_list'] = Station.objects.select_related('profile').all()
-
-        context['station_profile_list'] = StationProfile.objects.all()
-        context['station_watershed_list'] = Watershed.objects.all()
-        context['station_district_list'] = AdministrativeRegion.objects.all()
-
-        return self.render_to_response(context)
-
-
-@api_view(['GET', 'POST', 'PATCH', 'DELETE'])
-def persist_threshold_view(request):
-    if request.method == 'GET':
-
-        station_id = request.GET.get('station_id', None)
-        variable_id_list = request.GET.get('variable_id_list', None)
-
-        variable_query_statement = ""
-        query_parameters = {"station_id": station_id, }
-
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if variable_id_list is not None:
-            variable_id_list = tuple(json.loads(variable_id_list))
-            variable_query_statement = "AND variable_id IN %(variable_id_list)s"
-            query_parameters['variable_id_list'] = variable_id_list
-
-        get_persist_threshold_query = f"""
-            SELECT variable.id
-                ,variable.name
-                ,persist_threshold.station_id
-                ,persist_threshold.window
-                ,persist_threshold.minimum_variance
-                ,persist_threshold.interval	
-                ,persist_threshold.id
-            FROM wx_qcpersistthreshold persist_threshold
-            JOIN wx_variable variable on persist_threshold.variable_id = variable.id 
-            WHERE station_id = %(station_id)s
-            {variable_query_statement}
-            ORDER BY variable.name
-        """
-
-        result = []
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(get_persist_threshold_query, query_parameters)
-
-                rows = cursor.fetchall()
-                for row in rows:
-                    obj = {
-                        'variable': {
-                            'id': row[0],
-                            'name': row[1]
-                        },
-                        'station_id': row[2],
-                        'window': row[3],
-                        'minimum_variance': row[4],
-                        'interval': row[5],
-                        'id': row[6],
-
+                except ObjectDoesNotExist:
+                    threshold_entry = {
+                        'month': month_id,
+                        'min': '---',
+                        'max': '---',
                     }
-                    result.append(obj)
-
-        return Response(result, status=status.HTTP_200_OK)
-
-
-    elif request.method == 'POST':
-
-        station_id = request.data['station_id']
-        variable_id = request.data['variable_id']
-        interval = request.data['interval']
-        window = request.data['window']
-        minimum_variance = request.data['minimum_variance']
-
-        if station_id is None:
-            JsonResponse(data={"message": "'station_id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if variable_id is None:
-            JsonResponse(data={"message": "'variable_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if window is None:
-            JsonResponse(data={"message": "'window' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if minimum_variance is None:
-            JsonResponse(data={"message": "'minimum_variance' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        post_persist_threshold_query = f"""
-            INSERT INTO wx_qcpersistthreshold (created_at, updated_at, "window", minimum_variance, station_id, variable_id, interval) 
-            VALUES (now(), now(), %(window)s, %(minimum_variance)s , %(station_id)s, %(variable_id)s, %(interval)s)
-        """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(post_persist_threshold_query,
-                                   {'station_id': station_id, 'variable_id': variable_id, 'interval': interval,
-                                    'window': window, 'minimum_variance': minimum_variance, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
+            else:
+                threshold_entry = {
+                    'month': month_id,
+                    'min': '---',
+                    'max': '---',
+                }
+        threshold_list.append(threshold_entry)
+    return threshold_list
 
 
-    elif request.method == 'PATCH':
-        persist_threshold_id = request.GET.get('id', None)
-        interval = request.data['interval']
-        window = request.data['window']
-        minimum_variance = request.data['minimum_variance']
+def get_range_threshold_in_list(threshold_list, month_id):
+    if threshold_list:
+        for threshold_entry in threshold_list:
+            if threshold_entry['month'] == month_id:
+                return threshold_entry
 
-        if persist_threshold_id is None:
-            JsonResponse(data={"message": "'id' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if interval is None:
-            JsonResponse(data={"message": "'interval' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if window is None:
-            JsonResponse(data={"message": "'window' parameter cannot be null."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if minimum_variance is None:
-            JsonResponse(data={"message": "'minimum_variance' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
-
-        patch_persist_threshold_query = f"""
-            UPDATE wx_qcpersistthreshold
-            SET interval = %(interval)s
-               ,"window" = %(window)s
-               ,minimum_variance = %(minimum_variance)s
-            WHERE id = %(persist_threshold_id)s
-        """
-
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(patch_persist_threshold_query,
-                                   {'persist_threshold_id': persist_threshold_id, 'interval': interval,
-                                    'window': window, 'minimum_variance': minimum_variance, })
-                except psycopg2.errors.UniqueViolation:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Threshold already exists"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
+    threshold_entry = {'month': month_id, 'min': '---', 'max': '---'}
+    return threshold_entry
 
 
-    elif request.method == 'DELETE':
-        persist_threshold_id = request.GET.get('id', None)
+def format_range_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable_name):
+    months = get_months()
 
-        if persist_threshold_id is None:
-            JsonResponse(data={"message": "'persist_threshold_id' parameter cannot be null."},
-                         status=status.HTTP_400_BAD_REQUEST)
+    formated_thresholds = []
+    for month_id in sorted(months.keys()):
+        month_name = months[month_id]
 
-        delete_persist_threshold_query = f""" DELETE FROM wx_qcpersistthreshold WHERE id = %(persist_threshold_id)s """
-        with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(delete_persist_threshold_query, {'persist_threshold_id': persist_threshold_id})
-                except:
-                    conn.rollback()
-                    return JsonResponse(data={"message": "Error on delete threshold"},
-                                        status=status.HTTP_400_BAD_REQUEST)
+        custom_entry = get_range_threshold_in_list(custom_thresholds, month_id)
+        reference_entry = get_range_threshold_in_list(reference_thresholds, month_id)
 
-            conn.commit()
-        return Response(status=status.HTTP_200_OK)
+        formated_threshold = {
+            'variable_name': variable_name,
+            'month_name': month_name,
+            'global':{
+                'children':{
+                    'g_min': global_thresholds['min'],
+                    'g_max': global_thresholds['max'],
+                }
+            },
+            'reference':{
+                'children':{
+                    'r_min': reference_entry['min'],
+                    'r_max': reference_entry['max'],
+                }
+            },
+            'custom':{
+                'children':{
+                    'c_min': custom_entry['min'],
+                    'c_max': custom_entry['max'],
+                }
+            }
+        }
+        formated_thresholds.append(formated_threshold)
 
-    return Response([], status=status.HTTP_200_OK)
+    return formated_thresholds
+
+
+@require_http_methods(["GET"])
+def get_range_threshold(request):
+    station_id = request.GET.get('station_id', None)
+    if station_id is None:
+        response = {'message': "Field Station can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    variable_ids = request.GET.get('variable_ids', None)
+    if variable_ids is None:
+        response = {'message': "Field Variables can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST) 
+
+    interval_id = request.GET.get('interval_id', None)
+    # if interval_id is None:
+    #     response = {'message': "Field Measurement Interval can not be empty."}
+    #     return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)    
+
+    station = Station.objects.get(id=int(station_id))
+    variable_ids = [int(variable_id) for variable_id in variable_ids.split(",")]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    reference_station_id = station.reference_station_id
+    if reference_station_id:
+        reference_station = Station.objects.get(id=station.reference_station_id)
+        reference_station_name = reference_station.name+' - '+reference_station.code
+    else:
+        reference_station = None
+        reference_station_name = None
+
+    data = {
+        'reference_station_id': reference_station_id,
+        'reference_station_name': reference_station_name,
+        'variable_data': {},
+    }
+
+    for variable_id in variable_ids:
+        variable = Variable.objects.get(id=variable_id)
+
+        custom_thresholds = get_range_threshold_list(station.id, variable.id, interval_seconds, is_reference=False)
+
+        if reference_station:
+            reference_thresholds = get_range_threshold_list(reference_station.id, variable.id, interval_seconds, is_reference=True)
+        else:
+            reference_thresholds = None
+
+        global_thresholds = {}
+        if station.is_automatic:
+            global_thresholds['min'] = variable.range_min_hourly
+            global_thresholds['max'] = variable.range_max_hourly
+        else:
+            global_thresholds['min'] = variable.range_min
+            global_thresholds['max'] = variable.range_max
+
+        global_thresholds['min'] = '---' if global_thresholds['min'] is None else str(global_thresholds['min'])
+        global_thresholds['max'] = '---' if global_thresholds['max'] is None else str(global_thresholds['max'])
+
+        formated_thresholds = format_range_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable.name)
+
+        data['variable_data'][variable.name] = formated_thresholds;
+
+    response = {'data': data}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def update_range_threshold(request):
+    months = get_months()
+    months_ids = {v: k for k, v in months.items()}
+
+    new_min = request.GET.get('new_min', None)    
+    new_max = request.GET.get('new_max', None)
+    interval_id = request.GET.get('interval_id', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+    month_name = request.GET.get('month_name', None)
+
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    month_id = months_ids[month_name]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    qcrangethreshold, created = QcRangeThreshold.objects.get_or_create(station_id=station.id, variable_id=variable.id, month=month_id, interval=interval_seconds)
+
+    qcrangethreshold.range_min = new_min
+    qcrangethreshold.range_max = new_max
+
+    qcrangethreshold.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def delete_range_threshold(request):
+    months = get_months()
+    months_ids = {v: k for k, v in months.items()}
+
+    interval_id = request.GET.get('interval_id', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+    month_name = request.GET.get('month_name', None)
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    month_id = months_ids[month_name]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    try:
+        qcrangethreshold = QcRangeThreshold.objects.get(station_id=station.id, variable_id=variable.id, month=month_id, interval=interval_seconds)
+        qcrangethreshold.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+def get_step_threshold_form(request):
+    template = loader.get_template('wx/quality_control/step_threshold.html')
+
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['station_profile_list'] = StationProfile.objects.all()
+    context['station_watershed_list'] = Watershed.objects.all()
+    context['station_district_list'] = AdministrativeRegion.objects.all()
+    context['interval_list'] = Interval.objects.filter(seconds__gt=1).order_by('seconds')    
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_step_threshold_entry(station_id, variable_id, interval, is_reference=False):
+    try:
+        threshold = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval)
+        threshold_entry = {
+            'min': str(threshold.step_min) if threshold.step_min is not None else '---',
+            'max': str(threshold.step_max) if threshold.step_max is not None else '---',
+        }        
+    except ObjectDoesNotExist:
+        if is_reference:
+            try:
+                threshold = QcStepThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=None)
+                threshold_entry = {
+                    'min': str(threshold.step_min)+'*' if threshold.step_min is not None else '---',
+                    'max': str(threshold.step_max)+'*' if threshold.step_max is not None else '---',
+                }
+            except ObjectDoesNotExist:
+                threshold_entry = {
+                    'min': '---',
+                    'max': '---',
+                }
+        else:
+            threshold_entry = {
+                'min': '---',
+                'max': '---',
+            }        
+
+    return threshold_entry
+
+
+def format_step_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable_name):
+    formated_threshold = {
+        'variable_name': variable_name,
+        'global':{
+            'children':{
+                'g_min': global_thresholds['min'],
+                'g_max': global_thresholds['max'],
+            }
+        },
+        'reference':{
+            'children':{
+                'r_min': reference_thresholds['min'],
+                'r_max': reference_thresholds['max'],
+            }
+        },
+        'custom':{
+            'children':{
+                'c_min': custom_thresholds['min'],
+                'c_max': custom_thresholds['max'],
+            }
+        }
+    }
+    return [formated_threshold]
+
+
+@require_http_methods(["GET"])
+def get_step_threshold(request):
+    station_id = request.GET.get('station_id', None)
+    if station_id is None:
+        response = {'message': "Field Station can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    
+    variable_ids = request.GET.get('variable_ids', None)
+    if variable_ids is None:
+        response = {'message': "Field Variables can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST) 
+
+    interval_id = request.GET.get('interval_id', None)
+    # if interval_id is None:
+    #     response = {'message': "Field Measurement Interval can not be empty."}
+    #     return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)    
+
+    station = Station.objects.get(id=int(station_id))
+    variable_ids = [int(variable_id) for variable_id in variable_ids.split(",")]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    reference_station_id = station.reference_station_id
+    if reference_station_id:
+        reference_station = Station.objects.get(id=station.reference_station_id)
+        reference_station_name = reference_station.name+' - '+reference_station.code
+    else:
+        reference_station = None
+        reference_station_name = None
+
+    data = {
+        'reference_station_id': reference_station_id,
+        'reference_station_name': reference_station_name,
+        'variable_data': {},
+    }
+
+    for variable_id in variable_ids:
+        variable = Variable.objects.get(id=variable_id)
+
+        custom_thresholds = get_step_threshold_entry(station.id, variable.id, interval_seconds, is_reference=False)
+        
+        if reference_station:
+            reference_thresholds = get_step_threshold_entry(reference_station.id, variable.id, interval_seconds, is_reference=True)
+        else:
+            reference_thresholds = {'min': '---', 'max': '---'}
+
+        global_thresholds = {}
+        if station.is_automatic:
+            global_thresholds['min'] = -variable.step_hourly if variable.step_hourly else variable.step_hourly
+            global_thresholds['max'] = variable.step_hourly
+        else:
+            global_thresholds['min'] = -variable.step if variable.step else variable.step
+            global_thresholds['max'] = variable.step
+
+        global_thresholds['min'] = '---' if global_thresholds['min'] is None else str(global_thresholds['min'])
+        global_thresholds['max'] = '---' if global_thresholds['max'] is None else str(global_thresholds['max'])
+
+        formated_thresholds = format_step_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable.name)
+
+        data['variable_data'][variable.name] = formated_thresholds;
+
+    response = {'data': data}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def update_step_threshold(request):
+    new_min = request.GET.get('new_min', None)    
+    new_max = request.GET.get('new_max', None)
+    interval_id = request.GET.get('interval_id', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    qcstepthreshold, created = QcStepThreshold.objects.get_or_create(station_id=station.id, variable_id=variable.id, interval=interval_seconds)
+
+    qcstepthreshold.step_min = new_min
+    qcstepthreshold.step_max = new_max
+
+    qcstepthreshold.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def delete_step_threshold(request):
+    interval_id = request.GET.get('interval_id', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    try:
+        qcstepthreshold = QcStepThreshold.objects.get(station_id=station.id, variable_id=variable.id, interval=interval_seconds)        
+        qcstepthreshold.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+def get_persist_threshold_form(request):
+    template = loader.get_template('wx/quality_control/persist_threshold.html')
+
+    context = {}
+    context['station_list'] = Station.objects.select_related('profile').all()
+    context['station_profile_list'] = StationProfile.objects.all()
+    context['station_watershed_list'] = Watershed.objects.all()
+    context['station_district_list'] = AdministrativeRegion.objects.all()
+    context['interval_list'] = Interval.objects.filter(seconds__gt=1).order_by('seconds')    
+
+    return HttpResponse(template.render(context, request))
+
+
+def get_persist_threshold_entry(station_id, variable_id, interval, is_reference=False):
+    try:
+        threshold = QcPersistThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=interval)
+        threshold_entry = {
+            'var': str(threshold.minimum_variance) if threshold.minimum_variance is not None else '---',
+            'win': str(threshold.window) if threshold.window is not None else '---',
+        }        
+    except ObjectDoesNotExist:
+        if is_reference:
+            try:
+                threshold = QcPersistThreshold.objects.get(station_id=station_id, variable_id=variable_id, interval=None)
+                threshold_entry = {
+                    'var': str(threshold.minimum_variance)+'*' if threshold.minimum_variance is not None else '---',
+                    'win': str(threshold.window)+'*' if threshold.window is not None else '---',
+                }
+            except ObjectDoesNotExist:
+                threshold_entry = {
+                    'var': '---',
+                    'win': '---',
+                }
+        else:
+            threshold_entry = {
+                'var': '---',
+                'win': '---',
+            }        
+
+    return threshold_entry
+
+
+def format_persist_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable_name):
+    formated_threshold = {
+        'variable_name': variable_name,
+        'global':{
+            'children':{
+                'g_var': global_thresholds['var'],
+                'g_win': global_thresholds['win'],
+            }
+        },
+        'reference':{
+            'children':{
+                'r_var': reference_thresholds['var'],
+                'r_win': reference_thresholds['win'],
+            }
+        },
+        'custom':{
+            'children':{
+                'c_var': custom_thresholds['var'],
+                'c_win': custom_thresholds['win'],
+            }
+        }
+    }
+    return [formated_threshold]
+
+
+@require_http_methods(["GET"])
+def get_persist_threshold(request):
+    station_id = request.GET.get('station_id', None)
+    if station_id is None:
+        response = {'message': "Field Station can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)
+    
+    variable_ids = request.GET.get('variable_ids', None)
+    if variable_ids is None:
+        response = {'message': "Field Variables can not be empty."}
+        return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST) 
+
+    interval_id = request.GET.get('interval_id', None)
+    # if interval_id is None:
+    #     response = {'message': "Field Measurement Interval can not be empty."}
+    #     return JsonResponse(response, status=status.HTTP_400_BAD_REQUEST)    
+
+    station = Station.objects.get(id=int(station_id))
+    variable_ids = [int(variable_id) for variable_id in variable_ids.split(",")]
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    reference_station_id = station.reference_station_id
+    if reference_station_id:
+        reference_station = Station.objects.get(id=station.reference_station_id)
+        reference_station_name = reference_station.name+' - '+reference_station.code
+    else:
+        reference_station = None
+        reference_station_name = None
+
+    data = {
+        'reference_station_id': reference_station_id,
+        'reference_station_name': reference_station_name,
+        'variable_data': {},
+    }
+
+    for variable_id in variable_ids:
+        variable = Variable.objects.get(id=variable_id)
+
+        custom_thresholds = get_persist_threshold_entry(station.id, variable.id, interval_seconds, is_reference=False)
+        
+        if reference_station:
+            reference_thresholds = get_persist_threshold_entry(reference_station.id, variable.id, interval_seconds, is_reference=True)
+        else:
+            reference_thresholds = {'var': '---', 'win': '---'}
+
+        global_thresholds = {}
+        if station.is_automatic:
+            global_thresholds['var'] = variable.persistence_hourly
+            global_thresholds['win'] = variable.persistence_window_hourly
+        else:
+            global_thresholds['var'] = variable.persistence
+            global_thresholds['win'] = variable.persistence_window
+
+        global_thresholds['var'] = '---' if global_thresholds['var'] is None else str(global_thresholds['var'])
+        global_thresholds['win'] = '---' if global_thresholds['win'] is None else str(global_thresholds['win'])
+
+        formated_thresholds = format_persist_thresholds(global_thresholds, reference_thresholds, custom_thresholds, variable.name)
+
+        data['variable_data'][variable.name] = formated_thresholds;
+
+    response = {'data': data}
+    return JsonResponse(response, status=status.HTTP_200_OK)    
+
+
+@require_http_methods(["POST"])
+def update_persist_threshold(request):
+    new_var = request.GET.get('new_var', None)    
+    new_win = request.GET.get('new_win', None)
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+    interval_id = request.GET.get('interval_id', None)
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    try:
+        qcpersistthreshold = QcPersistThreshold.objects.get(station_id=station.id, variable_id=variable.id, interval=interval_seconds)
+    except ObjectDoesNotExist:
+        qcpersistthreshold = QcPersistThreshold.objects.create(station_id=station.id, variable_id=variable.id, interval=interval_seconds, minimum_variance=new_var, window=new_win)
+
+    qcpersistthreshold.save()
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
+
+
+@require_http_methods(["POST"])
+def delete_persist_threshold(request):
+    station_id = request.GET.get('station_id', None)    
+    variable_name = request.GET.get('variable_name', None)    
+    interval_id = request.GET.get('interval_id', None)
+
+    station = Station.objects.get(id=station_id)
+    variable = Variable.objects.get(name=variable_name)
+    interval_seconds = get_interval_in_seconds(interval_id)
+
+    try:
+        qcpersistthreshold = QcPersistThreshold.objects.get(station_id=station.id, variable_id=variable.id, interval=interval_seconds)        
+        qcpersistthreshold.delete()
+    except ObjectDoesNotExist:
+        pass
+
+    response = {}
+    return JsonResponse(response, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -4048,50 +6166,46 @@ class DataInventoryView(LoginRequiredMixin, TemplateView):
 
 @api_view(['GET'])
 def get_data_inventory(request):
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
-
-    try:
-        start_date = datetime.datetime.strptime(start_date, '%Y')
-        end_date = datetime.datetime.strptime(end_date, '%Y')
-
-        if start_date >= end_date:
-            return JsonResponse({"message": "Invalid date. End date must be greater than start date"},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-    except ValueError:
-        return JsonResponse({"message": "Invalid date format. The expected date format is 'YYYY'"},
-                            status=status.HTTP_400_BAD_REQUEST)
+    start_year = request.GET.get('start_date', None)
+    end_year = request.GET.get('end_date', None)
+    is_automatic = request.GET.get('is_automatic', None)
 
     result = []
 
     query = """
-        SELECT DATE_TRUNC('YEAR', station_data.datetime)
+       SELECT EXTRACT('YEAR' from station_data.datetime)
               ,station.id
               ,station.name
               ,station.code
+              ,station.is_automatic
+              ,station.begin_date
+              ,station.watershed
               ,TRUNC(AVG(station_data.record_count_percentage)::numeric, 2)
         FROM wx_stationdataminimuminterval AS station_data
         JOIN wx_station AS station ON station.id = station_data.station_id
-        WHERE station_data.datetime >= %(start_date)s
-          AND station_data.datetime <  %(end_date)s
-        GROUP BY 1, station.id, station.name
-        ORDER BY station.name
+        WHERE EXTRACT('YEAR' from station_data.datetime) >= %(start_year)s
+          AND EXTRACT('YEAR' from station_data.datetime) <  %(end_year)s
+          AND station.is_automatic = %(is_automatic)s
+        GROUP BY 1, station.id
+        ORDER BY station.watershed, station.name
     """
 
     with connection.cursor() as cursor:
-        cursor.execute(query, {"start_date": start_date, "end_date": end_date})
+        cursor.execute(query, {"start_year": start_year, "end_year": end_year, "is_automatic": is_automatic})
         rows = cursor.fetchall()
 
         for row in rows:
             obj = {
-                'datetime': row[0],
+                'year': row[0],
                 'station': {
                     'id': row[1],
                     'name': row[2],
                     'code': row[3],
+                    'is_automatic': row[4],
+                    'begin_date': row[5],
+                    'watershed': row[6],
                 },
-                'percentage': row[4],
+                'percentage': row[7],
             }
             result.append(obj)
 
@@ -4099,130 +6213,175 @@ def get_data_inventory(request):
 
 
 @api_view(['GET'])
-def get_station_data_inventory(request):
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
-    station_id = request.GET.get('station_id', None)
+def get_data_inventory_by_station(request):
+    start_year = request.GET.get('start_date', None)
+    end_year = request.GET.get('end_date', None)
+    station_id: list = request.GET.get('station_id', None)
+    record_limit = request.GET.get('record_limit', None)
 
-    try:
-        start_date = datetime.datetime.strptime(start_date, '%Y')
-        end_date = datetime.datetime.strptime(end_date, '%Y')
+    if station_id is None or len(station_id) == 0:
+        return JsonResponse({"message": "\"station_id\" must not be null"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if start_date >= end_date:
-            return JsonResponse({"message": "Invalid date. End date must be greater than start date"},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-    except ValueError:
-        return JsonResponse({"message": "Invalid date format. The expected date format is 'YYYY'"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-    if station_id is None:
-        return JsonResponse({"message": "Invalid request. Station id must be provided"},
-                            status=status.HTTP_400_BAD_REQUEST)
+    record_limit_lexical = ""
+    if record_limit is not None:
+        record_limit_lexical = f"LIMIT {record_limit}"
 
     result = []
-    query = """
-        SELECT DATE_TRUNC('YEAR', station_data.datetime)
-              ,station.id
-              ,station.name
-              ,station.code
-              ,variable.id
-              ,variable.name
+    query = f"""
+       WITH variable AS (
+            SELECT variable.id, variable.name 
+            FROM wx_variable AS variable
+            JOIN wx_stationvariable AS station_variable ON station_variable.variable_id = variable.id
+            WHERE station_variable.station_id = %(station_id)s
+            ORDER BY variable.name
+            {record_limit_lexical}
+        )
+        SELECT EXTRACT('YEAR' from station_data.datetime)
+              ,limited_variable.id
+              ,limited_variable.name
               ,TRUNC(AVG(station_data.record_count_percentage)::numeric, 2)
         FROM wx_stationdataminimuminterval AS station_data
-        JOIN wx_station AS station ON station.id = station_data.station_id
-        JOIN wx_variable AS variable ON variable.id = station_data.variable_id
-        WHERE station_data.station_id = %(station_id)s
-          AND station_data.datetime  >= %(start_date)s
-          AND station_data.datetime  <  %(end_date)s
-        GROUP BY 1, station.id, station.name, station.code, variable.id, variable.name
-        ORDER BY variable.name
+        JOIN variable AS limited_variable ON limited_variable.id = station_data.variable_id
+        JOIN wx_station station ON station_data.station_id = station.id
+        WHERE EXTRACT('YEAR' from station_data.datetime) >= %(start_year)s
+          AND EXTRACT('YEAR' from station_data.datetime) <  %(end_year)s
+          AND station_data.station_id = %(station_id)s
+        GROUP BY 1, limited_variable.id, limited_variable.name
+        ORDER BY 1, limited_variable.name
     """
 
     with connection.cursor() as cursor:
-        cursor.execute(query, {"station_id": station_id, "start_date": start_date, "end_date": end_date})
+        cursor.execute(query, {"start_year": start_year, "end_year": end_year, "station_id": station_id})
         rows = cursor.fetchall()
 
         for row in rows:
             obj = {
-                'datetime': row[0],
-                'station': {
-                    'id': row[1],
-                    'name': row[2],
-                    'code': row[3],
-                },
+                'year': row[0],
                 'variable': {
-                    'id': row[4],
-                    'name': row[5],
+                    'id': row[1],
+                    'name': row[2],
                 },
-                'percentage': row[6],
+                'percentage': row[3],
             }
             result.append(obj)
 
     return Response(result, status=status.HTTP_200_OK)
 
-
 @api_view(['GET'])
-def get_station_variable_data_inventory(request):
-    start_date = request.GET.get('start_date', None)
-    end_date = request.GET.get('end_date', None)
+def get_station_variable_month_data_inventory(request):
+    year = request.GET.get('year', None)
     station_id = request.GET.get('station_id', None)
-    variable_id = request.GET.get('variable_id', None)
-
-    try:
-        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-
-        if start_date >= end_date:
-            return JsonResponse({"message": "Invalid date. End date must be greater than start date"},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-    except ValueError:
-        return JsonResponse({"message": "Invalid date format. The expected date format is 'YYYY-MM-DDTHH:MI:SS.sssZ'"},
-                            status=status.HTTP_400_BAD_REQUEST)
 
     if station_id is None:
         return JsonResponse({"message": "Invalid request. Station id must be provided"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-    if variable_id is None:
-        return JsonResponse({"message": "Invalid request. Variable id must be provided"},
                             status=status.HTTP_400_BAD_REQUEST)
 
     result = []
     query = """
         SELECT EXTRACT('MONTH' FROM station_data.datetime) AS month
-              ,EXTRACT('DAY' FROM station_data.datetime) AS day
-              ,station_data.datetime
-              ,measurement_variable.name
+              ,variable.id
+              ,variable.name
+              ,measurementvariable.name
               ,TRUNC(AVG(station_data.record_count_percentage)::numeric, 2)
         FROM wx_stationdataminimuminterval AS station_data
         JOIN wx_variable variable ON station_data.variable_id=variable.id
-        JOIN wx_measurementvariable measurement_variable ON variable.measurement_variable_id=measurement_variable.id
-        WHERE station_data.variable_id = %(variable_id)s
-          AND station_data.station_id  = %(station_id)s
-          AND station_data.datetime   >= %(start_date)s
-          AND station_data.datetime   <= %(end_date)s
-        GROUP BY 1, 2, station_data.datetime, measurement_variable.name
-
+        LEFT JOIN wx_measurementvariable measurementvariable ON measurementvariable.id = variable.measurement_variable_id
+        WHERE EXTRACT('YEAR' from station_data.datetime) = %(year)s
+          AND station_data.station_id = %(station_id)s
+        GROUP BY 1, variable.id, variable.name, measurementvariable.name
     """
 
     with connection.cursor() as cursor:
-        cursor.execute(query, {"start_date": start_date, "end_date": end_date, "variable_id": variable_id,
-                               "station_id": station_id})
+        cursor.execute(query, {"year": year, "station_id": station_id})
         rows = cursor.fetchall()
 
         for row in rows:
             obj = {
                 'month': row[0],
-                'day': row[1],
-                'datetime': row[2],
-                'measurement_variable': slugify(row[3]),
+                'variable': {
+                    'id': row[1],
+                    'name': row[2],
+                    'measurement_variable_name': row[3] if row[3] is None else row[3].lower().replace(' ', '-'),
+                },
                 'percentage': row[4],
             }
             result.append(obj)
 
     return Response(result, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_station_variable_day_data_inventory(request):
+    year = request.GET.get('year', None)
+    month = request.GET.get('month', None)
+    station_id = request.GET.get('station_id', None)
+    variable_id = request.GET.get('variable_id', None)
+
+    if station_id is None:
+        return JsonResponse({"message": "Invalid request. Station id must be provided"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    query = """
+         WITH data AS (
+             SELECT EXTRACT('DAY' FROM station_data.datetime) AS day
+                   ,EXTRACT('DOW' FROM station_data.datetime) AS dow
+                   ,TRUNC(station_data.record_count_percentage::numeric, 2) as percentage
+                   ,station_data.record_count
+                   ,station_data.ideal_record_count
+                   ,(select COUNT(1) from raw_data rd where rd.station_id = station_data.station_id and rd.variable_id = station_data.variable_id and rd.datetime between station_data.datetime  and station_data.datetime + '1 DAY'::interval and coalesce(rd.manual_flag, rd.quality_flag) in (1, 4)) qc_passed_amount
+                   ,(select COUNT(1) from raw_data rd where rd.station_id = station_data.station_id and rd.variable_id = station_data.variable_id and rd.datetime between station_data.datetime  and station_data.datetime + '1 DAY'::interval) qc_amount
+            FROM wx_stationdataminimuminterval AS station_data
+            WHERE EXTRACT('YEAR' from station_data.datetime) = %(year)s
+              AND EXTRACT('MONTH' from station_data.datetime) = %(month)s 
+              AND station_data.station_id = %(station_id)s
+              AND station_data.variable_id = %(variable_id)s
+            ORDER BY station_data.datetime)
+         SELECT available_days.custom_day
+               ,data.dow
+               ,COALESCE(data.percentage, 0) AS percentage
+               ,COALESCE(data.record_count, 0) AS record_count
+               ,COALESCE(data.ideal_record_count, 0) AS ideal_record_count
+               ,case when data.qc_amount = 0 then 0 
+                     else TRUNC((data.qc_passed_amount / data.qc_amount::numeric) * 100, 2) end as qc_passed_percentage
+         FROM (SELECT custom_day FROM unnest( ARRAY[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31] ) AS custom_day) AS available_days
+         LEFT JOIN data ON data.day = available_days.custom_day;
+         
+    """
+
+    days = []
+    day_with_data = None
+    with connection.cursor() as cursor:
+        cursor.execute(query, {"year": year, "station_id": station_id, "month": month, "variable_id": variable_id})
+        rows = cursor.fetchall()
+
+        for row in rows:
+            obj = {
+                'day': row[0],
+                'dow': row[1],
+                'percentage': row[2],
+                'record_count': row[3],
+                'ideal_record_count': row[4],
+                'qc_passed_percentage': row[5],
+            }
+
+            if row[1] is not None and day_with_data is None:
+                day_with_data = obj
+            days.append(obj)
+
+    if day_with_data is None:
+        return JsonResponse({"message": "No data found"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+    for day in days:
+        current_day = day.get('day', None)
+        current_dow = day.get('dow', None)
+        if current_dow is None:
+            day_with_data_day = day_with_data.get('day', None)
+            day_with_data_dow = day_with_data.get('dow', None)
+            day_difference = current_day - day_with_data_day
+            day["dow"] = (day_difference + day_with_data_dow) % 7
+
+    return Response(days, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])

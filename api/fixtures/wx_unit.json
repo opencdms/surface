@@ -1,1 +1,322 @@
-[{"model": "wx.unit", "pk": 1, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "°C", "name": "Celsius Degrees"}}, {"model": "wx.unit", "pk": 2, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "mm", "name": "Millimeters"}}, {"model": "wx.unit", "pk": 3, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "%", "name": "Percent"}}, {"model": "wx.unit", "pk": 4, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "th", "name": "Thents"}}, {"model": "wx.unit", "pk": 5, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "MJ/m2", "name": "Megajoules/m2"}}, {"model": "wx.unit", "pk": 6, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "cm", "name": "Centimeters"}}, {"model": "wx.unit", "pk": 7, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "m/s", "name": "Meters/Second"}}, {"model": "wx.unit", "pk": 8, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "km", "name": "Kilometers"}}, {"model": "wx.unit", "pk": 9, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "th degrees", "name": "Tens of Degrees"}}, {"model": "wx.unit", "pk": 10, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "hPa", "name": "Hectopascals"}}, {"model": "wx.unit", "pk": 11, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "m3/s", "name": "Meters^3/Second"}}, {"model": "wx.unit", "pk": 12, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "min", "name": "Minutes"}}, {"model": "wx.unit", "pk": 13, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "mbar", "name": "Millibars"}}, {"model": "wx.unit", "pk": 14, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "knots", "name": "Knots"}}, {"model": "wx.unit", "pk": 15, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "degrees", "name": "Degrees"}}, {"model": "wx.unit", "pk": 16, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "oct", "name": "Octas"}}, {"model": "wx.unit", "pk": 17, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "g/kg", "name": "Grams/Kilograms"}}, {"model": "wx.unit", "pk": 18, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "days", "name": "Days"}}, {"model": "wx.unit", "pk": 19, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "hours", "name": "Hours"}}, {"model": "wx.unit", "pk": 20, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "m", "name": "Meters"}}, {"model": "wx.unit", "pk": 21, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "degree days", "name": "Degree Days"}}, {"model": "wx.unit", "pk": 22, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "km/h", "name": "Kilometers/hour"}}, {"model": "wx.unit", "pk": 23, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "°F", "name": "Fahrenheit"}}, {"model": "wx.unit", "pk": 24, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "in", "name": "Inches"}}, {"model": "wx.unit", "pk": 25, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "mi", "name": "Miles"}}, {"model": "wx.unit", "pk": 26, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "mi/h", "name": "Miles/hour"}}, {"model": "wx.unit", "pk": 27, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "per day", "name": "Per Day"}}, {"model": "wx.unit", "pk": 28, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "W/m2", "name": "Watts per square meter"}}, {"model": "wx.unit", "pk": 29, "fields": {"created_at": "2015-01-21T17:01:29Z", "updated_at": "2015-01-21T17:01:29Z", "symbol": "V", "name": "Volts"}}, {"model": "wx.unit", "pk": 30, "fields": {"created_at": "2015-02-16T03:33:01Z", "updated_at": "2015-02-16T03:33:01Z", "symbol": "inHg", "name": "Inches of Mercury"}}, {"model": "wx.unit", "pk": 31, "fields": {"created_at": "2015-07-29T10:22:06Z", "updated_at": "2015-07-29T10:22:06Z", "symbol": "kJ/m2", "name": "Kilojoules per square meter"}}, {"model": "wx.unit", "pk": 32, "fields": {"created_at": "2022-10-25T13:52:03.087Z", "updated_at": "2022-10-25T13:52:03.087Z", "symbol": "Hz", "name": "Hertz"}}]
+[
+{
+    "model": "wx.unit",
+    "pk": 1,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "°C",
+        "name": "Celsius Degrees"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 2,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "mm",
+        "name": "Millimeters"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 3,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "%",
+        "name": "Percent"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 4,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "th",
+        "name": "Thents"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 5,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "MJ/m2",
+        "name": "Megajoules/m2"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 6,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "cm",
+        "name": "Centimeters"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 7,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "m/s",
+        "name": "Meters/Second"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 8,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "km",
+        "name": "Kilometers"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 9,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "th degrees",
+        "name": "Tens of Degrees"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 10,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "hPa",
+        "name": "Hectopascals"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 11,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "m3/s",
+        "name": "Meters^3/Second"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 12,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "min",
+        "name": "Minutes"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 13,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "mbar",
+        "name": "Millibars"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 14,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "knots",
+        "name": "Knots"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 15,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "degrees",
+        "name": "Degrees"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 16,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "oct",
+        "name": "Octas"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 17,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "g/kg",
+        "name": "Grams/Kilograms"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 18,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "days",
+        "name": "Days"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 19,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "hours",
+        "name": "Hours"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 20,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "m",
+        "name": "Meters"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 21,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "degree days",
+        "name": "Degree Days"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 22,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "km/h",
+        "name": "Kilometers/hour"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 23,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "°F",
+        "name": "Fahrenheit"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 24,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "in",
+        "name": "Inches"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 25,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "mi",
+        "name": "Miles"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 26,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "mi/h",
+        "name": "Miles/hour"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 27,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "per day",
+        "name": "Per Day"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 28,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "W/m2",
+        "name": "Watts per square meter"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 29,
+    "fields": {
+        "created_at": "2015-01-21T17:01:29Z",
+        "updated_at": "2015-01-21T17:01:29Z",
+        "symbol": "V",
+        "name": "Volts"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 30,
+    "fields": {
+        "created_at": "2015-02-16T03:33:01Z",
+        "updated_at": "2015-02-16T03:33:01Z",
+        "symbol": "inHg",
+        "name": "Inches of Mercury"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 31,
+    "fields": {
+        "created_at": "2015-07-29T10:22:06Z",
+        "updated_at": "2015-07-29T10:22:06Z",
+        "symbol": "kJ/m2",
+        "name": "Kilojoules per square meter"
+    }
+},
+{
+    "model": "wx.unit",
+    "pk": 32,
+    "fields": {
+        "created_at": "2023-05-09T01:41:17.023Z",
+        "updated_at": "2023-05-09T01:41:17.023Z",
+        "symbol": "Hz",
+        "name": "Hertz"
+    }
+}
+]
