@@ -1,3 +1,7 @@
+from django.urls import path
+from django.http import JsonResponse
+from ftplib import FTP
+
 from django.contrib import admin
 from django.utils.html import format_html
 from import_export.admin import ExportMixin, ImportMixin
@@ -185,6 +189,43 @@ class QcPersistThresholdAdmin(ExportMixin, admin.ModelAdmin):
 class FTPServerAdmin(admin.ModelAdmin):
     list_display = ("name", "host", "port", "username")
     form = forms.FTPServerForm
+
+    change_form_template = "admin/ftpserver_change_form.html"  # Custom template
+
+    # Custom view to handle the FTP connection test
+    def test_ftp_connection(self, request):
+        if request.method == "POST":
+            # Retrieve form data from the AJAX request
+            host = request.POST.get('host')
+            port = request.POST.get('port')
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+
+            # Validate and handle empty or invalid port values
+            try:
+                port = int(port)
+            except ValueError:
+                return JsonResponse({"status": "error", "message": "Invalid port value"})
+
+            # Try to establish an FTP connection
+            try:
+                ftp = FTP()
+                ftp.connect(host, port, timeout=10)
+                ftp.login(user=username, passwd=password)
+                ftp.quit()
+                return JsonResponse({"status": "success", "message": "Connection successful!"})
+            except Exception as e:
+                return JsonResponse({"status": "error", "message": str(e)})
+
+        return JsonResponse({"status": "error", "message": "Invalid request method"})
+
+    # Add custom URL for the AJAX request
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('test-ftp-connection/', self.admin_site.admin_view(self.test_ftp_connection), name='test-ftp-connection'),
+        ]
+        return custom_urls + urls
 
 
 @admin.register(models.StationFileIngestion)

@@ -1,0 +1,93 @@
+{% extends "admin/change_form.html" %}
+
+{% block submit_buttons_bottom %}
+    <!-- Add a custom button to test FTP connection below the form fields -->
+    <div id="test-connection-container">
+        <button type="button" id="test-ftp-button" onclick="ClearFtpResult()">Test FTP Connection</button>
+        <p id="test-ftp-result"></p>  <!-- Placeholder for the result -->
+    </div>
+
+    {{ block.super }}  <!-- This ensures the standard submit buttons are rendered -->
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+
+    <style>
+        /* Styling the Test FTP Connection container */
+        #test-connection-container {
+            margin-top: 20px; 
+            margin-bottom: 20px;
+        }
+
+        /* Styling the Test FTP Connection button */
+        #test-ftp-button {
+            display: inline-block;
+            background-color: var(--button-bg);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: background 0.15s;
+        }
+
+        #test-ftp-button:hover {
+            background-color: #609ab6;
+        }
+
+        /* Styling for the result message */
+        #test-ftp-result {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+    </style>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('#test-ftp-button').click(function(){
+                // Gather the form data
+                var host = $('#id_host').val();
+                var port = $('#id_port').val();
+                var username = $('#id_username').val();
+                var password = $('#id_password').val();
+
+                // Perform AJAX request to test FTP connection
+                $.ajax({
+                    url: "{% url 'admin:test-ftp-connection' %}",
+                    method: "POST",
+                    data: {
+                        'host': host,
+                        'port': port,
+                        'username': username,
+                        'password': password,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.status === "success") {
+                            $('#test-ftp-result').text(response.message).css('color', 'green');
+                        } else {
+                            $('#test-ftp-result').text(response.message).css('color', 'red');
+                        }
+                    },
+                    error: function() {
+                        $('#test-ftp-result').text("An error occurred").css('color', 'red');
+                    }
+                });
+            });
+        });
+    
+        function ClearFtpResult() {
+            // Get the element by its ID
+            const element = document.getElementById('test-ftp-result');
+            
+            // Clear the text after 5 seconds (5000 milliseconds)
+            setTimeout(() => {
+                element.textContent = '';
+            }, 5000);
+        }
+    </script>
+{% endblock %}
