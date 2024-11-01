@@ -68,5 +68,15 @@
       "name": "BELIZE MANUAL HOURLY DATA",
       "description": "Belize manual hourly data decoder (xls)"
     }
+  },
+  {
+    "model": "wx.decoder",
+    "pk": 10,
+    "fields": {
+      "created_at": "2024-10-31T20:50:23.471Z",
+      "updated_at": "2024-10-31T20:50:23.471Z",
+      "name": "SAT_TX325",
+      "description": "TX325 decoder for Campbell"
+    }
   }
 ]

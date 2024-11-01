@@ -6,7 +6,7 @@ import logging
 import os
 import socket
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from ftplib import FTP, error_perm, error_reply
 from time import sleep, time
 from croniter import croniter
@@ -780,6 +780,39 @@ def latest_received_dpc_data_in_hours(last_execution):
         return int(((datetime.now().astimezone(pytz.UTC) - last_execution).total_seconds()) / 3600)
     except TypeError as e:
         return 999999
+
+# set search criteria for dcp testing
+def set_search_criteria_dcp_test(dcp_info):
+    with open(settings.LRGS_CS_FILE_PATH, 'w') as cs_file:
+        if dcp_info['first_channel'] is not None:
+            cs_file.write(
+                f"""DRS_SINCE: now - 1 hour\nDRS_UNTIL: now\nDCP_ADDRESS: {dcp_info['dcp_address']}\nCHANNEL: |{dcp_info['first_channel']}\n""")
+        else:
+            cs_file.write(
+                f"""DRS_SINCE: now - 1 hour\nDRS_UNTIL: now\nDCP_ADDRESS: {dcp_info['dcp_address']}\n""")
+
+
+# called when the user attempts to test whether a noaaDCP is able to transmit
+def test_dcp_transmit(dcp_info):
+    set_search_criteria_dcp_test(dcp_info)
+
+    command = subprocess.Popen([settings.LRGS_EXECUTABLE_PATH,
+                                '-h', settings.LRGS_SERVER_HOST,
+                                '-p', settings.LRGS_SERVER_PORT,
+                                '-u', settings.LRGS_USER,
+                                '-P', settings.LRGS_PASSWORD,
+                                '-f', settings.LRGS_CS_FILE_PATH
+                                ], shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+    output, err_message = command.communicate()
+    # response = {
+    #     "output": output.decode('ascii'),
+    #     "err_message": err_message
+    # }
+
+    response = output.decode('ascii')
+
+    return response
 
 @shared_task
 def get_entl_data():
