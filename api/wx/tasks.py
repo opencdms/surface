@@ -794,6 +794,8 @@ def set_search_criteria_dcp_test(dcp_info):
 
 # called when the user attempts to test whether a noaaDCP is able to transmit
 def test_dcp_transmit(dcp_info):
+    logging.info(f"Attempting to test DCP transmition for {dcp_info['dcp_address']}")
+
     set_search_criteria_dcp_test(dcp_info)
 
     command = subprocess.Popen([settings.LRGS_EXECUTABLE_PATH,
@@ -811,6 +813,8 @@ def test_dcp_transmit(dcp_info):
     # }
 
     response = output.decode('ascii')
+
+    logging.info(f"{dcp_info['dcp_address']} DCP test transmission output {response}")
 
     return response
 
