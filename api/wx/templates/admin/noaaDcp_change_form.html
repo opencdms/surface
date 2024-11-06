@@ -119,7 +119,7 @@
                     success: function(response) {
                         // Hide the spinner, show the result text, and display info
                         $('.test-spinner').hide();
-                        $('#test-dcp-result').text(response.message).css('color', response.status === "success" ? 'white' : 'red').show();
+                        $('#test-dcp-result').text(response.message).css('color', response.status === "success" ? '#28a745' : 'red').show();
                         $('#test-dcp-info').show();
                     },
                     error: function(jqXHR, textStatus) {

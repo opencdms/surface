@@ -35,4 +35,5 @@ django-ckeditor==6.7.1
 django-simple-history==3.3.0
 pygeoapi
 pyoscar
+minio
 numpy==1.21.2

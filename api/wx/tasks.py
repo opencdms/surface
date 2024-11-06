@@ -11,6 +11,10 @@ from ftplib import FTP, error_perm, error_reply
 from time import sleep, time
 from croniter import croniter
 
+import csv
+import tempfile
+from minio import Minio
+
 import math, cmath
 import cronex
 import dateutil.parser
@@ -2123,3 +2127,344 @@ def export_station_to_oscar_wigos(selected_ids, api_token, cleaned_data):
         
     else:
         return {'code': 412, 'description': 'No WIGOS ID was provided'}
+
+# Tasks the looks for stations that are set for international exchange (see STATION model) and transmits them to wis2box
+@shared_task
+def aws_transmit_wis2box():
+    logging.info('aws_transmit_wis2box starting')
+
+    # grab a stations that have international exchange set
+    transmit_stations = Station.objects.filter(international_exchange=True).values_list('id', flat=True)
+
+    station_id = list(transmit_stations)
+
+
+    try:
+
+        for id in station_id:
+            # Log that data is being processed for a station
+            logging.info(f'AWS Transmision: Processing data for Station ID: {id}')
+            # Create a dictionary to map column names to their corresponding values
+            data_row = {
+                'wsi_series': None,
+                'wsi_issuer': None,
+                'wsi_issue_number': None,
+                'wsi_local': None,
+                'wmo_block_number': None,
+                'wmo_station_number': None,
+                'station_type': None,
+                'year': None,
+                'month': None,
+                'day': None,
+                'hour': None,
+                'minute': None,
+                'latitude': None,
+                'longitude': None,
+                'station_height_above_msl': None,
+                'barometer_height_above_msl': None,
+                'station_pressure': None,
+                'msl_pressure': None,
+                'geopotential_height': None,
+                'thermometer_height': None,
+                'air_temperature': None,
+                'dewpoint_temperature': None,
+                'relative_humidity': None,
+                'method_of_ground_state_measurement': None,
+                'ground_state': None,
+                'method_of_snow_depth_measurement': None,
+                'snow_depth': None,
+                'precipitation_intensity': None,
+                'anemometer_height': None,
+                'time_period_of_wind': None,
+                'wind_direction': None,
+                'wind_speed': None,
+                'maximum_wind_gust_direction_10_minutes': None,
+                'maximum_wind_gust_speed_10_minutes': None,
+                'maximum_wind_gust_direction_1_hour': None,
+                'maximum_wind_gust_speed_1_hour': None,
+                'maximum_wind_gust_direction_3_hours': None,
+                'maximum_wind_gust_speed_3_hours': None,
+                'rain_sensor_height': None,
+                'total_precipitation_1_hour': None,
+                'total_precipitation_3_hours': None,
+                'total_precipitation_6_hours': None,
+                'total_precipitation_12_hours': None,
+                'total_precipitation_24_hours': None
+            }
+
+                # Function to populate data_row with query results
+                
+            # Fxn that populates dictionary with values for the csv file
+            def populate_data_row(result, result_info):
+                    # Adding the result to the data_row dictionary
+                    # Handling query result, given that query result is station related (result_info is station_info)
+                    if result:
+                        if result_info == "station_info":
+
+                            if result[0]:
+                                row_item = result[0].split("-")
+
+                                data_row['wsi_series'] = row_item[0]
+                                data_row['wsi_issuer'] = row_item[1]
+                                data_row['wsi_issue_number'] = row_item[2]
+                                data_row['wsi_local'] = row_item[3]
+
+                            # station type is 0 for automatic stations and 1 for manned stations
+                            if result[4]:
+                                data_row['station_type'] = 0
+                            else:
+                                data_row['station_type'] = 1
+
+                            data_row['latitude'] = round(result[1], 5)
+                            data_row['longitude'] = round(result[2], 5)
+
+                            data_row['station_height_above_msl'] = result[3]
+
+                            data_row['barometer_height_above_msl'] = round(result[3] + 1.7, 2) # 1.7 metre above station_height_above_msl
+
+                            data_row['thermometer_height'] = 1.7
+
+                            data_row['anemometer_height'] = 10
+
+                            data_row['time_period_of_wind'] = -5
+
+                            data_row['rain_sensor_height'] = 1.5
+
+                        elif result_info == "raw_data":
+                            # Populate year, month, day, hour, minute in data_row
+                            # Get current UTC datetime
+                            current_utc_datetime = result[0][2]
+
+                            # Extract year, month, day, hour, and minute
+                            year = current_utc_datetime.year
+                            month = current_utc_datetime.month
+                            day = current_utc_datetime.day
+                            hour = current_utc_datetime.hour
+                            minute = current_utc_datetime.minute
+
+                            # Add the extracted components to data_row
+                            data_row['year'] = year
+                            data_row['month'] = month
+                            data_row['day'] = day
+                            data_row['hour'] = hour
+                            data_row['minute'] = minute
+
+                            for row in result:
+                                if row[0] == 10:
+                                    data_row['air_temperature'] = round(row[1] + 273.15, 2) 
+                                elif row[0] == 19:
+                                    data_row['dewpoint_temperature'] = round(row[1] + 273.15, 2)
+                                elif row[0] == 30:
+                                    data_row['relative_humidity'] = round(row[1])  
+                                elif row[0] == 51:
+                                    data_row['wind_speed'] = round(row[1], 1)  
+                                elif row[0] == 60:
+                                    data_row['station_pressure'] = row[1] * 100  
+                                elif row[0] == 61:
+                                    data_row['msl_pressure'] = row[1] * 100  
+
+                        elif result_info == "precip_hourly_data":
+                            precip_hourly = []
+
+                            for rows in result:
+                                precip_hourly.append(rows[0]) 
+
+                            data_row['total_precipitation_1_hour'] = round(precip_hourly[0], 1)
+
+                            data_row['total_precipitation_3_hours'] = round(sum(precip_hourly[:3]), 1)
+
+                            data_row['total_precipitation_6_hours'] = round(sum(precip_hourly[:6]), 1)
+
+                            data_row['total_precipitation_12_hours'] = round(sum(precip_hourly[:12]), 1)
+
+                            data_row['total_precipitation_24_hours'] = round(sum(precip_hourly), 1)   
+
+                        elif result_info == "wind_hourly_data":
+                            wind_hourly = []
+
+                            for rows in result:
+                                wind_hourly.append(rows[0]) 
+
+                            data_row['maximum_wind_gust_speed_1_hour'] = round(wind_hourly[0], 1)
+
+                            for value in wind_hourly:
+
+                                if data_row['maximum_wind_gust_speed_3_hours']:
+                                    if value > data_row['maximum_wind_gust_speed_3_hours']:
+                                        data_row['maximum_wind_gust_speed_3_hours'] = round(value, 1)
+
+                                else:
+                                    data_row['maximum_wind_gust_speed_3_hours'] = round(value, 1)
+                        
+                        elif result_info == "wind_direction_hourly_data":
+                            data_row['wind_direction'] = round(result[0][0])
+                            data_row['maximum_wind_gust_direction_1_hour'] = round(result[0][1])
+                            data_row['maximum_wind_gust_direction_3_hours'] = round(max(result[0][1], result[1][1], result[2][1]))
+
+
+            # Populate data_row with query1 results
+            query1 = list(Station.objects.filter(id=id).values_list('wigos', 'latitude', 'longitude', 'elevation', 'is_automatic').first())
+            populate_data_row(query1, "station_info")
+
+            # Populate data_row with query2
+            # Define the query with placeholders for parameters
+            query = """
+            SELECT variable_id, measured, datetime
+            FROM raw_data rd
+            WHERE station_id = %s
+            AND datetime = (
+                SELECT MAX(datetime)
+                FROM hourly_summary
+                WHERE station_id = %s
+            )
+            AND variable_id IN (10, 19, 30, 51, 60, 61);
+            """
+
+            # Open a cursor to perform database operations
+            with connection.cursor() as cursor:
+                # Execute the query, passing `id` as the parameter to prevent SQL injection
+                cursor.execute(query, [id, id])
+
+                # Fetch all results from the executed query
+                query2 = cursor.fetchall()
+
+                for x in range(len(query2)):
+                    query2[x] = list(query2[x])
+
+            populate_data_row(query2, "raw_data")
+
+            # Populate data_row with query3
+            query = """
+            SELECT sum_value
+            FROM hourly_summary hs
+            WHERE station_id = %s
+            AND variable_id = 0
+            ORDER BY datetime DESC
+            LIMIT 24;
+            """
+
+            # Execute the query safely using a parameter
+            with connection.cursor() as cursor:
+                # Pass `id` as a parameter to prevent SQL injection
+                cursor.execute(query, [id])
+                
+                # Fetch all results from the executed query
+                query3 = cursor.fetchall()
+                
+                # Convert each tuple in query3 to a list
+                query3 = [list(row) for row in query3]
+
+            populate_data_row(query3, "precip_hourly_data")
+
+            # Populate data_row with query4
+            query = """
+            SELECT max_value
+            FROM hourly_summary hs
+            WHERE station_id = %s
+            AND variable_id = 53
+            ORDER BY datetime DESC
+            LIMIT 3;
+            """
+
+            # Execute the query safely using a parameter
+            with connection.cursor() as cursor:
+                # Pass `id` as a parameter to prevent SQL injection
+                cursor.execute(query, [id])
+                
+                # Fetch all results from the executed query
+                query4 = cursor.fetchall()
+                
+                # Convert each tuple in query4 to a list
+                query4 = [list(row) for row in query4]
+
+            populate_data_row(query4, "wind_hourly_data")
+
+            # Populate data_row with query5
+            # Define the query with a placeholder for `id`
+            query = """
+            SELECT avg_value, max_value
+            FROM hourly_summary
+            WHERE station_id = %s
+            AND variable_id = 55
+            ORDER BY datetime DESC
+            LIMIT 3;
+            """
+
+            # Execute the query safely using a parameter
+            with connection.cursor() as cursor:
+                # Pass `id` as a parameter to prevent SQL injection
+                cursor.execute(query, [id])
+                
+                # Fetch all results from the executed query
+                query5 = cursor.fetchall()
+                
+                # Convert each tuple in query5 to a list
+                query5 = [list(row) for row in query5]
+
+            populate_data_row(query5, "wind_direction_hourly_data")
+
+
+            # CSV writing
+            # Create a temporary file for the CSV
+            with tempfile.NamedTemporaryFile(suffix='.csv', mode='w', delete=False) as temp_csv:
+                csv_writer = csv.DictWriter(temp_csv, fieldnames=data_row.keys())
+                csv_writer.writeheader()
+                csv_writer.writerow(data_row)
+                temp_csv_path = temp_csv.name  # Save the temp file path for upload
+
+            # Log that data was written to csv file
+            logging.info(f"Data has been written to: {temp_csv_path} for Station Id: {id}")
+
+            minio_path = settings.WIS2BOX_TOPIC_HIERARCHY
+                            
+            # IF PUSHING TO REGIONAL WIS2
+            if settings.ENABLE_WIS2BOX_REGIONAL == "true":
+                # Push CSV to regional wis2box
+                try:
+                    is_secure = False
+
+                    client = Minio(
+                        endpoint=settings.WIS2BOX_ENDPOINT_REGIONAL,
+                        access_key=settings.WIS2BOX_USER_REGIONAL,
+                        secret_key=settings.WIS2BOX_PASSWORD_REGIONAL,
+                        secure=is_secure)
+
+                    filename = f'wmo_data_{id}.csv'
+                    client.fput_object('wis2box-incoming', minio_path+filename, temp_csv_path)
+
+                    # Log that transfer to regional wis2box was succesful
+                    logging.info(f"Data transfer to regional wis2box successful for Station Id: {id}")
+
+                except minio.error.S3Error as e:
+                    # Log the error if a minio error occurs
+                    logging.error(f"regional wis2box Connection Error for station id {id}: {e}")
+
+            # IF PUSHING TO LOCAL WIS2
+            if settings.ENABLE_WIS2BOX_LOCAL == "true":
+                # Push CSV to local wis2box
+                try:
+                    is_secure = False
+
+                    client = Minio(
+                        endpoint=settings.WIS2BOX_ENDPOINT_LOCAL,
+                        access_key=settings.WIS2BOX_USER_LOCAL,
+                        secret_key=settings.WIS2BOX_PASSWORD_LOCAL,
+                        secure=is_secure)
+
+                    filename = f'wmo_data_{id}.csv'
+                    client.fput_object('wis2box-incoming', minio_path+filename, temp_csv_path)
+
+                    # Log that transfer to local wis2box was succesful
+                    logging.info(f"Data transfer to local wis2box successful for Station Id: {id}")
+
+                except minio.error.S3Error as e:
+                    # Log the error if a minio error occurs
+                    logging.error(f"regional local Connection Error for station id {id}: {e}")
+            
+            # Clean up the temporary file
+            logging.info(f"Temporary file for wis2box transfer {temp_csv_path} deleted for Station Id: {id}")
+            os.remove(temp_csv_path)
+
+    except psycopg2.Error as e:
+        # Log the error if a psycopg2 error occurs
+        logging.error(f"An error occured attempting to send AWS data to wis2box: {e}")

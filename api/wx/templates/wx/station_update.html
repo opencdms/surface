@@ -7,6 +7,10 @@
     max-width: 95%; 
     margin: 0 auto;
   }
+
+  .hide_content {
+    display: none;
+  }
   
   /* Hide options by default */
   .form-item {
@@ -192,6 +196,8 @@
       {% form %}
         {% attr form.is_automatic 'group' class %}srf-field-checkbox{% endattr %}
         {% attr form.is_active 'group' class %}srf-field-checkbox{% endattr %}
+        {% attr form.is_synoptic 'group' class %}srf-field-checkbox{% endattr %}
+        {% attr form.international_exchange 'group' class %}srf-field-checkbox{% endattr %}
       {% endform %}
     </div>
 
@@ -498,6 +504,27 @@
 
   });
 
+
+    // Function to toggle visibility of containers based on checkbox status
+    function toggleSynopticContainers() {
+      const isChecked = document.getElementById('id_is_synoptic').checked;
+      const containers = ['id_synoptic_code_container', 'id_synoptic_type_container'];
+
+      containers.forEach(id => {
+        const container = document.getElementById(id);
+        if (isChecked) {
+          container.classList.remove('hide_content');
+        } else {
+          container.classList.add('hide_content');
+        }
+      });
+    }
+
+    // Event listener for the checkbox
+    document.getElementById('id_is_synoptic').addEventListener('change', toggleSynopticContainers);
+
+    // Initial check to set the right state on page load
+    toggleSynopticContainers();
   </script>
 </div>
 {% endblock %}

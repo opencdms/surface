@@ -405,6 +405,8 @@
           {% form %}
             {% attr form.is_automatic 'group' class %}srf-field-checkbox{% endattr %}
             {% attr form.is_active 'group' class %}srf-field-checkbox{% endattr %}
+            {% attr form.is_synoptic 'group' class %}srf-field-checkbox{% endattr %}
+            {% attr form.international_exchange 'group' class %}srf-field-checkbox{% endattr %}
             {% attr form.end_date 'widget' class %}srf-field-max-300{% endattr %}
             {% attr form.zone 'widget' class %}srf-field-max-300{% endattr %}
           {% endform %}
@@ -727,7 +729,7 @@
         'id_wigos_part_4_container',
         'id_wmo_region_container',
         'id_wmo_station_type_container',
-        'id_international_station_container',
+        'id_international_exchange_container',
         'id_reporting_status_container'
       ];
 
@@ -819,7 +821,7 @@
       }
       
       // WIS2BOX-specific containers
-      var wis2boxContainer = document.getElementById('id_international_station_container');
+      var wis2boxContainer = document.getElementById('id_international_exchange_container');
       var wis2box_settings_container = document.getElementById('wis2box_specific_settings');
       
       if (wis2boxActive) {
@@ -968,6 +970,29 @@
       document.getElementById('main_content').classList.remove('hide_main_content');
       document.getElementById('oscar_error_container').classList.add('hide_content');
     }
+  
+  
+    // Function to toggle visibility of containers based on checkbox status
+    function toggleSynopticContainers() {
+      const isChecked = document.getElementById('id_is_synoptic').checked;
+      const containers = ['id_synoptic_code_container', 'id_synoptic_type_container'];
+
+      containers.forEach(id => {
+        const container = document.getElementById(id);
+        if (isChecked) {
+          container.classList.remove('hide_content');
+        } else {
+          container.classList.add('hide_content');
+        }
+      });
+    }
+
+    // Event listener for the checkbox
+    document.getElementById('id_is_synoptic').addEventListener('change', toggleSynopticContainers);
+
+    // Initial check to set the right state on page load
+    toggleSynopticContainers();
+
   </script>
 </div>
 {% endblock %}

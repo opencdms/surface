@@ -459,7 +459,7 @@ class Station(BaseModel):
         blank=True,
     )
 
-    international_station = models.BooleanField(default=False)
+    international_exchange = models.BooleanField(default=False)
     
     is_automatic = models.BooleanField(default=True)
     is_synoptic = models.BooleanField(default=False)
