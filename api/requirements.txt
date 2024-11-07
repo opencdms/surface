@@ -36,4 +36,5 @@ django-simple-history==3.3.0
 pygeoapi
 pyoscar
 minio
+pint==0.18
 numpy==1.21.2
