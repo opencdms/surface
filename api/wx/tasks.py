@@ -2231,75 +2231,96 @@ def aws_transmit_wis2box():
                             data_row['rain_sensor_height'] = 1.5
 
                         elif result_info == "raw_data":
-                            # Populate year, month, day, hour, minute in data_row
-                            # Get current UTC datetime
-                            current_utc_datetime = result[0][2]
+                            try:
+                                # Populate year, month, day, hour, minute in data_row
+                                # Get current UTC datetime
+                                current_utc_datetime = result[0][2]
 
-                            # Extract year, month, day, hour, and minute
-                            year = current_utc_datetime.year
-                            month = current_utc_datetime.month
-                            day = current_utc_datetime.day
-                            hour = current_utc_datetime.hour
-                            minute = current_utc_datetime.minute
+                                # Extract year, month, day, hour, and minute
+                                year = current_utc_datetime.year
+                                month = current_utc_datetime.month
+                                day = current_utc_datetime.day
+                                hour = current_utc_datetime.hour
+                                minute = current_utc_datetime.minute
 
-                            # Add the extracted components to data_row
-                            data_row['year'] = year
-                            data_row['month'] = month
-                            data_row['day'] = day
-                            data_row['hour'] = hour
-                            data_row['minute'] = minute
+                                # Add the extracted components to data_row
+                                data_row['year'] = year
+                                data_row['month'] = month
+                                data_row['day'] = day
+                                data_row['hour'] = hour
+                                data_row['minute'] = minute
 
-                            for row in result:
-                                if row[0] == 10:
-                                    data_row['air_temperature'] = round(row[1] + 273.15, 2) 
-                                elif row[0] == 19:
-                                    data_row['dewpoint_temperature'] = round(row[1] + 273.15, 2)
-                                elif row[0] == 30:
-                                    data_row['relative_humidity'] = round(row[1])  
-                                elif row[0] == 51:
-                                    data_row['wind_speed'] = round(row[1], 1)  
-                                elif row[0] == 60:
-                                    data_row['station_pressure'] = row[1] * 100  
-                                elif row[0] == 61:
-                                    data_row['msl_pressure'] = row[1] * 100  
+                                for row in result:
+                                    if row[0] == 10:
+                                        data_row['air_temperature'] = round(row[1] + 273.15, 2) 
+                                    elif row[0] == 19:
+                                        data_row['dewpoint_temperature'] = round(row[1] + 273.15, 2)
+                                    elif row[0] == 30:
+                                        data_row['relative_humidity'] = round(row[1])  
+                                    elif row[0] == 51:
+                                        data_row['wind_speed'] = round(row[1], 1)  
+                                    elif row[0] == 60:
+                                        data_row['station_pressure'] = row[1] * 100  
+                                    elif row[0] == 61:
+                                        data_row['msl_pressure'] = row[1] * 100  
+                            except Exception as e:
+                                logging.error(f'An error occured when parsing raw data. Error: {e}')
 
                         elif result_info == "precip_hourly_data":
                             precip_hourly = []
 
                             for rows in result:
-                                precip_hourly.append(rows[0]) 
+                                try:
+                                    precip_hourly.append(rows[0]) 
+                                except Exception as e:
+                                    logging.error(f'An error occured when parsing hourly summary for precipitation data. Error: {e}')
 
-                            data_row['total_precipitation_1_hour'] = round(precip_hourly[0], 1)
+                            try:
 
-                            data_row['total_precipitation_3_hours'] = round(sum(precip_hourly[:3]), 1)
+                                data_row['total_precipitation_1_hour'] = round(precip_hourly[0], 1)
 
-                            data_row['total_precipitation_6_hours'] = round(sum(precip_hourly[:6]), 1)
+                                data_row['total_precipitation_3_hours'] = round(sum(precip_hourly[:3]), 1)
 
-                            data_row['total_precipitation_12_hours'] = round(sum(precip_hourly[:12]), 1)
+                                data_row['total_precipitation_6_hours'] = round(sum(precip_hourly[:6]), 1)
 
-                            data_row['total_precipitation_24_hours'] = round(sum(precip_hourly), 1)   
+                                data_row['total_precipitation_12_hours'] = round(sum(precip_hourly[:12]), 1)
+
+                                data_row['total_precipitation_24_hours'] = round(sum(precip_hourly), 1)   
+
+                            except Exception as e:
+                                logging.error(f'An error occured when parsing hourly summary for precipitation data. Error: {e}')
 
                         elif result_info == "wind_hourly_data":
                             wind_hourly = []
 
                             for rows in result:
-                                wind_hourly.append(rows[0]) 
+                                try:
+                                    wind_hourly.append(rows[0]) 
+                                except Exception as e:
+                                    logging.error(f'An error occured when parsing hourly summary for wind hourly data. Error: {e}')
 
-                            data_row['maximum_wind_gust_speed_1_hour'] = round(wind_hourly[0], 1)
+                            try:
+                                data_row['maximum_wind_gust_speed_1_hour'] = round(wind_hourly[0], 1)
 
-                            for value in wind_hourly:
+                                for value in wind_hourly:
 
-                                if data_row['maximum_wind_gust_speed_3_hours']:
-                                    if value > data_row['maximum_wind_gust_speed_3_hours']:
+                                    if data_row['maximum_wind_gust_speed_3_hours']:
+                                        if value > data_row['maximum_wind_gust_speed_3_hours']:
+                                            data_row['maximum_wind_gust_speed_3_hours'] = round(value, 1)
+
+                                    else:
                                         data_row['maximum_wind_gust_speed_3_hours'] = round(value, 1)
 
-                                else:
-                                    data_row['maximum_wind_gust_speed_3_hours'] = round(value, 1)
+                            except Exception as e:
+                                logging.error(f'An error occured when parsing hourly summary for wind gust data. Error: {e}')
                         
                         elif result_info == "wind_direction_hourly_data":
-                            data_row['wind_direction'] = round(result[0][0])
-                            data_row['maximum_wind_gust_direction_1_hour'] = round(result[0][1])
-                            data_row['maximum_wind_gust_direction_3_hours'] = round(max(result[0][1], result[1][1], result[2][1]))
+                            try:
+                                data_row['wind_direction'] = round(result[0][0])
+                                data_row['maximum_wind_gust_direction_1_hour'] = round(result[0][1])
+                                data_row['maximum_wind_gust_direction_3_hours'] = round(max(result[0][1], result[1][1], result[2][1]))
+                            except Exception as e:
+                                logging.error(f'An error occured when parsing hourly summary for wind direction data. Error: {e}')
 
 
             # Populate data_row with query1 results
@@ -2464,6 +2485,9 @@ def aws_transmit_wis2box():
             # Clean up the temporary file
             logging.info(f"Temporary file for wis2box transfer {temp_csv_path} deleted for Station Id: {id}")
             os.remove(temp_csv_path)
+
+            # logging that the station transfer was complete
+            logging.info(f'AWS Transmision for Station ID: {id} complete')
 
     except psycopg2.Error as e:
         # Log the error if a psycopg2 error occurs
