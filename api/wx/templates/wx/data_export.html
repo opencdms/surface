@@ -45,33 +45,23 @@
                 clearable
               ></v-autocomplete>
             </v-col>
-            <v-col class="text-center" cols="1">
+            <v-col class="text-center" cols="2">
               <v-switch
                 v-model="filter.isActive"
                 @change="invertValue(filter.isActive)"
                 label="Active"
               ></v-switch>
             </v-col>
-            <v-col class="text-center" cols="1">
+            <v-col class="text-center" cols="2">
               <v-switch
                 v-model="filter.isAutomatic"
                 @change="invertValue(filter.isAutomatic)"
                 label="Automatic"
               ></v-switch>
             </v-col>
-            <v-col class="text-center" cols="2">
-              <v-btn
-                class="ml-2"
-                outlined
-                justify-end
-                color="primary"
-                @click="selectAllStations"
-                >Select All</v-btn
-              >
-            </v-col>
           </v-row>
           <v-row dense justify="start" class="pt-3">
-            <v-col class="text-center" cols="6">
+            <v-col class="text-center" cols="10">
               <v-autocomplete
                 v-model="station"
                 :items="stationList"
@@ -86,7 +76,19 @@
                 clearable
               ></v-autocomplete>
             </v-col>
-            <v-col class="text-center" cols="3">
+            <v-col class="text-center" cols="2">
+              <v-btn
+                class="ml-2"
+                outlined
+                justify-end
+                color="primary"
+                @click="selectAllStations"
+                >Select All</v-btn
+              >
+            </v-col>
+          </v-row>
+          <v-row dense justify="start" class="pt-3">
+            <v-col class="text-center" cols="7">
               <v-select
                 v-model="source"
                 :items="sources"
@@ -96,11 +98,20 @@
               ></v-select>
             </v-col>
                         
-            <v-col class="text-center" cols="3" v-if="source.source === 'raw_data'">
+            <v-col class="text-center" cols="5" v-if="source.source === 'raw_data'">
               <v-select
               v-model="dataInterval"
               :items="dataIntervals"
               label="Data Interval"
+              ></v-select>
+            </v-col>
+
+            <!-- dropdown for aggregation -->
+            <v-col class="text-center" cols="5" v-if="source.source != 'raw_data'">
+              <v-select
+                v-model="aggregation"
+                :items="aggregations"
+                label="Aggregation"
               ></v-select>
             </v-col>
           </v-row>
@@ -376,6 +387,13 @@
           {value: 3, text: "Monthly summary", source: "monthly_summary"},
           {value: 4, text: "Yearly summary", source: "yearly_summary"},
         ],
+        aggregation: "avg",
+        aggregations: [
+          {text: "Maximum", value: "max"},
+          {text: "Minimum", value: "min"},
+          {text: "Average", value: "avg"},
+          {text: "Sum", value: "sum"},
+        ],
         initial_date: moment().format('YYYY-MM-DD'),
         initial_time: '00:00',
         final_date: moment().add(1, 'days').format('YYYY-MM-DD'),
@@ -493,7 +511,8 @@
             start_datetime: this.formatDatetimeForRequest(start_datetime),
             end_datetime: this.formatDatetimeForRequest(end_datetime),
             variables: this.variables.map(v => v.value),
-            data_interval: this.dataInterval
+            data_interval: this.dataInterval,
+            aggregation: this.aggregation,
           }).then(data => {
             this.updateTable()
             this.loading = false;

@@ -90,13 +90,22 @@ def ScheduleDataExport(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
+    # access values from the response
     json_body = json.loads(request.body)
     station_ids = json_body['stations']  # array with station ids
-    data_source = json_body[
-        'source']  # one of raw_data, hourly_summary, daily_summary, monthly_summary or yearly_summary
+
+    data_source = json_body['source']  # could be either raw_data, hourly_summary, daily_summary, monthly_summary or yearly_summary
+
     start_date = json_body['start_datetime']  # in format %Y-%m-%d %H:%M:%S
+
     end_date = json_body['end_datetime']  # in format %Y-%m-%d %H:%M:%S
+
     variable_ids = json_body['variables']  # list of obj in format {id: Int, agg: Str}
+
+    aggregation = json_body['aggregation'] # sets which column in the db will be used when the source is a summary. 
+    # If source is raw_data, this will be set to none
+    if data_source == 'raw_data':
+        aggregation = None
 
     data_interval_seconds = None
     if data_source == 'raw_data' and 'data_interval' in json_body:  # a number with the data interval in seconds. Only required for raw_data
@@ -140,7 +149,7 @@ def ScheduleDataExport(request):
             variable = Variable.objects.get(pk=variable_id)
             DataFileVariable.objects.create(datafile=newfile, variable=variable)
 
-        tasks.export_data.delay(station_id, data_source, start_date, end_date, variable_ids, newfile.id)
+        tasks.export_data.delay(station_id, data_source, start_date, end_date, variable_ids, newfile.id, aggregation)
         created_data_file_ids.append(newfile.id)
 
     return HttpResponse(created_data_file_ids, status=status.HTTP_200_OK)

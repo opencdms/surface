@@ -872,7 +872,7 @@ def save_flash_data(data_string):
     read_data_flash(data_string.encode('latin-1'))
 
 @shared_task
-def export_data(station_id, source, start_date, end_date, variable_ids, file_id):
+def export_data(station_id, source, start_date, end_date, variable_ids, file_id, agg):
     logger.info(f'Exporting data (file "{file_id}")')
 
     timezone_offset = pytz.timezone(settings.TIMEZONE_NAME)
@@ -891,44 +891,48 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
         data_source_description = 'Raw data'
         converted_start_date = start_date_utc
         converted_end_date = end_date_utc
+
     else:
-        measured_source = '''
-            CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value
-                 WHEN var.sampling_operation_id = 3      THEN data.min_value
-                 WHEN var.sampling_operation_id = 4      THEN data.max_value
-                 WHEN var.sampling_operation_id = 6      THEN data.sum_value
-            ELSE data.sum_value END as value '''
+        # measured_source = '''
+        #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value
+        #          WHEN var.sampling_operation_id = 3      THEN data.min_value
+        #          WHEN var.sampling_operation_id = 4      THEN data.max_value
+        #          WHEN var.sampling_operation_id = 6      THEN data.sum_value
+        #     ELSE data.sum_value END as value '''
         if source == 'hourly_summary':
             datetime_variable = 'datetime'
             date_source = f"(datetime + interval '{station.utc_offset_minutes} minutes') at time zone 'utc' as date"
             data_source_description = 'Hourly summary'
             converted_start_date = start_date_utc
             converted_end_date = end_date_utc
+
         elif source == 'daily_summary':
             datetime_variable = 'day'
             data_source_description = 'Daily summary'
             date_source = "day::date"
             converted_start_date = start_date_utc.astimezone(timezone_offset).date()
             converted_end_date = end_date_utc.astimezone(timezone_offset).date()
+
         elif source == 'monthly_summary':
-            measured_source = '''
-                CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                    WHEN var.sampling_operation_id = 3      THEN data.min_value
-                    WHEN var.sampling_operation_id = 4      THEN data.max_value
-                    WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                ELSE data.sum_value END as value '''
+            # measured_source = '''
+            #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+            #         WHEN var.sampling_operation_id = 3      THEN data.min_value
+            #         WHEN var.sampling_operation_id = 4      THEN data.max_value
+            #         WHEN var.sampling_operation_id = 6      THEN data.sum_value
+            #     ELSE data.sum_value END as value '''
             datetime_variable = 'date'
             date_source = "date::date"
             data_source_description = 'Monthly summary'
             converted_start_date = start_date_utc.astimezone(timezone_offset).date()
             converted_end_date = end_date_utc.astimezone(timezone_offset).date()
+
         elif source == 'yearly_summary':
-            measured_source = '''
-                CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                    WHEN var.sampling_operation_id = 3      THEN data.min_value
-                    WHEN var.sampling_operation_id = 4      THEN data.max_value
-                    WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                ELSE data.sum_value END as value '''
+            # measured_source = '''
+            #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+            #         WHEN var.sampling_operation_id = 3      THEN data.min_value
+            #         WHEN var.sampling_operation_id = 4      THEN data.max_value
+            #         WHEN var.sampling_operation_id = 6      THEN data.sum_value
+            #     ELSE data.sum_value END as value '''
             datetime_variable = 'date'
             date_source = "date::date"
             data_source_description = 'Yearly summary'
@@ -970,7 +974,7 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
             current_end_datetime = datetime_list[i + 1]
 
             with connection.cursor() as cursor:
-                if source == 'raw_data':
+                if source == 'raw_data': 
 
                     query_raw_data = '''
                         WITH processed_data AS (
@@ -999,19 +1003,22 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     cursor.execute(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
-            
-
 
                 elif source == 'hourly_summary':
-
+                                                                                    # directly bellow data.avg_value is used...understand this!!! why is it happening
+                                                                                    # also confim that the summaries have a avg_value column
                     query_hourly = '''
                         WITH processed_data AS (
                             SELECT datetime ,var.id as variable_id
-                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                            WHEN var.sampling_operation_id = 3      THEN data.min_value
-                            WHEN var.sampling_operation_id = 4      THEN data.max_value
-                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, '-99.9') as value  
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
                             FROM hourly_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.datetime >= %(start_datetime)s
@@ -1029,21 +1036,25 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     
                     logging.info(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                     cursor.execute(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
                     
                 elif source == 'daily_summary':
                     query_daily = '''
                         WITH processed_data AS (
                             SELECT day ,var.id as variable_id
-                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                            WHEN var.sampling_operation_id = 3      THEN data.min_value
-                            WHEN var.sampling_operation_id = 4      THEN data.max_value
-                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, '-99.9') as value  
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
                             FROM daily_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.day >= %(start_datetime)s
@@ -1060,21 +1071,25 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
                     logging.info(query_daily, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                     cursor.execute(query_daily, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
                 
                 elif source == 'monthly_summary':
                     query_monthly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
-                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                            WHEN var.sampling_operation_id = 3      THEN data.min_value
-                            WHEN var.sampling_operation_id = 4      THEN data.max_value
-                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, '-99.9') as value  
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
                             FROM monthly_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.date >= %(start_datetime)s
@@ -1091,21 +1106,25 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     
                     logging.info(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                     cursor.execute(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                 elif source == 'yearly_summary':
                     query_yearly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
-                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                            WHEN var.sampling_operation_id = 3      THEN data.min_value
-                            WHEN var.sampling_operation_id = 4      THEN data.max_value
-                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, '-99.9') as value  
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
                             FROM yearly_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.date >= %(start_datetime)s
@@ -1122,11 +1141,12 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
                     logging.info(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                     cursor.execute(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
+                
                 query_result = query_result + cursor.fetchall()
 
 
@@ -1138,14 +1158,31 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
             start_date_header = start_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
             end_date_header = end_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
 
-            f.write(f'Station:,{station.code} - {station.name}\n')
-            f.write(f'Data source:,{data_source_description}\n')
-            f.write(f'Description:,{variable_names_string}\n')
-            f.write(f'Latitude:,{station.latitude}\n')
-            f.write(f'Longitude:,{station.longitude}\n')
-            f.write(f'Date of completion:,{date_of_completion.strftime("%Y-%m-%d %H:%M:%S")}\n')
-            f.write(f'Prepared by:,{current_datafile.prepared_by}\n')
-            f.write(f'Start date:,{start_date_header},End date:,{end_date_header}\n\n')
+            f.write(f'Station:{station.code} - {station.name}\n')
+            f.write(f'Data source:{data_source_description}\n')
+            f.write(f'Description:{variable_names_string}\n')
+            f.write(f'Latitude:{station.latitude}\n')
+            f.write(f'Longitude:{station.longitude}\n')
+            f.write(f'Date of completion:{date_of_completion.strftime("%Y-%m-%d %H:%M:%S")}\n')
+            f.write(f'Prepared by:{current_datafile.prepared_by}\n')
+            f.write(f'Start date:{start_date_header}, End date:,{end_date_header}\n\n')
+
+            # Check the value of the agg to inform aggregation
+            if agg == "min":
+                # Write the text for "min" to the file
+                f.write(f'Aggregation: Minimum\n\n')
+            elif agg == "max":
+                # Write the text for "max" to the file
+                f.write(f'Aggregation: Maximum\n\n')
+            elif agg == "sum":
+                # Write the text for "sum" to the file
+                f.write(f'Aggregation: Sum\n\n')
+            elif agg == "avg":
+                # Write the text for "avg" to the file
+                f.write(f'Aggregation: Average\n\n')
+            else:
+                # Handle unexpected values of 'agg'
+                f.write(f'Aggregation: Instantaneous Raw Data\n\n')
 
 
         lines = 0
