@@ -16,6 +16,8 @@ matplotlib.use("Agg")
 import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
+from openpyxl import Workbook
+import tempfile
 import psycopg2
 import pytz
 from django.contrib import messages
@@ -24,7 +26,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.template import loader
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -44,6 +46,7 @@ from rest_framework.parsers import FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from slugify import slugify
+from celery.result import AsyncResult
 
 from tempestas_api import settings
 from wx import serializers, tasks
@@ -103,6 +106,9 @@ def ScheduleDataExport(request):
     variable_ids = json_body['variables']  # list of obj in format {id: Int, agg: Str}
 
     aggregation = json_body['aggregation'] # sets which column in the db will be used when the source is a summary. 
+
+    displayUTC = json_body['displayUTC'] # determins wheter an offset will be applied based on the truthines of displayUTC
+
     # If source is raw_data, this will be set to none
     if data_source == 'raw_data':
         aggregation = None
@@ -140,19 +146,33 @@ def ScheduleDataExport(request):
         prepared_by = request.user.username
 
     for station_id in station_ids:
-        newfile = DataFile.objects.create(ready=False, initial_date=start_date_utc, final_date=end_date_utc,
-                                          source=data_source_description, prepared_by=prepared_by,
-                                          interval_in_seconds=data_interval_seconds)
-        DataFileStation.objects.create(datafile=newfile, station_id=station_id)
+        if aggregation:
+            for agg in aggregation:
+                newfile = DataFile.objects.create(ready=False, initial_date=start_date_utc, final_date=end_date_utc,
+                                                source=data_source_description, prepared_by=prepared_by,
+                                                interval_in_seconds=data_interval_seconds)
+                DataFileStation.objects.create(datafile=newfile, station_id=station_id)
 
-        for variable_id in variable_ids:
-            variable = Variable.objects.get(pk=variable_id)
-            DataFileVariable.objects.create(datafile=newfile, variable=variable)
+                for variable_id in variable_ids:
+                    variable = Variable.objects.get(pk=variable_id)
+                    DataFileVariable.objects.create(datafile=newfile, variable=variable)
 
-        tasks.export_data.delay(station_id, data_source, start_date, end_date, variable_ids, newfile.id, aggregation)
-        created_data_file_ids.append(newfile.id)
+                tasks.export_data.delay(station_id, data_source, start_date, end_date, variable_ids, newfile.id, agg, displayUTC)
+                created_data_file_ids.append(newfile.id)
+        else:
+            newfile = DataFile.objects.create(ready=False, initial_date=start_date_utc, final_date=end_date_utc,
+                                            source=data_source_description, prepared_by=prepared_by,
+                                            interval_in_seconds=data_interval_seconds)
+            DataFileStation.objects.create(datafile=newfile, station_id=station_id)
 
-    return HttpResponse(created_data_file_ids, status=status.HTTP_200_OK)
+            for variable_id in variable_ids:
+                variable = Variable.objects.get(pk=variable_id)
+                DataFileVariable.objects.create(datafile=newfile, variable=variable)
+
+            tasks.export_data.delay(station_id, data_source, start_date, end_date, variable_ids, newfile.id, aggregation, displayUTC)
+            created_data_file_ids.append(newfile.id)
+
+    return JsonResponse({'data': created_data_file_ids}, status=status.HTTP_200_OK)
 
 
 @api_view(('GET',))
@@ -186,7 +206,7 @@ def DataExportFiles(request):
             'source': {'text': df['source'],
                        'value': 0 if df['source'] == 'Raw data' else (1 if df['source'] == 'Hourly summary' else 2)},
             'lines': df['lines'],
-            'prepared_by': df['prepared_by']
+            'prepared_by': df['prepared_by'],
         }
         if f['ready_date'] is not None:
             f['ready_date'] = f['ready_date']
@@ -201,10 +221,79 @@ def DownloadDataFile(request):
     file_id = request.GET.get('id', None)
     file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
     if os.path.exists(file_path):
-        with open(file_path, 'rb') as fh:
-            response = HttpResponse(fh.read(), content_type="text/csv")
-            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
-            return response
+        # with open(file_path, 'rb') as fh:
+        #     response = HttpResponse(fh.read(), content_type="text/csv")
+        #     response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+        #     return response
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+    return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
+
+
+# download .xlsx version of the data file
+def DownloadDataFileXLSX(request):
+    # file id of the csv to be converted to .xlsx
+    file_id = request.GET.get('id', None)
+    # path to the xlsx file
+    xlsx_file_path = os.path.join('/data', 'exported_data', str(file_id) + '.xlsx')
+    # path to the csv file
+    file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
+
+    try:
+        if not os.path.exists(xlsx_file_path):
+            # if the .xlsx file does not exist then create it
+            tasks.convert_csv_xlsx(file_path, file_id, file_id)
+
+        return FileResponse(open(xlsx_file_path, 'rb'), as_attachment=True, filename=os.path.basename(xlsx_file_path))
+    
+    except Exception as e:
+        logger.error(f"An error occured while trying to download {file_id}.xlsx. Error code: {e}")
+    
+    # return 404 on error
+    return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
+
+
+# combine csv files into a .xlsx file and then download them
+@csrf_exempt
+def CombineFilesXLSX(request):
+    # retrieve the file id's and convert them into a list
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)  # Parse JSON body
+            file_ids = data.get("file_ids", [])  # Retrieve the array
+
+            if file_ids:
+                combine_task = tasks.combine_xlsx_files.delay(file_ids)
+
+                return JsonResponse({"task_id": combine_task.id})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    # return 404 on error
+    return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
+
+# view that checks the task status of a celery task and returns the status
+# check the urls.py for this: wx/data/export/check_task_status/
+def check_task_status(request):
+    task_id = request.GET.get('task_id')
+    if not task_id:
+        return JsonResponse({"error": "Missing task ID."}, status=400)
+
+    result = AsyncResult(task_id)
+    return JsonResponse({"status": result.status})
+
+# download the combined .xlsx files
+def download_combined_xlsx_file(request):
+    task_id = request.GET.get('task_id')
+
+    if task_id:
+        # Retrieve the file path from where your Celery task saved it
+        file_path = os.path.join('/data', 'exported_data', str(task_id) + '.xlsx')
+
+        if os.path.exists(file_path):
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=f"SURFACE_data_export_combine.xlsx")
+        else:
+            return JsonResponse({"error": "File not found."}, status=404)
+    
     return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
 
 
