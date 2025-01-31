@@ -255,21 +255,69 @@ def DownloadDataFileXLSX(request):
 # combine csv files into a .xlsx file and then download them
 @csrf_exempt
 def CombineFilesXLSX(request):
-    # retrieve the file id's and convert them into a list
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)  # Parse JSON body
-            file_ids = data.get("file_ids", [])  # Retrieve the array
+    # ensure that the request method is post
+    if request.method != 'POST':
+        # else return the "method not allowed" error in response
+        return HttpResponse(status=405)
+    
+    # processing the request
+    try:
+        # ensuring that the start date and the end date are valid
+        json_body = json.loads(request.body)
+        # grabbing the start and the end date
+        start_date = json_body['start_datetime']  # in format %Y-%m-%d %H:%M:%S
 
-            if file_ids:
-                combine_task = tasks.combine_xlsx_files.delay(file_ids)
+        end_date = json_body['end_datetime']  # in format %Y-%m-%d %H:%M:%S
 
-                return JsonResponse({"task_id": combine_task.id})
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+        start_date_utc = pytz.UTC.localize(datetime.datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S'))
+        end_date_utc = pytz.UTC.localize(datetime.datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S'))
+        # ensuring that the start date and the end date are valid
+        if start_date_utc > end_date_utc:
+            message = 'The initial date must be greater than final date.'
+            return JsonResponse(data={"message": message}, status=status.HTTP_400_BAD_REQUEST)
+    
+        station_ids = json_body['stations']  # array with station ids
 
-    # return 404 on error
-    return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
+        data_source = json_body['source']  # could be either raw_data, hourly_summary, daily_summary, monthly_summary or yearly_summary
+
+        variable_ids = json_body['variables']  # list of obj in format {id: Int, agg: Str}
+
+        aggregation = json_body['aggregation'] # sets which column in the db will be used when the source is a summary. 
+
+        displayUTC = json_body['displayUTC'] # determins wheter an offset will be applied based on the truthines of displayUTC
+
+        # If source is raw_data, aggregation will be set to none
+        if data_source == 'raw_data':
+            aggregation = None
+
+        data_interval_seconds = None
+        if data_source == 'raw_data' and 'data_interval' in json_body:  # a number with the data interval in seconds. Only required for raw_data
+            data_interval_seconds = json_body['data_interval']
+        elif data_source == 'raw_data':
+            data_interval_seconds = 300
+
+        prepared_by = None
+        if request.user.first_name and request.user.last_name:
+            prepared_by = f'{request.user.first_name} {request.user.last_name}'
+        else:
+            prepared_by = request.user.username
+
+        data_source_dict = {
+            "raw_data": "Raw Data",
+            "hourly_summary": "Hourly Summary",
+            "daily_summary": "Daily Summary",
+            "monthly_summary": "Monthly Summary",
+            "yearly_summary": "Yearly Summary",
+        }
+
+        data_source_description = data_source_dict[data_source]
+
+        # send the MAIN task unto celery
+        combine_task = tasks.combine_xlsx_files.delay(station_ids, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds, prepared_by, data_source_description)
+
+        return JsonResponse({"task_id": combine_task.id})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 # view that checks the task status of a celery task and returns the status
 # check the urls.py for this: wx/data/export/check_task_status/

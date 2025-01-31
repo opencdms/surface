@@ -263,7 +263,7 @@
                 @click="exportCSV()"
                 :disabled="variables.length == 0 || station.length == 0"
               >
-                Export CSV
+                Export
                 <i class="material-icons right">send</i>
               </v-btn>
             </v-col>
@@ -333,7 +333,7 @@
                     get_app
                   </v-icon>
                 </template>
-                <span>Download file</span>
+                <span>Download CSV</span>
               </v-tooltip>
 
               <!-- if the status is readdy add the excel download option -->
@@ -343,7 +343,7 @@
                     mdi-file-excel
                   </v-icon>
                 </template>
-                <span>Convert to .xlsx</span>
+                <span>Download xlsx</span>
               </v-tooltip>
 
               <!-- show the delete option based on user privileges -->
@@ -415,7 +415,6 @@
       vuetify: new Vuetify(),
       delimiters: ["[[", "]]"],
       data: {
-        combinetoxlsx: false,
         combineXLSXtaskId: 0,
         isProcessing: false,
         hours: (function() {
@@ -571,11 +570,11 @@
         // Function to control button state
         showCombineXLSX() {
           // Disable the button if isProcessing is true or based on other conditions
-          if (this.station.length > 1 && this.variables.length > 0) {
+          if (this.station.length > 1 && this.variables.length > 0 && this.source.source == "raw_data") {
             return false;
           }
-          if (this.station.length === 1 && this.variables.length > 0) {
-            if (this.aggregation.length > 1) {
+          if (this.station.length >= 1 && this.variables.length > 0) {
+            if (this.aggregation.length >= 1 && this.source.source != "raw_data") {
               return false;
             }
           }
@@ -641,34 +640,7 @@
             // update the table
             this.updateTable();
 
-            // check if the new csv files should be combined in one xlsx file and dowloaded
-            if(this.combinetoxlsx == true){
-              // reset the var
-              this.combinetoxlsx = false;
-
-              // get the file ids from the response
-              this.file_id_arr = response.data.data;
-
-              // combining files
-              fetch('combine_xlsx/', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ file_ids: this.file_id_arr }),
-              })
-              .then(response => response.json())
-              .then(data => {
-                  if (data.task_id) {
-                      this.combineXLSXtaskId = data.task_id; // Save task ID for polling
-                      this.pollXLSXCombineResult();
-                  } else {
-                      alert('Failed to start combining files into one .xlsx file!');
-                  }
-              });
-            }
-
-            // previous versions add the loading end here instead of after this.$forceUpdate();
+            // previous versions add the loading end here instead of after the this.$forceUpdate() call in the updateTable method;
           }).catch(err => {
             this.loading = false;
             this.request_error = true;
@@ -697,10 +669,44 @@
         convertCombineXLSX(){
           // Set the `isProcessing` variable to true to disable the button and show "Processing"
           this.isProcessing = true;
-          // set the combinetoxlsx var to true so that the exportCSV method can access it
-          this.combinetoxlsx = true;
-          // call the exportCSV method
-          this.exportCSV();
+
+          // call the exportXLSX method
+          this.exportXLSX();
+        },
+        exportXLSX() {
+          // this.loading = true;
+
+          let start_datetime = moment(`${this.initial_date} ${this.initial_time}`)
+          let end_datetime = moment(`${this.final_date} ${this.final_time}`)
+
+
+          axios.post("combine_xlsx/", {
+            multiple: true,
+            stations: this.station.map(s => s.value),
+            source: this.source.source,
+            start_datetime: this.formatDatetimeForRequest(start_datetime),
+            end_datetime: this.formatDatetimeForRequest(end_datetime),
+            variables: this.variables.map(v => v.value),
+            data_interval: this.dataInterval,
+            aggregation: this.aggregation.map(a => a.value),
+            displayUTC: this.displayUTC // determine whether or not the timestamps in the final output will be in UTC.
+          }).then(response => {
+            // update the table
+            // this.updateTable();
+
+            if (response.data.task_id) {
+                    this.combineXLSXtaskId = response.data.task_id; // Save task ID for polling
+                    this.pollXLSXCombineResult();
+                } else {
+                    alert("Failed to start combining files into one .xlsx file!");
+                }
+
+          }).catch(err => {
+            this.isProcessing = false;
+            this.loading = false;
+            this.request_error = true;
+            this.request_error_message = err.response.data.message;
+          })
         },
         pollXLSXCombineResult() {
             const interval = setInterval(() => {
@@ -711,13 +717,16 @@
                         clearInterval(interval); // Stop polling
 
                         // update the file table
-                        this.updateTable();
+                        // this.updateTable();
 
                         // allow the combine and download button to be accessible again
                         this.isProcessing = false;
 
                         window.location.href = `download_combined_xlsx_file/?task_id=${this.combineXLSXtaskId}`; // Redirect to download
                     } else if (data.status === 'FAILURE') {
+                        // allow the combine and download button to be accessible again
+                        this.isProcessing = false;
+                        
                         clearInterval(interval); // Stop polling
                         alert('Combining .xlsx files failed!');
                     }
