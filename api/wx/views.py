@@ -219,7 +219,11 @@ def DataExportFiles(request):
 
 def DownloadDataFile(request):
     file_id = request.GET.get('id', None)
-    file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
+    # for combine xlsx downloads
+    if 'combine' in str(file_id):
+        file_path = os.path.join('/data', 'exported_data', str(file_id) + '.xlsx')
+    else:
+        file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
     if os.path.exists(file_path):
         # with open(file_path, 'rb') as fh:
         #     response = HttpResponse(fh.read(), content_type="text/csv")
@@ -401,24 +405,21 @@ def combineDataExportFiles(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-# download the combined .xlsx files
-def download_combined_xlsx_file(request):
-    task_id = request.GET.get('task_id')
-
-    if task_id:
-        # Retrieve the file path from where your Celery task saved it
-        file_path = os.path.join('/data', 'exported_data', str(task_id) + '.xlsx')
-
-        if os.path.exists(file_path):
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=f"SURFACE_data_export_combine.xlsx")
-        else:
-            return JsonResponse({"error": "File not found."}, status=404)
-    
-    return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
-
-
+# to delete data file
 def DeleteDataFile(request):
     file_id = request.GET.get('id', None)
+
+    if 'combine' in str(file_id):
+        entry_id = int(str(file_id).split('-')[-1])
+
+        CombineDataFile.objects.get(pk=entry_id).delete()
+
+        file_path = os.path.join('/data', 'exported_data', str(file_id) + '.xlsx')
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        return JsonResponse({}, status=status.HTTP_200_OK)
+
     df = DataFile.objects.get(pk=file_id)
     DataFileStation.objects.filter(datafile=df).delete()
     DataFileVariable.objects.filter(datafile=df).delete()

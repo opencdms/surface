@@ -440,7 +440,7 @@
                   <!-- if the status is ready add the excel download option -->
                   <v-tooltip bottom v-if="item.status.value == 1">
                     <template v-slot:activator="{ on }">
-                      <v-icon small class="mr-2" @click="convert_to_xlsx(item)" v-on="on">
+                      <v-icon small class="mr-2" @click="download_combine_xlsx(item)" v-on="on">
                         mdi-file-excel
                       </v-icon>
                     </template>
@@ -448,9 +448,10 @@
                   </v-tooltip>
     
                   <!-- show the delete option based on user privileges -->
-                  <v-tooltip bottom v-if="showDeleteAction">
+                  <!-- <v-tooltip bottom v-if="showDeleteAction"> -->
+                  <v-tooltip bottom>
                     <template v-slot:activator="{ on }">
-                      <v-icon small @click="deleteItem(item)" v-on="on">
+                      <v-icon small @click="deleteCombineItem(item)" v-on="on">
                         delete
                       </v-icon>
                     </template>
@@ -784,6 +785,9 @@
         download(item) {
           window.location.href = `download/?id=${item.id}`; // Redirect to download
         },
+        download_combine_xlsx(item) {
+          window.location.href = `download/?id=combine-${item.id}`; // Redirect to download for combine xlsx
+        },
         convert_to_xlsx(item) {
           window.location.href = `download_xlsx/?id=${item.id}&station_name=${item.station}`; // Redirect to download
         },
@@ -839,6 +843,14 @@
           this.loading = true;
           axios.get('delete/?id='+item.id).then(data => {
             this.updateTable();
+            this.loading = false;
+          });
+        },
+        // to delete the combine xlsx file
+        deleteCombineItem(item) {
+          this.loading = true;
+          axios.get('delete/?id=combine-'+item.id).then(data => {
+            this.updateCombineTable();
             this.loading = false;
           });
         },

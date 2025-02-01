@@ -71,7 +71,6 @@ urlpatterns = [
     path('wx/data/export/combine_xlsx/', views.CombineFilesXLSX, name='combine-xlsx'),
     path('wx/data/export/delete/', views.DeleteDataFile, name='data-export-delete'),
     path('wx/data/export/schedule/', views.ScheduleDataExport, name='data-export-schedule'),
-    path('wx/data/export/download_combined_xlsx_file/', views.download_combined_xlsx_file, name='download-combined-xlsx-file'),
     path('wx/data/export/combine_files/', views.combineDataExportFiles, name='combine-files'),
     path('get_yearly_average/', views.get_yearly_average),
     path('wx/reports/yearly_average/', views.YearlyAverageReport.as_view(), name='yearly-average'),
