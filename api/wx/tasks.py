@@ -44,7 +44,7 @@ from wx.decoders.sat_tx325 import read_data as read_data_sat_tx325
 from wx.decoders.surtron import read_data as read_data_surtron
 from wx.decoders.surface import read_file as read_file_surface
 from wx.decoders.toa5 import read_file as read_file_toa5
-from wx.models import DataFile
+from wx.models import DataFile, CombineDataFile
 from wx.models import Document
 from wx.models import NoaaDcp
 from wx.models import Station, Country, WMOReportingStatus, WMORegion, WMOStationType
@@ -1378,172 +1378,193 @@ def convert_csv_xlsx(file_path, file_station, file_id):
 
 
 # combine .xlsx files into a single .xlsx file
-@shared_task(bind=True)
-def combine_xlsx_files(self, station_ids, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds, prepared_by, data_source_description):
+@shared_task
+def combine_xlsx_files(station_ids, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds, prepared_by, data_source_description, entry_id):
+    # grab the current combine xlsx data file entry
+    current_datafile = CombineDataFile.objects.get(pk=entry_id)
 
-    # list containing the data frame of each station
-    station_data_frames = []
+    try:
 
-    for station_id in station_ids:
-        # a list to hold the dataframes containing the data queried from the db
-        export_data_df = []
+        # list containing the data frame of each station
+        station_data_frames = []
 
-        # station dataframe
-        station_df = pandas.DataFrame()
+        for station_id in station_ids:
+            # a list to hold the dataframes containing the data queried from the db
+            export_data_df = []
 
-        if aggregation:
-            for agg in aggregation:
+            # station dataframe
+            station_df = pandas.DataFrame()
 
-                export_data_df.append(export_data_xlsx(station_id, data_source, start_date, end_date, variable_ids, agg, displayUTC, data_interval_seconds))
-        else:
-            export_data_df.append(export_data_xlsx(station_id, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds))
+            if aggregation:
+                for agg in aggregation:
 
-        # Getting the columns in common between dataframs pertaining to a specific station
-        if data_source in ['raw_data', 'hourly_summary']:
-            # selecting the year, month, day, time columns which all dataframe will have in common given the data source
-            station_df = export_data_df[0].iloc[:, :4]
+                    export_data_df.append(export_data_xlsx(station_id, data_source, start_date, end_date, variable_ids, agg, displayUTC, data_interval_seconds))
+            else:
+                export_data_df.append(export_data_xlsx(station_id, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds))
 
-            # loop through the output dataframes and concat the columns containing data to the station dataframe
-            for df in export_data_df:
-                station_df = pandas.concat([station_df, df.iloc[:, 4:]], axis=1)
+            # Getting the columns in common between dataframs pertaining to a specific station
+            if data_source in ['raw_data', 'hourly_summary']:
+                # selecting the year, month, day, time columns which all dataframe will have in common given the data source
+                station_df = export_data_df[0].iloc[:, :4]
 
-        elif data_source == 'daily_summary':
-            # selecting the year, month, day columns which all dataframe will have in common given the data source
-            station_df = export_data_df[0].iloc[:, :3]
+                # loop through the output dataframes and concat the columns containing data to the station dataframe
+                for df in export_data_df:
+                    station_df = pandas.concat([station_df, df.iloc[:, 4:]], axis=1)
 
-            # loop through the output dataframes and concat the columns containing data to the station dataframe
-            for df in export_data_df:
-                station_df = pandas.concat([station_df, df.iloc[:, 3:]], axis=1)
+            elif data_source == 'daily_summary':
+                # selecting the year, month, day columns which all dataframe will have in common given the data source
+                station_df = export_data_df[0].iloc[:, :3]
 
-        elif data_source == 'monthly_summary':
-            # selecting the year, month columns which all dataframe will have in common given the data source
-            station_df = export_data_df[0].iloc[:, :2]
+                # loop through the output dataframes and concat the columns containing data to the station dataframe
+                for df in export_data_df:
+                    station_df = pandas.concat([station_df, df.iloc[:, 3:]], axis=1)
 
-            # loop through the output dataframes and concat the columns containing data to the station dataframe
-            for df in export_data_df:
-                station_df = pandas.concat([station_df, df.iloc[:, 2:]], axis=1)
+            elif data_source == 'monthly_summary':
+                # selecting the year, month columns which all dataframe will have in common given the data source
+                station_df = export_data_df[0].iloc[:, :2]
 
-        elif data_source == 'yearly_summary':
-            # selecting the year column which all dataframe will have in common given the data source
-            station_df = export_data_df[0].iloc[:, :1]
+                # loop through the output dataframes and concat the columns containing data to the station dataframe
+                for df in export_data_df:
+                    station_df = pandas.concat([station_df, df.iloc[:, 2:]], axis=1)
 
-            # loop through the output dataframes and concat the columns containing data to the station dataframe
-            for df in export_data_df:
-                station_df = pandas.concat([station_df, df.iloc[:, 1:]], axis=1)
+            elif data_source == 'yearly_summary':
+                # selecting the year column which all dataframe will have in common given the data source
+                station_df = export_data_df[0].iloc[:, :1]
 
-        else:
-            raise ValueError("A valid data source was not passed!")
+                # loop through the output dataframes and concat the columns containing data to the station dataframe
+                for df in export_data_df:
+                    station_df = pandas.concat([station_df, df.iloc[:, 1:]], axis=1)
 
-
-        # add the station dataframe to a list
-        station_data_frames.append(station_df)
+            else:
+                raise ValueError("A valid data source was not passed!")
 
 
-    # Create a new workbook for the combined file
-    combined_workbook = Workbook()
-    combined_workbook.remove(combined_workbook.active)  # Remove default sheet
+            # add the station dataframe to a list
+            station_data_frames.append(station_df)
 
-    # the name of the output file will be the celery task id
-    output_file = f'{settings.EXPORTED_DATA_CELERY_PATH}{self.request.id}.xlsx'
 
-    # retrieving the variable names given then variable ids and converting the names into a string
-    variable_dict = {}
-    variable_names_string = ''
-    try: 
-        with connection.cursor() as cursor_variable:
-            cursor_variable.execute(f'''
-                SELECT var.symbol
-                    ,var.id
-                    ,CASE WHEN unit.symbol IS NOT NULL THEN CONCAT(var.symbol, ' - ', var.name, ' (', unit.symbol, ')') 
-                        ELSE CONCAT(var.symbol, ' - ', var.name) END as var_name
-                FROM wx_variable var 
-                LEFT JOIN wx_unit unit ON var.unit_id = unit.id 
-                WHERE var.id IN %s
-                ORDER BY var.name
-            ''', (tuple(variable_ids),))
+        # Create a new workbook for the combined file
+        combined_workbook = Workbook()
+        combined_workbook.remove(combined_workbook.active)  # Remove default sheet
 
-            rows = cursor_variable.fetchall()
-            for row in rows:
-                variable_dict[row[1]] = row[0]
-                variable_names_string += f'{row[2]}   '
+        # the name of the output file will be the celery task id
+        output_file = f'{settings.EXPORTED_DATA_CELERY_PATH}combine-{entry_id}.xlsx'
+
+        # retrieving the variable names given then variable ids and converting the names into a string
+        variable_dict = {}
+        variable_names_string = ''
+        try: 
+            with connection.cursor() as cursor_variable:
+                cursor_variable.execute(f'''
+                    SELECT var.symbol
+                        ,var.id
+                        ,CASE WHEN unit.symbol IS NOT NULL THEN CONCAT(var.symbol, ' - ', var.name, ' (', unit.symbol, ')') 
+                            ELSE CONCAT(var.symbol, ' - ', var.name) END as var_name
+                    FROM wx_variable var 
+                    LEFT JOIN wx_unit unit ON var.unit_id = unit.id 
+                    WHERE var.id IN %s
+                    ORDER BY var.name
+                ''', (tuple(variable_ids),))
+
+                rows = cursor_variable.fetchall()
+                for row in rows:
+                    variable_dict[row[1]] = row[0]
+                    variable_names_string += f'{row[2]}   '
+        except Exception as e:
+            logger.error(f"AN ERROR OCCURED WITH THE VARIABLE NAMES: {e}")
+
+        # looping through the dataframes of each station
+        for x, id in enumerate(station_ids):
+            # get the station object
+            station = Station.objects.get(pk=id)
+
+            # the number of entries in the data
+            lines = len(station_data_frames[x].index)
+
+            # Create a new sheet with the station name
+            sheet = combined_workbook.create_sheet(title=f"{station.name} - {station.code}")
+
+            # Write DataFrame to the sheet
+            for r_idx, row in enumerate(dataframe_to_rows(station_data_frames[x], index=False, header=True), start=1):
+                for c_idx, value in enumerate(row, start=1):
+                    sheet.cell(row=r_idx, column=c_idx, value=value)
+
+            # insert a new row at the top of the sheet to add the aggregation options and headers
+            sheet.insert_rows(1, 12) # insert two rows at row 1
+
+            # raw data does not have any aggregation options
+            if data_source != 'raw_data':
+                # Get the number of columns in the DataFrame
+                num_cols = station_data_frames[x].shape[1]
+
+                # get the amount of cells to merge
+                num_merge = len(variable_ids) - 1
+
+                # retrieve how many times a merger should occur
+                qty_merge = len(aggregation) - 1
+
+                start_col = num_cols - num_merge # Second-to-last column index (1-based index)
+                end_col = num_cols # Last column index
+
+                # Define a bold border style
+                bold_border = Border(
+                    left=Side(style="thick"),
+                    right=Side(style="thick"),
+                    top=Side(style="thick"),
+                    bottom=Side(style="thick")
+                )
+
+                for x in range(qty_merge,-1,-1):
+                    # Merge
+                    sheet.merge_cells(start_row=12, start_column=start_col, end_row=12, end_column=end_col)
+                    cell = sheet.cell(row=12, column=start_col, value=aggregation[x].upper())
+                    cell.font = Font(bold=True)
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+                    # Apply bold border to all merged cells
+                    for row in range(12, 13):  # Only row 12
+                        for col in range(start_col, end_col + 1):
+                            sheet.cell(row=row, column=col).border = bold_border
+
+                    end_col = start_col - 1 # updated end column index
+                    start_col = end_col - num_merge  # updated start column index
+
+            date_of_completion = datetime.utcnow()
+            timezone_offset = pytz.timezone(settings.TIMEZONE_NAME)
+
+            # add the file headers
+            cell = sheet.cell(row=1, column=1, value=f'Station:{station.code} - {station.name}')
+            cell = sheet.cell(row=2, column=1, value=f'Data source:{data_source_description}')
+            cell = sheet.cell(row=3, column=1, value=f'Description:{variable_names_string}')
+            cell = sheet.cell(row=4, column=1, value=f'Latitude:{station.latitude}')
+            cell = sheet.cell(row=5, column=1, value=f'Longitude:{station.longitude}')
+            cell = sheet.cell(row=6, column=1, value=f'Date of completion:{date_of_completion.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}')
+            cell = sheet.cell(row=7, column=1, value=f'Prepared by:{prepared_by}')
+
+            if displayUTC and data_source in ['raw_data','hourly_summary']:
+                cell = sheet.cell(row=9, column=1, value=f'Dates are displayed in UTC')
+                cell = sheet.cell(row=10, column=1, value=f'Start date:{start_date}, End date:{end_date}')
+            else:
+                updated_start_date = pytz.UTC.localize(datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S'))
+                updated_end_date = pytz.UTC.localize(datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S'))
+                cell = sheet.cell(row=9, column=1, value=f'Start date:{updated_start_date.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}, End date:{updated_end_date.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}')
+
+        # Save the workbook
+        combined_workbook.save(output_file)
+
+        current_datafile.ready = True
+        current_datafile.ready_at = date_of_completion
+        current_datafile.lines = lines
+        current_datafile.save()
+        logger.info(f'Combine Data exported successfully (file "combine-{entry_id}")')
+    
+
     except Exception as e:
-        logger.error(f"AN ERROR OCCURED WITH THE VARIABLE NAMES: {e}")
-
-    # looping through the dataframes of each station
-    for x, id in enumerate(station_ids):
-        # get the station object
-        station = Station.objects.get(pk=id)
-
-        # Create a new sheet with the station name
-        sheet = combined_workbook.create_sheet(title=f"{station.name} - {station.code}")
-
-        # Write DataFrame to the sheet
-        for r_idx, row in enumerate(dataframe_to_rows(station_data_frames[x], index=False, header=True), start=1):
-            for c_idx, value in enumerate(row, start=1):
-                sheet.cell(row=r_idx, column=c_idx, value=value)
-
-        # insert a new row at the top of the sheet to add the aggregation options and headers
-        sheet.insert_rows(1, 12) # insert two rows at row 1
-
-        # raw data does not have any aggregation options
-        if data_source != 'raw_data':
-            # Get the number of columns in the DataFrame
-            num_cols = station_data_frames[x].shape[1]
-
-            # get the amount of cells to merge
-            num_merge = len(variable_ids) - 1
-
-            # retrieve how many times a merger should occur
-            qty_merge = len(aggregation) - 1
-
-            start_col = num_cols - num_merge # Second-to-last column index (1-based index)
-            end_col = num_cols # Last column index
-
-            # Define a bold border style
-            bold_border = Border(
-                left=Side(style="thick"),
-                right=Side(style="thick"),
-                top=Side(style="thick"),
-                bottom=Side(style="thick")
-            )
-
-            for x in range(qty_merge,-1,-1):
-                # Merge
-                sheet.merge_cells(start_row=12, start_column=start_col, end_row=12, end_column=end_col)
-                cell = sheet.cell(row=12, column=start_col, value=aggregation[x].upper())
-                cell.font = Font(bold=True)
-                cell.alignment = Alignment(horizontal="center", vertical="center")
-
-                # Apply bold border to all merged cells
-                for row in range(12, 13):  # Only row 12
-                    for col in range(start_col, end_col + 1):
-                        sheet.cell(row=row, column=col).border = bold_border
-
-                end_col = start_col - 1 # updated end column index
-                start_col = end_col - num_merge  # updated start column index
-
-        date_of_completion = datetime.utcnow()
-        timezone_offset = pytz.timezone(settings.TIMEZONE_NAME)
-
-        # add the file headers
-        cell = sheet.cell(row=1, column=1, value=f'Station:{station.code} - {station.name}')
-        cell = sheet.cell(row=2, column=1, value=f'Data source:{data_source_description}')
-        cell = sheet.cell(row=3, column=1, value=f'Description:{variable_names_string}')
-        cell = sheet.cell(row=4, column=1, value=f'Latitude:{station.latitude}')
-        cell = sheet.cell(row=5, column=1, value=f'Longitude:{station.longitude}')
-        cell = sheet.cell(row=6, column=1, value=f'Date of completion:{date_of_completion.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}')
-        cell = sheet.cell(row=7, column=1, value=f'Prepared by:{prepared_by}')
-
-        if displayUTC and data_source in ['raw_data','hourly_summary']:
-            cell = sheet.cell(row=9, column=1, value=f'Dates are displayed in UTC')
-            cell = sheet.cell(row=10, column=1, value=f'Start date:{start_date}, End date:{end_date}')
-        else:
-            updated_start_date = pytz.UTC.localize(datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S'))
-            updated_end_date = pytz.UTC.localize(datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S'))
-            cell = sheet.cell(row=9, column=1, value=f'Start date:{updated_start_date.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}, End date:{updated_end_date.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}')
-
-    # Save the workbook
-    combined_workbook.save(output_file)
+        current_datafile.ready = False
+        current_datafile.ready_at = datetime.utcnow()
+        current_datafile.lines = 0
+        current_datafile.save()
+        logger.error(f'Error on export combine xlsx data file "combine-{entry_id}". Error -  {repr(e)}')      
 
 
 # returns the data frame for each query ran in order to facilitate combining the files later

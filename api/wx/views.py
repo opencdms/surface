@@ -55,7 +55,7 @@ from wx.decoders.hobo import read_file as read_file_hobo
 from wx.decoders.toa5 import read_file
 from wx.forms import StationForm
 from wx.models import AdministrativeRegion, StationFile, Decoder, QualityFlag, DataFile, DataFileStation, \
-    DataFileVariable, StationImage, WMOStationType, WMORegion, WMOProgram, StationCommunication
+    DataFileVariable, StationImage, WMOStationType, WMORegion, WMOProgram, StationCommunication, CombineDataFile
 from wx.models import Country, Unit, Station, Variable, DataSource, StationVariable, \
     StationProfile, Document, Watershed, Interval, CountryISOCode
 from wx.utils import get_altitude, get_watershed, get_district, get_interpolation_image, parse_float_value, \
@@ -275,7 +275,7 @@ def CombineFilesXLSX(request):
         if start_date_utc > end_date_utc:
             message = 'The initial date must be greater than final date.'
             return JsonResponse(data={"message": message}, status=status.HTTP_400_BAD_REQUEST)
-    
+
         station_ids = json_body['stations']  # array with station ids
 
         data_source = json_body['source']  # could be either raw_data, hourly_summary, daily_summary, monthly_summary or yearly_summary
@@ -312,22 +312,94 @@ def CombineFilesXLSX(request):
 
         data_source_description = data_source_dict[data_source]
 
-        # send the MAIN task unto celery
-        combine_task = tasks.combine_xlsx_files.delay(station_ids, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds, prepared_by, data_source_description)
+        # converting the station_ids into a string to pass to the new entry
+        station_ids_string = ""
+        for x in station_ids:
+            station_ids_string += str(x) + "_"
 
-        return JsonResponse({"task_id": combine_task.id})
+        # converting the variable_ids into a string to pass to the new entry
+        variable_ids_string = ""
+        for y in variable_ids:
+            variable_ids_string += str(y) + "_"
+
+        # add this file entry to the combine data file model
+        new_entry = CombineDataFile.objects.create(ready=False, initial_date=start_date_utc, final_date=end_date_utc,
+                                                        source=data_source_description, prepared_by=prepared_by,
+                                                        stations_ids=station_ids_string, variable_ids=variable_ids_string, aggregation="  ".join(aggregation).upper())
+
+        # send the MAIN task unto celery
+        combine_task = tasks.combine_xlsx_files.delay(station_ids, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds, prepared_by, data_source_description, new_entry.id)
+        print(f'BTW THIS IS THE NEW_ENTRY ID::::::::{new_entry.id}')
+        return JsonResponse({'data': new_entry.id}, status=status.HTTP_200_OK)
     except Exception as e:
+        logger.error(f'An error occured while attempting to schedule combine task. Error = {e}')
         return JsonResponse({"error": str(e)}, status=500)
 
-# view that checks the task status of a celery task and returns the status
-# check the urls.py for this: wx/data/export/check_task_status/
-def check_task_status(request):
-    task_id = request.GET.get('task_id')
-    if not task_id:
-        return JsonResponse({"error": "Missing task ID."}, status=400)
 
-    result = AsyncResult(task_id)
-    return JsonResponse({"status": result.status})
+# get an update on the combine files
+@api_view(('GET',))
+def combineDataExportFiles(request):
+    files = []
+    try:
+        for df in CombineDataFile.objects.all().order_by('-created_at').values()[:100:1]:
+            if df['ready'] and df['ready_at']:
+                file_status = {'text': "Ready", 'value': 1}
+            elif df['ready_at']:
+                file_status = {'text': "Error", 'value': 2}
+            else:
+                file_status = {'text': "Processing", 'value': 0}
+
+            # getting the stations list
+            current_station_names_list = []
+            try:
+                station_ids = str(df['stations_ids']).split('_')
+
+                for x in station_ids:
+                    if x:
+                        current_station_names_list.append(Station.objects.get(pk=int(x)).name)
+
+            except ObjectDoesNotExist:
+                current_station_names_list = ["Stations not found"]
+
+
+            # getting variables list
+            variable_list = []
+            try:
+                variable_ids = str(df['variable_ids']).split('_')
+
+                for y in variable_ids:
+                    if y:
+                        variable_list.append(Variable.objects.get(pk=int(y)).name)
+
+            except Exception as e:
+                # logger.warning(f'An warning occurd during variable list creation: {variable_ids}')
+                variable_list = ["No variables"]
+
+            f = {
+                'id': df['id'],
+                'request_date': df['created_at'],
+                'ready_date': df['ready_at'],
+                'station': current_station_names_list,
+                'variables': variable_list,
+                'status': file_status,
+                'initial_date': df['initial_date'],
+                'final_date': df['final_date'],
+                'source': {'text': df['source'],
+                        'value': 0 if df['source'] == 'Raw data' else (1 if df['source'] == 'Hourly summary' else 2)},
+                'lines': df['lines'],
+                'prepared_by': df['prepared_by'],
+                'aggregation': df['aggregation'],
+            }
+            if f['ready_date'] is not None:
+                f['ready_date'] = f['ready_date']
+            files.append(f)
+
+        return Response(files, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.warning(f"An error occured while attempting to update the combined .xlsx files table. Error - {e}")
+        return JsonResponse({"error": str(e)}, status=500)
+
 
 # download the combined .xlsx files
 def download_combined_xlsx_file(request):

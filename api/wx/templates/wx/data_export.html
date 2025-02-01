@@ -273,19 +273,9 @@
               <v-btn
               small
               @click="convertCombineXLSX"
-              :disabled="isProcessing || showCombineXLSX()"
+              :disabled="showCombineXLSX()"
             >
-              <template v-if="isProcessing">
-                Combine and Download .XLSX
-                <v-progress-circular
-                  indeterminate
-                  size="20"
-                  class="ml-2"
-                  color="green"
-                  style="vertical-align: middle; margin: 0; padding: 0; box-shadow: none; border: none;"
-                />
-              </template>
-              <template v-else>
+              <template>
                 Combine and Download .XLSX
                 <i class="material-icons right">download</i>
               </template>
@@ -303,103 +293,224 @@
         <v-divider class="pa-3"></v-divider>
 
         <!-- output files -->
-        <v-flex v-if="documents.length > 0">
-          <span class="srf-display-2 text-uppercase">Files</span><br /><br />
-        </v-flex>
-        <v-row dense v-if="documents.length > 0" justify="center">
-          <v-overlay :value="loading">
-            <v-progress-circular indeterminate size="64"></v-progress-circular>
-          </v-overlay>
-          <v-data-table
-            ref="documents_table"
-            :headers="documents_headers"
-            :items="documents"
-            :items-per-page="5"
-            class="elevation-1"
-            sort-by="id"
-            sort-desc
-            dense
-            calculate-widths
-            show-expand
+        <v-tabs
+          v-if="documents.length > 0"
+          v-model="export_files_model"
+          centered
+          slider-color="green"
+          class="mb-9"
+        >
+          <v-tab :key="1" :href="`#tab-1`" >
+            Export Files
+          </v-tab>
 
-            :item-class="getRowClass"
+          <v-tab :key="2" :href="`#tab-2`">
+            Combined .XLSX Files
+          </v-tab>
+        </v-tabs>
+
+        <v-tabs-items v-model="export_files_model">
+          <v-tab-item
+            :key="1"
+            :value="`tab-1`"
           >
-            <!-- handling the actions section of the table -->
-            <template v-slot:item.action="{ item }">
-              <!-- if the status is ready add a download file option -->
-              <v-tooltip bottom v-if="item.status.value == 1">
-                <template v-slot:activator="{ on }">
-                  <v-icon small class="mr-2" @click="download(item)" v-on="on">
-                    get_app
-                  </v-icon>
+
+            <v-row dense v-if="documents.length > 0" justify="center">
+              <v-overlay :value="loading">
+                <v-progress-circular indeterminate size="64"></v-progress-circular>
+              </v-overlay>
+              <v-data-table
+                ref="documents_table"
+                :headers="documents_headers"
+                :items="documents"
+                :items-per-page="5"
+                class="elevation-1"
+                sort-by="id"
+                sort-desc
+                dense
+                calculate-widths
+                show-expand
+    
+                :item-class="getRowClass"
+              >
+                <!-- handling the actions section of the table -->
+                <template v-slot:item.action="{ item }">
+                  <!-- if the status is ready add a download file option -->
+                  <v-tooltip bottom v-if="item.status.value == 1">
+                    <template v-slot:activator="{ on }">
+                      <v-icon small class="mr-2" @click="download(item)" v-on="on">
+                        get_app
+                      </v-icon>
+                    </template>
+                    <span>Download CSV</span>
+                  </v-tooltip>
+    
+                  <!-- if the status is readdy add the excel download option -->
+                  <v-tooltip bottom v-if="item.status.value == 1">
+                    <template v-slot:activator="{ on }">
+                      <v-icon small class="mr-2" @click="convert_to_xlsx(item)" v-on="on">
+                        mdi-file-excel
+                      </v-icon>
+                    </template>
+                    <span>Download xlsx</span>
+                  </v-tooltip>
+    
+                  <!-- show the delete option based on user privileges -->
+                  <v-tooltip bottom v-if="showDeleteAction">
+                    <template v-slot:activator="{ on }">
+                      <v-icon small @click="deleteItem(item)" v-on="on">
+                        delete
+                      </v-icon>
+                    </template>
+                    <span>Delete file</span>
+                  </v-tooltip>
+    
                 </template>
-                <span>Download CSV</span>
-              </v-tooltip>
-
-              <!-- if the status is readdy add the excel download option -->
-              <v-tooltip bottom v-if="item.status.value == 1">
-                <template v-slot:activator="{ on }">
-                  <v-icon small class="mr-2" @click="convert_to_xlsx(item)" v-on="on">
-                    mdi-file-excel
-                  </v-icon>
+                <!-- Display each row dropdown -->
+                <template v-slot:expanded-item="{ item, headers }">
+                  <td colspan="5">
+                    <!-- variables -->
+                    <span class="subtitle-1 font-weight-bold">Variables:</span
+                    ><br />
+                    <span class="text-end" v-for="v in item.variables"
+                      >&nbsp;&nbsp;&nbsp;[[ v ]]<br
+                    /></span>
+                    <!-- status -->
+                    <span class="subtitle-1 font-weight-bold">Status:</span><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[ item.status.text ]]<br
+                    /></span>
+                    <!-- aggregation -->
+                    <!-- <span class="subtitle-1 font-weight-bold">Aggregation:</span><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[]]<br
+                    /></span> -->
+                  </td>
+    
+                  <td colspan="2">
+                    <!-- source -->
+                    <span class="subtitle-1 font-weight-bold">Source:</span><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[ item.source.text ]]<br
+                    /></span>
+                    <!-- Initital Date -->
+                    <span class="subtitle-1 font-weight-bold">Initial date:</span
+                    ><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[ item.initial_date ]]<br
+                    /></span>
+                    <!-- Final Date -->
+                    <span class="subtitle-1 font-weight-bold">Final date:</span
+                    ><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[ item.final_date ]]<br
+                    /></span>
+                  </td>
                 </template>
-                <span>Download xlsx</span>
-              </v-tooltip>
+              </v-data-table>
+            </v-row>
 
-              <!-- show the delete option based on user privileges -->
-              <v-tooltip bottom v-if="showDeleteAction">
-                <template v-slot:activator="{ on }">
-                  <v-icon small @click="deleteItem(item)" v-on="on">
-                    delete
-                  </v-icon>
+          </v-tab-item>
+
+          <v-tab-item
+            :key="2"
+            :value="`tab-2`"
+          >
+
+            <v-row dense v-if="documents.length > 0" justify="center">
+              <v-overlay :value="loading">
+                <v-progress-circular indeterminate size="64"></v-progress-circular>
+              </v-overlay>
+              <v-data-table
+                ref="combine_documents_table"
+                :headers="combine_documents_headers"
+                :items="combine_documents"
+                :items-per-page="5"
+                class="elevation-1"
+                sort-by="id"
+                sort-desc
+                dense
+                calculate-widths
+                show-expand
+    
+                :item-class="getRowClass"
+              >
+                <!-- handling the actions section of the table -->
+                <template v-slot:item.action="{ item }">
+                  <!-- if the status is ready add the excel download option -->
+                  <v-tooltip bottom v-if="item.status.value == 1">
+                    <template v-slot:activator="{ on }">
+                      <v-icon small class="mr-2" @click="convert_to_xlsx(item)" v-on="on">
+                        mdi-file-excel
+                      </v-icon>
+                    </template>
+                    <span>Download</span>
+                  </v-tooltip>
+    
+                  <!-- show the delete option based on user privileges -->
+                  <v-tooltip bottom v-if="showDeleteAction">
+                    <template v-slot:activator="{ on }">
+                      <v-icon small @click="deleteItem(item)" v-on="on">
+                        delete
+                      </v-icon>
+                    </template>
+                    <span>Delete file</span>
+                  </v-tooltip>
+    
                 </template>
-                <span>Delete file</span>
-              </v-tooltip>
+                <!-- Display each row dropdown -->
+                <template v-slot:expanded-item="{ item, headers }">
+                  <td colspan="5">
+                    <!-- variables -->
+                    <span class="subtitle-1 font-weight-bold">Variables:</span
+                    ><br />
+                    <span class="text-end" v-for="v in item.variables"
+                      >&nbsp;&nbsp;&nbsp;[[ v ]]<br
+                    /></span>
+                    <!-- Station names -->
+                    <span class="subtitle-1 font-weight-bold">Station Name(s):</span
+                    ><br />
+                    <span class="text-end" v-for="s in item.station"
+                      >&nbsp;&nbsp;&nbsp;[[ s ]]<br
+                    /></span>
+                    <!-- status -->
+                    <span class="subtitle-1 font-weight-bold">Aggregation(s):</span><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[ item.aggregation ]]<br
+                    /></span>
+                    <!-- aggregation -->
+                    <!-- <span class="subtitle-1 font-weight-bold">Aggregation:</span><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[]]<br
+                    /></span> -->
+                  </td>
+    
+                  <td colspan="2">
+                    <!-- source -->
+                    <span class="subtitle-1 font-weight-bold">Source:</span><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[ item.source.text ]]<br
+                    /></span>
+                    <!-- Initital Date -->
+                    <span class="subtitle-1 font-weight-bold">Initial date:</span
+                    ><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[ item.initial_date ]]<br
+                    /></span>
+                    <!-- Final Date -->
+                    <span class="subtitle-1 font-weight-bold">Final date:</span
+                    ><br />
+                    <span class="text-end"
+                      >&nbsp;&nbsp;&nbsp;[[ item.final_date ]]<br
+                    /></span>
+                  </td>
+                </template>
+              </v-data-table>
+            </v-row>
 
-            </template>
-            <!-- Display each row dropdown -->
-            <template v-slot:expanded-item="{ item, headers }">
-              <td colspan="5">
-                <!-- variables -->
-                <span class="subtitle-1 font-weight-bold">Variables:</span
-                ><br />
-                <span class="text-end" v-for="v in item.variables"
-                  >&nbsp;&nbsp;&nbsp;[[ v ]]<br
-                /></span>
-                <!-- status -->
-                <span class="subtitle-1 font-weight-bold">Status:</span><br />
-                <span class="text-end"
-                  >&nbsp;&nbsp;&nbsp;[[ item.status.text ]]<br
-                /></span>
-                <!-- aggregation -->
-                <!-- <span class="subtitle-1 font-weight-bold">Aggregation:</span><br />
-                <span class="text-end"
-                  >&nbsp;&nbsp;&nbsp;[[]]<br
-                /></span> -->
-              </td>
+          </v-tab-item>
+        </v-tabs-items>
 
-              <td colspan="2">
-                <!-- source -->
-                <span class="subtitle-1 font-weight-bold">Source:</span><br />
-                <span class="text-end"
-                  >&nbsp;&nbsp;&nbsp;[[ item.source.text ]]<br
-                /></span>
-                <!-- Initital Date -->
-                <span class="subtitle-1 font-weight-bold">Initial date:</span
-                ><br />
-                <span class="text-end"
-                  >&nbsp;&nbsp;&nbsp;[[ item.initial_date ]]<br
-                /></span>
-                <!-- Final Date -->
-                <span class="subtitle-1 font-weight-bold">Final date:</span
-                ><br />
-                <span class="text-end"
-                  >&nbsp;&nbsp;&nbsp;[[ item.final_date ]]<br
-                /></span>
-              </td>
-            </template>
-          </v-data-table>
-        </v-row>
       </div>
     </v-app>
   </div>
@@ -415,8 +526,8 @@
       vuetify: new Vuetify(),
       delimiters: ["[[", "]]"],
       data: {
+        export_files_model: 'tab-1',
         combineXLSXtaskId: 0,
-        isProcessing: false,
         hours: (function() {
           const hours = [];
           hours.length = 24;
@@ -447,6 +558,16 @@
         documents_headers: [
           { text: "Id", value: "id", align: "left"},
           { text: "Station", value: "station", align: "left"},
+          { text: "Prepared by", value: "prepared_by", align: "left"},
+          { text: "Requested at", value: "request_date", align: "left"},
+          { text: "Ready at", value: "ready_date", align: "left"},
+          { text: "Status", value: "status.text", align: "left"},
+          { text: "Lines", value: "lines", align: "left"},
+          { text: 'Actions', value: 'action', align: "center", sortable: false },
+        ],
+        combine_documents: [],
+        combine_documents_headers: [
+          { text: "Id", value: "id", align: "left"},
           { text: "Prepared by", value: "prepared_by", align: "left"},
           { text: "Requested at", value: "request_date", align: "left"},
           { text: "Ready at", value: "ready_date", align: "left"},
@@ -569,7 +690,7 @@
       methods: {
         // Function to control button state
         showCombineXLSX() {
-          // Disable the button if isProcessing is true or based on other conditions
+          // based on other conditions
           if (this.station.length > 1 && this.variables.length > 0 && this.source.source == "raw_data") {
             return false;
           }
@@ -667,15 +788,16 @@
           window.location.href = `download_xlsx/?id=${item.id}&station_name=${item.station}`; // Redirect to download
         },
         convertCombineXLSX(){
-          // Set the `isProcessing` variable to true to disable the button and show "Processing"
-          this.isProcessing = true;
+          // switch to the combined .xlsx files tab
+          this.export_files_model = 'tab-2';
+
+          // set loading to true
+          this.loading = true;
 
           // call the exportXLSX method
           this.exportXLSX();
         },
         exportXLSX() {
-          // this.loading = true;
-
           let start_datetime = moment(`${this.initial_date} ${this.initial_time}`)
           let end_datetime = moment(`${this.final_date} ${this.final_time}`)
 
@@ -691,53 +813,27 @@
             aggregation: this.aggregation.map(a => a.value),
             displayUTC: this.displayUTC // determine whether or not the timestamps in the final output will be in UTC.
           }).then(response => {
-            // update the table
-            // this.updateTable();
-
-            if (response.data.task_id) {
-                    this.combineXLSXtaskId = response.data.task_id; // Save task ID for polling
-                    this.pollXLSXCombineResult();
-                } else {
-                    alert("Failed to start combining files into one .xlsx file!");
-                }
+            // update the table combine xlsx table
+            this.updateCombineTable();
 
           }).catch(err => {
-            this.isProcessing = false;
             this.loading = false;
             this.request_error = true;
             this.request_error_message = err.response.data.message;
           })
         },
-        pollXLSXCombineResult() {
-            const interval = setInterval(() => {
-                fetch(`check_task_status/?task_id=${this.combineXLSXtaskId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'SUCCESS') {
-                        clearInterval(interval); // Stop polling
-
-                        // update the file table
-                        // this.updateTable();
-
-                        // allow the combine and download button to be accessible again
-                        this.isProcessing = false;
-
-                        window.location.href = `download_combined_xlsx_file/?task_id=${this.combineXLSXtaskId}`; // Redirect to download
-                    } else if (data.status === 'FAILURE') {
-                        // allow the combine and download button to be accessible again
-                        this.isProcessing = false;
-                        
-                        clearInterval(interval); // Stop polling
-                        alert('Combining .xlsx files failed!');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error polling task status:', error);
-                });
-            }, 3000); // Poll every 3 seconds
-
-            // Stop polling after 10 minutes
-            setTimeout(() => clearInterval(interval), 600000);
+        updateCombineTable() {
+          axios.get('combine_files/').then(res => {
+              res.data.forEach(record => {
+                record.request_date =  this.handleServerDatetime(record.request_date);
+                record.ready_date =  this.handleServerDatetime(record.ready_date);
+                record.initial_date =  this.handleServerDatetime(record.initial_date);
+                record.final_date =  this.handleServerDatetime(record.final_date);
+              });
+              this.combine_documents = res.data
+            });
+          this.$forceUpdate();
+          this.loading = false;
         },
         deleteItem(item) {
           this.loading = true;
@@ -770,7 +866,13 @@
           this.showDeleteAction = true;
 
         this.updateTable();
+
+        // update the table combine xlsx table
+        this.updateCombineTable();
+
         setInterval(this.updateTable, 10000)
+
+        setInterval(this.updateCombineTable, 10000)
       }
     })
   })();
