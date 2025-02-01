@@ -16,6 +16,8 @@ matplotlib.use("Agg")
 import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
+from openpyxl import Workbook
+import tempfile
 import psycopg2
 import pytz
 from django.contrib import messages
@@ -24,7 +26,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.template import loader
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -44,6 +46,7 @@ from rest_framework.parsers import FileUploadParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from slugify import slugify
+from celery.result import AsyncResult
 
 from tempestas_api import settings
 from wx import serializers, tasks
@@ -52,7 +55,7 @@ from wx.decoders.hobo import read_file as read_file_hobo
 from wx.decoders.toa5 import read_file
 from wx.forms import StationForm
 from wx.models import AdministrativeRegion, StationFile, Decoder, QualityFlag, DataFile, DataFileStation, \
-    DataFileVariable, StationImage, WMOStationType, WMORegion, WMOProgram, StationCommunication
+    DataFileVariable, StationImage, WMOStationType, WMORegion, WMOProgram, StationCommunication, CombineDataFile
 from wx.models import Country, Unit, Station, Variable, DataSource, StationVariable, \
     StationProfile, Document, Watershed, Interval, CountryISOCode
 from wx.utils import get_altitude, get_watershed, get_district, get_interpolation_image, parse_float_value, \
@@ -90,13 +93,25 @@ def ScheduleDataExport(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
+    # access values from the response
     json_body = json.loads(request.body)
     station_ids = json_body['stations']  # array with station ids
-    data_source = json_body[
-        'source']  # one of raw_data, hourly_summary, daily_summary, monthly_summary or yearly_summary
+
+    data_source = json_body['source']  # could be either raw_data, hourly_summary, daily_summary, monthly_summary or yearly_summary
+
     start_date = json_body['start_datetime']  # in format %Y-%m-%d %H:%M:%S
+
     end_date = json_body['end_datetime']  # in format %Y-%m-%d %H:%M:%S
+
     variable_ids = json_body['variables']  # list of obj in format {id: Int, agg: Str}
+
+    aggregation = json_body['aggregation'] # sets which column in the db will be used when the source is a summary. 
+
+    displayUTC = json_body['displayUTC'] # determins wheter an offset will be applied based on the truthines of displayUTC
+
+    # If source is raw_data, this will be set to none
+    if data_source == 'raw_data':
+        aggregation = None
 
     data_interval_seconds = None
     if data_source == 'raw_data' and 'data_interval' in json_body:  # a number with the data interval in seconds. Only required for raw_data
@@ -131,19 +146,33 @@ def ScheduleDataExport(request):
         prepared_by = request.user.username
 
     for station_id in station_ids:
-        newfile = DataFile.objects.create(ready=False, initial_date=start_date_utc, final_date=end_date_utc,
-                                          source=data_source_description, prepared_by=prepared_by,
-                                          interval_in_seconds=data_interval_seconds)
-        DataFileStation.objects.create(datafile=newfile, station_id=station_id)
+        if aggregation:
+            for agg in aggregation:
+                newfile = DataFile.objects.create(ready=False, initial_date=start_date_utc, final_date=end_date_utc,
+                                                source=data_source_description, prepared_by=prepared_by,
+                                                interval_in_seconds=data_interval_seconds)
+                DataFileStation.objects.create(datafile=newfile, station_id=station_id)
 
-        for variable_id in variable_ids:
-            variable = Variable.objects.get(pk=variable_id)
-            DataFileVariable.objects.create(datafile=newfile, variable=variable)
+                for variable_id in variable_ids:
+                    variable = Variable.objects.get(pk=variable_id)
+                    DataFileVariable.objects.create(datafile=newfile, variable=variable)
 
-        tasks.export_data.delay(station_id, data_source, start_date, end_date, variable_ids, newfile.id)
-        created_data_file_ids.append(newfile.id)
+                tasks.export_data.delay(station_id, data_source, start_date, end_date, variable_ids, newfile.id, agg, displayUTC)
+                created_data_file_ids.append(newfile.id)
+        else:
+            newfile = DataFile.objects.create(ready=False, initial_date=start_date_utc, final_date=end_date_utc,
+                                            source=data_source_description, prepared_by=prepared_by,
+                                            interval_in_seconds=data_interval_seconds)
+            DataFileStation.objects.create(datafile=newfile, station_id=station_id)
 
-    return HttpResponse(created_data_file_ids, status=status.HTTP_200_OK)
+            for variable_id in variable_ids:
+                variable = Variable.objects.get(pk=variable_id)
+                DataFileVariable.objects.create(datafile=newfile, variable=variable)
+
+            tasks.export_data.delay(station_id, data_source, start_date, end_date, variable_ids, newfile.id, aggregation, displayUTC)
+            created_data_file_ids.append(newfile.id)
+
+    return JsonResponse({'data': created_data_file_ids}, status=status.HTTP_200_OK)
 
 
 @api_view(('GET',))
@@ -177,7 +206,7 @@ def DataExportFiles(request):
             'source': {'text': df['source'],
                        'value': 0 if df['source'] == 'Raw data' else (1 if df['source'] == 'Hourly summary' else 2)},
             'lines': df['lines'],
-            'prepared_by': df['prepared_by']
+            'prepared_by': df['prepared_by'],
         }
         if f['ready_date'] is not None:
             f['ready_date'] = f['ready_date']
@@ -190,17 +219,207 @@ def DataExportFiles(request):
 
 def DownloadDataFile(request):
     file_id = request.GET.get('id', None)
-    file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
+    # for combine xlsx downloads
+    if 'combine' in str(file_id):
+        file_path = os.path.join('/data', 'exported_data', str(file_id) + '.xlsx')
+    else:
+        file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
     if os.path.exists(file_path):
-        with open(file_path, 'rb') as fh:
-            response = HttpResponse(fh.read(), content_type="text/csv")
-            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
-            return response
+        # with open(file_path, 'rb') as fh:
+        #     response = HttpResponse(fh.read(), content_type="text/csv")
+        #     response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+        #     return response
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
     return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
 
 
+# download .xlsx version of the data file
+def DownloadDataFileXLSX(request):
+    # file id of the csv to be converted to .xlsx
+    file_id = request.GET.get('id', None)
+    # path to the xlsx file
+    xlsx_file_path = os.path.join('/data', 'exported_data', str(file_id) + '.xlsx')
+    # path to the csv file
+    file_path = os.path.join('/data', 'exported_data', str(file_id) + '.csv')
+
+    try:
+        if not os.path.exists(xlsx_file_path):
+            # if the .xlsx file does not exist then create it
+            tasks.convert_csv_xlsx(file_path, file_id, file_id)
+
+        return FileResponse(open(xlsx_file_path, 'rb'), as_attachment=True, filename=os.path.basename(xlsx_file_path))
+    
+    except Exception as e:
+        logger.error(f"An error occured while trying to download {file_id}.xlsx. Error code: {e}")
+    
+    # return 404 on error
+    return JsonResponse({}, status=status.HTTP_404_NOT_FOUND)
+
+
+# combine csv files into a .xlsx file and then download them
+@csrf_exempt
+def CombineFilesXLSX(request):
+    # ensure that the request method is post
+    if request.method != 'POST':
+        # else return the "method not allowed" error in response
+        return HttpResponse(status=405)
+    
+    # processing the request
+    try:
+        # ensuring that the start date and the end date are valid
+        json_body = json.loads(request.body)
+        # grabbing the start and the end date
+        start_date = json_body['start_datetime']  # in format %Y-%m-%d %H:%M:%S
+
+        end_date = json_body['end_datetime']  # in format %Y-%m-%d %H:%M:%S
+
+        start_date_utc = pytz.UTC.localize(datetime.datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S'))
+        end_date_utc = pytz.UTC.localize(datetime.datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S'))
+        # ensuring that the start date and the end date are valid
+        if start_date_utc > end_date_utc:
+            message = 'The initial date must be greater than final date.'
+            return JsonResponse(data={"message": message}, status=status.HTTP_400_BAD_REQUEST)
+
+        station_ids = json_body['stations']  # array with station ids
+
+        data_source = json_body['source']  # could be either raw_data, hourly_summary, daily_summary, monthly_summary or yearly_summary
+
+        variable_ids = json_body['variables']  # list of obj in format {id: Int, agg: Str}
+
+        aggregation = json_body['aggregation'] # sets which column in the db will be used when the source is a summary. 
+
+        displayUTC = json_body['displayUTC'] # determins wheter an offset will be applied based on the truthines of displayUTC
+
+        # If source is raw_data, aggregation will be set to none
+        if data_source == 'raw_data':
+            aggregation = None
+
+        data_interval_seconds = None
+        if data_source == 'raw_data' and 'data_interval' in json_body:  # a number with the data interval in seconds. Only required for raw_data
+            data_interval_seconds = json_body['data_interval']
+        elif data_source == 'raw_data':
+            data_interval_seconds = 300
+
+        prepared_by = None
+        if request.user.first_name and request.user.last_name:
+            prepared_by = f'{request.user.first_name} {request.user.last_name}'
+        else:
+            prepared_by = request.user.username
+
+        data_source_dict = {
+            "raw_data": "Raw Data",
+            "hourly_summary": "Hourly Summary",
+            "daily_summary": "Daily Summary",
+            "monthly_summary": "Monthly Summary",
+            "yearly_summary": "Yearly Summary",
+        }
+
+        data_source_description = data_source_dict[data_source]
+
+        # converting the station_ids into a string to pass to the new entry
+        station_ids_string = ""
+        for x in station_ids:
+            station_ids_string += str(x) + "_"
+
+        # converting the variable_ids into a string to pass to the new entry
+        variable_ids_string = ""
+        for y in variable_ids:
+            variable_ids_string += str(y) + "_"
+
+        # add this file entry to the combine data file model
+        new_entry = CombineDataFile.objects.create(ready=False, initial_date=start_date_utc, final_date=end_date_utc,
+                                                        source=data_source_description, prepared_by=prepared_by,
+                                                        stations_ids=station_ids_string, variable_ids=variable_ids_string, aggregation="  ".join(aggregation).upper())
+
+        # send the MAIN task unto celery
+        combine_task = tasks.combine_xlsx_files.delay(station_ids, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds, prepared_by, data_source_description, new_entry.id)
+        print(f'BTW THIS IS THE NEW_ENTRY ID::::::::{new_entry.id}')
+        return JsonResponse({'data': new_entry.id}, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f'An error occured while attempting to schedule combine task. Error = {e}')
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+# get an update on the combine files
+@api_view(('GET',))
+def combineDataExportFiles(request):
+    files = []
+    try:
+        for df in CombineDataFile.objects.all().order_by('-created_at').values()[:100:1]:
+            if df['ready'] and df['ready_at']:
+                file_status = {'text': "Ready", 'value': 1}
+            elif df['ready_at']:
+                file_status = {'text': "Error", 'value': 2}
+            else:
+                file_status = {'text': "Processing", 'value': 0}
+
+            # getting the stations list
+            current_station_names_list = []
+            try:
+                station_ids = str(df['stations_ids']).split('_')
+
+                for x in station_ids:
+                    if x:
+                        current_station_names_list.append(Station.objects.get(pk=int(x)).name)
+
+            except ObjectDoesNotExist:
+                current_station_names_list = ["Stations not found"]
+
+
+            # getting variables list
+            variable_list = []
+            try:
+                variable_ids = str(df['variable_ids']).split('_')
+
+                for y in variable_ids:
+                    if y:
+                        variable_list.append(Variable.objects.get(pk=int(y)).name)
+
+            except Exception as e:
+                # logger.warning(f'An warning occurd during variable list creation: {variable_ids}')
+                variable_list = ["No variables"]
+
+            f = {
+                'id': df['id'],
+                'request_date': df['created_at'],
+                'ready_date': df['ready_at'],
+                'station': current_station_names_list,
+                'variables': variable_list,
+                'status': file_status,
+                'initial_date': df['initial_date'],
+                'final_date': df['final_date'],
+                'source': {'text': df['source'],
+                        'value': 0 if df['source'] == 'Raw data' else (1 if df['source'] == 'Hourly summary' else 2)},
+                'lines': df['lines'],
+                'prepared_by': df['prepared_by'],
+                'aggregation': df['aggregation'],
+            }
+            if f['ready_date'] is not None:
+                f['ready_date'] = f['ready_date']
+            files.append(f)
+
+        return Response(files, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.warning(f"An error occured while attempting to update the combined .xlsx files table. Error - {e}")
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+# to delete data file
 def DeleteDataFile(request):
     file_id = request.GET.get('id', None)
+
+    if 'combine' in str(file_id):
+        entry_id = int(str(file_id).split('-')[-1])
+
+        CombineDataFile.objects.get(pk=entry_id).delete()
+
+        file_path = os.path.join('/data', 'exported_data', str(file_id) + '.xlsx')
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        return JsonResponse({}, status=status.HTTP_200_OK)
+
     df = DataFile.objects.get(pk=file_id)
     DataFileStation.objects.filter(datafile=df).delete()
     DataFileVariable.objects.filter(datafile=df).delete()
@@ -2258,7 +2477,8 @@ class StationDetailView(LoginRequiredMixin, DetailView):
                  Row('code', 'wigos'),
                  Row('begin_date', 'end_date', 'relocation_date'),
                  Row('wmo', 'reporting_status'),
-                 Row('is_active', 'is_automatic'),
+                 Row('is_active', 'is_automatic', 'international_exchange', 'is_synoptic'),
+                 Row('synoptic_code', 'synoptic_type'),
                  Row('network', 'wmo_station_type'),
                  Row('profile', 'communication_type'),
                  Row('elevation', 'country'),
@@ -2320,7 +2540,8 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         Fieldset('SURFACE Requirements',
                  Row('latitude', 'longitude'),
                  Row('name'),
-                 Row('is_active', 'is_automatic'),
+                 Row('is_active', 'is_automatic', 'is_synoptic'),
+                 Row('synoptic_code', 'synoptic_type'),
                  Row('code', 'elevation'),
                  Row('country', 'communication_type'),
                  Row('region', 'watershed'),
@@ -2331,7 +2552,7 @@ class StationCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
                  Row('wigos_part_1', 'wigos_part_2', 'wigos_part_3', 'wigos_part_4'),
                  Row('wmo_region'),
                  Row('wmo_station_type', 'reporting_status'),
-                 Row('international_station'),
+                 Row('international_exchange'),
                  ),
         Fieldset('OSCAR Specific Settings',
                 #  Row(''),
@@ -2477,7 +2698,8 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
                  Row('code', 'wigos'),
                  Row('begin_date', 'end_date', 'relocation_date'),
                  Row('wmo', 'reporting_status'),
-                 Row('is_active', 'is_automatic'),
+                 Row('is_active', 'is_automatic', 'international_exchange', 'is_synoptic'),
+                 Row('synoptic_code', 'synoptic_type'),
                  Row('network', 'wmo_station_type'),
                  Row('profile', 'communication_type'),
                  Row('elevation', 'country'),

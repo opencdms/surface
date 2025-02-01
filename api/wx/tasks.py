@@ -6,12 +6,19 @@ import logging
 import os
 import socket
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from ftplib import FTP, error_perm, error_reply
 from time import sleep, time
 from croniter import croniter
 
+import csv
+import tempfile
+from minio import Minio
+
 import math, cmath
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import Alignment, Font, Border, Side
 import cronex
 import dateutil.parser
 import pandas
@@ -37,7 +44,7 @@ from wx.decoders.sat_tx325 import read_data as read_data_sat_tx325
 from wx.decoders.surtron import read_data as read_data_surtron
 from wx.decoders.surface import read_file as read_file_surface
 from wx.decoders.toa5 import read_file as read_file_toa5
-from wx.models import DataFile
+from wx.models import DataFile, CombineDataFile
 from wx.models import Document
 from wx.models import NoaaDcp
 from wx.models import Station, Country, WMOReportingStatus, WMORegion, WMOStationType
@@ -781,6 +788,43 @@ def latest_received_dpc_data_in_hours(last_execution):
     except TypeError as e:
         return 999999
 
+# set search criteria for dcp testing
+def set_search_criteria_dcp_test(dcp_info):
+    with open(settings.LRGS_CS_FILE_PATH, 'w') as cs_file:
+        if dcp_info['first_channel'] is not None:
+            cs_file.write(
+                f"""DRS_SINCE: now - 1 hour\nDRS_UNTIL: now\nDCP_ADDRESS: {dcp_info['dcp_address']}\nCHANNEL: |{dcp_info['first_channel']}\n""")
+        else:
+            cs_file.write(
+                f"""DRS_SINCE: now - 1 hour\nDRS_UNTIL: now\nDCP_ADDRESS: {dcp_info['dcp_address']}\n""")
+
+
+# called when the user attempts to test whether a noaaDCP is able to transmit
+def test_dcp_transmit(dcp_info):
+    logging.info(f"Attempting to test DCP transmition for {dcp_info['dcp_address']}")
+
+    set_search_criteria_dcp_test(dcp_info)
+
+    command = subprocess.Popen([settings.LRGS_EXECUTABLE_PATH,
+                                '-h', settings.LRGS_SERVER_HOST,
+                                '-p', settings.LRGS_SERVER_PORT,
+                                '-u', settings.LRGS_USER,
+                                '-P', settings.LRGS_PASSWORD,
+                                '-f', settings.LRGS_CS_FILE_PATH
+                                ], shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+    output, err_message = command.communicate()
+    # response = {
+    #     "output": output.decode('ascii'),
+    #     "err_message": err_message
+    # }
+
+    response = output.decode('ascii')
+
+    logging.info(f"{dcp_info['dcp_address']} DCP test transmission output {response}")
+
+    return response
+
 @shared_task
 def get_entl_data():
     print('LIGHTNING DATA - Starting get_entl_data task...')
@@ -831,7 +875,7 @@ def save_flash_data(data_string):
     read_data_flash(data_string.encode('latin-1'))
 
 @shared_task
-def export_data(station_id, source, start_date, end_date, variable_ids, file_id):
+def export_data(station_id, source, start_date, end_date, variable_ids, file_id, agg, displayUTC):
     logger.info(f'Exporting data (file "{file_id}")')
 
     timezone_offset = pytz.timezone(settings.TIMEZONE_NAME)
@@ -850,44 +894,48 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
         data_source_description = 'Raw data'
         converted_start_date = start_date_utc
         converted_end_date = end_date_utc
+
     else:
-        measured_source = '''
-            CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value
-                 WHEN var.sampling_operation_id = 3      THEN data.min_value
-                 WHEN var.sampling_operation_id = 4      THEN data.max_value
-                 WHEN var.sampling_operation_id = 6      THEN data.sum_value
-            ELSE data.sum_value END as value '''
+        # measured_source = '''
+        #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value
+        #          WHEN var.sampling_operation_id = 3      THEN data.min_value
+        #          WHEN var.sampling_operation_id = 4      THEN data.max_value
+        #          WHEN var.sampling_operation_id = 6      THEN data.sum_value
+        #     ELSE data.sum_value END as value '''
         if source == 'hourly_summary':
             datetime_variable = 'datetime'
             date_source = f"(datetime + interval '{station.utc_offset_minutes} minutes') at time zone 'utc' as date"
             data_source_description = 'Hourly summary'
             converted_start_date = start_date_utc
             converted_end_date = end_date_utc
+
         elif source == 'daily_summary':
             datetime_variable = 'day'
             data_source_description = 'Daily summary'
             date_source = "day::date"
             converted_start_date = start_date_utc.astimezone(timezone_offset).date()
             converted_end_date = end_date_utc.astimezone(timezone_offset).date()
+
         elif source == 'monthly_summary':
-            measured_source = '''
-                CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                    WHEN var.sampling_operation_id = 3      THEN data.min_value
-                    WHEN var.sampling_operation_id = 4      THEN data.max_value
-                    WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                ELSE data.sum_value END as value '''
+            # measured_source = '''
+            #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+            #         WHEN var.sampling_operation_id = 3      THEN data.min_value
+            #         WHEN var.sampling_operation_id = 4      THEN data.max_value
+            #         WHEN var.sampling_operation_id = 6      THEN data.sum_value
+            #     ELSE data.sum_value END as value '''
             datetime_variable = 'date'
             date_source = "date::date"
             data_source_description = 'Monthly summary'
             converted_start_date = start_date_utc.astimezone(timezone_offset).date()
             converted_end_date = end_date_utc.astimezone(timezone_offset).date()
+
         elif source == 'yearly_summary':
-            measured_source = '''
-                CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                    WHEN var.sampling_operation_id = 3      THEN data.min_value
-                    WHEN var.sampling_operation_id = 4      THEN data.max_value
-                    WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                ELSE data.sum_value END as value '''
+            # measured_source = '''
+            #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+            #         WHEN var.sampling_operation_id = 3      THEN data.min_value
+            #         WHEN var.sampling_operation_id = 4      THEN data.max_value
+            #         WHEN var.sampling_operation_id = 6      THEN data.sum_value
+            #     ELSE data.sum_value END as value '''
             datetime_variable = 'date'
             date_source = "date::date"
             data_source_description = 'Yearly summary'
@@ -923,32 +971,72 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
             datetime_list.append(current_datetime)
         datetime_list.append(converted_end_date)
 
+        # adding an extra day to the list when the source is monthly_summary or daily_summary
+        # This will cause the last month/day to be included in the output
+        if source in ['monthly_summary', 'daily_summary']:
+            datetime_list.append(converted_end_date + timedelta(days=1))
+
+            # in the case of querying for the monthly_summary of only 1 month
+            # strip the datetime_list of the last value so that there are no duplicates
+            if len(datetime_list) == 3 and source == 'monthly_summary':
+                datetime_list.pop()
+        # adding an extra hour to the list when the souce is hourly_summary
+        elif source == 'hourly_summary':
+            datetime_list.append(converted_end_date + timedelta(hours=1))
+        # adding extra seconds to the list when the souce is raw_data
+        # the number of seconds added is based on the data interval selected
+        elif source == 'raw_data':
+            datetime_list.append(converted_end_date + timedelta(seconds=current_datafile.interval_in_seconds))
+
+
         query_result = []
         for i in range(0, len(datetime_list) - 1):
             current_start_datetime = datetime_list[i]
             current_end_datetime = datetime_list[i + 1]
 
             with connection.cursor() as cursor:
-                if source == 'raw_data':
+                if source == 'raw_data': 
 
-                    query_raw_data = '''
-                        WITH processed_data AS (
-                            SELECT datetime
-                                ,var.id as variable_id
-                                ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
-                            FROM raw_data data
-                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
-                            WHERE data.datetime >= %(start_datetime)s
-                            AND data.datetime < %(end_datetime)s
-                            AND data.station_id = %(station_id)s
-                        )
-                        SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
-                            ,variable.id
-                            ,COALESCE(value, '-99.9')
-                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '%(data_interval)s seconds') generated_time
-                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
-                        LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
-                    ''' 
+                    # removing the offset addition from the query based on the truthines of displayUTC. Removed `+ interval '%(utc_offset)s minutes'`
+                    if displayUTC:
+                        query_raw_data = '''
+                            WITH processed_data AS (
+                                SELECT datetime
+                                    ,var.id as variable_id
+                                    ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
+                                FROM raw_data data
+                                JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                                WHERE data.datetime >= %(start_datetime)s
+                                AND data.datetime <= %(end_datetime)s
+                                AND data.station_id = %(station_id)s
+                            )
+                            SELECT (generated_time) at time zone 'utc' as datetime
+                                ,variable.id
+                                ,COALESCE(value, '-99.9')
+                            FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '%(data_interval)s seconds') generated_time
+                            JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                            LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                        ''' 
+                    # keeping the offset addition in the query based on the truthines of displayUTC.
+                    else:
+                        query_raw_data = '''
+                            WITH processed_data AS (
+                                SELECT datetime
+                                    ,var.id as variable_id
+                                    ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
+                                FROM raw_data data
+                                JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                                WHERE data.datetime >= %(start_datetime)s
+                                AND data.datetime <= %(end_datetime)s
+                                AND data.station_id = %(station_id)s
+                            )
+                            SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
+                                ,variable.id
+                                ,COALESCE(value, '-99.9')
+                            FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '%(data_interval)s seconds') generated_time
+                            JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                            LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                        ''' 
 
                     logging.info(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
@@ -958,55 +1046,91 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     cursor.execute(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
                           'station_id': station_id, 'data_interval': current_datafile.interval_in_seconds})
-            
-
 
                 elif source == 'hourly_summary':
+                    
+                    # removing the offset addition from the query based on the truthines of displayUTC. Removed `+ interval '%(utc_offset)s minutes'`
+                    if displayUTC:
+                        query_hourly = '''
+                            WITH processed_data AS (
+                                SELECT datetime ,var.id as variable_id
+                                ,COALESCE(
+                                    CASE
+                                        WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                        WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                        WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                        WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                        ELSE data.avg_value 
+                                    END, '-99.9'
+                                ) as value  
+                                FROM hourly_summary data
+                                JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                                WHERE data.datetime >= %(start_datetime)s
+                                AND data.datetime <= %(end_datetime)s
+                                AND data.station_id = %(station_id)s
+                            )
+                            SELECT (generated_time) at time zone 'utc' as datetime
+                                ,variable.id
+                                ,COALESCE(value, '-99.9')
 
-                    query_hourly = '''
-                        WITH processed_data AS (
-                            SELECT datetime ,var.id as variable_id
-                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                            WHEN var.sampling_operation_id = 3      THEN data.min_value
-                            WHEN var.sampling_operation_id = 4      THEN data.max_value
-                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, '-99.9') as value  
-                            FROM hourly_summary data
-                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
-                            WHERE data.datetime >= %(start_datetime)s
-                            AND data.datetime < %(end_datetime)s
-                            AND data.station_id = %(station_id)s
-                        )
-                        SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
-                            ,variable.id
-                            ,COALESCE(value, '-99.9')
+                            FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 hours') generated_time
+                            JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                            LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                        '''
+                    # keeping the offset addition in the query based on the truthines of displayUTC.
+                    else:
+                        query_hourly = '''
+                            WITH processed_data AS (
+                                SELECT datetime ,var.id as variable_id
+                                ,COALESCE(
+                                    CASE
+                                        WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                        WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                        WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                        WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                        ELSE data.avg_value 
+                                    END, '-99.9'
+                                ) as value  
+                                FROM hourly_summary data
+                                JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                                WHERE data.datetime >= %(start_datetime)s
+                                AND data.datetime <= %(end_datetime)s
+                                AND data.station_id = %(station_id)s
+                            )
+                            SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
+                                ,variable.id
+                                ,COALESCE(value, '-99.9')
 
-                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds' , INTERVAL '1 hours') generated_time
-                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
-                        LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
-                    '''
+                            FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 hours') generated_time
+                            JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                            LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                        '''
                     
                     logging.info(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                     cursor.execute(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
                     
                 elif source == 'daily_summary':
                     query_daily = '''
                         WITH processed_data AS (
                             SELECT day ,var.id as variable_id
-                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                            WHEN var.sampling_operation_id = 3      THEN data.min_value
-                            WHEN var.sampling_operation_id = 4      THEN data.max_value
-                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, '-99.9') as value  
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
                             FROM daily_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.day >= %(start_datetime)s
-                            AND data.day < %(end_datetime)s
+                            AND data.day <= %(end_datetime)s
                             AND data.station_id = %(station_id)s
                         )
                         SELECT (generated_time) as datetime
@@ -1019,25 +1143,29 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
                     logging.info(query_daily, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                     cursor.execute(query_daily, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
                 
                 elif source == 'monthly_summary':
                     query_monthly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
-                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                            WHEN var.sampling_operation_id = 3      THEN data.min_value
-                            WHEN var.sampling_operation_id = 4      THEN data.max_value
-                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, '-99.9') as value  
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
                             FROM monthly_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.date >= %(start_datetime)s
-                            AND data.date < %(end_datetime)s
+                            AND data.date <= %(end_datetime)s
                             AND data.station_id = %(station_id)s
                         )
                         SELECT (generated_time) as datetime
@@ -1050,21 +1178,25 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
                     
                     logging.info(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                     cursor.execute(query_monthly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                 elif source == 'yearly_summary':
                     query_yearly = '''
                         WITH processed_data AS (
                             SELECT date ,var.id as variable_id
-                            ,COALESCE(CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
-                            WHEN var.sampling_operation_id = 3      THEN data.min_value
-                            WHEN var.sampling_operation_id = 4      THEN data.max_value
-                            WHEN var.sampling_operation_id = 6      THEN data.sum_value
-                            ELSE data.sum_value END, '-99.9') as value  
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
                             FROM yearly_summary data
                             JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
                             WHERE data.date >= %(start_datetime)s
@@ -1081,11 +1213,12 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
 
                     logging.info(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
 
                     cursor.execute(query_yearly, {'variable_ids': variable_ids,
                           'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
-                          'station_id': station_id})
+                          'station_id': station_id, 'aggregation': agg})
+                
                 query_result = query_result + cursor.fetchall()
 
 
@@ -1094,17 +1227,57 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
         date_of_completion = datetime.utcnow()
 
         with open(filepath, 'w') as f: 
-            start_date_header = start_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
-            end_date_header = end_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
 
-            f.write(f'Station:,{station.code} - {station.name}\n')
-            f.write(f'Data source:,{data_source_description}\n')
-            f.write(f'Description:,{variable_names_string}\n')
-            f.write(f'Latitude:,{station.latitude}\n')
-            f.write(f'Longitude:,{station.longitude}\n')
-            f.write(f'Date of completion:,{date_of_completion.strftime("%Y-%m-%d %H:%M:%S")}\n')
-            f.write(f'Prepared by:,{current_datafile.prepared_by}\n')
-            f.write(f'Start date:,{start_date_header},End date:,{end_date_header}\n\n')
+            # modify the displayed start and end date in the csv file based on the summary type
+            # show the hour, minute, second, year, month, day in the output
+            if data_source_description in ["Raw data", "Hourly summary"]:
+                start_date_header = start_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
+                end_date_header = end_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
+            # show just the year, month and day
+            elif data_source_description in ["Daily summary"]:
+                start_date_header = start_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d')
+                end_date_header = end_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d')
+            # show just the year and month
+            elif data_source_description in ["Monthly summary"]:
+                start_date_header = start_date_utc.astimezone(timezone_offset).strftime('%Y-%m')
+                end_date_header = end_date_utc.astimezone(timezone_offset).strftime('%Y-%m')
+            # show just the year
+            elif data_source_description in ["Yearly summary"]:
+                start_date_header = start_date_utc.astimezone(timezone_offset).strftime('%Y')
+                end_date_header = int(end_date_utc.astimezone(timezone_offset).strftime('%Y')) - 1
+            # generic: show everything (hour, minute, second, year, month, day)
+            else:
+                start_date_header = start_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
+                end_date_header = end_date_utc.astimezone(timezone_offset).strftime('%Y-%m-%d %H:%M:%S')
+
+            f.write(f'Station:{station.code} - {station.name}\n')
+            f.write(f'Data source:{data_source_description}\n')
+            f.write(f'Description:{variable_names_string}\n')
+            f.write(f'Latitude:{station.latitude}\n')
+            f.write(f'Longitude:{station.longitude}\n')
+            f.write(f'Date of completion:{date_of_completion.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}\n')
+            f.write(f'Prepared by:{current_datafile.prepared_by}\n')
+            f.write(f'Start date:{start_date_header}, End date:{end_date_header}\n\n')
+            if displayUTC:
+                f.write('Dates are displayed in UTC\n')
+                f.write(f'Start date in UTC:{converted_start_date.strftime("%Y-%m-%d %H:%M:%S")}, End date in UTC:{converted_end_date.strftime("%Y-%m-%d %H:%M:%S")}\n\n')
+
+            # Check the value of the agg to inform aggregation
+            if agg == "min":
+                # Write the text for "min" to the file
+                f.write(f'Aggregation: Minimum\n\n')
+            elif agg == "max":
+                # Write the text for "max" to the file
+                f.write(f'Aggregation: Maximum\n\n')
+            elif agg == "sum":
+                # Write the text for "sum" to the file
+                f.write(f'Aggregation: Sum\n\n')
+            elif agg == "avg":
+                # Write the text for "avg" to the file
+                f.write(f'Aggregation: Average\n\n')
+            else:
+                # Handle unexpected values of 'agg'
+                f.write(f'Aggregation: Instantaneous Raw Data\n\n')
 
 
         lines = 0
@@ -1150,6 +1323,9 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
         current_datafile.save()
         logger.info(f'Data exported successfully (file "{file_id}")')
 
+        # create a new .xlsx version of the file
+        convert_csv_xlsx(filepath, station.name, file_id)
+
 
     except Exception as e:
         current_datafile.ready = False
@@ -1157,6 +1333,627 @@ def export_data(station_id, source, start_date, end_date, variable_ids, file_id)
         current_datafile.lines = 0
         current_datafile.save()
         logger.error(f'Error on export data file "{file_id}". {repr(e)}')
+
+
+# converts csv files to .xlsx format
+def convert_csv_xlsx(file_path, file_station, file_id):
+    if os.path.exists(file_path) and file_station:
+        # open the csv and read all lines
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+
+        try:
+            # represents the workbook
+            wb = Workbook()
+            # currently active default worksheet in the workbook
+            ws = wb.active
+            # Naming the worksheet
+            ws.title = f'{file_station}'
+
+            # Write metadata
+            for i, line in enumerate(lines):
+                # Stop adding metadata once the data table starts
+                if "Year" in line:
+                    start_data_index = i + 1
+                    break
+                # writing the metadata to a single column
+                ws.cell(row=i + 1, column=1, value=line.strip())
+
+            # Write tabular data headers and rows
+            headers = lines[start_data_index - 1].strip().split(",")
+            ws.append(headers)  # Add headers
+
+            # Add the tabular data stating from start_data_index till the end of the list
+            for line in lines[start_data_index:]:
+                row_data = line.strip().split(",")
+                ws.append(row_data)
+        except Exception as e:
+            logger.error(f'An error occured while attempting to convert {file_id}.csv to .xlsx. Error Output: {e}')
+
+        try:
+            # Save the workbook
+            wb.save(f'{settings.EXPORTED_DATA_CELERY_PATH}{file_id}.xlsx')  
+        except Exception as e:
+            logger.error(f'An error occured while attempting to save the {file_id}.xlsx file. Error Output: {e}')
+
+
+# combine .xlsx files into a single .xlsx file
+@shared_task
+def combine_xlsx_files(station_ids, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds, prepared_by, data_source_description, entry_id):
+    # grab the current combine xlsx data file entry
+    current_datafile = CombineDataFile.objects.get(pk=entry_id)
+
+    try:
+
+        # list containing the data frame of each station
+        station_data_frames = []
+
+        for station_id in station_ids:
+            # a list to hold the dataframes containing the data queried from the db
+            export_data_df = []
+
+            # station dataframe
+            station_df = pandas.DataFrame()
+
+            if aggregation:
+                for agg in aggregation:
+
+                    export_data_df.append(export_data_xlsx(station_id, data_source, start_date, end_date, variable_ids, agg, displayUTC, data_interval_seconds))
+            else:
+                export_data_df.append(export_data_xlsx(station_id, data_source, start_date, end_date, variable_ids, aggregation, displayUTC, data_interval_seconds))
+
+            # Getting the columns in common between dataframs pertaining to a specific station
+            if data_source in ['raw_data', 'hourly_summary']:
+                # selecting the year, month, day, time columns which all dataframe will have in common given the data source
+                station_df = export_data_df[0].iloc[:, :4]
+
+                # loop through the output dataframes and concat the columns containing data to the station dataframe
+                for df in export_data_df:
+                    station_df = pandas.concat([station_df, df.iloc[:, 4:]], axis=1)
+
+            elif data_source == 'daily_summary':
+                # selecting the year, month, day columns which all dataframe will have in common given the data source
+                station_df = export_data_df[0].iloc[:, :3]
+
+                # loop through the output dataframes and concat the columns containing data to the station dataframe
+                for df in export_data_df:
+                    station_df = pandas.concat([station_df, df.iloc[:, 3:]], axis=1)
+
+            elif data_source == 'monthly_summary':
+                # selecting the year, month columns which all dataframe will have in common given the data source
+                station_df = export_data_df[0].iloc[:, :2]
+
+                # loop through the output dataframes and concat the columns containing data to the station dataframe
+                for df in export_data_df:
+                    station_df = pandas.concat([station_df, df.iloc[:, 2:]], axis=1)
+
+            elif data_source == 'yearly_summary':
+                # selecting the year column which all dataframe will have in common given the data source
+                station_df = export_data_df[0].iloc[:, :1]
+
+                # loop through the output dataframes and concat the columns containing data to the station dataframe
+                for df in export_data_df:
+                    station_df = pandas.concat([station_df, df.iloc[:, 1:]], axis=1)
+
+            else:
+                raise ValueError("A valid data source was not passed!")
+
+
+            # add the station dataframe to a list
+            station_data_frames.append(station_df)
+
+
+        # Create a new workbook for the combined file
+        combined_workbook = Workbook()
+        combined_workbook.remove(combined_workbook.active)  # Remove default sheet
+
+        # the name of the output file will be the celery task id
+        output_file = f'{settings.EXPORTED_DATA_CELERY_PATH}combine-{entry_id}.xlsx'
+
+        # retrieving the variable names given then variable ids and converting the names into a string
+        variable_dict = {}
+        variable_names_string = ''
+        try: 
+            with connection.cursor() as cursor_variable:
+                cursor_variable.execute(f'''
+                    SELECT var.symbol
+                        ,var.id
+                        ,CASE WHEN unit.symbol IS NOT NULL THEN CONCAT(var.symbol, ' - ', var.name, ' (', unit.symbol, ')') 
+                            ELSE CONCAT(var.symbol, ' - ', var.name) END as var_name
+                    FROM wx_variable var 
+                    LEFT JOIN wx_unit unit ON var.unit_id = unit.id 
+                    WHERE var.id IN %s
+                    ORDER BY var.name
+                ''', (tuple(variable_ids),))
+
+                rows = cursor_variable.fetchall()
+                for row in rows:
+                    variable_dict[row[1]] = row[0]
+                    variable_names_string += f'{row[2]}   '
+        except Exception as e:
+            logger.error(f"AN ERROR OCCURED WITH THE VARIABLE NAMES: {e}")
+
+        # looping through the dataframes of each station
+        for x, id in enumerate(station_ids):
+            # get the station object
+            station = Station.objects.get(pk=id)
+
+            # the number of entries in the data
+            lines = len(station_data_frames[x].index)
+
+            # Create a new sheet with the station name
+            sheet = combined_workbook.create_sheet(title=f"{station.name} - {station.code}")
+
+            # Write DataFrame to the sheet
+            for r_idx, row in enumerate(dataframe_to_rows(station_data_frames[x], index=False, header=True), start=1):
+                for c_idx, value in enumerate(row, start=1):
+                    sheet.cell(row=r_idx, column=c_idx, value=value)
+
+            # insert a new row at the top of the sheet to add the aggregation options and headers
+            sheet.insert_rows(1, 12) # insert two rows at row 1
+
+            # raw data does not have any aggregation options
+            if data_source != 'raw_data':
+                # Get the number of columns in the DataFrame
+                num_cols = station_data_frames[x].shape[1]
+
+                # get the amount of cells to merge
+                num_merge = len(variable_ids) - 1
+
+                # retrieve how many times a merger should occur
+                qty_merge = len(aggregation) - 1
+
+                start_col = num_cols - num_merge # Second-to-last column index (1-based index)
+                end_col = num_cols # Last column index
+
+                # Define a bold border style
+                bold_border = Border(
+                    left=Side(style="thick"),
+                    right=Side(style="thick"),
+                    top=Side(style="thick"),
+                    bottom=Side(style="thick")
+                )
+
+                for x in range(qty_merge,-1,-1):
+                    # Merge
+                    sheet.merge_cells(start_row=12, start_column=start_col, end_row=12, end_column=end_col)
+                    cell = sheet.cell(row=12, column=start_col, value=aggregation[x].upper())
+                    cell.font = Font(bold=True)
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+                    # Apply bold border to all merged cells
+                    for row in range(12, 13):  # Only row 12
+                        for col in range(start_col, end_col + 1):
+                            sheet.cell(row=row, column=col).border = bold_border
+
+                    end_col = start_col - 1 # updated end column index
+                    start_col = end_col - num_merge  # updated start column index
+
+            date_of_completion = datetime.utcnow()
+            timezone_offset = pytz.timezone(settings.TIMEZONE_NAME)
+
+            # add the file headers
+            cell = sheet.cell(row=1, column=1, value=f'Station:{station.code} - {station.name}')
+            cell = sheet.cell(row=2, column=1, value=f'Data source:{data_source_description}')
+            cell = sheet.cell(row=3, column=1, value=f'Description:{variable_names_string}')
+            cell = sheet.cell(row=4, column=1, value=f'Latitude:{station.latitude}')
+            cell = sheet.cell(row=5, column=1, value=f'Longitude:{station.longitude}')
+            cell = sheet.cell(row=6, column=1, value=f'Date of completion:{date_of_completion.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}')
+            cell = sheet.cell(row=7, column=1, value=f'Prepared by:{prepared_by}')
+
+            if displayUTC and data_source in ['raw_data','hourly_summary']:
+                cell = sheet.cell(row=9, column=1, value=f'Dates are displayed in UTC')
+                cell = sheet.cell(row=10, column=1, value=f'Start date:{start_date}, End date:{end_date}')
+            else:
+                updated_start_date = pytz.UTC.localize(datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S'))
+                updated_end_date = pytz.UTC.localize(datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S'))
+                cell = sheet.cell(row=9, column=1, value=f'Start date:{updated_start_date.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}, End date:{updated_end_date.astimezone(timezone_offset).strftime("%Y-%m-%d %H:%M:%S")}')
+
+        # Save the workbook
+        combined_workbook.save(output_file)
+
+        current_datafile.ready = True
+        current_datafile.ready_at = date_of_completion
+        current_datafile.lines = lines
+        current_datafile.save()
+        logger.info(f'Combine Data exported successfully (file "combine-{entry_id}")')
+    
+
+    except Exception as e:
+        current_datafile.ready = False
+        current_datafile.ready_at = datetime.utcnow()
+        current_datafile.lines = 0
+        current_datafile.save()
+        logger.error(f'Error on export combine xlsx data file "combine-{entry_id}". Error -  {repr(e)}')      
+
+
+# returns the data frame for each query ran in order to facilitate combining the files later
+def export_data_xlsx(station_id, source, start_date, end_date, variable_ids, agg, displayUTC, data_interval_seconds):
+
+    timezone_offset = pytz.timezone(settings.TIMEZONE_NAME)
+    start_date_utc = pytz.UTC.localize(datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S'))
+    end_date_utc = pytz.UTC.localize(datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S'))
+
+    station = Station.objects.get(pk=station_id)
+
+    variable_ids = tuple(variable_ids)
+    # variable_ids = ','.join([str(x) for x in variable_ids])
+
+    # Diferent data sources have diferents columns names for the measurement data and diferents intervals
+    if source == 'raw_data':
+        datetime_variable = 'datetime'
+        data_source_description = 'Raw data'
+        converted_start_date = start_date_utc
+        converted_end_date = end_date_utc
+
+    else:
+        # measured_source = '''
+        #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value
+        #          WHEN var.sampling_operation_id = 3      THEN data.min_value
+        #          WHEN var.sampling_operation_id = 4      THEN data.max_value
+        #          WHEN var.sampling_operation_id = 6      THEN data.sum_value
+        #     ELSE data.sum_value END as value '''
+        if source == 'hourly_summary':
+            datetime_variable = 'datetime'
+            date_source = f"(datetime + interval '{station.utc_offset_minutes} minutes') at time zone 'utc' as date"
+            data_source_description = 'Hourly summary'
+            converted_start_date = start_date_utc
+            converted_end_date = end_date_utc
+
+        elif source == 'daily_summary':
+            datetime_variable = 'day'
+            data_source_description = 'Daily summary'
+            date_source = "day::date"
+            converted_start_date = start_date_utc.astimezone(timezone_offset).date()
+            converted_end_date = end_date_utc.astimezone(timezone_offset).date()
+
+        elif source == 'monthly_summary':
+            # measured_source = '''
+            #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+            #         WHEN var.sampling_operation_id = 3      THEN data.min_value
+            #         WHEN var.sampling_operation_id = 4      THEN data.max_value
+            #         WHEN var.sampling_operation_id = 6      THEN data.sum_value
+            #     ELSE data.sum_value END as value '''
+            datetime_variable = 'date'
+            date_source = "date::date"
+            data_source_description = 'Monthly summary'
+            converted_start_date = start_date_utc.astimezone(timezone_offset).date()
+            converted_end_date = end_date_utc.astimezone(timezone_offset).date()
+
+        elif source == 'yearly_summary':
+            # measured_source = '''
+            #     CASE WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+            #         WHEN var.sampling_operation_id = 3      THEN data.min_value
+            #         WHEN var.sampling_operation_id = 4      THEN data.max_value
+            #         WHEN var.sampling_operation_id = 6      THEN data.sum_value
+            #     ELSE data.sum_value END as value '''
+            datetime_variable = 'date'
+            date_source = "date::date"
+            data_source_description = 'Yearly summary'
+            converted_start_date = start_date_utc.astimezone(timezone_offset).date()
+            converted_end_date = end_date_utc.astimezone(timezone_offset).date()
+
+    try:
+        variable_dict = {}
+        variable_names_string = ''
+
+        with connection.cursor() as cursor_variable:
+            cursor_variable.execute(f'''
+                SELECT var.symbol
+                    ,var.id
+                    ,CASE WHEN unit.symbol IS NOT NULL THEN CONCAT(var.symbol, ' - ', var.name, ' (', unit.symbol, ')') 
+                        ELSE CONCAT(var.symbol, ' - ', var.name) END as var_name
+                FROM wx_variable var 
+                LEFT JOIN wx_unit unit ON var.unit_id = unit.id 
+                WHERE var.id IN %s
+                ORDER BY var.name
+            ''', (variable_ids,))
+
+            rows = cursor_variable.fetchall()
+            for row in rows:
+                variable_dict[row[1]] = row[0]
+                variable_names_string += f'{row[2]}   '
+
+        # Iterate over the start and end date day by day to split the queries
+        datetime_list = [converted_start_date]
+        current_datetime = converted_start_date
+        while current_datetime < converted_end_date and (current_datetime + timedelta(days=1)) < converted_end_date:
+            current_datetime = current_datetime + timedelta(days=1)
+            datetime_list.append(current_datetime)
+        datetime_list.append(converted_end_date)
+
+        # adding an extra day to the list when the source is monthly_summary or daily_summary
+        # This will cause the last month/day to be included in the output
+        if source in ['monthly_summary', 'daily_summary']:
+            datetime_list.append(converted_end_date + timedelta(days=1))
+
+            # in the case of querying for the monthly_summary of only 1 month
+            # strip the datetime_list of the last value so that there are no duplicates
+            if len(datetime_list) == 3 and source == 'monthly_summary':
+                datetime_list.pop()
+        # adding an extra hour to the list when the souce is hourly_summary
+        elif source == 'hourly_summary':
+            datetime_list.append(converted_end_date + timedelta(hours=1))
+        # adding extra seconds to the list when the souce is raw_data
+        # the number of seconds added is based on the data interval selected
+        elif source == 'raw_data':
+            datetime_list.append(converted_end_date + timedelta(seconds=data_interval_seconds))
+
+
+        query_result = []
+        for i in range(0, len(datetime_list) - 1):
+            current_start_datetime = datetime_list[i]
+            current_end_datetime = datetime_list[i + 1]
+
+            with connection.cursor() as cursor:
+                if source == 'raw_data': 
+
+                    # removing the offset addition from the query based on the truthines of displayUTC. Removed `+ interval '%(utc_offset)s minutes'`
+                    if displayUTC:
+                        query_raw_data = '''
+                            WITH processed_data AS (
+                                SELECT datetime
+                                    ,var.id as variable_id
+                                    ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
+                                FROM raw_data data
+                                JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                                WHERE data.datetime >= %(start_datetime)s
+                                AND data.datetime <= %(end_datetime)s
+                                AND data.station_id = %(station_id)s
+                            )
+                            SELECT (generated_time) at time zone 'utc' as datetime
+                                ,variable.id
+                                ,COALESCE(value, '-99.9')
+                            FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '%(data_interval)s seconds') generated_time
+                            JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                            LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                        ''' 
+                    # keeping the offset addition in the query based on the truthines of displayUTC.
+                    else:
+                        query_raw_data = '''
+                            WITH processed_data AS (
+                                SELECT datetime
+                                    ,var.id as variable_id
+                                    ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
+                                FROM raw_data data
+                                JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                                WHERE data.datetime >= %(start_datetime)s
+                                AND data.datetime <= %(end_datetime)s
+                                AND data.station_id = %(station_id)s
+                            )
+                            SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
+                                ,variable.id
+                                ,COALESCE(value, '-99.9')
+                            FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '%(data_interval)s seconds') generated_time
+                            JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                            LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                        ''' 
+
+                    logging.info(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'data_interval': data_interval_seconds})
+
+
+                    cursor.execute(query_raw_data, {'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'data_interval': data_interval_seconds})
+
+                elif source == 'hourly_summary':
+                    
+                    # removing the offset addition from the query based on the truthines of displayUTC. Removed `+ interval '%(utc_offset)s minutes'`
+                    if displayUTC:
+                        query_hourly = '''
+                            WITH processed_data AS (
+                                SELECT datetime ,var.id as variable_id
+                                ,COALESCE(
+                                    CASE
+                                        WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                        WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                        WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                        WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                        ELSE data.avg_value 
+                                    END, '-99.9'
+                                ) as value  
+                                FROM hourly_summary data
+                                JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                                WHERE data.datetime >= %(start_datetime)s
+                                AND data.datetime <= %(end_datetime)s
+                                AND data.station_id = %(station_id)s
+                            )
+                            SELECT (generated_time) at time zone 'utc' as datetime
+                                ,variable.id
+                                ,COALESCE(value, '-99.9')
+
+                            FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 hours') generated_time
+                            JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                            LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                        '''
+                    # keeping the offset addition in the query based on the truthines of displayUTC.
+                    else:
+                        query_hourly = '''
+                            WITH processed_data AS (
+                                SELECT datetime ,var.id as variable_id
+                                ,COALESCE(
+                                    CASE
+                                        WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                        WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                        WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                        WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                        ELSE data.avg_value 
+                                    END, '-99.9'
+                                ) as value  
+                                FROM hourly_summary data
+                                JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                                WHERE data.datetime >= %(start_datetime)s
+                                AND data.datetime <= %(end_datetime)s
+                                AND data.station_id = %(station_id)s
+                            )
+                            SELECT (generated_time + interval '%(utc_offset)s minutes') at time zone 'utc' as datetime
+                                ,variable.id
+                                ,COALESCE(value, '-99.9')
+
+                            FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 hours') generated_time
+                            JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                            LEFT JOIN processed_data ON datetime = generated_time AND variable.id = variable_id
+                        '''
+                    
+                    logging.info(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
+                          'station_id': station_id, 'aggregation': agg})
+
+                    cursor.execute(query_hourly,{'utc_offset': station.utc_offset_minutes, 'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime, 
+                          'station_id': station_id, 'aggregation': agg})
+                    
+                elif source == 'daily_summary':
+                    query_daily = '''
+                        WITH processed_data AS (
+                            SELECT day ,var.id as variable_id
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
+                            FROM daily_summary data
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.day >= %(start_datetime)s
+                            AND data.day <= %(end_datetime)s
+                            AND data.station_id = %(station_id)s
+                        )
+                        SELECT (generated_time) as datetime
+                            ,variable.id
+                            ,COALESCE(value, '-99.9')
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s - INTERVAL '1 seconds', INTERVAL '1 days') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                        LEFT JOIN processed_data ON day = generated_time AND variable.id = variable_id
+                    '''
+
+                    logging.info(query_daily, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'aggregation': agg})
+
+                    cursor.execute(query_daily, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'aggregation': agg})
+                
+                elif source == 'monthly_summary':
+                    query_monthly = '''
+                        WITH processed_data AS (
+                            SELECT date ,var.id as variable_id
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
+                            FROM monthly_summary data
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.date >= %(start_datetime)s
+                            AND data.date <= %(end_datetime)s
+                            AND data.station_id = %(station_id)s
+                        )
+                        SELECT (generated_time) as datetime
+                            ,variable.id
+                            ,COALESCE(value, '-99.9')
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s, INTERVAL '1 months') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                        LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
+                        '''
+                    
+                    logging.info(query_monthly, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'aggregation': agg})
+
+                    cursor.execute(query_monthly, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'aggregation': agg})
+
+                elif source == 'yearly_summary':
+                    query_yearly = '''
+                        WITH processed_data AS (
+                            SELECT date ,var.id as variable_id
+                            ,COALESCE(
+                                CASE
+                                    WHEN %(aggregation)s = 'avg'      THEN data.avg_value::real 
+                                    WHEN %(aggregation)s = 'min'      THEN data.min_value
+                                    WHEN %(aggregation)s = 'max'      THEN data.max_value
+                                    WHEN %(aggregation)s = 'sum'      THEN data.sum_value
+                                    ELSE data.avg_value 
+                                END, '-99.9'
+                            ) as value  
+                            FROM yearly_summary data
+                            JOIN wx_variable var ON data.variable_id = var.id AND var.id IN %(variable_ids)s
+                            WHERE data.date >= %(start_datetime)s
+                            AND data.date < %(end_datetime)s
+                            AND data.station_id = %(station_id)s
+                        )
+                        SELECT (generated_time) as datetime
+                            ,variable.id
+                            ,COALESCE(value, '-99.9')
+                        FROM generate_series(%(start_datetime)s, %(end_datetime)s, INTERVAL '1 years') generated_time
+                        JOIN wx_variable variable ON variable.id IN %(variable_ids)s
+                        LEFT JOIN processed_data ON date = generated_time AND variable.id = variable_id
+                        ''' 
+
+                    logging.info(query_yearly, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'aggregation': agg})
+
+                    cursor.execute(query_yearly, {'variable_ids': variable_ids,
+                          'start_datetime': current_start_datetime, 'end_datetime': current_end_datetime,
+                          'station_id': station_id, 'aggregation': agg})
+                
+                query_result = query_result + cursor.fetchall()
+
+
+        if query_result:
+            
+            df = pandas.DataFrame(data=query_result).pivot(index=0, columns=1)
+            df.rename(columns=variable_dict, inplace=True)
+            df.columns = df.columns.droplevel(0)
+            if source == 'daily_summary':
+                df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
+                df['Month'] = df.index.map(lambda x: x.strftime('%m'))
+                df['Day'] = df.index.map(lambda x: x.strftime('%d'))
+                cols = df.columns.tolist()
+                cols = cols[-3:] + cols[:-3]
+                df = df[cols]
+                df = df.drop_duplicates(subset=['Day', 'Month', 'Year'], keep='first')
+            elif source == 'monthly_summary':                
+                df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
+                df['Month'] = df.index.map(lambda x: x.strftime('%m'))
+                cols = df.columns.tolist()
+                cols = cols[-2:] + cols[:-2]
+                df = df[cols]
+                df = df.drop_duplicates(subset=['Month', 'Year'], keep='first')
+            elif source == 'yearly_summary':
+                df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
+                cols = df.columns.tolist()
+                cols = cols[-1:] + cols[:-1]
+                df = df[cols]
+                df = df.drop_duplicates(subset=['Year'], keep='first')
+            else:
+                df['Year'] = df.index.map(lambda x: x.strftime('%Y'))
+                df['Month'] = df.index.map(lambda x: x.strftime('%m'))
+                df['Day'] = df.index.map(lambda x: x.strftime('%d'))
+                df['Time'] = df.index.map(lambda x: x.strftime('%H:%M:%S'))
+                cols = df.columns.tolist()
+                cols = cols[-4:] + cols[:-4]
+                df = df[cols]
+
+            return df
+
+    except Exception as e:
+        logger.error(f'Error on export data as combine xlsx. Error - {repr(e)}')
+
+
 
 @shared_task
 def ftp_ingest_historical_station_files():
@@ -2086,3 +2883,368 @@ def export_station_to_oscar_wigos(selected_ids, api_token, cleaned_data):
         
     else:
         return {'code': 412, 'description': 'No WIGOS ID was provided'}
+
+# Tasks the looks for stations that are set for international exchange (see STATION model) and transmits them to wis2box
+@shared_task
+def aws_transmit_wis2box():
+    logging.info('aws_transmit_wis2box starting')
+
+    # grab a stations that have international exchange set
+    transmit_stations = Station.objects.filter(international_exchange=True).values_list('id', flat=True)
+
+    station_id = list(transmit_stations)
+
+
+    try:
+
+        for id in station_id:
+            # Log that data is being processed for a station
+            logging.info(f'AWS Transmision: Processing data for Station ID: {id}')
+            # Create a dictionary to map column names to their corresponding values
+            data_row = {
+                'wsi_series': None,
+                'wsi_issuer': None,
+                'wsi_issue_number': None,
+                'wsi_local': None,
+                'wmo_block_number': None,
+                'wmo_station_number': None,
+                'station_type': None,
+                'year': None,
+                'month': None,
+                'day': None,
+                'hour': None,
+                'minute': None,
+                'latitude': None,
+                'longitude': None,
+                'station_height_above_msl': None,
+                'barometer_height_above_msl': None,
+                'station_pressure': None,
+                'msl_pressure': None,
+                'geopotential_height': None,
+                'thermometer_height': None,
+                'air_temperature': None,
+                'dewpoint_temperature': None,
+                'relative_humidity': None,
+                'method_of_ground_state_measurement': None,
+                'ground_state': None,
+                'method_of_snow_depth_measurement': None,
+                'snow_depth': None,
+                'precipitation_intensity': None,
+                'anemometer_height': None,
+                'time_period_of_wind': None,
+                'wind_direction': None,
+                'wind_speed': None,
+                'maximum_wind_gust_direction_10_minutes': None,
+                'maximum_wind_gust_speed_10_minutes': None,
+                'maximum_wind_gust_direction_1_hour': None,
+                'maximum_wind_gust_speed_1_hour': None,
+                'maximum_wind_gust_direction_3_hours': None,
+                'maximum_wind_gust_speed_3_hours': None,
+                'rain_sensor_height': None,
+                'total_precipitation_1_hour': None,
+                'total_precipitation_3_hours': None,
+                'total_precipitation_6_hours': None,
+                'total_precipitation_12_hours': None,
+                'total_precipitation_24_hours': None
+            }
+
+                # Function to populate data_row with query results
+                
+            # Fxn that populates dictionary with values for the csv file
+            def populate_data_row(result, result_info):
+                    # Adding the result to the data_row dictionary
+                    # Handling query result, given that query result is station related (result_info is station_info)
+                    if result:
+                        if result_info == "station_info":
+
+                            if result[0]:
+                                row_item = result[0].split("-")
+
+                                data_row['wsi_series'] = row_item[0]
+                                data_row['wsi_issuer'] = row_item[1]
+                                data_row['wsi_issue_number'] = row_item[2]
+                                data_row['wsi_local'] = row_item[3]
+
+                            # station type is 0 for automatic stations and 1 for manned stations
+                            if result[4]:
+                                data_row['station_type'] = 0
+                            else:
+                                data_row['station_type'] = 1
+
+                            data_row['latitude'] = round(result[1], 5)
+                            data_row['longitude'] = round(result[2], 5)
+
+                            data_row['station_height_above_msl'] = result[3]
+
+                            data_row['barometer_height_above_msl'] = round(result[3] + 1.7, 2) # 1.7 metre above station_height_above_msl
+
+                            data_row['thermometer_height'] = 1.7
+
+                            data_row['anemometer_height'] = 10
+
+                            data_row['time_period_of_wind'] = -5
+
+                            data_row['rain_sensor_height'] = 1.5
+
+                        elif result_info == "raw_data":
+                            try:
+                                # Populate year, month, day, hour, minute in data_row
+                                # Get current UTC datetime
+                                current_utc_datetime = result[0][2]
+
+                                # Extract year, month, day, hour, and minute
+                                year = current_utc_datetime.year
+                                month = current_utc_datetime.month
+                                day = current_utc_datetime.day
+                                hour = current_utc_datetime.hour
+                                minute = current_utc_datetime.minute
+
+                                # Add the extracted components to data_row
+                                data_row['year'] = year
+                                data_row['month'] = month
+                                data_row['day'] = day
+                                data_row['hour'] = hour
+                                data_row['minute'] = minute
+
+                                for row in result:
+                                    if row[0] == 10:
+                                        data_row['air_temperature'] = round(row[1] + 273.15, 2) 
+                                    elif row[0] == 19:
+                                        data_row['dewpoint_temperature'] = round(row[1] + 273.15, 2)
+                                    elif row[0] == 30:
+                                        data_row['relative_humidity'] = round(row[1])  
+                                    elif row[0] == 51:
+                                        data_row['wind_speed'] = round(row[1], 1)  
+                                    elif row[0] == 60:
+                                        data_row['station_pressure'] = row[1] * 100  
+                                    elif row[0] == 61:
+                                        data_row['msl_pressure'] = row[1] * 100  
+                            except Exception as e:
+                                logging.error(f'An error occured when parsing raw data. Error: {e}')
+
+                        elif result_info == "precip_hourly_data":
+                            precip_hourly = []
+
+                            for rows in result:
+                                try:
+                                    precip_hourly.append(rows[0]) 
+                                except Exception as e:
+                                    logging.error(f'An error occured when parsing hourly summary for precipitation data. Error: {e}')
+
+                            try:
+
+                                data_row['total_precipitation_1_hour'] = round(precip_hourly[0], 1)
+
+                                data_row['total_precipitation_3_hours'] = round(sum(precip_hourly[:3]), 1)
+
+                                data_row['total_precipitation_6_hours'] = round(sum(precip_hourly[:6]), 1)
+
+                                data_row['total_precipitation_12_hours'] = round(sum(precip_hourly[:12]), 1)
+
+                                data_row['total_precipitation_24_hours'] = round(sum(precip_hourly), 1)   
+
+                            except Exception as e:
+                                logging.error(f'An error occured when parsing hourly summary for precipitation data. Error: {e}')
+
+                        elif result_info == "wind_hourly_data":
+                            wind_hourly = []
+
+                            for rows in result:
+                                try:
+                                    wind_hourly.append(rows[0]) 
+                                except Exception as e:
+                                    logging.error(f'An error occured when parsing hourly summary for wind hourly data. Error: {e}')
+
+                            try:
+                                data_row['maximum_wind_gust_speed_1_hour'] = round(wind_hourly[0], 1)
+
+                                for value in wind_hourly:
+
+                                    if data_row['maximum_wind_gust_speed_3_hours']:
+                                        if value > data_row['maximum_wind_gust_speed_3_hours']:
+                                            data_row['maximum_wind_gust_speed_3_hours'] = round(value, 1)
+
+                                    else:
+                                        data_row['maximum_wind_gust_speed_3_hours'] = round(value, 1)
+
+                            except Exception as e:
+                                logging.error(f'An error occured when parsing hourly summary for wind gust data. Error: {e}')
+                        
+                        elif result_info == "wind_direction_hourly_data":
+                            try:
+                                data_row['wind_direction'] = round(result[0][0])
+                                data_row['maximum_wind_gust_direction_1_hour'] = round(result[0][1])
+                                data_row['maximum_wind_gust_direction_3_hours'] = round(max(result[0][1], result[1][1], result[2][1]))
+                            except Exception as e:
+                                logging.error(f'An error occured when parsing hourly summary for wind direction data. Error: {e}')
+
+
+            # Populate data_row with query1 results
+            query1 = list(Station.objects.filter(id=id).values_list('wigos', 'latitude', 'longitude', 'elevation', 'is_automatic').first())
+            populate_data_row(query1, "station_info")
+
+            # Populate data_row with query2
+            # Define the query with placeholders for parameters
+            query = """
+            SELECT variable_id, measured, datetime
+            FROM raw_data rd
+            WHERE station_id = %s
+            AND datetime = (
+                SELECT MAX(datetime)
+                FROM hourly_summary
+                WHERE station_id = %s
+            )
+            AND variable_id IN (10, 19, 30, 51, 60, 61);
+            """
+
+            # Open a cursor to perform database operations
+            with connection.cursor() as cursor:
+                # Execute the query, passing `id` as the parameter to prevent SQL injection
+                cursor.execute(query, [id, id])
+
+                # Fetch all results from the executed query
+                query2 = cursor.fetchall()
+
+                for x in range(len(query2)):
+                    query2[x] = list(query2[x])
+
+            populate_data_row(query2, "raw_data")
+
+            # Populate data_row with query3
+            query = """
+            SELECT sum_value
+            FROM hourly_summary hs
+            WHERE station_id = %s
+            AND variable_id = 0
+            ORDER BY datetime DESC
+            LIMIT 24;
+            """
+
+            # Execute the query safely using a parameter
+            with connection.cursor() as cursor:
+                # Pass `id` as a parameter to prevent SQL injection
+                cursor.execute(query, [id])
+                
+                # Fetch all results from the executed query
+                query3 = cursor.fetchall()
+                
+                # Convert each tuple in query3 to a list
+                query3 = [list(row) for row in query3]
+
+            populate_data_row(query3, "precip_hourly_data")
+
+            # Populate data_row with query4
+            query = """
+            SELECT max_value
+            FROM hourly_summary hs
+            WHERE station_id = %s
+            AND variable_id = 53
+            ORDER BY datetime DESC
+            LIMIT 3;
+            """
+
+            # Execute the query safely using a parameter
+            with connection.cursor() as cursor:
+                # Pass `id` as a parameter to prevent SQL injection
+                cursor.execute(query, [id])
+                
+                # Fetch all results from the executed query
+                query4 = cursor.fetchall()
+                
+                # Convert each tuple in query4 to a list
+                query4 = [list(row) for row in query4]
+
+            populate_data_row(query4, "wind_hourly_data")
+
+            # Populate data_row with query5
+            # Define the query with a placeholder for `id`
+            query = """
+            SELECT avg_value, max_value
+            FROM hourly_summary
+            WHERE station_id = %s
+            AND variable_id = 55
+            ORDER BY datetime DESC
+            LIMIT 3;
+            """
+
+            # Execute the query safely using a parameter
+            with connection.cursor() as cursor:
+                # Pass `id` as a parameter to prevent SQL injection
+                cursor.execute(query, [id])
+                
+                # Fetch all results from the executed query
+                query5 = cursor.fetchall()
+                
+                # Convert each tuple in query5 to a list
+                query5 = [list(row) for row in query5]
+
+            populate_data_row(query5, "wind_direction_hourly_data")
+
+
+            # CSV writing
+            # Create a temporary file for the CSV
+            with tempfile.NamedTemporaryFile(suffix='.csv', mode='w', delete=False) as temp_csv:
+                csv_writer = csv.DictWriter(temp_csv, fieldnames=data_row.keys())
+                csv_writer.writeheader()
+                csv_writer.writerow(data_row)
+                temp_csv_path = temp_csv.name  # Save the temp file path for upload
+
+            # Log that data was written to csv file
+            logging.info(f"Data has been written to: {temp_csv_path} for Station Id: {id}")
+
+            minio_path = settings.WIS2BOX_TOPIC_HIERARCHY
+                            
+            # IF PUSHING TO REGIONAL WIS2
+            if settings.ENABLE_WIS2BOX_REGIONAL == "true":
+                # Push CSV to regional wis2box
+                try:
+                    is_secure = False
+
+                    client = Minio(
+                        endpoint=settings.WIS2BOX_ENDPOINT_REGIONAL,
+                        access_key=settings.WIS2BOX_USER_REGIONAL,
+                        secret_key=settings.WIS2BOX_PASSWORD_REGIONAL,
+                        secure=is_secure)
+
+                    filename = f'wmo_data_{id}.csv'
+                    client.fput_object('wis2box-incoming', minio_path+filename, temp_csv_path)
+
+                    # Log that transfer to regional wis2box was succesful
+                    logging.info(f"Data transfer to regional wis2box successful for Station Id: {id}")
+
+                except minio.error.S3Error as e:
+                    # Log the error if a minio error occurs
+                    logging.error(f"regional wis2box Connection Error for station id {id}: {e}")
+
+            # IF PUSHING TO LOCAL WIS2
+            if settings.ENABLE_WIS2BOX_LOCAL == "true":
+                # Push CSV to local wis2box
+                try:
+                    is_secure = False
+
+                    client = Minio(
+                        endpoint=settings.WIS2BOX_ENDPOINT_LOCAL,
+                        access_key=settings.WIS2BOX_USER_LOCAL,
+                        secret_key=settings.WIS2BOX_PASSWORD_LOCAL,
+                        secure=is_secure)
+
+                    filename = f'wmo_data_{id}.csv'
+                    client.fput_object('wis2box-incoming', minio_path+filename, temp_csv_path)
+
+                    # Log that transfer to local wis2box was succesful
+                    logging.info(f"Data transfer to local wis2box successful for Station Id: {id}")
+
+                except minio.error.S3Error as e:
+                    # Log the error if a minio error occurs
+                    logging.error(f"regional local Connection Error for station id {id}: {e}")
+            
+            # Clean up the temporary file
+            logging.info(f"Temporary file for wis2box transfer {temp_csv_path} deleted for Station Id: {id}")
+            os.remove(temp_csv_path)
+
+            # logging that the station transfer was complete
+            logging.info(f'AWS Transmision for Station ID: {id} complete')
+
+    except psycopg2.Error as e:
+        # Log the error if a psycopg2 error occurs
+        logging.error(f"An error occured attempting to send AWS data to wis2box: {e}")

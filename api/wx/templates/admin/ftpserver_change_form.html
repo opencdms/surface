@@ -1,0 +1,112 @@
+{% extends "admin/change_form.html" %}
+
+{% block submit_buttons_bottom %}
+    <!-- Add a custom button to test FTP connection below the form fields -->
+    <div id="test-connection-container">
+        <button type="button" id="test-ftp-button" onclick="ClearFtpResult()">Test FTP Connection</button>
+        
+        <div class="ftp-spinner" style="display: none;"></div> <!-- Initially hidden spinner -->
+
+        <p id="test-ftp-result"></p>  <!-- Placeholder for the result -->
+    </div>
+
+    {{ block.super }}  <!-- This ensures the standard submit buttons are rendered -->
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+
+    <style>
+        /* Styling the Test FTP Connection container */
+        #test-connection-container {
+            margin-top: 20px; 
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center; /* Align items vertically centered */
+        }
+
+        /* Styling the Test FTP Connection button */
+        #test-ftp-button {
+            display: inline-block;
+            background-color: var(--button-bg);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px; 
+            transition: background 0.15s;
+        }
+
+        #test-ftp-button:hover {
+            background-color: #609ab6;
+        }
+
+        /* Styling for the result message */
+        #test-ftp-result {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+        /* Spinner styling */
+        .ftp-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(138, 138, 138, 0.3);
+            border-top: 3px solid #4d4d4d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px; /* Space between button and spinner */
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('#test-ftp-button').click(function(){
+                // Hide the result text and show the spinner
+                $('#test-ftp-result').hide();
+                $('.ftp-spinner').show();
+
+                // Gather the form data
+                var host = $('#id_host').val();
+                var port = $('#id_port').val();
+                var username = $('#id_username').val();
+                var password = $('#id_password').val();
+
+                // Perform AJAX request to test FTP connection
+                $.ajax({
+                    url: "{% url 'admin:test-ftp-connection' %}",
+                    method: "POST",
+                    data: {
+                        'host': host,
+                        'port': port,
+                        'username': username,
+                        'password': password,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        // Hide the spinner and show the result text with a message
+                        $('.ftp-spinner').hide();
+                        $('#test-ftp-result').text(response.message).css('color', response.status === "success" ? 'green' : 'red').show();
+                    },
+                    error: function() {
+                        // Hide the spinner and show an error message
+                        $('.ftp-spinner').hide();
+                        $('#test-ftp-result').text("An error occurred").css('color', 'red').show();
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

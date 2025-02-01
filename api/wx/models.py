@@ -459,7 +459,7 @@ class Station(BaseModel):
         blank=True,
     )
 
-    international_station = models.BooleanField(default=False)
+    international_exchange = models.BooleanField(default=False)
     
     is_automatic = models.BooleanField(default=True)
     is_synoptic = models.BooleanField(default=False)
@@ -838,6 +838,21 @@ class Document(BaseModel):
         return self.file.name
 
 
+class CombineDataFile(BaseModel):
+    ready_at = models.DateTimeField(null=True, blank=True)
+    ready = models.BooleanField(default=False)
+    initial_date = models.DateTimeField(null=True, blank=True)
+    final_date = models.DateTimeField(null=True, blank=True)
+    source = models.CharField(max_length=30, null=False, blank=False, default="Raw data")
+    lines = models.IntegerField(null=True, blank=True, default=None)
+    prepared_by = models.CharField(max_length=256, null=True, blank=True)
+    stations_ids = models.TextField(null=False, blank=False)
+    variable_ids= models.TextField(null=True, blank=True)
+    aggregation = models.CharField(max_length=256, null=False, blank=False, default="N/A")
+
+    def __str__(self):
+        return 'file ' + str(self.id)
+    
 class DataFile(BaseModel):
     ready_at = models.DateTimeField(null=True, blank=True)
     ready = models.BooleanField(default=False)

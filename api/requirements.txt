@@ -1,4 +1,5 @@
 numpy==1.21.2
+openpyxl
 affine==2.3.0
 amqp==5.0.6
 appdirs==1.4.4
@@ -35,4 +36,6 @@ django-ckeditor==6.7.1
 django-simple-history==3.3.0
 pygeoapi
 pyoscar
+minio
+pint==0.18
 numpy==1.21.2

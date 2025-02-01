@@ -13,6 +13,11 @@ app = Celery('tempestas_api')
 # app.conf.broker_url = 'redis://surface_redis:6379/0'
 app.conf.broker_url = settings.SURFACE_BROKER_URL
 
+# setting up a results backend
+app.conf.result_backend = settings.SURFACE_BROKER_URL
+# app.conf.result_expires = 3600  # Results expire after 1 hour
+
+
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
 # - namespace='CELERY' means all celery-related configuration keys
@@ -64,6 +69,11 @@ app.conf.beat_schedule = {
     'gen_hf_data': {
         'task': 'wx.tasks.gen_toa5_file',
         'schedule': 900
+    },    
+    # aws transmission to wis2box task
+    'aws_transmit_wis2box': {
+        'task': 'wx.tasks.aws_transmit_wis2box',
+        'schedule': 60
     },    
 }
 

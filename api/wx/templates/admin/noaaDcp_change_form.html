@@ -1,0 +1,148 @@
+{% extends "admin/change_form.html" %}
+
+{% block submit_buttons_bottom %}
+    <div id="test-dcp-container">
+        <div id="test-dcp-info" style="display: none;">
+            <p id="test-dcp-result"></p>
+        </div>
+
+        <div id="test-dcp-inline">
+            <button type="button" id="test-dcp-button">Test DCP Address</button>
+            <div class="test-spinner" style="display: none;"></div>
+        </div>
+    </div>
+
+    {{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+
+<style>
+/* Styling the Test dcp address container */
+#test-dcp-container {
+    margin-top: 20px; 
+    margin-bottom: 20px;
+}
+
+#test-dcp-inline {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+}
+
+#test-dcp-button {
+    background-color: var(--button-bg);
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+#test-dcp-button:hover {
+    background-color: #609ab6;
+}
+
+#test-dcp-result {
+    display: block;
+}
+
+.test-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgb(138, 138, 138);
+    border-top: 3px solid #4d4d4d;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+#test-dcp-info {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #ababab;
+    background: var(--darkened-bg);
+    border-radius: 4px;
+    padding: 12px 14px;
+}
+</style>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            let testDcpRequest = null;
+
+            $('#test-dcp-button').click(function(){
+                const button = $(this);
+
+                // If the button says "Cancel", abort the request
+                if (button.text() === "Cancel") {
+                    if (testDcpRequest) {
+                        testDcpRequest.abort();
+                    }
+                    resetButton();
+                    return;
+                }
+
+                // Update button to show "Cancel"
+                button.text("Cancel");
+
+                // Hide the result text, show the spinner
+                $('#test-dcp-result, #test-dcp-info').hide();
+                $('.test-spinner').show();
+
+                // Gather form data
+                var dcp_address = $('#id_dcp_address').val();
+                var first_channel = $('#id_first_channel').val();
+
+                // Start AJAX request to test the DCP address
+                testDcpRequest = $.ajax({
+                    url: "{% url 'admin:test-dcp' %}",
+                    method: "POST",
+                    data: {
+                        'dcp_address': dcp_address,
+                        'first_channel': first_channel,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        // Hide the spinner, show the result text, and display info
+                        $('.test-spinner').hide();
+                        $('#test-dcp-result').text(response.message).css('color', response.status === "success" ? '#28a745' : 'red').show();
+                        $('#test-dcp-info').show();
+                    },
+                    error: function(jqXHR, textStatus) {
+                        // Check if the request was canceled
+                        if (textStatus === "abort") {
+                            console.log("Request was canceled");
+                        } else {
+                            // Handle other errors
+                            $('#test-dcp-result').text("An error occurred").css('color', 'red').show();
+                            $('#test-dcp-info').show();
+                        }
+                    },
+                    complete: function() {
+                        // Reset button and spinner when the request completes
+                        resetButton();
+                    }
+                });
+            });
+
+            function resetButton() {
+                $('#test-dcp-button').text("Test DCP Address");
+                $('.test-spinner').hide();
+            }
+        });
+    </script>
+{% endblock %}

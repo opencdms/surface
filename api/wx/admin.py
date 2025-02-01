@@ -1,8 +1,12 @@
+from django.urls import path
+from django.http import JsonResponse
+from ftplib import FTP
+
 from django.contrib import admin
 from django.utils.html import format_html
 from import_export.admin import ExportMixin, ImportMixin
 
-from wx import models, forms
+from wx import models, forms, tasks
 from simple_history.utils import update_change_reason
 
 @admin.register(models.AdministrativeRegion)
@@ -156,6 +160,47 @@ class NoaaDcpAdmin(admin.ModelAdmin):
                     "first_transmission_time", "transmission_window", "transmission_period", "last_datetime")
     exclude = ('config_data',)
 
+    change_form_template = "admin/noaaDcp_change_form.html"  # Custom template
+
+    # Custom view to handle the dcp address test
+    def test_dcp(self, request):
+        if request.method == "POST":
+
+            # Try to verify dcp address
+            try:
+                # Retrieve form data from the AJAX request
+                dcp_address = request.POST.get('dcp_address')
+                first_channel = request.POST.get('first_channel')
+
+                # ensure first channel and dcp address are entered
+                if not first_channel or not dcp_address:
+                    raise Exception("Enter values for both the DCP Address and the First Channel!")
+
+                dcp_info = {
+                    'first_channel': first_channel,
+                    'dcp_address': dcp_address,
+                }
+
+                dcp_address_test_result = tasks.test_dcp_transmit(dcp_info)
+
+                # raise an exception if the test result is empty
+                if not dcp_address_test_result:
+                    raise Exception("The message is empty! Please ensure values for the DCP Address and the First Channel are correct. Also ensure that the station is transmitting.")
+
+                return JsonResponse({"status": "success", "message": dcp_address_test_result})
+            except Exception as e:
+                return JsonResponse({"status": "error", "message": str(e)})
+
+        return JsonResponse({"status": "error", "message": "Invalid request method"})
+
+    # Add custom URL for the AJAX request
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('test-dcp/', self.admin_site.admin_view(self.test_dcp), name='test-dcp'),
+        ]
+        return custom_urls + urls
+
 @admin.register(models.NoaaDcpsStation)
 class NoaaDcpsStationAdmin(admin.ModelAdmin):
     search_fields = ("station__name",)
@@ -185,6 +230,43 @@ class QcPersistThresholdAdmin(ExportMixin, admin.ModelAdmin):
 class FTPServerAdmin(admin.ModelAdmin):
     list_display = ("name", "host", "port", "username")
     form = forms.FTPServerForm
+
+    change_form_template = "admin/ftpserver_change_form.html"  # Custom template
+
+    # Custom view to handle the FTP connection test
+    def test_ftp_connection(self, request):
+        if request.method == "POST":
+            # Retrieve form data from the AJAX request
+            host = request.POST.get('host')
+            port = request.POST.get('port')
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+
+            # Validate and handle empty or invalid port values
+            try:
+                port = int(port)
+            except ValueError:
+                return JsonResponse({"status": "error", "message": "Invalid port value"})
+
+            # Try to establish an FTP connection
+            try:
+                ftp = FTP()
+                ftp.connect(host, port, timeout=10)
+                ftp.login(user=username, passwd=password)
+                ftp.quit()
+                return JsonResponse({"status": "success", "message": "Connection successful!"})
+            except Exception as e:
+                return JsonResponse({"status": "error", "message": str(e)})
+
+        return JsonResponse({"status": "error", "message": "Invalid request method"})
+
+    # Add custom URL for the AJAX request
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('test-ftp-connection/', self.admin_site.admin_view(self.test_ftp_connection), name='test-ftp-connection'),
+        ]
+        return custom_urls + urls
 
 
 @admin.register(models.StationFileIngestion)

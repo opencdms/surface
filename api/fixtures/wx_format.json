@@ -48,5 +48,15 @@
       "name": "DCP TXT",
       "description": "DPC TEXT messages"
     }
+  },
+  {
+    "model": "wx.format",
+    "pk": 7,
+    "fields": {
+      "created_at": "2024-10-31T20:50:23.471Z",
+      "updated_at": "2024-10-31T20:50:23.471Z",
+      "name": "SAT_TX325",
+      "description": "TX325 format"
+    }
   }
 ]
