@@ -448,8 +448,8 @@
                   </v-tooltip>
     
                   <!-- show the delete option based on user privileges -->
-                  <!-- <v-tooltip bottom v-if="showDeleteAction"> -->
-                  <v-tooltip bottom>
+                  <v-tooltip bottom v-if="showDeleteAction">
+                  <!-- <v-tooltip bottom> -->
                     <template v-slot:activator="{ on }">
                       <v-icon small @click="deleteCombineItem(item)" v-on="on">
                         delete
@@ -742,6 +742,9 @@
           bool = !bool;
         },
         exportCSV() {
+          // switch to the combined .xlsx files tab
+          this.export_files_model = 'tab-1';
+
           this.loading = true;
 
           let start_datetime = moment(`${this.initial_date} ${this.initial_time}`)
