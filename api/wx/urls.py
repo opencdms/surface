@@ -141,6 +141,8 @@ urlpatterns = [
     path('wx/data/capture/monthly/', views.MonthlyFormView.as_view(), name='monthly-form'),
     path('wx/data/capture/monthly/load/', views.MonthlyFormLoad, name='load-monthly-form'),
     path('wx/data/capture/monthly/update/', views.MonthlyFormUpdate, name='update-monthly-form'),    
+    path('wx/agromet/summaries/', views.AgroMetSummariesView.as_view(), name='agromet-summaries'),
+    path('wx/agromet/summaries/get/', views.get_agromet_summary_data, name='get-agromet-data'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

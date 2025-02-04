@@ -651,7 +651,6 @@
               </div>
             </li>
 
-
             {% if request.user.is_staff or request.user.is_superuser %}
             <li id="quality-control-group" class="hide-menu">
               <div class="collapsible-header"><i class="material-icons">playlist_add_check</i>Quality<span>&nbsp;</span>Control</div>
@@ -702,9 +701,22 @@
                     {% if 'wave-data' in request.user_permissions or request.user.is_staff or request.user.is_superuser%}
                       <a id="wave-data" href="{% url 'wave-data' %}" class="hide-menu collection-item left-space" onclick="mainOverlayLoader()">Wave data analysis<i class="material-icons secondary-content">water</i></a>
                     {% endif %}
+
                   </ul>
                 </div>
-            </div>
+              </div>
+            </li>
+    
+
+            <li id="agromet-group" class="hide-menu">
+              <div class="collapsible-header"><i class="material-icons">agriculture</i>Agro<span>-</span>Met</div>
+              <div class="collapsible-body">
+                <div class="collapsible-subitem mb-2">
+                  <ul class="collection">
+                    <a id="agromet-summaries"  href="{% url 'agromet-summaries' %}" class="hide-menu collection-item left-space " onclick="mainOverlayLoader()">Agro-Met Summaries<i class="material-icons secondary-content">park</i></a>
+                  </ul>
+                </div>
+              </div>
             </li>
 
             {% if request.user.is_staff or request.user.is_superuser %}
@@ -838,7 +850,8 @@
           'maintenance-group',          
           'data-group',
           'products-group',
-          'quality-control-group'
+          'quality-control-group',
+          'agromet-group'
         ];
 
         const localMenus = [
@@ -865,7 +878,8 @@
           'step-threshold',
           'persist-threshold',
           'equipement-inventory',
-          'maintenance-reports'
+          'maintenance-reports',
+          'agromet-summaries'
         ]
 
         const menuList = "{{USER_PERMISSIONS|safe}}";

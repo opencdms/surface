@@ -1,0 +1,324 @@
+{% extends "base.html" %} {% block content %} {% load static %} {% load material_form %}
+
+<div class="srf-container">
+	<div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+		<span class="srf-display-1 text-uppercase">Agromet Summaries</span><br /><br />
+	</div>
+	<div class="srf-flex justify-content-between srf-padding" id="app">
+		<v-app>
+			<form enctype="multipart/form-data" method="POST" class="mb-10">
+				{% csrf_token %}
+				<v-row>
+					<v-col cols="4">
+						<v-autocomplete
+							label="Select Station"
+							:items="stationList"
+							item-value="id"
+							item-text="name"
+							v-model="requestData.stationId"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+					</v-col>
+					<v-col cols="8">
+						<v-autocomplete
+							label="Select Variables"
+							:items="filteredVariableList"
+							item-value="id"
+							item-text="name"
+							v-model="requestData.variableIds"
+							required
+							hint="*Required"
+							multiple
+							chips
+							clearable
+							persistent-hint
+							deletable-chips
+							:disabled="!requestData.stationId"
+						/>
+					</v-col>
+				</v-row>
+				<v-row>
+					<v-col cols="2">
+						<v-radio-group v-model="requestData.aggregation" row label="Select an Option">
+							<v-radio
+								v-for="(aggregation, index) in aggregations"
+								:key="index"
+								:label="aggregation"
+								:value="aggregation"
+							></v-radio>
+						</v-radio-group>
+					</v-col>
+					<v-col cols="2" v-if="requestData.aggregation==='Month'">
+						<v-autocomplete
+							label="Select Month"
+							:items="months"
+							v-model="requestData.month"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+					</v-col>
+					<v-col cols="2" v-if="requestData.aggregation==='Season'">
+						<v-autocomplete
+							label="Select Season"
+							:items="seasons"
+							v-model="requestData.season"
+							required
+							hint="*Required"
+							persistent-hint
+						/>		
+					</v-col>
+					<v-col cols="2">
+						<v-autocomplete
+							label="Select Start Year"
+							:items="availableStartYears"
+							v-model="requestData.startYear"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+					</v-col>	
+					<v-col cols="2">
+						<v-autocomplete
+							label="Select End Year"
+							:items="availableEndYears"
+							v-model="requestData.endYear"
+							required
+							hint="*Required"
+							persistent-hint
+							:disabled="!requestData.startYear"
+						/>
+					</v-col>
+				</v-row>
+				<v-row>
+					<v-col cols="2">
+						<v-autocomplete
+							label="Select Sampling Operation"
+							:items="sampling_operation"
+							v-model="requestData.samplingOperation"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+					</v-col>					
+					<v-col cols="2">
+						<v-autocomplete
+							label="Select Aggregation Interval"
+							:items="intervals"
+							v-model="requestData.interval"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+					</v-col>
+					<v-col cols="2" class="d-flex justify-center">
+						<v-btn
+							@click="getData"
+							:disabled="disableQuery"							
+							> Request Data <v-icon right>send</v-icon> </v-btn>
+					</v-col>											
+				</v-row>					
+			</form>
+
+			<div>
+				<template>
+					<v-card v-if="requestedData.responseData">
+						<v-tabs v-model="tab" bg-color="primary" class="justify-center">
+							<v-tab v-for="variableId in requestedData.variableIds" :key="variableId" :value="variableId">
+								[[ variableList.find(variable => variable.id==variableId)?.name ]]
+							</v-tab>
+						</v-tabs>
+				
+						<v-card-title> [[ ]] </v-card-title>
+						<v-card-text>
+							<template>
+								<v-data-table
+									:headers="dataTable.headers"
+									:items="dataTable.data"
+								></v-data-table>
+							</template>
+						</v-card-text>
+					</v-card>
+				</template>
+			</div
+		</v-app>
+	</div>
+</div>
+
+{% endblock %} {% block localjavascript %}
+ 
+<script>
+	Vue.use(window.vuelidate.default);
+	const { required, minLength } = window.validators;
+
+	new Vue({
+		el: "#app",
+		vuetify: new Vuetify(),
+		delimiters: ["[[", "]]"],
+		validations: {
+		},
+		data: {
+			now: moment().format('YYYY-MM-DD'),
+			tab: null,
+			loading_data: false,
+			requestData: {
+				stationId: {{station_id}},
+				variableIds: {{variable_ids | safe}},
+				aggregation: 'Month',
+				month: null,
+				season: null,
+				samplingOperation: 'VAR SAMPLING OP.',
+				interval: null,
+				startYear: null,
+				endYear: null,
+			},
+			requestedData: {
+				stationId: null,
+				variableIds: [],
+				aggregation: 'Month',
+				month: null,
+				season: null,
+				samplingOperation: null,
+				interval: null,
+				startYear: null,
+				endYear: null,
+				responseData: null,
+			},
+			start_year_menu: false,
+			end_year_menu: false,
+			aggregations: ['Month', 'Season'],
+			sampling_operation: ['VAR SAMPLING OP.', 'MIN', 'MAX', 'AVG', 'STDDEV', 'SUM'],
+			months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+			seasons: ['DJF', 'MAM','JJA', 'SON','Dry', 'Wet', 'Annual'],
+			intervals: [
+				'week',
+				'ten-days',
+				'trimester',
+				'semester'					
+			],
+			variableList: {{ variable_list | safe }},
+			stationList: [
+				{% for station in station_list %}
+					{id: {{station.id}}, name: "{{station.name | safe }} - {{station.code}}"},
+				{% endfor %}
+			],
+		},
+		watch: {
+			'requestData.stationId' (newStationId, oldStationId) {
+				this.requestData.variableIds = []
+			},
+			'requestData.startYear' (newStartYear, oldStartYear) {
+				console.log(newStartYear, oldStartYear)
+				this.requestData.endYear = null
+			}
+		},	
+		computed: {
+			availableStartYears () {
+				const min_year = 1900
+				const max_year = moment().year()
+				return Array.from({ length: max_year - min_year + 1 }, (_, i) => max_year - i);
+			},
+			availableEndYears () {
+				if (!this.requestData.startYear) return [];
+				const min_year = this.requestData.startYear
+				const max_year = moment().year()
+				return Array.from({ length: max_year - min_year + 1 }, (_, i) => max_year - i);
+			},
+			disableQuery (){
+				const { variableIds, aggregation, month, season, ...rest } = this.requestData;
+				if ((variableIds === null) || (variableIds.length === 0)) return true;
+				if ((aggregation === 'Month' && month === null)) return true;
+				if ((aggregation === 'Season' && season === null)) return true;
+
+				const keys = ['stationId', 'samplingOperation', 'interval', 'startYear', 'endYear'];
+				return keys.some(key => rest[key] === null);
+			},
+			filteredVariableList() {
+				if (!this.requestData.stationId) return [];
+		
+				const stationvariableList = {{ stationvariable_list | safe }};
+				const variableList = {{ variable_list | safe }};
+		
+				const stationVariableIds = stationvariableList
+					.filter(stationvariable => stationvariable.station_id == this.requestData.stationId)
+					.map(stationvariable => stationvariable.variable_id);
+				
+				return variableList.filter(variable => stationVariableIds.includes(variable.id));
+			},
+			dataTable () {
+				let selectedVariableId = null
+				let filteredData = []
+				if (!(this.tab===null)){
+					selectedVariableId = this.requestedData.variableIds[this.tab];
+					console.log(selectedVariableId)
+					filteredData = this.requestedData.responseData.filter(entry => entry.variable_id===selectedVariableId);
+					console.log(filteredData)
+				}
+
+				const aggregationMap = {
+					Month: this.requestedData.month,
+					Season: this.requestedData.season,
+				};
+				  
+				const aggregation = aggregationMap[this.requestedData.aggregation] || null;
+				
+				return {
+					headers: [
+						{ text: 'Station', align: 'start', value: 'station' },
+						{ text: 'Month', align: 'end', value: 'month' },
+						{ text: 'Year', align: 'end', value: 'year' },
+						{ text: `${aggregation} (days 01-10) #1`, align: 'end', value: 'agg_1' },
+						{ text: `${aggregation} (days 11-20) #2`, align: 'end', value: 'agg_2' },
+						{ text: `${aggregation} (days 21-) #3`, align: 'end', value: 'agg_3' },
+					],
+					data: filteredData
+				}
+			},
+		},
+		methods: { 
+			clearSelectedVariables (){
+				this.requestData.variableIds = []
+			},
+			getData(){
+				this.requestedData.stationId = this.requestData.stationId
+				this.requestedData.variableIds = this.requestData.variableIds
+				this.requestedData.month = this.requestData.month
+				this.requestedData.season = this.requestData.season
+				this.requestedData.samplingOperation = this.requestData.samplingOperation
+				this.requestedData.interval = this.requestData.interval
+				this.requestedData.startYear = this.requestData.startYear
+				this.requestedData.endYear = this.requestData.endYear
+				this.requestedData.aggregation = this.requestData.aggregation
+				this.requestedData.responseData = []
+				console.log(this.requestData)
+
+				const url = `/wx/agromet/summaries/get/`
+				const params = {
+					station_id: this.requestedData.stationId,
+					variable_ids: this.requestedData.variableIds.join(','),
+					month: this.requestedData.month,
+					season: this.requestedData.season,
+					sampling_operation: this.requestedData.samplingOperation,
+					interval: this.requestedData.interval,
+					start_year: this.requestedData.startYear,
+					end_year: this.requestedData.endYear,
+					aggregation: this.requestedData.aggregation
+				};
+
+				console.log(params)
+						
+        		axios.get(url, { params })
+				.then(response => {
+					console.log(response.data)
+					this.requestedData.responseData = response.data;
+				})
+				.catch(error => {
+					console.error('Error fetching data:', error);
+				});
+			}
+		}		
+	})
+</script>
+{% endblock %}
