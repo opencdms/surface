@@ -130,10 +130,10 @@
             </v-col>
 
             <!-- Togglable switch to determine whether the output should be in local time of utc time -->
-            <v-col class="text-center" cols="2" v-if="source.source === 'hourly_summary' || source.source === 'raw_data'">
+            <v-col class="text-center" cols="3" v-if="source.source === 'hourly_summary' || source.source === 'raw_data'">
               <v-switch
                 v-model="displayUTC"
-                label="Display in UTC"
+                label="Coordinated Universal Time (UTC)"
               ></v-switch>
             </v-col>
           </v-row>
@@ -674,18 +674,18 @@
           return filteredStations;
         },
         computedCols() {
-          if (this.source.source === "raw_data") {
-            return 3;
-          }
+          // if (this.source.source === "raw_data") {
+          //   return 3;
+          // }
 
           return 5;
         },
         computedColsSource() {
-          if (this.source.source === "hourly_summary") {
-            return 5;
-          }
+          // if (this.source.source === "hourly_summary") {
+          //   return 5;
+          // }
 
-          return 7;
+          return 3;
         },
       },
       methods: {
