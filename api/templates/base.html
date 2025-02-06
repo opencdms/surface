@@ -631,6 +631,7 @@
               <div class="collapsible-body">
                 <div class="collapsible-subitem mb-2">
                   <ul class="collection">
+
                       {% if 'monthly-form' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
                         <a id="monthly-form" href="{% url 'monthly-form' %}" class="collection-item left-space" onclick="mainOverlayLoader()">Monthly Capture Form<i class="material-icons secondary-content">keyboard</i></a>
                       {% endif %}

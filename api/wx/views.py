@@ -2563,6 +2563,108 @@ class StationUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
         return context
 
+@api_view(['POST'])
+def pgia_update(request):
+    try:
+        hours_dict = request.data['table']
+        now_utc = datetime.datetime.now().astimezone(pytz.UTC) + datetime.timedelta(
+            hours=settings.PGIA_REPORT_HOURS_AHEAD_TIME)
+
+        pgia = Station.objects.get(id=4)
+        datetime_offset = pytz.FixedOffset(pgia.utc_offset_minutes)
+
+        day = datetime.datetime.strptime(request.data['date'], '%Y-%m-%d')
+        station_id = pgia.id
+        seconds = 3600
+
+        records_list = []
+        for hour, hour_data in hours_dict.items():
+            data_datetime = day.replace(hour=int(hour))
+            data_datetime = datetime_offset.localize(data_datetime)
+            if data_datetime <= now_utc:
+                if hour_data:
+                    if 'action' in hour_data.keys():
+                        hour_data.pop('action')
+
+                    if 'remarks' in hour_data.keys():
+                        remarks = hour_data.pop('remarks')
+                    else:
+                        remarks = None
+
+                    if 'observer' in hour_data.keys():
+                        observer = hour_data.pop('observer')
+                    else:
+                        observer = None
+
+                    for variable_id, measurement in hour_data.items():
+                        if measurement is None:
+                            measurement_value = settings.MISSING_VALUE
+                            measurement_code = settings.MISSING_VALUE_CODE
+
+                        try:
+                            measurement_value = float(measurement)
+                            measurement_code = measurement
+                        except Exception:
+                            measurement_value = settings.MISSING_VALUE
+                            measurement_code = settings.MISSING_VALUE_CODE
+                        records_list.append((
+                            station_id, variable_id, seconds, data_datetime, measurement_value, 1, None,
+                            None, None, None, None, None, None, None, False, remarks, observer,
+                            measurement_code))
+
+        insert_raw_data_pgia.insert(raw_data_list=records_list, date=day, station_id=station_id,
+                                    override_data_on_conflict=True, utc_offset_minutes=pgia.utc_offset_minutes)
+    except Exception as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return HttpResponse(status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def pgia_load(request):
+    try:
+        date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
+    except ValueError as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    pgia = Station.objects.get(id=4)
+    datetime_offset = pytz.FixedOffset(pgia.utc_offset_minutes)
+    request_datetime = datetime_offset.localize(date)
+
+    start_datetime = request_datetime
+    end_datetime = request_datetime + datetime.timedelta(days=1)
+
+    with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                f"""
+                    SELECT (datetime + interval '{pgia.utc_offset_minutes} minutes') at time zone 'utc',
+                        variable_id,
+                        CASE WHEN var.variable_type ilike 'code' THEN code ELSE measured::varchar END as value,
+                        remarks,
+                        observer
+                    FROM raw_data
+                    JOIN wx_variable var ON raw_data.variable_id=var.id
+                    WHERE station_id = %(station_id)s
+                      AND datetime >= %(start_date)s 
+                      AND datetime < %(end_date)s
+                """,
+                {
+                    'start_date': start_datetime,
+                    'end_date': end_datetime,
+                    'station_id': pgia.id
+                })
+
+
+        context['is_update'] = True
+
+        return context
+
 
 @api_view(['GET'])
 def MonthlyFormLoad(request):

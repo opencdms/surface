@@ -450,7 +450,8 @@ class Station(BaseModel):
     )
 
     is_active = models.BooleanField(default=False)
-
+   
+    is_automatic = models.BooleanField(default=False)
 
     reporting_status = models.ForeignKey(
         WMOReportingStatus,
@@ -461,7 +462,6 @@ class Station(BaseModel):
 
     international_station = models.BooleanField(default=False)
     
-    is_automatic = models.BooleanField(default=True)
     is_synoptic = models.BooleanField(default=False)
     synoptic_code = models.IntegerField(
         null=True,
@@ -472,7 +472,7 @@ class Station(BaseModel):
         null=True,
         blank=True
     )
-
+    
     organization = models.CharField(
         max_length=256,
         null=True,
