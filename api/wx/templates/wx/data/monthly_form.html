@@ -1,0 +1,423 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<div class="srf-container" style="max-height: 280px">
+  <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+    <span class="srf-display-1 text-uppercase">Data Capture</span><br /><br />
+    <span class="srf-display-2 text-uppercase">Daily Form</span>
+  </div>
+  <div class="srf-flex justify-content-between srf-padding" id="app">
+    <v-app>
+      <form enctype="multipart/form-data" method="POST" class="mb-10">
+        {% csrf_token %}
+        <div class="fieldWrapper">
+          <v-row>
+            <v-flex sm1 md3 lg3 class="d-flex justify-between">
+              <v-autocomplete
+                  label="Select"
+                  v-model="requestData.stationId"
+                  :items="stationList"
+                  :item-text="(item) => `${item.name} ${item.code}`"
+                  item-value="id"
+                  :disabled="draft"
+                  required
+                  hint="*Required"
+                  persistent-hint
+              ></v-autocomplete>
+            </v-flex>
+
+            <v-flex sm1 md3 lg3 class="d-flex justify-between">
+              <v-menu
+                  :close-on-content-click="false"
+                  :disabled="draft"
+                  v-model="menu1"
+                  :nudge-right="40"
+                  transition="scale-transition"
+                  offset-y
+                  class="max-50"
+              >
+                <template v-slot:activator="{ on }">
+                  <v-text-field
+                      :disabled="draft"
+                      v-model="requestData.date"
+                      label="Date"
+                      prepend-icon="event"
+                      v-on="on"
+                      required
+                      hint="*Required"
+                      persistent-hint
+                      :rules="simpleTextFieldsRules"
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                  name="date"
+                  v-model="requestData.date"
+                  @input="menu1 = false"
+                  type="month"
+                ></v-date-picker>
+              </v-menu>
+            </v-flex>
+          </v-row>
+          <v-row class="mt-3">
+            <v-btn class="ml-1" :disabled="draft" outlined class="btn-outline-default" @click="fetchData()"> Load </v-btn>
+            <v-btn class="ml-1" :disabled="!draft" outlined class="btn-outline-default" @click="fetchData()"> Cancel </v-btn>
+            <v-btn class="ml-1" :disabled="!(draft && valid)" outlined class="btn-outline-default" @click="updateData()"> Save </v-btn>
+          </v-row>     
+        </div>
+      </form>
+      <div>
+        <v-list v-if="errors.length" >
+          <v-subheader>ERROR LIST</v-subheader>
+          <v-list-item-group>
+            <v-list-item v-for="(error, i) in errors" :key="i">
+              <v-list-item-content>
+                <v-list-item-title :style="{ color: 'red' }" v-text="error.message"></v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list-item-group>
+        </v-list>         
+        <div>
+          <hot-table
+            :hidden="hideTable"
+            :settings="hotSettings"
+            :data="hotData"
+            style="z-index: 0"
+            ref="stationTable"
+          ></hot-table>
+        </div>
+        <v-overlay absolute :value="loading">
+          <span>LOADING</span>
+          <v-progress-circular indeterminate color="primary"/>
+        </v-overlay>
+      </div>
+    </v-app>
+  </div>
+</div>
+
+{% endblock %} {% block localjavascript %}
+
+<script>
+  Vue.component('hot-table',window.Handsontable.vue.HotTable );
+  Vue.use(window.vuelidate.default);
+  const { required, minLength } = window.validators;
+
+  new Vue({
+    el: "#app",
+    vuetify: new Vuetify(),
+    delimiters: ["[[", "]]"],
+    validations: {
+      requestData: {
+        date: { required },
+      }
+    },
+    data: {
+      MISSING_VALUE: {{ MISSING_VALUE }},
+      current_username: "{{ user.username }}",
+      stationList: [
+        {% for station in station_list %}
+          {id: {{station.id}}, name: "{{station.name | safe }}", code: {{station.code}}},
+        {% endfor %}
+      ],      
+      loading: false,
+      numberOfDays: 0,
+      hotData: [],
+      hotSettings: {
+        licenseKey: 'non-commercial-and-evaluation',
+        maxRows: {{handsontable_config.number_of_rows}},
+        minRows: {{handsontable_config.number_of_rows}},
+        minCols: {{handsontable_config.number_of_columns}},
+        maxCols: {{handsontable_config.number_of_columns}},
+        preventOverflow: 'horizontal',
+        colHeaders: {{handsontable_config.col_headers|safe}},
+        columns: {{handsontable_config.columns|safe}},
+        contextMenu: ['undo', 'redo', '---------', 'copy', 'cut', '---------', 'clear_column'],
+      },
+      limits: {{handsontable_config.limits|safe}},
+      variableIds: {{handsontable_config.variable_ids|safe}},
+      menu1: false,
+      requestData: {
+        date: "{{date|safe}}",
+        stationId: {{station_id}},
+      },
+      simpleTextFieldsRules: [
+        v => (v !== undefined && v !== "") || "This field is required"
+      ],
+      draft: false,
+      valid: true,
+      stationTable: true,
+      hideTable: false,      
+      errors: [],
+      validating:{
+        column: null,
+        row: null,
+      },      
+    },
+    methods: {
+      daysInMonth(month, year) {
+        return new Date(year, month, 0).getDate();
+      },
+      afterChange(changes, source) {
+        if(source != "calculateStatistics" && changes) {
+          changes.forEach(c => {this.calculateColumnStatistics(parseInt(c[1]));})
+        }
+      },
+      beforeValidate(value, row, prop, source) {
+        this.draft = true;
+        this.validating.column = prop;
+        this.validating.row = row;
+        this.removeErrorMessage(row, prop);
+      },
+      fieldValidator(value, callback) {
+        if(value == null) {
+          callback(true);
+          return
+        }
+
+        const rowDay = this.getRowDay(this.validating.row)
+        const rowDate = moment(this.requestData.date).set('date', rowDay).format('YYYY-MM-DD'); 
+        const today = moment().format('YYYY-MM-DD')
+        // Compare the formatted dates
+        if (rowDate > today) {
+          error = `Can not insert future data at "${rowDate}", current time is ${today}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        }        
+        
+        const numValue = Number(value)
+        if (isNaN(numValue)) {
+          error = `"${value}" is not a number.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+          callback(false);
+          return
+        } 
+
+        const ranges = this.limits[this.getColumnName(this.validating.column)];
+        if (ranges == null | ranges.min == 'null' | ranges.max=='null'){
+          callback(true);
+          return
+        }
+        
+        const isValid = ranges.min <= numValue && numValue <= ranges.max;
+        if (!isValid){
+          error = `Value must be between ${ranges.min} and ${ranges.max}.`;
+          this.addErrorMessage(this.validating.row, this.validating.column, error);
+        }
+        callback(isValid);        
+      },
+      calculateStatistics(){
+        this.variableIds.forEach(col => {this.calculateColumnStatistics(col);});
+      },
+      calculateColumnStatistics(col) {
+        // Get column data to be used in calculation
+        const data = this.$refs.stationTable.hotInstance.getDataAtProp(this.getColumnIndex(col)).slice(0, this.numberOfDays)
+
+        // Cell value validation logic
+        const isValidValue = (value) => value != null && !isNaN(value) && value !== this.MISSING_VALUE;    
+
+        // Calculate SUM, MIN, MAX and COUNT
+        let sum = 0; min = null; max = null; valid_cells = 0;
+
+        data.forEach(value => {
+          value = parseFloat(value)
+          if(isValidValue(value)){
+            valid_cells += 1;
+            sum += value;
+            min = (min === null) ? value : Math.min(min, value);
+            max = (max === null) ? value : Math.max(max, value);
+          }
+        })
+
+        // Calculate AVG and STDDEV
+        let avg = null; stddev = null;
+
+        if(valid_cells>0){
+          avg = sum/valid_cells
+          stddev = 0
+          if(valid_cells>1){
+            variance = 0;
+            data.forEach(value => {
+              value = parseFloat(value);
+              variance += isValidValue(value)? Math.pow(value - avg, 2): 0
+            })
+            stddev = Math.sqrt(variance / (valid_cells - 1))
+          }
+        }
+        
+        // Save statistics
+        this.hotData[this.numberOfDays][col] = sum;
+        this.hotData[this.numberOfDays+1][col] = avg;
+        this.hotData[this.numberOfDays+2][col] = min;
+        this.hotData[this.numberOfDays+3][col] = max;
+        this.hotData[this.numberOfDays+4][col] = stddev;
+        this.hotData[this.numberOfDays+5][col] = valid_cells;
+
+        this.$refs.stationTable.hotInstance.render()
+      },
+      getColumnIndex(code){
+        const columnIndex = this.hotSettings.columns.findIndex(column => column.data == code);
+        return columnIndex !== -1 ? columnIndex : null;
+      },          
+      getColumnName(code) {
+        const column = this.hotSettings.columns.find(column => column.data == code);
+        return column ? column.name.toUpperCase() : null;
+      },
+      getRowDay(row){
+        return this.hotSettings.rowHeaders[row]
+      },      
+      addErrorMessage(row, prop, error=null) {
+        this.errors.push({
+          row: row,
+          prop: prop,
+          message: `${error} (${this.getColumnName(prop)}, ${this.getRowDay(row)})`
+        });
+      },   
+      removeErrorMessage(row, prop) {
+        this.errors = this.errors.filter(error => !(error.row === row && error.prop === prop));
+      },
+      configureTableForMonth(){
+        this.numberOfDays = this.daysInMonth(this.requestData.date.substr(5, 2), this.requestData.date.substr(0, 4));
+        this.hotSettings.rowHeaders = Array(this.numberOfDays).fill(undefined).map((n, i) => i + 1)
+        this.hotSettings.rowHeaders.push('SUM', 'AVG', 'MIN', 'MAX', 'STDDEV', 'COUNT')
+        this.hotSettings.maxRows = this.numberOfDays + 6;
+        this.hotSettings.minRows = this.numberOfDays + 6;
+        numberOfDays = this.numberOfDays
+        this.$refs.stationTable.hotInstance.updateSettings({
+          cells: function (row, col) {
+            cellProperties = {};
+
+            if (row >= numberOfDays) {
+              cellProperties.readOnly = true;
+              cellProperties.validator = null;
+              cellProperties.numericFormat = {
+                pattern: {
+                  mantissa: 2
+                }
+              }
+            }
+            if (row == numberOfDays + 5) {
+              cellProperties.numericFormat = {
+                pattern: {
+                  mantissa: 0
+                }
+              }
+            }
+
+            return cellProperties;
+          }
+        })
+      },
+      fetchData() {
+        this.loading = true;
+
+        if (this.requestData.stationId===null){
+          this.loading = false;
+          return
+        }
+
+        let url = `/wx/data/capture/monthly/load/?date=${this.requestData.date}&station=${this.requestData.stationId}`;
+        axios.get(url).then(res => {
+          // Store loaded data in in table
+          hotInstance = this.$refs.stationTable.hotInstance
+          this.hotData = [];
+          hotInstance.loadData(this.hotData);
+          for(i=0; i<res.data.length; i++){
+            if(this.variableIds.includes(res.data[i][1])){
+              row = parseInt(res.data[i][0].substr(8, 2)) - 1;
+              this.hotData[row][res.data[i][1]] = res.data[i][2];
+            }
+          }
+          hotInstance.render();
+
+          // Update errors
+          this.errors = [];
+          this.calculateStatistics();
+          this.draft = false;
+          this.loading = false;
+        });
+
+        // this.configureTableForMonth()
+      },      
+      updateData() {
+        if (this.valid) {
+          const [year, month] = this.requestData.date.split('-')
+
+          hourSet = new Set();
+          this.hotData.forEach(day => {
+            variableArray = Object.keys(day);
+            if(variableArray.length)
+              variableArray.forEach(variable => {
+                  hourSet.add(day);
+                  return;
+              })
+            })
+
+          hourSet.forEach(hour => {
+            this.hotSettings.columns.forEach(column => {
+                if (hour[column.data] == null)
+                  hour[column.data] = this.MISSING_VALUE;
+              });
+          })
+          
+          this.loading = true;
+          axios.post("update/",
+            {
+              date: {
+                year: year,
+                month: month
+              },
+              station: this.requestData.stationId,
+              table: this.hotData
+            }).then(data => {
+              this.draft = false;
+              this.fetchData();
+          });
+        }
+      },
+    },
+    watch: {
+      'requestData.stationId': function (newValue, oldValue) {
+        this.hideTable = newValue==null
+        this.fetchData();
+      },
+      'requestData.date': function (newValue, oldValue) {
+        this.fetchData();
+        this.configureTableForMonth();
+      },
+      'errors.length': function (newValue, oldValue) {
+        this.valid = this.errors.length == 0;
+      },
+    },
+    mounted() {
+      Handsontable.hooks.add('beforeValidate', this.beforeValidate, this.$refs.stationTable.hotInstance);
+      Handsontable.hooks.add('afterChange', this.afterChange, this.$refs.stationTable.hotInstance);
+      this.fetchData();
+      this.configureTableForMonth();
+
+      Handsontable.validators.registerValidator('fieldValidator', this.fieldValidator);
+    
+      this.hideTable = this.requestData.stationId==null
+    
+    }
+  });
+
+  $(document).ready(function(){
+    function getCookie(c_name) {
+        if(document.cookie.length > 0) {
+            c_start = document.cookie.indexOf(c_name + "=");
+            if(c_start != -1) {
+                c_start = c_start + c_name.length + 1;
+                c_end = document.cookie.indexOf(";", c_start);
+                if(c_end == -1) c_end = document.cookie.length;
+                return unescape(document.cookie.substring(c_start,c_end));
+            }
+        }
+        return "";
+    }
+
+    $(function () {
+      axios.defaults.headers.common["X-CSRFToken"] = getCookie("csrftoken");
+      axios.defaults.headers.common["Content-Type"] = 'application/json';
+    });
+  });
+</script>
+{% endblock %}

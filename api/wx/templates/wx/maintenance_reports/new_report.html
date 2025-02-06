@@ -1,6 +1,11 @@
 {% extends "base.html" %} {% block content %} 
-<script src="https://cdn.ckeditor.com/4.20.2/full/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/4.22.1/full/ckeditor.js"></script>
 <script src="/static/js/ckeditor-vue.js"></script>
+
+<style>
+  .cke_notifications_area { display: none; }
+</style>
+
 <div class="srf-container">
   <div id="app" v-cloak> 
     <v-app>    
@@ -603,11 +608,11 @@
               </v-layout>
 
               <v-flex mt-8>
-                <!-- <v-btn color="grey"
+                <v-btn color="grey"
                   :disabled="futureTime() || futureDate()"
                   @click="updateMaintenanceReportSummary(maintenance_report, 'D')"
                   :href="viewMaintenanceReport(maintenance_report.id)"
-                > Preview </v-btn> -->
+                > Preview </v-btn>
                 <v-btn
                   color="warning"
                   :disabled="futureTime() || futureDate()"
@@ -992,7 +997,7 @@
           axios({
             method: 'post',
             url: '/wx/maintenance_report/equipmenttype_data/update/',
-            params: {
+            data: {
               'maintenance_report_id': this.maintenance_report.id,
               'equipment_order': equipment_order,
               'equipment_type_id': equipment_type.id,

@@ -47,7 +47,7 @@ from slugify import slugify
 
 from tempestas_api import settings
 from wx import serializers, tasks
-from wx.decoders import insert_raw_data_pgia
+from wx.decoders import insert_raw_data_pgia, insert_raw_data_synop
 from wx.decoders.hobo import read_file as read_file_hobo
 from wx.decoders.toa5 import read_file
 from wx.forms import StationForm
@@ -76,6 +76,8 @@ from wx.models import QcRangeThreshold, QcStepThreshold, QcPersistThreshold
 from simple_history.utils import update_change_reason
 from django.db.models.functions import Cast
 from django.db.models import IntegerField
+
+from wx.models import WMOCodeValue
 
 logger = logging.getLogger('surface.urls')
 
@@ -572,26 +574,6 @@ def GetImage(request):
         response = HttpResponse(content_type="image/jpeg")
         red.save(response, "JPEG")
         return response
-
-
-@permission_classes([IsAuthenticated])
-def DailyFormView(request):
-    template = loader.get_template('wx/daily_form.html')
-
-    station_list = Station.objects.filter(is_automatic=False, is_active=True)
-    station_list = station_list.values('id', 'name', 'code')
-    
-    # for station in station_list:
-    #     station['code'] = int(station['code'])
-
-    context = {'station_list': station_list}
-
-    return HttpResponse(template.render(context, request))
-
-
-class SynopCaptureView(LoginRequiredMixin, TemplateView):
-    template_name = "wx/synopcapture.html"
-
 
 @permission_classes([IsAuthenticated])
 def DataCaptureView(request):
@@ -2678,9 +2660,10 @@ def pgia_load(request):
                     'station_id': pgia.id
                 })
 
-            response = cursor.fetchall()
 
-    return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
+        context['is_update'] = True
+
+        return context
 
 
 @api_view(['GET'])
@@ -2939,7 +2922,7 @@ def station_report_data(request):
                 if current_unit not in y_axis_unit_dict.keys():
                     chart['yAxis'].append({
                         'labels': {
-                            'format': '{value} ' + variable_data['unit']
+                            'format': '{value} ' + variable_data['unit'],
                         },
                         'title': {
                             'text': None
@@ -2968,7 +2951,7 @@ def station_report_data(request):
                         chart['xAxis'] = {
                             'type': 'datetime',
                             'labels': {
-                                'format': '{value:%Y-%b}'
+                                'format': '{value:%Y-%b}',
                             },
                             'title': {
                                 'text': 'Y'
@@ -2983,7 +2966,7 @@ def station_report_data(request):
                         chart['xAxis'] = {
                             'type': 'datetime',
                             'labels': {
-                                'format': '{value:%Y-%b}'
+                                'format': '{value:%Y-%b}',
                             },
                             'title': {
                                 'text': 'Reference'
@@ -3078,7 +3061,7 @@ def variable_report_data(request):
                 if current_unit not in y_axis_unit_dict.keys():
                     chart['yAxis'].append({
                         'labels': {
-                            'format': '{value} ' + variable_data['unit']
+                            'format': '{value} ' + variable_data['unit'],
                         },
                         'title': {
                             'text': None
@@ -3107,7 +3090,7 @@ def variable_report_data(request):
                         chart['xAxis'] = {
                             'type': 'datetime',
                             'labels': {
-                                'format': '{value:%Y-%b}'
+                                'format': '{value:%Y-%b}',
                             },
                             'title': {
                                 'text': 'Y'
@@ -3122,7 +3105,7 @@ def variable_report_data(request):
                         chart['xAxis'] = {
                             'type': 'datetime',
                             'labels': {
-                                'format': '{value:%Y-%b}'
+                                'format': '{value:%Y-%b}',
                             },
                             'title': {
                                 'text': 'Reference'
@@ -3688,7 +3671,114 @@ def query_stationsmonitoring_station(data_type, time_type, date_picked, station_
                          'suspicious': r[3],
                          'bad': r[4],
                          'not_checked': r[5]} for r in results]
-    
+    elif data_type=='Visits':
+        query = """
+            WITH ordered_reports AS (
+                SELECT 
+                    id
+                    ,station_id
+                    ,visit_type_id
+                    ,visit_date
+                    ,initial_time
+                    ,end_time
+                    ,responsible_technician_id
+                    ,next_visit_date
+                    ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                FROM wx_maintenancereport
+                WHERE status='A'AND station_id=%s
+            )
+            ,latest_report AS(
+                SELECT 
+                    *
+                FROM ordered_reports
+                WHERE rn=1    
+            )
+            SELECT 
+                r.id
+                ,p.name
+                ,s.is_automatic
+                ,r.visit_date
+                ,v.name
+                ,r.initial_time
+                ,r.end_time
+                ,t.name
+                ,r.next_visit_date
+            FROM latest_report r
+            LEFT JOIN wx_station s ON r.station_id = s.id
+            LEFT JOIN wx_stationprofile p ON p.id=s.profile_id
+            LEFT JOIN wx_technician t ON r.responsible_technician_id = t.id
+            LEFT JOIN wx_visittype v ON r.visit_type_id = v.id
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (station_id,))
+            results = cursor.fetchall()
+        
+        station_data = [{'Maintenance Report ID': r[0],
+                         'Station Profile': r[1],
+                         'Station Type': 'Automatic' if r[2] else 'Manual',
+                         'Visit Date': r[3],
+                         'Visit Type': r[4],
+                         'Initial Time': r[5],
+                         'End Time': r[6],
+                         'Responsible Technician': r[7],
+                         'Next Visit Date': r[8]} for r in results]
+        
+        if len(station_data)>0:
+            station_data = station_data[0]
+        else:
+            station_data = {}
+    elif data_type=='Equipment':
+        query = """
+            WITH ordered_reports AS (
+                SELECT 
+                    id
+                    ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                FROM wx_maintenancereport
+                WHERE status='A'AND station_id=%s
+            )
+            ,latest_report AS(
+                SELECT 
+                    id
+                FROM ordered_reports
+                WHERE rn=1    
+            )
+            SELECT 
+                e.model
+                ,e.serial_number
+                ,et.name
+                ,se.classification
+                ,q.color
+            FROM latest_report r
+            LEFT JOIN wx_maintenancereportequipment se ON se.maintenance_report_id=r.id
+            LEFT JOIN wx_equipment e ON e.id = se.new_equipment_id
+            LEFT JOIN wx_equipmenttype et ON et.id = se.equipment_type_id
+            LEFT JOIN
+                    wx_qualityflag q ON 
+                    CASE
+                        WHEN se.classification='N' THEN q.symbol = 'B'
+                        WHEN se.classification='P' THEN q.symbol = 'S'
+                        WHEN se.classification='F' THEN q.symbol = 'G'
+                        ELSE q.symbol = '-'
+                    END
+            ORDER BY se.equipment_type_id, se.equipment_order
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, (station_id,))
+            results = cursor.fetchall()
+
+        classification_dict = {
+            'F':  'Fully Functional',
+            'P':  'Partially Functional',
+            'N':  'Not Functional'
+        }
+        
+        station_data = [{'model': r[0],
+                         'serial_number': r[1],
+                         'equipment_type': r[2],
+                         'classification': classification_dict[r[3]],
+                         'color': r[4]} for r in results]        
     return station_data
 
 
@@ -3791,10 +3881,111 @@ def query_stationsmonitoring_map(data_type, time_type, date_picked):
                 LEFT JOIN qf ON s.id = qf.station_id
                 WHERE s.is_active
             """
+        elif data_type=='Visits':
+            query = """
+                WITH ordered_reports AS (
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                    FROM wx_maintenancereport
+                    WHERE status='A'
+                )
+                ,latest_reports AS(
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,rn
+                    FROM ordered_reports
+                    WHERE rn=1    
+                )
+                SELECT 
+                    s.id
+                    ,s.name
+                    ,s.code
+                    ,s.latitude
+                    ,s.longitude                    
+                    ,q.color AS color
+                FROM wx_station s
+                LEFT JOIN latest_reports l ON l.station_id = s.id
+                LEFT JOIN wx_qualityflag q ON
+                    CASE
+                        WHEN l.next_visit_date IS NULL THEN q.symbol = '-'
+                        WHEN l.next_visit_date > NOW() THEN q.symbol = 'G'
+                        WHEN l.next_visit_date >= NOW() - INTERVAL '1 month' AND l.next_visit_date <= NOW() THEN q.symbol = 'S'
+                        WHEN l.next_visit_date < NOW() - INTERVAL '1 month' THEN q.symbol = 'B'
+                    END
+                WHERE s.is_active
+            """
+        elif data_type == 'Equipment':
+            query = """
+                WITH ordered_reports AS (
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,ROW_NUMBER() OVER (PARTITION BY station_id ORDER BY visit_date DESC) AS rn
+                    FROM wx_maintenancereport
+                    WHERE status='A'
+                )
+                ,latest_reports AS(
+                    SELECT 
+                        id
+                        ,station_id
+                        ,visit_date
+                        ,next_visit_date
+                        ,rn
+                    FROM ordered_reports
+                    WHERE rn=1    
+                )
+                ,station_equipment AS (
+                    SELECT 
+                        r.station_id
+                        ,COUNT(*) AS count_eq
+                        ,SUM(CASE WHEN re.classification = 'F' THEN 1 ELSE 0 END) AS count_f
+                        ,SUM(CASE WHEN re.classification = 'P' THEN 1 ELSE 0 END) AS count_p
+                        ,SUM(CASE WHEN re.classification = 'N' THEN 1 ELSE 0 END) AS count_n
+                    FROM latest_reports r
+                    LEFT JOIN wx_maintenancereportequipment re 
+                        ON  re.maintenance_report_id = r.id
+                    GROUP BY r.station_id
+                )
+                SELECT
+                    s.id,
+                    s.name,
+                    s.code,
+                    s.latitude,
+                    s.longitude,
+                    q.color AS color
+                FROM
+                    wx_station s
+                LEFT JOIN
+                    station_equipment se ON se.station_id = s.id
+                LEFT JOIN
+                    wx_qualityflag q ON 
+                    CASE
+                        WHEN se.count_eq IS NULL THEN q.symbol = '-'
+                        WHEN se.count_n > 0 THEN q.symbol = 'B'
+                        WHEN se.count_p > 0 THEN q.symbol = 'S'
+                        ELSE q.symbol = 'G'
+                    END
+                WHERE
+                    s.is_active
+            """            
+            
 
         if data_type in ['Communication', 'Quality Control']:
             with connection.cursor() as cursor:
                 cursor.execute(query, (datetime_picked, datetime_picked, ))
+                results = cursor.fetchall()
+        elif data_type in ['Visits', 'Equipment']:
+            with connection.cursor() as cursor:
+                cursor.execute(query)
                 results = cursor.fetchall()
     else:
         if data_type=='Communication':
@@ -4179,7 +4370,7 @@ def create_wave_chart(dataset):
             if current_unit not in y_axis_unit_dict.keys():
                 chart['yAxis'].append({
                     'labels': {
-                        'format': '{value} ' + variable_data['unit']
+                        'format': '{value} ' + variable_data['unit'],
                     },
                     'title': {
                         'text': None
@@ -4377,7 +4568,7 @@ def get_equipment_inventory_data(request):
                      'id': station.id} for station in stations]
 
     response = {
-        'equipments': equipment_list,
+        'equipment': equipment_list,
         'equipment_types': list(equipment_types.values()),
         'manufacturers': list(manufacturers.values()),
         'funding_sources': list(funding_sources.values()),
@@ -4626,17 +4817,19 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
     profile = StationProfile.objects.get(pk=station.profile_id)
     responsible_technician = Technician.objects.get(pk=maintenance_report.responsible_technician_id)
     visit_type = VisitType.objects.get(pk=maintenance_report.visit_type_id)
-    maintenance_report_station_components = MaintenanceReportStationComponent.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    # maintenance_report_station_component_list = []    
-    # for maintenance_report_station_component in maintenance_report_station_components:
-    #     dictionary = {'condition': maintenance_report_station_component.condition,
-    #                   'component_classification': maintenance_report_station_component.component_classification,
-    #                  }
-    #     maintenance_report_station_component_list.append(dictionary)
+    maintenance_report_station_equipments = MaintenanceReportEquipment.objects.filter(maintenance_report_id=maintenance_report.id)
 
-    maintenance_report_station_component_list = get_component_list(maintenance_report)
+    maintenance_report_station_equipment_list = []
 
+    for maintenance_report_station_equipment in maintenance_report_station_equipments:
+        new_equipment_id =  maintenance_report_station_equipment.new_equipment_id
+        new_equipment = Equipment.objects.get(id=new_equipment_id)
+        dictionary = {'condition': maintenance_report_station_equipment.condition,
+                      'component_classification': maintenance_report_station_equipment.classification,
+                      'name': ' '.join([new_equipment.model, new_equipment.serial_number])
+                     }
+        maintenance_report_station_equipment_list.append(dictionary)
 
     other_technicians_ids = [maintenance_report.other_technician_1_id,
                              maintenance_report.other_technician_2_id,
@@ -4693,7 +4886,8 @@ def get_maintenance_report_view(request, id, source): # Maintenance report view
 
     context['contact_information'] = maintenance_report.contacts  
 
-    context['equipment_records'] = maintenance_report_station_component_list
+    context['equipment_records'] = maintenance_report_station_equipment_list
+    # context['equipment_records'] = maintenance_report_station_component_list
 
     # JSON
     # return JsonResponse(context, status=status.HTTP_200_OK)
@@ -4961,27 +5155,25 @@ def update_maintenance_report_equipment_type(maintenance_report, equipment_type,
 
 @require_http_methods(["POST"])
 def update_maintenance_report_equipment_type_data(request):
-    maintenance_report_id = request.GET.get('maintenance_report_id', None)
-    equipment_type_id = request.GET.get('equipment_type_id', None)
-    equipment_order = request.GET.get('equipment_order', None),
+    form_data = json.loads(request.body.decode())
 
-    if type(equipment_order) is tuple:
+    maintenance_report_id = form_data['maintenance_report_id'] 
+    equipment_type_id = form_data['equipment_type_id'] 
+    equipment_order = form_data['equipment_order'] 
+    if isinstance(equipment_order, tuple):
         equipment_order = equipment_order[0]
-    elif not type(equipment_order) is str:
+    elif not isinstance(equipment_order, str):
         logger.error("Error in equipment order during maintenance report equipment update")
-
     equipment_data = {
-        'new_equipment_id': request.GET.get('new_equipment_id', None),
-        'old_equipment_id': request.GET.get('old_equipment_id', None),
-        'condition': request.GET.get('condition', None),
-        'classification': request.GET.get('classification', None),
+        'new_equipment_id': form_data['new_equipment_id'], 
+        'old_equipment_id': form_data['old_equipment_id'], 
+        'condition': form_data['condition'], 
+        'classification': form_data['classification'], 
     }
 
     maintenance_report = MaintenanceReport.objects.get(id=maintenance_report_id)
     equipment_type = EquipmentType.objects.get(id=equipment_type_id)
-
     update_maintenance_report_equipment_type(maintenance_report, equipment_type, equipment_order, equipment_data)
-
     response = {}
     return JsonResponse(response, status=status.HTTP_200_OK)
 
@@ -6533,6 +6725,7 @@ def get_data_inventory_by_station(request):
 
     return Response(result, status=status.HTTP_200_OK)
 
+
 @api_view(['GET'])
 def get_station_variable_month_data_inventory(request):
     year = request.GET.get('year', None)
@@ -6650,104 +6843,1539 @@ def get_station_variable_day_data_inventory(request):
     return Response(days, status=status.HTTP_200_OK)
 
 
+class UserInfo(views.APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        username = request.user.username
+        return Response({'username': username})
+
+
+class AvailableDataView(views.APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            json_data = json.loads(request.body)
+
+            initial_date = json_data['initial_date']
+            final_date = json_data['final_date']
+            data_source = json_data['data_source']
+            sv_list = [(row['station_id'], row['variable_id']) for row in json_data['series']]
+
+            if (data_source=="monthly_summary"):
+                initial_date = initial_date[:-2]+'01'
+                final_date = final_date[:-2]+'01'
+            elif (data_source=="yearly_summary"):
+                initial_date = initial_date[:-5]+'01-01'
+                final_date = final_date[:-5]+'01-01'
+
+            initial_datetime = datetime.datetime.strptime(initial_date, '%Y-%m-%d')
+            final_datetime = datetime.datetime.strptime(final_date, '%Y-%m-%d')
+
+            num_days = (final_datetime-initial_datetime).days + 1            
+
+            ret_data =  {
+                'initial_date': initial_date,
+                'final_date': final_date,
+                'data_source': data_source,
+                'sv_list': sv_list
+            }
+
+            query = f"""
+                WITH series AS (
+                    SELECT station_id, variable_id
+                    FROM UNNEST(ARRAY{sv_list}) AS t(station_id int, variable_id int)
+                ),
+                daily_summ AS(
+                    SELECT
+                        MIN(day) AS first_day
+                        ,MAX(day) AS last_day
+                        ,station_id
+                        ,variable_id
+                        ,100*COUNT(*)/{num_days}::float AS percentage
+                    FROM daily_summary
+                    WHERE day >= '{initial_date}'
+                      AND day <= '{final_date}'
+                      AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+                    GROUP BY station_id, variable_id
+                )
+                SELECT
+                    daily_summ.first_day 
+                    ,daily_summ.last_day
+                    ,series.station_id
+                    ,series.variable_id
+                    ,COALESCE(daily_summ.percentage, 0)
+                FROM series
+                LEFT JOIN daily_summ ON daily_summ.station_id = series.station_id AND daily_summ.variable_id = series.variable_id
+            """
+
+            result = []
+
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                for row in rows:
+                    new_entry = {
+                        'first_date': row[0],
+                        'last_date': row[1],
+                        'station_id': row[2],
+                        'variable_id': row[3],
+                        'percentage': round(row[4], 1)
+                    }
+
+                    result.append(new_entry)
+
+            return JsonResponse({'data': result}, status=status.HTTP_200_OK)
+        except json.JSONDecodeError:
+            return Response({'error': 'Invalid JSON format'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def DataExportQueryData(initial_datetime, final_datetime, data_source, series, interval):
+    DB_NAME=os.getenv('SURFACE_DB_NAME')
+    DB_USER=os.getenv('SURFACE_DB_USER')
+    DB_PASSWORD=os.getenv('SURFACE_DB_PASSWORD')
+    DB_HOST=os.getenv('SURFACE_DB_HOST')
+    config = f"dbname={DB_NAME} user={DB_USER} password={DB_PASSWORD} host={DB_HOST}"
+
+    config = settings.SURFACE_CONNECTION_STRING
+
+    series = [(row['station_id'], row['variable_id']) for row in series]
+
+    if (data_source=='raw_data'):
+      dfs = []
+      ini_day = initial_datetime;
+      while (ini_day <= final_datetime):
+        fin_day = ini_day + datetime.timedelta(days=1)
+        fin_day = fin_day.replace(hour=0, minute=0, second=0, microsecond=0) 
+
+        fin_day = min(fin_day, final_datetime)
+
+        query = f"""
+          WITH time_series AS(
+            SELECT 
+              timestamp AS datetime
+            FROM
+              GENERATE_SERIES(
+                '{ini_day}'::TIMESTAMP
+                ,'{fin_day}'::TIMESTAMP
+                ,'{interval} SECONDS'
+              ) AS timestamp
+            WHERE timestamp BETWEEN '{ini_day}' AND '{fin_day}'
+          )          
+          ,series AS (
+              SELECT station_id, variable_id
+              FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+          )
+          ,processed_data AS (
+            SELECT datetime
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE WHEN var.variable_type ilike 'code' THEN data.code ELSE data.measured::varchar END, '-99.9') AS value
+            FROM raw_data data
+            LEFT JOIN wx_variable var ON data.variable_id = var.id
+            WHERE (data.datetime >= '{ini_day}')
+              AND ((data.datetime < '{fin_day}') OR (data.datetime='{fin_day}' AND {fin_day > final_datetime}))
+              AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+          )
+          SELECT 
+            ts.datetime AS datetime
+            ,series.variable_id AS variable_id
+            ,series.station_id AS station_id
+            ,COALESCE(data.value, '-99.9') AS value
+          FROM time_series ts
+          CROSS JOIN series
+          LEFT JOIN processed_data AS data
+            ON data.datetime = ts.datetime
+            AND data.variable_id = series.variable_id
+            AND data.station_id = series.station_id;
+        """
+        with psycopg2.connect(config) as conn:
+          with conn.cursor() as cursor:
+            logging.info(query)
+            cursor.execute(query)
+            data = cursor.fetchall()
+
+        dfs.append(pd.DataFrame(data))
+
+        ini_day += datetime.timedelta(days=1)
+        ini_day = ini_day.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if ini_day == final_datetime:
+          break
+
+      df = pd.concat(dfs)
+      return df
+    else:
+      if (data_source=='hourly_summary'):
+        query = f'''
+            WITH time_series AS(
+              SELECT 
+                timestamp AS datetime
+              FROM
+                GENERATE_SERIES(
+                  DATE_TRUNC('HOUR', '{initial_datetime}'::TIMESTAMP)
+                  ,DATE_TRUNC('HOUR', '{final_datetime}'::TIMESTAMP)
+                  ,'1 HOUR'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{initial_datetime}' AND '{final_datetime}'
+            )       
+            ,series AS (
+                SELECT station_id, variable_id
+                FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+            )
+            ,processed_data AS (
+              SELECT
+                datetime
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE 
+                  WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                  WHEN var.sampling_operation_id = 3      THEN data.min_value
+                  WHEN var.sampling_operation_id = 4      THEN data.max_value
+                  WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                  ELSE data.sum_value END, '-99.9') as value
+              FROM hourly_summary data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.datetime BETWEEN '{initial_datetime}' AND '{final_datetime}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.datetime AS datetime
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.datetime = ts.datetime
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;
+        '''    
+      elif (data_source=='daily_summary'):      
+        query = f'''
+            WITH time_series AS(
+              SELECT 
+                timestamp::DATE AS date
+              FROM
+                GENERATE_SERIES(
+                  DATE_TRUNC('DAY', '{initial_datetime}'::TIMESTAMP)
+                  ,DATE_TRUNC('DAY', '{final_datetime}'::TIMESTAMP)
+                  ,'1 DAY'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{initial_datetime}' AND '{final_datetime}'
+            )       
+            ,series AS (
+                SELECT station_id, variable_id
+                FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+            )
+            ,processed_data AS (
+              SELECT
+                day
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE 
+                  WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                  WHEN var.sampling_operation_id = 3      THEN data.min_value
+                  WHEN var.sampling_operation_id = 4      THEN data.max_value
+                  WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                  ELSE data.sum_value END, '-99.9') as value
+              FROM daily_summary data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.day BETWEEN '{initial_datetime}' AND '{final_datetime}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.date AS date
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.day = ts.date
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;
+        '''
+      elif (data_source=='monthly_summary'):
+        query = f'''
+            WITH time_series AS(
+              SELECT 
+                timestamp::DATE AS date
+              FROM
+                GENERATE_SERIES(
+                  DATE_TRUNC('MONTH', '{initial_datetime}'::TIMESTAMP)
+                  ,DATE_TRUNC('MONTH', '{final_datetime}'::TIMESTAMP)
+                  ,'1 MONTH'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{initial_datetime}' AND '{final_datetime}'
+            )       
+            ,series AS (
+                SELECT station_id, variable_id
+                FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+            )
+            ,processed_data AS (
+              SELECT
+                date
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE 
+                  WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                  WHEN var.sampling_operation_id = 3      THEN data.min_value
+                  WHEN var.sampling_operation_id = 4      THEN data.max_value
+                  WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                  ELSE data.sum_value END, '-99.9') as value
+              FROM monthly_summary data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.date BETWEEN '{initial_datetime}' AND '{final_datetime}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.date AS date
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.date = ts.date
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;        
+        '''
+      elif (data_source=='yearly_summary'):
+        query = f'''
+            WITH time_series AS(
+              SELECT 
+                timestamp::DATE AS date
+              FROM
+                GENERATE_SERIES(
+                  DATE_TRUNC('YEAR', '{initial_datetime}'::TIMESTAMP)
+                  ,DATE_TRUNC('YEAR', '{final_datetime}'::TIMESTAMP)
+                  ,'1 YEAR'
+                ) AS timestamp
+              WHERE timestamp BETWEEN '{initial_datetime}' AND '{final_datetime}'
+            )       
+            ,series AS (
+                SELECT station_id, variable_id
+                FROM UNNEST(ARRAY{series}) AS t(station_id int, variable_id int)
+            )
+            ,processed_data AS (
+              SELECT
+                date
+                ,station_id
+                ,var.id as variable_id
+                ,COALESCE(CASE 
+                  WHEN var.sampling_operation_id in (1,2) THEN data.avg_value::real
+                  WHEN var.sampling_operation_id = 3      THEN data.min_value
+                  WHEN var.sampling_operation_id = 4      THEN data.max_value
+                  WHEN var.sampling_operation_id = 6      THEN data.sum_value
+                  ELSE data.sum_value END, '-99.9') as value
+              FROM yearly_summary data
+              LEFT JOIN wx_variable var ON data.variable_id = var.id
+              WHERE data.date BETWEEN '{initial_datetime}' AND '{final_datetime}'
+                AND (station_id, variable_id) IN (SELECT station_id, variable_id FROM series)
+            )
+            SELECT 
+              ts.date AS date
+              ,series.variable_id AS variable_id
+              ,series.station_id AS station_id
+              ,COALESCE(data.value, '-99.9') AS value
+            FROM time_series ts
+            CROSS JOIN series
+            LEFT JOIN processed_data AS data
+              ON data.date = ts.date
+              AND data.variable_id = series.variable_id
+              AND data.station_id = series.station_id;        
+        '''               
+
+      with psycopg2.connect(config) as conn:
+        with conn.cursor() as cursor:
+          logging.info(query)
+          cursor.execute(query)
+          data = cursor.fetchall()
+
+      df = pd.DataFrame(data)
+    return df
+
+
+class AppDataExportView(views.APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = serializers.DataExportSerializer(data=request.data)
+        if serializer.is_valid():
+            data_dict = {
+                key: [dict(item) for item in value] if key == 'series' else value
+                for key, value in serializer.validated_data.items()
+            }
+
+            initial_datetime = datetime.datetime.combine(data_dict['initial_date'],  data_dict['initial_time'])
+            final_datetime = datetime.datetime.combine(data_dict['final_date'],  data_dict['final_time'])
+
+            df = DataExportQueryData(initial_datetime, final_datetime, data_dict['data_source'], data_dict['series'], data_dict['interval'])
+
+            try:
+                file_format = data_dict.get('file_format')            
+                if(file_format == 'excel'):
+                    output = io.BytesIO()
+                    df.to_excel(output, index=False, engine='openpyxl')
+                    output.seek(0)
+
+                    return HttpResponse(
+                        output,
+                        content_type='application/vnd.ms-excel',
+                        headers={'Content-Disposition': 'attachment; filename="data.xlsx"'}
+                    )
+                elif(file_format == 'csv'):
+                    output = io.StringIO()
+                    df.to_csv(output, index=False)
+                    output.seek(0)
+
+                    return HttpResponse(
+                        output,
+                        content_type='text/csv',
+                        headers={'Content-Disposition': 'attachment; filename="data.csv"'}
+                    )                
+
+                elif(file_format == 'rinstat'):
+                    output = io.StringIO()
+                    df.to_csv(output, sep='\t', index=False)
+                    output.seek(0)
+                    
+                    return HttpResponse(
+                        output,
+                        content_type='text/tab-separated-values',
+                        headers={'Content-Disposition': 'attachment; filename="data.tsv"'}
+                    )
+                else:
+                    return HttpResponse('Unsupported file format', status=400)
+            except Exception as e:
+                return HttpResponse('An error occurred: {}'.format(e), status=500)
+        else:
+            return HttpResponse(
+                json.dumps({'message': 'Validation failed', 'errors': serializer.errors}),
+                content_type='application/json',
+                status=400
+            )
+
+
+class IntervalViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = Interval.objects.all().order_by('seconds')
+    serializer_class = serializers.IntervalSerializer
+
+def get_synop_table_config():
+    # List of variables, in order, for synoptic station input form
+    variable_symbols = [
+        'WINDINDR', 'PRECIND', 'STATIND', 'LOWCLH', 'VISBY',
+        'CLDTOT', 'WNDDIR', 'WNDSPD', 'TEMP', 'TDEWPNT', 'TEMPWB',
+        'RH', 'PRESSTN', 'PRESSEA', 'PRECSLR', 'PRECDUR', 'PRSWX',
+        'W1', 'W2', 'Nh', 'CL', 'CM', 'CH', 'STSKY',
+        'DL', 'DM', 'DH', 'TEMPMAX', 'TEMPMIN', 'PREC24H', 'N1', 'C1', 'hh1',
+        'N2', 'C2', 'hh2', 'N3', 'C3', 'hh3', 'N4', 'C4', 'hh4', 'SpPhenom'
+    ]
+    
+    # Get a variable list using the order of variable_ids list
+    variable_dict = {variable.symbol: variable for variable in Variable.objects.filter(symbol__in=variable_symbols)}
+    variable_list = [variable_dict[variable_symbol] for variable_symbol in variable_symbols]
+
+    nested_headers = [
+        [variable.name for variable in variable_list]+['Remarks', 'Observer', 'Action'],
+        # [variable.symbol for variable in variable_list]+['Remarks', 'Observer', 'Action'],
+        [variable.synoptic_code_form if variable.synoptic_code_form is not None else '' for variable in variable_list]+['', '', ''],
+    ]
+
+    col_widths = [
+        99, 146, 176, 136, 61, 107, 100, 83, 171,
+        154, 117, 175, 163, 180, 129, 181, 112,
+        144, 144, 169, 108, 124, 110, 82, 148, 153,
+        150, 208, 212, 162, 159, 195, 162, 159, 195,
+        162, 159, 195, 162, 159, 195, 145, 64, 65, 49
+    ]
+
+
+    columns = []
+    for variable in variable_list:
+        if (variable.variable_type=='Numeric'):
+            var_type='numeric'
+            numeric_format = '0'
+            if variable.scale > 0:
+                numeric_format = '0.'+'0'*variable.scale
+
+            new_column = {
+                'data': str(variable.id),
+                'name': str(variable.symbol),
+                'type': var_type,
+                'numericFormat': {'pattern': numeric_format},
+                'validator': 'numericFieldValidator'
+            }
+        elif(variable.variable_type=='Code'):
+            var_type='dropdown'
+            new_column = {
+                'data': str(variable.id),
+                'name': str(variable.symbol),
+                'type': var_type,
+                'codetable': variable.code_table_id,
+                'strict': 'true',
+                'validator': 'dropdownFieldValidator'
+            }            
+        else:
+            var_type='text'
+            numeric_format=None
+            new_column = {
+                'data': str(variable.id),
+                'name': str(variable.symbol),
+                'type': var_type,
+                'validator': 'textFieldValidator'
+            }
+
+        columns.append(new_column)
+ 
+    columns.append({
+        'data': 'remarks',
+        'name':'remarks',
+        'type': 'text',
+        'validator': 'textFieldValidator'
+    })
+    columns.append({
+        'data': 'observer',
+        'name':'observer',
+        'type': 'text',
+        'validator': 'textFieldValidator'
+    })
+    columns.append({
+        'data': 'action',
+        'renderer': 'deleteButtonRenderer',
+        'readOnly': 'true',
+    })   
+
+    row_headers = [
+        '00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00',
+        '08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00',
+        '16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00',
+        'SUM', 'AVG', 'MIN', 'MAX', 'STDDEV', 'COUNT'
+    ]
+    number_of_columns = len(columns)
+    number_of_rows = len(row_headers)
+    
+    # Get wmo code values to use in dropdown for code variables
+    wmocodevalue_list = WMOCodeValue.objects.values('value', 'code_table_id')
+    wmocodevalue_dict = {}
+    for item in wmocodevalue_list:
+        code_table_id = item['code_table_id']
+
+        if code_table_id not in wmocodevalue_dict:
+            wmocodevalue_dict[code_table_id] = []
+
+        wmocodevalue_dict[code_table_id].append(item['value'])
+
+    context = {
+        'col_widths': col_widths,
+        'nested_headers': nested_headers,
+        'row_headers': row_headers,
+        'columns': columns,
+        'variable_ids': [variable.id for variable in variable_list],
+        'wmocodevalue_dict': wmocodevalue_dict,
+        'number_of_columns': number_of_columns,
+        'number_of_rows': number_of_rows,
+    }
+    return context
+
+
+class SynopView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/data/synop.html"
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+
+        context['station_list'] = Station.objects.filter(is_synoptic=True).values('id', 'name', 'code')
+        context['handsontable_config'] = get_synop_table_config()
+        # Get parameters from request or set default values
+        station_id = request.GET.get('station_id', 'null')
+        date = request.GET.get('date', datetime.date.today().isoformat())
+        context['station_id'] = station_id
+        context['date'] = date
+
+        return self.render_to_response(context)    
+
+
 @api_view(['POST'])
-def delete_pgia_hourly_capture_row(request):
-    request_date = request.data['date']
-    hour = request.data['hour']
-    station_id = request.data['station_id']
-    variable_id_list = request.data['variable_ids']
-
+def synop_update(request):
     try:
-        request_date = datetime.datetime.strptime(request_date, '%Y-%m-%d')
-    except ValueError:
-        return JsonResponse({"message": "Invalid date format. The expected date format is 'YYYY-MM-DD'"},
-                            status=status.HTTP_400_BAD_REQUEST)
+        day = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
+        station_id = request.GET['station_id']
 
-    if station_id is None:
-        return JsonResponse({"message": "Invalid request. Station id must be provided"},
-                            status=status.HTTP_400_BAD_REQUEST)
+        hours_dict = request.data['table']
+        now_utc = datetime.datetime.now().astimezone(pytz.UTC)
+        now_utc+= datetime.timedelta(hours=settings.PGIA_REPORT_HOURS_AHEAD_TIME)
 
-    if hour is None:
-        return JsonResponse({"message": "Invalid request. Hour must be provided"}, status=status.HTTP_400_BAD_REQUEST)
+        station = Station.objects.get(id=station_id)
+        datetime_offset = pytz.FixedOffset(station.utc_offset_minutes)
 
-    if variable_id_list is None:
-        return JsonResponse({"message": "Invalid request. Variable ids must be provided"},
-                            status=status.HTTP_400_BAD_REQUEST)
+        seconds = 3600
 
-    variable_id_list = tuple(variable_id_list)
-    station = Station.objects.get(id=station_id)
-    datetime_offset = pytz.FixedOffset(station.utc_offset_minutes)
-    current_datetime = datetime_offset.localize(request_date.replace(hour=hour))
+        records_list = []
+        for hour, hour_data in hours_dict.items():
+            data_datetime = day.replace(hour=int(hour))
+            data_datetime = datetime_offset.localize(data_datetime)
+            if data_datetime <= now_utc:
+                if hour_data:
+                    if 'action' in hour_data.keys():
+                        hour_data.pop('action')
 
-    result = []
-    delete_query = """
-        DELETE FROM raw_data
-        WHERE station_id = %(station_id)s
-          AND variable_id IN %(variable_id_list)s
-          AND datetime = %(current_datetime)s
-    """
+                    if 'remarks' in hour_data.keys():
+                        remarks = hour_data.pop('remarks')
+                    else:
+                        remarks = None
 
-    get_last_updated_datetime_query = """
-        SELECT max(last_data_datetime)
-        FROM wx_stationvariable
-        WHERE station_id = %(station_id)s
-          AND variable_id IN %(variable_id_list)s
-        ORDER BY 1 DESC
-    """
+                    if 'observer' in hour_data.keys():
+                        observer = hour_data.pop('observer')
+                    else:
+                        observer = None
 
-    update_last_updated_datetime_query = """
-        WITH rd as (
-            SELECT station_id
-                  ,variable_id
-                  ,measured
-                  ,code
-                  ,datetime
-                  ,RANK() OVER (PARTITION BY station_id, variable_id ORDER BY datetime DESC) datetime_rank
-            FROM raw_data
-            WHERE station_id = %(station_id)s
-              AND variable_id IN %(variable_id_list)s)
-        UPDATE wx_stationvariable sv
-        SET last_data_datetime = rd.datetime
-           ,last_data_value    = rd.measured
-           ,last_data_code     = rd.code
-        FROM rd
-        WHERE sv.station_id = rd.station_id
-          AND sv.variable_id = rd.variable_id
-          AND rd.datetime_rank = 1
-    """
+                    for variable_id, measurement in hour_data.items():
+                        variable = Variable.objects.get(pk=variable_id)
+                        if measurement is None:
+                            measurement_value = settings.MISSING_VALUE
+                            measurement_code = settings.MISSING_VALUE_CODE
+                        else:
+                            if (variable.variable_type=='Numeric'):
+                                try:
+                                    measurement_value = float(measurement)
+                                    measurement_code = measurement
+                                except Exception:
+                                    measurement_value = settings.MISSING_VALUE
+                                    measurement_code = settings.MISSING_VALUE_CODE
+                            else:
+                                measurement_value = settings.MISSING_VALUE
+                                measurement_code = measurement
+                            
+                        records_list.append((
+                            station_id, variable_id, seconds, data_datetime, measurement_value, 1, None,
+                            None, None, None, None, None, None, None, False, remarks, observer,
+                            measurement_code))
 
-    create_daily_summary_task_query = """
-        INSERT INTO wx_dailysummarytask (station_id, date, created_at, updated_at)
-        VALUES (%(station_id)s, %(current_datetime)s, now(), now())
-        ON CONFLICT DO NOTHING
-    """
+        insert_raw_data_synop.insert(
+            raw_data_list=records_list,
+            date=day,
+            station_id=station_id,
+            override_data_on_conflict=True,
+            utc_offset_minutes=station.utc_offset_minutes
+        )
 
-    create_hourly_summary_task_query = """
-        INSERT INTO wx_hourlysummarytask (station_id, datetime, created_at, updated_at)
-        VALUES (%(station_id)s, %(current_datetime)s, now(), now())
-        ON CONFLICT DO NOTHING
-    """
+    except Exception as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return HttpResponse(status=status.HTTP_200_OK)
+
+
+def get_synop_data(station, date, utc_offset_minutes=0):
+    datetime_offset = pytz.FixedOffset(utc_offset_minutes)
+    request_datetime = datetime_offset.localize(date)
+
+    start_datetime = request_datetime
+    end_datetime = request_datetime + datetime.timedelta(days=1)
 
     with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
         with conn.cursor() as cursor:
-            cursor.execute(delete_query, {"station_id": station_id, "variable_id_list": variable_id_list,
-                                          "current_datetime": current_datetime})
+            query = f"""
+                SELECT 
+                    (datetime + INTERVAL '{utc_offset_minutes} MINUTES') AT TIME ZONE 'utc',
+                    variable_id,
+                    CASE WHEN var.variable_type = 'Numeric' THEN measured::VARCHAR
+                        ELSE code
+                    END AS value,
+                    remarks,
+                    observer
+                FROM raw_data
+                JOIN wx_variable var ON raw_data.variable_id=var.id
+                WHERE station_id = {station.id}
+                    AND datetime >= '{start_datetime}'
+                    AND datetime < '{end_datetime}'
+                """
 
-            cursor.execute(create_daily_summary_task_query,
-                           {"station_id": station_id, "current_datetime": request_date})
-            cursor.execute(create_hourly_summary_task_query,
-                           {"station_id": station_id, "current_datetime": current_datetime})
+            cursor.execute(query)
+            data = cursor.fetchall()
+    return data
 
-            cursor.execute(get_last_updated_datetime_query,
-                           {"station_id": station_id, "variable_id_list": variable_id_list})
 
+@api_view(['GET'])
+def synop_load(request):
+    try:
+        date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
+        station = Station.objects.get(id=request.GET['station_id'])
+    except ValueError as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    response = get_synop_data(station, date, station.utc_offset_minutes)
+
+    return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
+
+
+@api_view(['POST'])
+def synop_delete(request):
+    # Extract data from the request
+    request_date_str = request.GET.get('date', None)
+    hour = request.GET.get('hour', None)
+    station_id = request.GET.get('station_id', None)
+    
+    hour = int(hour)
+
+    variable_id_list = request.data.get('variable_ids')
+
+    # Validate inputs
+    if (None in [request_date_str, hour, station_id, variable_id_list]):
+        message = "Invalid request. 'date', 'hour', 'station_id', and 'variable_ids' must be provided."
+        return JsonResponse({"message": message}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate date format
+    try:
+        request_date = datetime.datetime.strptime(request_date_str, '%Y-%m-%d')
+    except ValueError:
+        message = "Invalid date format. The expected date format is 'YYYY-MM-DD'"
+        return JsonResponse({"message": message}, status=status.HTTP_400_BAD_REQUEST)
+    
+    variable_id_list = tuple(variable_id_list)
+    station = Station.objects.get(id=station_id)
+    datetime_offset = pytz.FixedOffset(station.utc_offset_minutes)
+    request_datetime = datetime_offset.localize(request_date.replace(hour=hour))
+
+    queries = {
+        "delete_raw_data": f"""
+            DELETE FROM raw_data
+            WHERE station_id = {station_id}
+              AND variable_id IN {variable_id_list}
+              AND datetime = '{request_datetime}'
+        """,
+        "create_daily_summary": f"""
+            INSERT INTO wx_dailysummarytask (station_id, date, created_at, updated_at)
+            VALUES ({station_id}, '{request_datetime}', now(), now())
+            ON CONFLICT DO NOTHING
+        """,
+        "create_hourly_summary": f"""
+            INSERT INTO wx_hourlysummarytask (station_id, datetime, created_at, updated_at)
+            VALUES ({station_id}, '{request_datetime}', now(), now())
+            ON CONFLICT DO NOTHING
+        """,
+        "get_last_updated": f"""
+            SELECT max(last_data_datetime)
+            FROM wx_stationvariable
+            WHERE station_id = {station_id}
+              AND variable_id IN {variable_id_list}
+            ORDER BY 1 DESC
+        """,
+        "update_last_updated": f"""
+            WITH rd AS (
+                SELECT station_id, variable_id, measured, code, datetime,
+                       RANK() OVER (PARTITION BY station_id, variable_id ORDER BY datetime DESC) AS datetime_rank
+                FROM raw_data
+                WHERE station_id = {station_id}
+                  AND variable_id IN {variable_id_list}
+            )
+            UPDATE wx_stationvariable sv
+            SET last_data_datetime = rd.datetime,
+                last_data_value = rd.measured,
+                last_data_code = rd.code
+            FROM rd
+            WHERE sv.station_id = rd.station_id
+              AND sv.variable_id = rd.variable_id
+              AND rd.datetime_rank = 1
+        """
+    }
+
+    with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(queries["delete_raw_data"])
+            # After deleting from raw_data, is necessary to update the daily and hourly summary tables.
+            cursor.execute(queries["create_daily_summary"])
+            cursor.execute(queries["create_hourly_summary"])
+            
+            # If suceed in inserting new data, it's necessary to update the 'last data' columns in wx_stationvariable tabl.
+            cursor.execute(queries["get_last_updated"])
+            
             last_data_datetime_row = cursor.fetchone()
-            if last_data_datetime_row is not None:
-                last_data_datetime = last_data_datetime_row[0]
-
-                if last_data_datetime == current_datetime:
-                    cursor.execute(update_last_updated_datetime_query,
-                                   {"station_id": station_id, "variable_id_list": variable_id_list})
+            if last_data_datetime_row and last_data_datetime_row[0] == request_datetime:
+                cursor.execute(queries['update_last_updated'])
         conn.commit()
 
-    return Response(result, status=status.HTTP_200_OK)
+    return Response([], status=status.HTTP_200_OK)
+
+
+def get_synop_form_config():
+    nested_headers = [
+        ["Report Indicator", "Date-Time or Time-UTC", "Wind Ind'r", "Station No. or Location Indicator",
+            "6-Group Ind.", "7-Group Ind.", "Lowest Cloud height", "Visibility", "Total cloud", "Wind Direction",
+            "Wind Speed", "Indicator and sign", "Air Temperature", "Indicator and sign", "Dew Point", 
+            "V.P.", "R.H.", "Indicator", "QNH", "Indicator", "QNH",
+            "Indicator", "Rainfall Since Last Report", "6-hr periods", "Indicator", "Present Weather",
+            { 'label': "Past Weather", 'colspan': 2 }, "Indicator", "Amt. CL/CM", "CL Clouds", "CM Clouds", "CH Clouds",
+            "SECTION 3 Indicator", "Indicator", "State of sky", "CL Direction", "CM Direction", "CH Direction",
+            "Indicator and sign", "Maximum Temperature", "Indicator and sign", "Minimum Temperature", "Indicator",
+            "24-hour Barometric change", "Indicator", "24-hour Rainfall at 00Z, 06Z, 12Z and 18Z",
+            "Indicator", "Amt. of layer", "Form of layer", "Height of lowest layer", "Indicator",
+            "Amt. of layer", "Form of layer", "Height of next layer", "Indicator", "Amt. of layer",
+            "Form of layer", "Height of next layer", "Indicator", "Amt. of layer", "Form of layer",
+            "Height of next layer", "Special Phenomena", "REMARKS", "Initails"
+        ],
+        ["Land Station-no distinction AAXX", "GGggYYGG", "iW", "IIiii", "iR", "iX", "h", "(VV) VV", "N",
+            "ddd dd", "(fmfm) f f", "1sn", "T'T' TTT", "2sn", "T'dT'd Td TdTd", "UUU", "",
+            "3", "POPOPOPO", "4", "PHPHPHPH PPPP", "6", "RRR", "Tr", "7", "ww", "W1", "W2", "8", "Nh", "CL",
+            "CM", "CH", "333", "0", "CS", "DL", "DM", "DH", "1sn", "TXTXTX", "2sn", "TnTnTn", "5j1",
+            "P24P24P24", "7", "R24R24R24R24", "8", "NS", "C", "hShS", "8", "NS", "C", "hShS", "8", "NS",
+            "C", "hShS", "8", "NS", "C", "hShS", "9SPSPsPsP", "", ""
+        ],
+    ]
+
+    number_of_columns = len(nested_headers[0])+1 # Adding the colspan
+
+    columns = []
+    for i in range(number_of_columns):
+        new_column = {
+            'data': i,
+            'name': str(i),
+            'type': 'text',
+            'readOnly': 'true',
+        }
+        columns.append(new_column)
+
+    context = {
+        'nested_headers': nested_headers,
+        'columns': columns,
+        'number_of_columns': number_of_columns,
+        'number_of_rows': 24
+    }
+
+    return context
+
+
+class SynopFormView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/data/synop_form.html"
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        context['station_list'] = Station.objects.filter(is_synoptic=True).values('id', 'name', 'code')
+        context['handsontable_config'] = get_synop_form_config()
+        
+        
+        # Get parameters from request or set default values
+        station_id = request.GET.get('station_id', 'null')
+        date = request.GET.get('date', datetime.date.today().isoformat())
+        context['station_id'] = station_id
+        context['date'] = date
+
+        return self.render_to_response(context)
+
+
+def get_synop_pvd_data(station, date):
+    datetime_offset = pytz.FixedOffset(station.utc_offset_minutes)
+    request_datetime = datetime_offset.localize(date)
+
+    pvd_data = []
+    with psycopg2.connect(settings.SURFACE_CONNECTION_STRING) as conn:
+        with conn.cursor() as cursor:
+            query = f"""
+                SELECT
+                    (datetime + INTERVAL '{station.utc_offset_minutes} MINUTES') AT TIME ZONE 'utc',
+                    variable_id,
+                    CASE WHEN var.variable_type = 'Numeric' THEN measured::VARCHAR
+                        ELSE code
+                    END AS value
+                FROM raw_data
+                INNER JOIN wx_variable var ON raw_data.variable_id=var.id
+                WHERE datetime >='{request_datetime-datetime.timedelta(days=1)}'
+                  AND datetime < '{request_datetime}'
+                  AND station_id={station.id}
+                  AND var.symbol IN ('PRECSLR', 'PRECDUR', 'PRESSTN')
+            """
+            
+            cursor.execute(query)
+            pvd_data = cursor.fetchall()
+
+    return pvd_data
+
+
+@api_view(['GET'])
+def synop_load_form(request):
+    # Functions that are used to format the data
+    def alphaCalc(air_temp: float):
+        return (17.27 * air_temp) / (air_temp + 237.3)
+    
+    def vaporPressureCalc(air_temp: float, air_temp_wb: float, atm_pressure: float):
+        E_w = 6.108 * math.exp(alphaCalc(air_temp_wb))
+        VP = E_w - (0.00066 * (1 + 0.00115 * air_temp_wb) * (air_temp - air_temp_wb) * atm_pressure)
+        return VP    
+
+    def relativeHumidityCalc(air_temp: float, vapor_pressure: float):
+        E_s = 6.108 * math.exp(alphaCalc(air_temp))
+        RH = (vapor_pressure / E_s) * 100
+        return RH
+
+    def dewPointCalc(vapor_pressure: float):
+        DP = (237.3*vapor_pressure)/(1-vapor_pressure)
+        return DP
+
+    def airTempCalc(value: float):
+        return None if value is None else abs(round(10*value))
+
+    def atmPressureCalc(atm_pressure: float):
+        return None if atm_pressure is None else f"{round(atm_pressure*10) % 10000:04}"
+
+    def windSpeedToCode(wind_speed_val: float):
+        # It was requested by Akeisha and Dwayne to just use last two digits
+        if wind_speed_val is None or str(wind_speed_val)==str(settings.MISSING_VALUE):
+            return '/'
+        return str(round(wind_speed_val%100)).zfill(2)
+            
+        # Using WMO code 1200
+        if wind_speed_val is None or str(wind_speed_val)==str(settings.MISSING_VALUE) :
+            wind_speed_code = '/'
+        elif 0 <= wind_speed_val < 90:
+            wind_speed_code = str(math.floor(wind_speed_val/10))
+        elif wind_speed_val >= 90:
+            wind_speed_code = str(9)
+        else:
+            wind_speed_code = '/'
+
+        return wind_speed_code
+
+    def windDirToCode(wind_dir: float):
+        # It was requested by Akeisha and Dwayne to just divide by 10
+        if wind_dir is None or str(wind_dir)==str(settings.MISSING_VALUE) : 
+            return None
+        return str(round((wind_dir%360)/10)).zfill(2)
+    
+        # Using WMO code 0877
+        if wind_dir is None or str(wind_dir)==str(settings.MISSING_VALUE) : 
+            return None
+        elif 0 <= wind_dir<=360: 
+            wind_dir_code = math.floor(((wind_dir-5)%360)/10)+1
+            print(wind_dir_code)
+        else:
+            wind_dir_code = 99
+
+        wind_dir_code = str(wind_dir_code).zfill(2)
+        return wind_dir_code
+
+    def lowestCloutHightToCode(lowest_ch: float):
+        if lowest_ch is None or str(lowest_ch)==str(settings.MISSING_VALUE) :
+            return '/'
+        elif 0 <= lowest_ch < 50:
+            return 0
+        elif 50 <= lowest_ch < 100:
+            return 1
+        elif 100 <= lowest_ch < 200:
+            return 2
+        elif 200 <= lowest_ch < 300:
+            return 3
+        elif 300 <= lowest_ch < 600:
+            return 4
+        elif 600 <= lowest_ch < 1000:
+            return 5
+        elif 1000 <= lowest_ch < 1500:
+            return 6
+        elif 1500 <= lowest_ch < 2000:
+            return 7
+        elif 2000 <= lowest_ch < 2500:
+            return 8
+        elif 2500 <= lowest_ch:
+            return 9
+
+    def reinfallToCode(rainfall:float):
+        # Rainfall in mm.
+        if rainfall is None or rainfall < 0:
+            return '///'
+        elif rainfall==0:
+            return '000'
+        elif rainfall < 1:
+            return f'99{round(rainfall*10)}'
+        elif rainfall < 989:
+            return f'{round(rainfall):03}'
+        elif rainfall >= 989:
+            return '989'
+        else:
+            return '///'
+
+    def reinfall24hToCode(rainfall:float):
+        # Rainfall in mm.
+        if rainfall is None or rainfall < 0:
+            return None
+
+        rainfall *= 10
+        if 0 < rainfall < 1:
+            return 9999 # Trace
+        
+        rainfall = round(rainfall)
+        if rainfall < 9998:
+            return f'{rainfall:04}'
+        else:
+            return '9998'
+        
+    def precdurCodeToValue(code: str):
+        # This dictionary must match WMO vlues for code 4019
+        code_table = {
+            '1': 6,
+            '2': 12,
+            '3': 18,
+            '4': 24,
+            '5': 1,
+            '6': 2,
+            '7': 3,
+            '8': 9,
+            '9': 15
+        }
+        if code not in code_table.keys():
+            return None
+        return code_table[code]
+        
+    def reinfallLast24h(curr_datetime:datetime, rainfall_data:list, rainfall_dur_data:list ):
+        # If there is precipitation was not measured at the exact datetime we can not infere what was the last 24h
+        if (len([row for row in rainfall_data if row[0] == curr_datetime])!=1):
+            return None
+
+        last24h_datetime = curr_datetime-datetime.timedelta(hours=24)
+        
+        prec24h_data = [row for row in rainfall_data if (last24h_datetime < row[0] <= curr_datetime)]
+        prec24h_data = sorted(prec24h_data, key=lambda x: x[0], reverse=True)
+
+        prec_sum = 0; precdur_sum = 0
+        for prec_row in prec24h_data:
+            prec_value = prec_row[2]
+
+            if prec_value in [str(settings.MISSING_VALUE), settings.MISSING_VALUE_CODE]:
+                prec_value = None
+            
+            if prec_value is not None:
+                prec_value = float(prec_value)
+                precdur_code = next((precdur_row[2] for precdur_row in rainfall_dur_data if precdur_row[0] == prec_row[0]),None)
+
+                # If there is precipitation and no duration then we can not infere what was the last 24h
+                if precdur_code is None or precdur_code==settings.MISSING_VALUE_CODE:
+                    return None
+                
+                precdur_sum+=precdurCodeToValue(precdur_code)
+                prec_sum+=prec_value
+                if precdur_sum==24:
+                    return reinfall24hToCode(prec_sum)
+                
+                # If duration exceeds 24h we can not infere what was the last 24h
+                elif precdur_sum>24:
+                    return None
+            
+        # If duration is below 24h we can not infere what was the last 24h
+        return None
+
+    try:
+        date = datetime.datetime.strptime(request.GET['date'], '%Y-%m-%d')
+        station = Station.objects.get(id=request.GET['station_id'])
+    except ValueError as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Current Day Data
+    data =  get_synop_data(station, date, utc_offset_minutes=0)
+
+    # Previous Day Data
+    pvd_data = get_synop_pvd_data(station, date)
+
+    variables = Variable.objects.all()
+
+    # Precipitation Measurements
+    rainfall_data = [row for row in pvd_data + data if row[1] == variables.get(symbol='PRECSLR').id and str(row[2]) != str(settings.MISSING_VALUE)]
+    # Precipitation Duration Measurements
+    rainfall_dur_data = [row for row in pvd_data + data if row[1] == variables.get(symbol='PRECDUR').id and str(row[2]) != str(settings.MISSING_VALUE)]
+
+    # This is a table reference that is usedd to identify what is the type of the data.
+    # Const is used for constant values.
+    # Var is used for general variable.
+    # Text is used for text values.
+    # SpVar is used for special variable that need some formating.
+    # Func is used for functions like Date-Hour, Vapor Pressure, etc.
+    # 1sn, 2sn and 5j1 are used for signals, usualy following some variable value.
+    reference = [
+        {'type': 'Const', 'ref': station.synoptic_type}, {'type': 'Func', 'ref': 'DateHour'},
+        {'type': 'Var', 'ref': 'WINDINDR'}, {'type': 'Const', 'ref': station.synoptic_code},
+        {'type': 'Var', 'ref': 'PRECIND'}, {'type': 'Var', 'ref': 'STATIND'},
+        {'type': 'SpVar', 'ref': 'LOWCLH'}, {'type': 'Var', 'ref': 'VISBY'}, {'type': 'Var', 'ref': 'CLDTOT'},
+        {'type': 'SpVar', 'ref': 'WNDDIR'}, {'type': 'SpVar', 'ref': 'WNDSPD'},
+        {'type': '1sn', 'ref': 'TEMP'}, {'type': 'SpVar', 'ref': 'TEMP'},
+        {'type': '2sn', 'ref': 'TDEWPNT'},
+        {'type': 'Func', 'ref': 'DP'}, {'type': 'Func', 'ref': 'VP'}, {'type': 'Func', 'ref': 'RH'},
+        {'type': 'Const', 'ref': 3},
+        {'type': 'SpVar', 'ref': 'PRESSTN'},
+        {'type': 'Const', 'ref': 4},
+        {'type': 'SpVar', 'ref': 'PRESSEA'},
+        {'type': 'Const', 'ref': 6},
+        {'type': 'SpVar', 'ref': 'PRECSLR'}, {'type': 'Var', 'ref': 'PRECDUR'},
+        {'type': 'Const', 'ref': 7},
+        {'type': 'Var', 'ref': 'PRSWX'}, {'type': 'Var', 'ref': 'W1'}, {'type': 'Var', 'ref': 'W2'},
+        {'type': 'Const', 'ref': 8}, 
+        {'type': 'Var', 'ref': 'Nh'},
+        {'type': 'Var', 'ref': 'CL'}, {'type': 'Var', 'ref': 'CM'}, {'type': 'Var', 'ref': 'CH'},
+        {'type': 'Const', 'ref': 333},  
+        {'type': 'Const', 'ref': 0},
+        {'type': 'Var', 'ref': 'STSKY'},
+        {'type': 'Var', 'ref': 'DL'}, {'type': 'Var', 'ref': 'DM'}, {'type': 'Var', 'ref': 'DH'},
+        {'type': '1sn', 'ref': 'TEMPMAX'}, {'type': 'SpVar', 'ref': 'TEMPMAX'},
+        {'type': '2sn', 'ref': 'TEMPMIN'}, {'type': 'SpVar', 'ref': 'TEMPMIN'},
+        {'type': '5j1', 'ref': None}, {'type': 'Func', 'ref': 'BarometricChange'},
+        {'type': 'Const', 'ref': 7},
+        # {'type': 'Func', 'ref': '24hRainfall'},
+        {'type': 'SpVar', 'ref': 'PREC24H'},
+        {'type': 'Const', 'ref': 8},
+        {'type': 'Var', 'ref': 'N1'}, {'type': 'Var', 'ref': 'C1'}, {'type': 'Var', 'ref': 'hh1'},
+        {'type': 'Const', 'ref': 8},
+        {'type': 'Var', 'ref': 'N2'}, {'type': 'Var', 'ref': 'C2'}, {'type': 'Var', 'ref': 'hh2'},
+        {'type': 'Const', 'ref': 8},
+        {'type': 'Var', 'ref': 'N3'}, {'type': 'Var', 'ref': 'C3'},{'type': 'Var', 'ref': 'hh3'},
+        {'type': 'Const', 'ref': 8},
+        {'type': 'Var', 'ref': 'N4'}, {'type': 'Var', 'ref': 'C4'}, {'type': 'Var', 'ref': 'hh4'},
+        {'type': 'Var', 'ref': 'SpPhenom'}, {'type': 'Text', 'ref': 'remarks'}, {'type': 'Text', 'ref': 'observer'},
+    ]
+
+    number_of_columns = len(reference)
+    number_of_rows = 24
+
+    hotData = []
+    for i in range(number_of_rows):
+        datetime_row = date+datetime.timedelta(hours=i)
+        data_row = [row for row in data if row[0] == datetime_row]
+        pvd_data_row = [row for row in pvd_data if row[0] == datetime_row-datetime.timedelta(days=1)]
+        dayhour = f"{date.day:02}{i:02}"
+
+        remarks, observer = (data_row[0][3], data_row[0][4]) if data_row else (None, None)
+
+        air_temp = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='TEMP').id), None)
+        air_temp_wb = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='TEMPWB').id), None)
+        atm_pressure = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='PRESSTN').id), None)
+        dew_point = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='TDEWPNT').id and str(row[2]) != str(settings.MISSING_VALUE)), None)
+        pvd_atm_pressure = next((float(row[2]) for row in pvd_data_row if row[1] == variables.get(symbol='PRESSTN').id), None)
+        relative_humidity = next((float(row[2]) for row in data_row if row[1] == variables.get(symbol='RH').id and str(row[2]) != str(settings.MISSING_VALUE)), None)
+
+        vars = [atm_pressure, pvd_atm_pressure]
+        if all(vars) and settings.MISSING_VALUE not in vars:
+            barometric_change_24h = round(atm_pressure-pvd_atm_pressure)
+        else:
+            barometric_change_24h = None
+
+        vars = [air_temp, air_temp_wb, atm_pressure]
+        if all(vars) and settings.MISSING_VALUE not in vars:
+            vapor_pressure = vaporPressureCalc(air_temp, air_temp_wb, atm_pressure)
+        else:
+            vapor_pressure = None
+
+        if relative_humidity is None and vapor_pressure is not None:
+            relative_humidity = relativeHumidityCalc(air_temp, vapor_pressure)
+
+        if dew_point is None and vapor_pressure is not None:
+            dew_point = dewPointCalc(vapor_pressure)
+
+        hotRow = []
+        for j in range(number_of_columns):
+            column_type=reference[j]['type']
+            if column_type=='Const':
+                value = reference[j]['ref']
+            elif column_type=='1sn':
+                value=None
+                if data_row:
+                    variable = variables.get(symbol=reference[j]['ref'])
+                    value = next((float(row[2]) for row in data_row if row[1] == variable.id), None)
+                    if str(value) == str(settings.MISSING_VALUE):
+                        value = None
+                    
+                    if value is not None:
+                       value = '10' if value >= 0 else '11'
+            elif column_type=='2sn':
+                value=None
+                if data_row:
+                    variable = variables.get(symbol=reference[j]['ref'])
+                    value = next((float(row[2]) for row in data_row if row[1] == variable.id), None)
+                    if str(value) == str(settings.MISSING_VALUE):
+                        value = None
+                    
+                    if value is not None:
+                       value = '20' if value >= 0 else '21'
+                    elif variable.id == 19 and relative_humidity is not None:
+                        value = '29'
+            elif column_type=='5j1':
+                value = None
+                if data_row:
+                    if barometric_change_24h is not None:
+                        value = '58' if barometric_change_24h >= 0 else '59'    
+            elif column_type=='Var':
+                value=None
+                if data_row:
+                    variable = variables.get(symbol=reference[j]['ref'])
+                    value = next((row[2] for row in data_row if row[1] == variable.id), None)
+            elif column_type=='SpVar':
+                value=None
+                if data_row:
+                    variable =  variables.get(symbol=reference[j]['ref'])
+                    value = next((row[2] for row in data_row if row[1] == variable.id), None)
+                    
+                    if value in [str(settings.MISSING_VALUE), settings.MISSING_VALUE_CODE]:
+                        value = None
+                    
+                    if value is not None:
+                        value = float(value)
+
+                    if variable.symbol in ['TEMP', 'TEMPMIN', 'TEMPMAX', 'TDEWPNT']:
+                        value = airTempCalc(value)
+                    elif variable.symbol in ['PRESSTN', 'PRESSEA']:
+                        value = atmPressureCalc(value)
+                    elif variable.symbol=='WNDDIR':
+                        value = windDirToCode(value)
+                    elif variable.symbol=='WNDSPD':
+                        value = windSpeedToCode(value)
+                    elif variable.symbol=='PRECSLR':
+                        value = reinfallToCode(value)
+                    elif variable.symbol=='PREC24H':
+                        value = reinfall24hToCode(value)
+                    elif variable.symbol=='LOWCLH':
+                        value = lowestCloutHightToCode(value)
+            elif column_type=='Func':
+                if reference[j]['ref']=='DateHour':
+                    value=dayhour
+                elif reference[j]['ref']=='VP':   
+                    value = round(vapor_pressure, 1) if vapor_pressure is not None else None            
+                elif reference[j]['ref']=='RH':
+                    value = round(relative_humidity) if relative_humidity is not None else None
+                elif reference[j]['ref']=='DP':
+                    value = airTempCalc(dew_point)
+                elif reference[j]['ref']=='BarometricChange':
+                    value =  f"{abs(barometric_change_24h):04}" if barometric_change_24h is not None else None
+                # elif reference[j]['ref']=='24hRainfall':
+                #     value = reinfallLast24h(datetime_row, rainfall_data, rainfall_dur_data) if i in [0,6,12,18] else None
+                else:
+                    value = 'Func'    
+            elif column_type=='Text':
+                value = {'remarks': remarks, 'observer': observer}.get(reference[j]['ref'])
+            else:
+                value='??'
+            
+            if value in [str(settings.MISSING_VALUE), settings.MISSING_VALUE_CODE]:
+                value = None
+                
+            hotRow.append(value)
+        hotData.append(hotRow)
+    
+    response = {}
+    response['hotData'] = hotData
+    return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
+
+def get_monthly_form_config():
+    # List of variables, in order, for synoptic station input form
+    variable_symbols = {
+        'PRECIP': {'min': 'null', 'max': 'null'},
+        'TEMPMAX': {'min': -100, 'max': 500},
+        'TEMPMIN': {'min': -100, 'max': 500},
+        'TEMPAVG': {'min': -100, 'max': 500},
+        'WNDMIL': {'min': 'null', 'max': 'null'},
+        'WINDRUN': {'min': 'null', 'max': 'null'},
+        'SUNSHNHR': {'min': 0, 'max': 1440},
+        'EVAPINI': {'min': 'null', 'max': 'null'},
+        'EVAPRES': {'min': 'null', 'max': 'null'},
+        'EVAPPAN': {'min': 'null', 'max': 'null'},
+        'TEMP': {'min': 'null', 'max': 'null'},
+        'TEMPWB': {'min': 'null', 'max': 'null'},
+        'TSOIL1': {'min': 'null', 'max': 'null'},
+        'TSOIL4': {'min': 'null', 'max': 'null'},
+        'DYTHND': {'min': 'null', 'max': 'null'},
+        'DYFOG': {'min': 'null', 'max': 'null'},
+        'DYHAIL': {'min': 'null', 'max': 'null'},
+        'DYGAIL': {'min': 'null', 'max': 'null'},
+        'TOTRAD': {'min': 'null', 'max': 'null'},
+        'RH@TMAX': {'min': 'null', 'max': 'null'},
+        'RHMAX': {'min': 0, 'max': 100},
+        'RHMIN': {'min': 0, 'max': 100},
+    }
+    
+    # Get a variable list using the order of variable_ids list
+    variable_dict = {variable.symbol: variable for variable in Variable.objects.filter(symbol__in=variable_symbols.keys())}
+    variable_list = [variable_dict[variable_symbol] for variable_symbol in variable_symbols.keys()]
+
+    col_widths = [80]*len(variable_list)
+
+    columns = [
+        {
+            'data': str(variable.id),
+            'name': str(variable.symbol),
+            'type': 'numeric',
+            'numericFormat': {'pattern': '0.0'},
+            'validator': 'fieldValidator'
+        } for variable in variable_list
+    ]
+
+    row_headers = [str(i+1) for i in range(31)]+['SUM', 'AVG', 'MIN', 'MAX', 'STDDEV', 'COUNT']
+    number_of_columns = len(columns)
+    number_of_rows = len(row_headers)
+    
+    context = {
+        'col_widths': col_widths,
+        'col_headers': list(variable_symbols.keys()),
+        'row_headers': row_headers,
+        'columns': columns,
+        'variable_ids': [variable.id for variable in variable_list],
+        'number_of_columns': number_of_columns,
+        'number_of_rows': number_of_rows,
+        'limits': variable_symbols, 
+    }
+    return context
+
+class MonthlyFormView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/data/monthly_form.html"
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        context['station_list'] = Station.objects.filter(is_automatic=False, is_active=True).values('id', 'name', 'code')
+        context['handsontable_config'] = get_monthly_form_config()
+        
+        # Get parameters from request or set default values
+        context['station_id'] = request.GET.get('station_id', 'null')
+        context['date'] = request.GET.get('date', datetime.date.today().strftime('%Y-%m'))
+
+        return self.render_to_response(context)
+
+@api_view(['GET'])
+def get_agromet_summary_data(request):
+    try:
+        requestedData = {
+            'start_year': request.GET.get('start_year'), #
+            'end_year': request.GET.get('end_year'), #
+            'station_id': request.GET.get('station_id'), #
+            'variable_ids': request.GET.get('variable_ids'), #
+            'month': request.GET.get('month'),
+            'season': request.GET.get('season'),
+            'interval': request.GET.get('interval'),
+            'sampling_operation': request.GET.get('sampling_operation'),
+            'aggregation': request.GET.get('aggregation'),
+        }
+
+        requestedData['start_date'] = f"{requestedData['start_year']}-01-01"
+        requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-01-01"
+        
+        print(requestedData)
+    except ValueError as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    config = settings.SURFACE_CONNECTION_STRING
+
+
+
+
+    if requestedData['aggregation']=='Month':
+        query = f"""
+            WITH filtered_data AS (
+                SELECT
+                    rd.station_id,
+                    rd.variable_id,
+                    rd.measured,
+                    rd.datetime,
+                    st.name AS station,
+                    so.symbol AS sampling_operation,
+                    TO_CHAR(rd.datetime, 'Month') AS month,
+                    EXTRACT(YEAR FROM rd.datetime) AS year,
+                    CASE 
+                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 1 AND 10 THEN 1
+                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 11 AND 20 THEN 2
+                        ELSE 3
+                    END as agg
+                FROM raw_data rd
+                JOIN wx_station st ON st.id = rd.station_id
+                JOIN wx_variable vr ON vr.id = rd.variable_id
+                JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id
+                WHERE rd.datetime >= '{requestedData['start_date']}'
+                    AND rd.datetime < '{requestedData['end_date']}'
+                    AND rd.station_id = {requestedData['station_id']}
+                    AND rd.variable_id IN ({requestedData['variable_ids']})
+                    AND TO_CHAR(rd.datetime, 'Mon') = '{requestedData['month']}'
+                    AND rd.measured != -99.9
+            )
+            SELECT
+                station,
+                variable_id,
+                sampling_operation,
+                month,
+                year,
+                agg,
+                ROUND(
+                    CASE sampling_operation
+                        WHEN 'INST' THEN AVG(measured::numeric)
+                        WHEN 'AVG' THEN AVG(measured::numeric)
+                        WHEN 'MIN' THEN MIN(measured::numeric)
+                        WHEN 'MAX' THEN MAX(measured::numeric)
+                        WHEN 'STDV' THEN STDDEV(measured::numeric)
+                        WHEN 'ACCUM' THEN SUM(measured::numeric)
+                        WHEN 'RMS' THEN SQRT(AVG(POW(measured::numeric, 2)))
+                        ELSE AVG(measured::numeric)
+                    END, 2
+                ) AS value
+            FROM filtered_data
+            GROUP BY station, variable_id, sampling_operation, month, year, agg
+        """
+
+        print(query)
+        
+        with psycopg2.connect(config) as conn:
+            df = pd.read_sql(query, conn)
+
+            index = ['station', 'variable_id', 'sampling_operation', 'month', 'year']
+            pivot_df = df.pivot_table(
+                index=index,
+                columns='agg',
+                values='value',
+                aggfunc='first'
+            ).reset_index().fillna('')
+            
+            pivot_df.columns = [col if col in index else 'agg_'+str(col) for col in pivot_df.columns]
+
+            data = pivot_df.to_dict(orient='records')
+        pass
+    elif requestedData['aggregation']=='Season':
+        pass
+    else:
+        query = f"""
+            WITH filtered_data AS (
+                SELECT
+                    rd.station_id,
+                    rd.variable_id,
+                    rd.measured,
+                    rd.datetime,
+                    st.name AS station,
+                    so.symbol AS sampling_operation,
+                    TO_CHAR(rd.datetime, 'Month') AS month,
+                    EXTRACT(YEAR FROM rd.datetime) AS year,
+                    CASE 
+                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 1 AND 10 THEN 1
+                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 11 AND 20 THEN 2
+                        ELSE 3
+                    END as agg
+                FROM raw_data rd
+                JOIN wx_station st ON st.id = rd.station_id
+                JOIN wx_variable vr ON vr.id = rd.variable_id
+                JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id
+                WHERE DATE(rd.datetime) >= '{requestedData['start_year']}-01-01'
+                    AND DATE(rd.datetime) <= '{requestedData['end_year']}-12-31'
+                    AND rd.station_id = {requestedData['station_id']}
+                    AND rd.variable_id IN ({requestedData['variable_ids']})
+                    AND EXTRACT(MONTH FROM rd.datetime) = 1
+                    AND rd.measured != -99.9
+            )
+            SELECT
+                station,
+                variable_id,
+                sampling_operation,
+                month,
+                year,
+                agg,
+                ROUND(
+                    CASE sampling_operation
+                        WHEN 'INST' THEN AVG(measured::numeric)
+                        WHEN 'AVG' THEN AVG(measured::numeric)
+                        WHEN 'MIN' THEN MIN(measured::numeric)
+                        WHEN 'MAX' THEN MAX(measured::numeric)
+                        WHEN 'STDV' THEN STDDEV(measured::numeric)
+                        WHEN 'ACCUM' THEN SUM(measured::numeric)
+                        WHEN 'RMS' THEN SQRT(AVG(POW(measured::numeric, 2)))
+                        ELSE AVG(measured::numeric)
+                    END, 2
+                ) AS value
+            FROM filtered_data
+            GROUP BY station, variable_id, sampling_operation, month, year, agg
+        """
+        print(query)
+
+        with psycopg2.connect(config) as conn:
+            df = pd.read_sql(query, conn)
+
+            index = ['station', 'variable_id', 'sampling_operation', 'month', 'year']
+            pivot_df = df.pivot_table(
+                index=index,
+                columns='agg',
+                values='value',
+                aggfunc='first'
+            ).reset_index().fillna('')
+            
+            pivot_df.columns = [col if col in index else 'agg_'+str(col) for col in pivot_df.columns]
+
+            data = pivot_df.to_dict(orient='records')
+
+
+    # logging.info(query)
+    
+    #     with conn.cursor() as cursor:
+    #       logging.info(query)
+    #       cursor.execute(query)
+    #       data = cursor.fetchall()
+
+    # response = json.dumps(data)
+    response = data
+    return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
+
+
+# def get_oldest_year():
+#     config = settings.SURFACE_CONNECTION_STRING
+#     try:
+#         with psycopg2.connect(config) as conn:
+#             with conn.cursor() as cursor:
+#                 query = """
+#                     SELECT EXTRACT(YEAR FROM datetime) AS year
+#                     FROM raw_data
+#                     ORDER BY datetime ASC
+#                     LIMIT 1
+#                 """
+#                 cursor.execute(query)
+#                 result = cursor.fetchone()  # Fetch the first row
+#                 if result:
+#                     return result[0]  # Return the oldest year as an integer
+#                 else:
+#                     return 'null'  # Return None if no data is found
+#     except Exception as e:
+#         print(f"Error fetching oldest year: {e}")
+#         return 'null'
+
+class AgroMetSummariesView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/agromet/agromet_summaries.html"
+    agromet_variable_symbols = [
+        'AIRTEMP', # Air Temp
+        'PRECIP', # Rainfall
+        # Soil Moisture
+        'TSOIL1', # Soil Temp 1feet
+        'TSOIL4', # Soil Temp 4feet
+        'RH', # Relative HUumidity
+        'WNDSPD', # Wind Speed
+        'WNDDIR', # Wind Direction
+        'EVAPPAN', # Evaportaion
+        # Evapotranspiration
+        'SOLARRAD', # Solar Radiation
+    ]  
+
+    agromet_variable_ids = Variable.objects.filter(symbol__in=agromet_variable_symbols).values_list('id', flat=True)
+              
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+
+        context['station_id'] = request.GET.get('station_id', 'null')
+        context['variable_ids'] = request.GET.get('variable_ids', 'null')
+
+        station_variables = StationVariable.objects.filter(variable_id__in=self.agromet_variable_ids).values('id', 'station_id', 'variable_id')
+        station_ids = station_variables.values_list('station_id', flat=True).distinct()
+
+        # context['oldest_year'] = get_oldest_year()
+        context['oldest_year'] = 1900
+        context['stationvariable_list'] = list(station_variables)
+        context['variable_list'] = list(Variable.objects.filter(symbol__in=self.agromet_variable_symbols).values('id', 'name', 'symbol'))
+        context['station_list'] = list(Station.objects.filter(id__in=station_ids, is_active=True).values('id', 'name', 'code'))
+
+        return self.render_to_response(context)    

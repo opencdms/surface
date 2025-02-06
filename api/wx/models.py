@@ -232,6 +232,8 @@ class Variable(BaseModel):
         default='line',
         choices=[('line', 'Line'), ('point', 'Point'), ('bar', 'Bar'), ('column', 'Column')])
 
+    synoptic_code_form = models.CharField(max_length=32, null=True, blank=True)
+
     class Meta:
         ordering = ('name',)
 
@@ -448,7 +450,7 @@ class Station(BaseModel):
     )
 
     is_active = models.BooleanField(default=False)
-    
+   
     is_automatic = models.BooleanField(default=False)
 
     reporting_status = models.ForeignKey(
@@ -459,6 +461,17 @@ class Station(BaseModel):
     )
 
     international_station = models.BooleanField(default=False)
+    
+    is_synoptic = models.BooleanField(default=False)
+    synoptic_code = models.IntegerField(
+        null=True,
+        blank=True
+    )
+    synoptic_type = models.CharField(
+        max_length=4,
+        null=True,
+        blank=True
+    )
     
     organization = models.CharField(
         max_length=256,
@@ -1548,3 +1561,11 @@ class MaintenanceReportEquipment(BaseModel):
 
     class Meta:
         unique_together = (('maintenance_report', 'new_equipment'), ('maintenance_report', 'equipment_type', 'equipment_order'))
+
+class WMOCodeValue(BaseModel):
+    code_table = models.ForeignKey(CodeTable, on_delete=models.DO_NOTHING)
+    value = models.CharField(max_length=8)
+    description = models.CharField(max_length=512, blank=True, null=True)
+
+    class Meta:
+        unique_together = ('code_table', 'value')

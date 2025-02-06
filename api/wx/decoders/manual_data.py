@@ -20,44 +20,54 @@ db_logger = logging.getLogger('db')
 
 column_names = [
     'day',
-    'rainfall',
-    'temp_max',
-    'temp_min',
-    'wind_cup_counter',
-    'wind_24h_thrown_back',
-    'sunshine',
-    'evaporation_initial',
-    'evaporation_reset',
-    'evaporation_24h_thrown_back',
-    'dry_bulb',
-    'wet_bulb',
-    'soil_temp_1_foot',
-    'soil_temp_4_foot',
-    'weather_ts',
-    'weather_fog',
-    'total_rad'
+    'PRECIP',
+    'TEMPMAX',
+    'TEMPMIN',
+    'TEMPAVG',
+    'WNDMIL',
+    'WINDRUN',
+    'SUNSHNHR',
+    'EVAPINI',
+    'EVAPRES',
+    'EVAPPAN',
+    'TEMP',
+    'TEMPWB',
+    'TSOIL1',
+    'TSOIL4',
+    'DYTHND',
+    'DYFOG',
+    'DYHAIL',
+    'DYGAIL',
+    'TOTRAD',
+    'RH@TMAX',
+    'RHMAX',
+    'RHMIN',
 ]
 
-# verificar
 variable_dict = {
-    'rainfall': 0,
-    'temp_min': 14,
-    'temp_max': 16,
-    'wind_cup_counter': 102,
-    'wind_24h_thrown_back': 103,
-    'sunshine': 77,
-    # 'evaporation_initial',
-    # 'evaporation_reset',
-    'evaporation_24h_thrown_back': 40,
-    'dry_bulb': 10,
-    'wet_bulb': 18,
-    'soil_temp_1_foot': 21,
-    'soil_temp_4_foot': 23,
-    'weather_ts': 104,
-    'weather_fog': 106,
-    'total_rad': 70
+    'PRECIP': 0,
+    'TEMPMAX': 16,
+    'TEMPMIN': 14,
+    'TEMPAVG': 12,
+    'SUNSHNHR': 77,
+    'WNDMIL': 102,
+    'WINDRUN': 103,
+    'EVAPINI': 4053,
+    'EVAPRES': 4054,
+    'EVAPPAN': 40,
+    'TEMP': 10,
+    'TEMPWB': 18,
+    'TSOIL1': 21,
+    'TSOIL4': 23,
+    'DYTHND': 104,
+    'DYHAIL': 105,
+    'DYFOG': 106,
+    'DYGAIL': 4052,
+    'TOTRAD': 70,
+    'RH@TMAX': 34,
+    'RHMAX': 33,
+    'RHMIN': 32,
 }
-
 
 def parse_date(month_datetime, day, utc_offset):
     datetime_offset = pytz.FixedOffset(utc_offset)
@@ -123,7 +133,14 @@ def read_file(filename, highfrequency_data=False, station_object=None, utc_offse
 
         # iterate over the sheets
         for sheet_name in source.sheet_names:
-            sheet_raw_data = source.parse(sheet_name, skipfooter=2, na_filter=False, names=column_names, usecols='A:Q')
+            sheet_raw_data = source.parse(
+                sheet_name,
+                skipfooter=2,
+                na_filter=False,
+                names=column_names,
+                usecols='A:W'
+            )
+
             if not sheet_raw_data.empty:
                 header = sheet_raw_data[0:1]
                 sheet_data = sheet_raw_data[7:]
@@ -131,17 +148,19 @@ def read_file(filename, highfrequency_data=False, station_object=None, utc_offse
                 # get the sheet station info
                 station_name = sheet_name.strip()
                 station = find_station_by_name(station_name)
-
                 station_id = station.id
 
                 # get the sheet data info 
                 if date_info is None:
-                    sheet_month = header['sunshine'][0].replace('MONTH: ', '').strip()
-                    sheet_year = header['evaporation_24h_thrown_back'][0].replace('YEAR: ', '').strip()
+                    sheet_month = header['WINDRUN'][0].replace('MONTH: ', '').strip()
+                    sheet_year = header['EVAPRES'][0].replace('YEAR: ', '').strip()
                     date_info = {'month': sheet_month, 'year': sheet_year}
                 else:
                     sheet_month = date_info['month']
                     sheet_year = date_info['year']
+
+                print(sheet_month)
+                print(sheet_year)
 
                 # filter the sheet day
                 month_datetime = datetime.datetime.strptime(f'{sheet_month} {sheet_year}', '%B %Y')
