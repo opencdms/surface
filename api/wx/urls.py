@@ -135,6 +135,9 @@ urlpatterns = [
     # path('wx/maintenance_reports/equipment_inventory/delete/', views.delete_equipment),
     path('wx/maintenance_reports/equipment_inventory/update/', views.update_equipment),
     path('wx/maintenance_report/equipmenttype_data/update/', views.update_maintenance_report_equipment_type_data),
+    path('wx/agromet/summaries/', views.AgroMetSummariesView.as_view(), name='agromet-summaries'),
+    path('wx/agromet/summaries/get/', views.get_agromet_summary_data, name='get-agromet-summaries-data'),
+    path('wx/agromet/products/', views.AgroMetProductsView.as_view(), name='agromet-products'),    
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

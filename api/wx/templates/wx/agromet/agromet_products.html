@@ -1,0 +1,138 @@
+{% extends "base.html" %} {% block content %} {% load static %} {% load material_form %}
+
+<div class="srf-container">
+	<div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+		<span class="srf-display-1 text-uppercase">Agromet Summaries</span><br /><br />
+	</div>
+	<div class="srf-flex justify-content-between srf-padding" id="app">
+		<v-app>
+			<form enctype="multipart/form-data" method="POST" class="mb-10">
+				{% csrf_token %}
+				<v-row>
+					<v-col cols="3">
+						<v-autocomplete
+							label="Select Station"
+							:items="stationList"
+							item-value="id"
+							item-text="name"
+							v-model="requestData.stationId"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+					</v-col>
+                    <v-col cols="3">
+                        <v-autocomplete
+							label="Select Element"
+							:items="elements"
+							v-model="requestData.element"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+                    </v-col>
+					<v-col cols="2">
+						<v-autocomplete
+							label="Select Start Year"
+							:items="availableStartYears"
+							v-model="requestData.startYear"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+					</v-col>	
+					<v-col cols="2">
+						<v-autocomplete
+							label="Select End Year"
+							:items="availableEndYears"
+							v-model="requestData.endYear"
+							required
+							hint="*Required"
+							persistent-hint
+							:disabled="!requestData.startYear"
+						/>
+					</v-col>
+					<v-col cols="2" class="d-flex justify-center">
+						<v-btn
+							@click="getData"
+							:disabled="disableQuery"						
+							> Request Data <v-icon right>send</v-icon> </v-btn>
+					</v-col>	                    
+				</v-row>				
+			</form>
+		</v-app>
+	</div>
+</div>
+
+{% endblock %} {% block localjavascript %}
+ 
+<script>
+	Vue.use(window.vuelidate.default);
+	const { required, minLength } = window.validators;
+
+	new Vue({
+		el: "#app",
+		vuetify: new Vuetify(),
+		delimiters: ["[[", "]]"],
+		validations: {
+		},
+		data: {
+			now: moment().format('YYYY-MM-DD'),
+			loading_data: false,
+			requestData: {
+				stationId: {{station_id}},
+                element: null,
+				startYear: null,
+				endYear: null,
+			},
+			requestedData: {
+				stationId: null,
+                element: null,
+				startYear: null,
+				endYear: null,
+				responseData: null,
+			},
+            elements: ['Air Temperature', 'Rainfall', 'Wind', 'Sunshine/Radiation', 'Relative Humidity', 'Free Water Evaporation / Evapotranspiration', 'Soil Temperature', 'Soil Moisture'],
+			start_year_menu: false,
+			end_year_menu: false,
+			stationList: [
+				{% for station in station_list %}
+					{id: {{station.id}}, name: "{{station.name | safe }} - {{station.code}}"},
+				{% endfor %}
+			],
+		},
+		watch: {
+			'requestData.stationId' (newStationId, oldStationId) {
+				this.requestData.variableIds = []
+			},
+			'requestData.startYear' (newStartYear, oldStartYear) {
+				this.requestData.endYear = null
+			}
+		},	
+		computed: {
+			availableStartYears () {
+				const min_year = 1900
+				const max_year = moment().year()
+				return Array.from({ length: max_year - min_year + 1 }, (_, i) => max_year - i);
+			},
+			availableEndYears () {
+				if (!this.requestData.startYear) return [];
+				const min_year = this.requestData.startYear
+				const max_year = moment().year()
+				return Array.from({ length: max_year - min_year + 1 }, (_, i) => max_year - i);
+			},
+			disableQuery (){
+                return false
+			},
+		},
+		methods: { 
+			clearSelectedVariables (){
+				this.requestData.variableIds = []
+			},
+            getData(){
+                console.log('GET DATA METHOD')
+            }
+		}		
+	})
+</script>
+{% endblock %}

@@ -669,6 +669,18 @@
             </div>
             </li>
 
+            <li id="agromet-group" class="hide-menu">
+              <div class="collapsible-header"><i class="material-icons">agriculture</i>Agro<span>-</span>Met</div>
+              <div class="collapsible-body">
+                <div class="collapsible-subitem mb-2">
+                  <ul class="collection">
+                    <a id="agromet-summaries"  href="{% url 'agromet-summaries' %}" class="hide-menu collection-item left-space " onclick="mainOverlayLoader()">Agro-Met Summaries<i class="material-icons secondary-content">park</i></a>
+                    <a id="agromet-products"  href="{% url 'agromet-products' %}" class="hide-menu collection-item left-space " onclick="mainOverlayLoader()">Agro-Met Products<i class="material-icons secondary-content">thermostat</i></a>
+                  </ul>                  
+                </div>
+              </div>
+            </li>            
+
             {% if request.user.is_staff or request.user.is_superuser %}
             <li class="collapsible-item">
               <a href="{% url 'admin:index' %}" style="padding: 0px 16px;" onclick="mainOverlayLoader()"><i class="material-icons">people</i>ADMINISTRATIVE AREA</a>
@@ -800,7 +812,8 @@
           'maintenance-group',          
           'data-group',
           'products-group',
-          'quality-control-group'
+          'quality-control-group',
+          'agromet-group'
         ];
 
         const localMenus = [
@@ -827,7 +840,9 @@
           'step-threshold',
           'persist-threshold',
           'equipement-inventory',
-          'maintenance-reports'
+          'maintenance-reports',
+          'agromet-summaries',
+          'agromet-products'
         ]
 
         const menuList = "{{USER_PERMISSIONS|safe}}";

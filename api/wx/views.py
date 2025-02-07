@@ -6751,3 +6751,275 @@ def delete_pgia_hourly_capture_row(request):
         conn.commit()
 
     return Response(result, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_agromet_summary_data(request):
+    try:
+        requestedData = {
+            'start_year': request.GET.get('start_year'), #
+            'end_year': request.GET.get('end_year'), #
+            'station_id': request.GET.get('station_id'), #
+            'variable_ids': request.GET.get('variable_ids'), #
+            'month': request.GET.get('month'),
+            'season': request.GET.get('season'),
+            'interval': request.GET.get('interval'),
+            'sampling_operation': request.GET.get('sampling_operation'),
+            'aggregation': request.GET.get('aggregation'),
+        }
+
+        requestedData['start_date'] = f"{requestedData['start_year']}-01-01"
+        requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-01-01"
+        
+        print(requestedData)
+    except ValueError as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    config = settings.SURFACE_CONNECTION_STRING
+
+
+
+
+    if requestedData['aggregation']=='Month':
+        query = f"""
+            WITH filtered_data AS (
+                SELECT
+                    rd.station_id,
+                    rd.variable_id,
+                    rd.measured,
+                    rd.datetime,
+                    st.name AS station,
+                    so.symbol AS sampling_operation,
+                    TO_CHAR(rd.datetime, 'Month') AS month,
+                    EXTRACT(YEAR FROM rd.datetime) AS year,
+                    CASE 
+                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 1 AND 10 THEN 1
+                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 11 AND 20 THEN 2
+                        ELSE 3
+                    END as agg
+                FROM raw_data rd
+                JOIN wx_station st ON st.id = rd.station_id
+                JOIN wx_variable vr ON vr.id = rd.variable_id
+                JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id
+                WHERE rd.datetime >= '{requestedData['start_date']}'
+                    AND rd.datetime < '{requestedData['end_date']}'
+                    AND rd.station_id = {requestedData['station_id']}
+                    AND rd.variable_id IN ({requestedData['variable_ids']})
+                    AND TO_CHAR(rd.datetime, 'Mon') = '{requestedData['month']}'
+                    AND rd.measured != -99.9
+            )
+            SELECT
+                station,
+                variable_id,
+                sampling_operation,
+                month,
+                year,
+                agg,
+                ROUND(
+                    CASE sampling_operation
+                        WHEN 'INST' THEN AVG(measured::numeric)
+                        WHEN 'AVG' THEN AVG(measured::numeric)
+                        WHEN 'MIN' THEN MIN(measured::numeric)
+                        WHEN 'MAX' THEN MAX(measured::numeric)
+                        WHEN 'STDV' THEN STDDEV(measured::numeric)
+                        WHEN 'ACCUM' THEN SUM(measured::numeric)
+                        WHEN 'RMS' THEN SQRT(AVG(POW(measured::numeric, 2)))
+                        ELSE AVG(measured::numeric)
+                    END, 2
+                ) AS value
+            FROM filtered_data
+            GROUP BY station, variable_id, sampling_operation, month, year, agg
+        """
+
+        print(query)
+        
+        with psycopg2.connect(config) as conn:
+            df = pd.read_sql(query, conn)
+
+            index = ['station', 'variable_id', 'sampling_operation', 'month', 'year']
+            pivot_df = df.pivot_table(
+                index=index,
+                columns='agg',
+                values='value',
+                aggfunc='first'
+            ).reset_index().fillna('')
+            
+            pivot_df.columns = [col if col in index else 'agg_'+str(col) for col in pivot_df.columns]
+
+            data = pivot_df.to_dict(orient='records')
+        pass
+    elif requestedData['aggregation']=='Season':
+        pass
+    else:
+        query = f"""
+            WITH filtered_data AS (
+                SELECT
+                    rd.station_id,
+                    rd.variable_id,
+                    rd.measured,
+                    rd.datetime,
+                    st.name AS station,
+                    so.symbol AS sampling_operation,
+                    TO_CHAR(rd.datetime, 'Month') AS month,
+                    EXTRACT(YEAR FROM rd.datetime) AS year,
+                    CASE 
+                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 1 AND 10 THEN 1
+                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 11 AND 20 THEN 2
+                        ELSE 3
+                    END as agg
+                FROM raw_data rd
+                JOIN wx_station st ON st.id = rd.station_id
+                JOIN wx_variable vr ON vr.id = rd.variable_id
+                JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id
+                WHERE DATE(rd.datetime) >= '{requestedData['start_year']}-01-01'
+                    AND DATE(rd.datetime) <= '{requestedData['end_year']}-12-31'
+                    AND rd.station_id = {requestedData['station_id']}
+                    AND rd.variable_id IN ({requestedData['variable_ids']})
+                    AND EXTRACT(MONTH FROM rd.datetime) = 1
+                    AND rd.measured != -99.9
+            )
+            SELECT
+                station,
+                variable_id,
+                sampling_operation,
+                month,
+                year,
+                agg,
+                ROUND(
+                    CASE sampling_operation
+                        WHEN 'INST' THEN AVG(measured::numeric)
+                        WHEN 'AVG' THEN AVG(measured::numeric)
+                        WHEN 'MIN' THEN MIN(measured::numeric)
+                        WHEN 'MAX' THEN MAX(measured::numeric)
+                        WHEN 'STDV' THEN STDDEV(measured::numeric)
+                        WHEN 'ACCUM' THEN SUM(measured::numeric)
+                        WHEN 'RMS' THEN SQRT(AVG(POW(measured::numeric, 2)))
+                        ELSE AVG(measured::numeric)
+                    END, 2
+                ) AS value
+            FROM filtered_data
+            GROUP BY station, variable_id, sampling_operation, month, year, agg
+        """
+        print(query)
+
+        with psycopg2.connect(config) as conn:
+            df = pd.read_sql(query, conn)
+
+            index = ['station', 'variable_id', 'sampling_operation', 'month', 'year']
+            pivot_df = df.pivot_table(
+                index=index,
+                columns='agg',
+                values='value',
+                aggfunc='first'
+            ).reset_index().fillna('')
+            
+            pivot_df.columns = [col if col in index else 'agg_'+str(col) for col in pivot_df.columns]
+
+            data = pivot_df.to_dict(orient='records')
+
+
+    # logging.info(query)
+    
+    #     with conn.cursor() as cursor:
+    #       logging.info(query)
+    #       cursor.execute(query)
+    #       data = cursor.fetchall()
+
+    # response = json.dumps(data)
+    response = data
+    return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
+
+
+# def get_oldest_year():
+#     config = settings.SURFACE_CONNECTION_STRING
+#     try:
+#         with psycopg2.connect(config) as conn:
+#             with conn.cursor() as cursor:
+#                 query = """
+#                     SELECT EXTRACT(YEAR FROM datetime) AS year
+#                     FROM raw_data
+#                     ORDER BY datetime ASC
+#                     LIMIT 1
+#                 """
+#                 cursor.execute(query)
+#                 result = cursor.fetchone()  # Fetch the first row
+#                 if result:
+#                     return result[0]  # Return the oldest year as an integer
+#                 else:
+#                     return 'null'  # Return None if no data is found
+#     except Exception as e:
+#         print(f"Error fetching oldest year: {e}")
+#         return 'null'
+
+class AgroMetSummariesView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/agromet/agromet_summaries.html"
+    agromet_variable_symbols = [
+        'AIRTEMP', # Air Temp
+        'PRECIP', # Rainfall
+        # Soil Moisture
+        'TSOIL1', # Soil Temp 1feet
+        'TSOIL4', # Soil Temp 4feet
+        'RH', # Relative HUumidity
+        'WNDSPD', # Wind Speed
+        'WNDDIR', # Wind Direction
+        'EVAPPAN', # Evaportaion
+        # Evapotranspiration
+        'SOLARRAD', # Solar Radiation
+    ]  
+
+    agromet_variable_ids = Variable.objects.filter(symbol__in=agromet_variable_symbols).values_list('id', flat=True)
+              
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+
+        context['station_id'] = request.GET.get('station_id', 'null')
+        context['variable_ids'] = request.GET.get('variable_ids', 'null')
+
+        station_variables = StationVariable.objects.filter(variable_id__in=self.agromet_variable_ids).values('id', 'station_id', 'variable_id')
+        station_ids = station_variables.values_list('station_id', flat=True).distinct()
+
+        # context['oldest_year'] = get_oldest_year()
+        context['oldest_year'] = 1900
+        context['stationvariable_list'] = list(station_variables)
+        context['variable_list'] = list(Variable.objects.filter(symbol__in=self.agromet_variable_symbols).values('id', 'name', 'symbol'))
+        context['station_list'] = list(Station.objects.filter(id__in=station_ids, is_active=True).values('id', 'name', 'code'))
+
+        return self.render_to_response(context)
+
+class AgroMetProductsView(LoginRequiredMixin, TemplateView):
+    template_name = "wx/agromet/agromet_products.html"
+    agromet_variable_symbols = [
+        'AIRTEMP', # Air Temp
+        'PRECIP', # Rainfall
+        # Soil Moisture
+        'TSOIL1', # Soil Temp 1feet
+        'TSOIL4', # Soil Temp 4feet
+        'RH', # Relative HUumidity
+        'WNDSPD', # Wind Speed
+        'WNDDIR', # Wind Direction
+        'EVAPPAN', # Evaportaion
+        # Evapotranspiration
+        'SOLARRAD', # Solar Radiation
+    ]  
+
+    agromet_variable_ids = Variable.objects.filter(symbol__in=agromet_variable_symbols).values_list('id', flat=True)
+              
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+
+        context['station_id'] = request.GET.get('station_id', 'null')
+        context['variable_ids'] = request.GET.get('variable_ids', 'null')
+
+        station_variables = StationVariable.objects.filter(variable_id__in=self.agromet_variable_ids).values('id', 'station_id', 'variable_id')
+        station_ids = station_variables.values_list('station_id', flat=True).distinct()
+
+        # context['oldest_year'] = get_oldest_year()
+        context['oldest_year'] = 1900
+        context['stationvariable_list'] = list(station_variables)
+        context['variable_list'] = list(Variable.objects.filter(symbol__in=self.agromet_variable_symbols).values('id', 'name', 'symbol'))
+        context['station_list'] = list(Station.objects.filter(id__in=station_ids, is_active=True).values('id', 'name', 'code'))
+
+        return self.render_to_response(context)
