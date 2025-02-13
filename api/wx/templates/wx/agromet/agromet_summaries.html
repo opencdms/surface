@@ -6,13 +6,29 @@
 	</div>
 	<div class="srf-flex justify-content-between srf-padding" id="app">
 		<v-app>
+			<v-overlay :value="loading_data">
+				<v-card flat light style="background-color: transparent;">
+					<v-card-title class="text-center"> Loading Data... </v-card-title>
+					<v-card-actions class="text-center justify-center">
+					  <v-progress-circular indeterminate color="primary"/>
+					</v-card-actions>
+				</v-card>
+			</v-overlay>
+
 			<form enctype="multipart/form-data" method="POST" class="mb-10">
 				{% csrf_token %}
 				<v-row>
+					<v-col cols="2" class="d-flex justify-center">
+						<v-switch 
+							v-model="filters.is_automatic"
+							:label='filters.is_automatic?"Automatic Stations":"Manual Stations"'
+							inset
+						/>
+					</v-col>
 					<v-col cols="4">
 						<v-autocomplete
 							label="Select Station"
-							:items="stationList"
+							:items="filteredStationList"
 							item-value="id"
 							item-text="name"
 							v-model="requestData.stationId"
@@ -21,7 +37,7 @@
 							persistent-hint
 						/>
 					</v-col>
-					<v-col cols="8">
+					<v-col cols="6">
 						<v-autocomplete
 							label="Select Variables"
 							:items="filteredVariableList"
@@ -40,36 +56,6 @@
 					</v-col>
 				</v-row>
 				<v-row>
-					<v-col cols="2">
-						<v-radio-group v-model="requestData.aggregation" row label="Select an Option">
-							<v-radio
-								v-for="(aggregation, index) in aggregations"
-								:key="index"
-								:label="aggregation"
-								:value="aggregation"
-							></v-radio>
-						</v-radio-group>
-					</v-col>
-					<v-col cols="2" v-if="requestData.aggregation==='Month'">
-						<v-autocomplete
-							label="Select Month"
-							:items="months"
-							v-model="requestData.month"
-							required
-							hint="*Required"
-							persistent-hint
-						/>
-					</v-col>
-					<v-col cols="2" v-if="requestData.aggregation==='Season'">
-						<v-autocomplete
-							label="Select Season"
-							:items="seasons"
-							v-model="requestData.season"
-							required
-							hint="*Required"
-							persistent-hint
-						/>		
-					</v-col>
 					<v-col cols="2">
 						<v-autocomplete
 							label="Select Start Year"
@@ -91,21 +77,32 @@
 							:disabled="!requestData.startYear"
 						/>
 					</v-col>
-				</v-row>
-				<v-row>
-					<v-col cols="2">
+					<v-col cols="3" class="d-flex justify-center">
+						<v-switch
+							v-model="filters.is_season"
+							:label='filters.is_season?"Seasonal Summary":"Monthly Summary"'
+							inset
+					  	/> 						  
+					</v-col>
+					<v-col cols="3" v-if="requestData.summaryType==='Month'">
 						<v-autocomplete
-							label="Select Sampling Operation"
-							:items="sampling_operation"
-							v-model="requestData.samplingOperation"
+							label="Select Months"
+							:items="months"
+							item-value='id'
+							item-text="name"
+							v-model="requestData.months"
 							required
 							hint="*Required"
 							persistent-hint
+							multiple
+							clearable
+							chips
+							deletable-chips
 						/>
 					</v-col>					
-					<v-col cols="2">
+					<v-col cols="2" v-if="requestData.summaryType==='Month'">
 						<v-autocomplete
-							label="Select Aggregation Interval"
+							label="Select Interval"
 							:items="intervals"
 							v-model="requestData.interval"
 							required
@@ -113,7 +110,9 @@
 							persistent-hint
 						/>
 					</v-col>
-					<v-col cols="2" class="d-flex justify-center">
+				</v-row>
+				<v-row>				
+					<v-col cols="2" class="d-flex justify-left">
 						<v-btn
 							@click="getData"
 							:disabled="disableQuery"							
@@ -122,9 +121,11 @@
 				</v-row>					
 			</form>
 
-			<div>
+
+			
+			<div>				
 				<template>
-					<v-card v-if="requestedData.responseData">
+					<v-card v-if="requestedData.responseData && !loading_data">
 						<v-tabs v-model="tab" bg-color="primary" class="justify-center">
 							<v-tab v-for="variableId in requestedData.variableIds" :key="variableId" :value="variableId">
 								[[ variableList.find(variable => variable.id==variableId)?.name ]]
@@ -140,9 +141,14 @@
 								></v-data-table>
 							</template>
 						</v-card-text>
-					</v-card>
-				</template>
-			</div
+						<v-card-actions>
+							<v-btn
+								@click="downloadCSV"
+								> Download CSV <v-icon right>download</v-icon> </v-btn>
+						</v-card-actions
+					</v-card>					
+				</template>	
+			</div>
 		</v-app>
 	</div>
 </div>
@@ -166,10 +172,8 @@
 			requestData: {
 				stationId: {{station_id}},
 				variableIds: {{variable_ids | safe}},
-				aggregation: 'Month',
-				month: null,
-				season: null,
-				samplingOperation: 'VAR SAMPLING OP.',
+				summaryType: 'Season',
+				months: [],
 				interval: null,
 				startYear: null,
 				endYear: null,
@@ -177,40 +181,56 @@
 			requestedData: {
 				stationId: null,
 				variableIds: [],
-				aggregation: 'Month',
-				month: null,
-				season: null,
-				samplingOperation: null,
+				summaryType: 'Season',
+				months: [],
 				interval: null,
 				startYear: null,
 				endYear: null,
 				responseData: null,
 			},
+			filters: {
+				is_season: true,
+				is_automatic: true
+			},
 			start_year_menu: false,
 			end_year_menu: false,
-			aggregations: ['Month', 'Season'],
-			sampling_operation: ['VAR SAMPLING OP.', 'MIN', 'MAX', 'AVG', 'STDDEV', 'SUM'],
-			months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-			seasons: ['DJF', 'MAM','JJA', 'SON','Dry', 'Wet', 'Annual'],
-			intervals: [
-				'week',
-				'ten-days',
-				'trimester',
-				'semester'					
+			summaryTypes: ['Month', 'Season'],
+			months: [
+				{id: 1, name: 'Jan'},
+				{id: 2, name: 'Feb'},
+				{id: 3, name: 'Mar'},
+				{id: 4, name: 'Apr'},
+				{id: 5, name: 'May'},
+				{id: 6, name: 'Jun'},
+				{id: 7, name: 'Jul'},
+				{id: 8, name: 'Aug'},
+				{id: 9, name: 'Sep'},
+				{id: 10, name: 'Oct'},
+				{id: 11, name: 'Nov'},
+				{id: 12, name: 'Dec'},
 			],
+			intervals: ['7 days', '10 days'],
 			variableList: {{ variable_list | safe }},
 			stationList: [
 				{% for station in station_list %}
-					{id: {{station.id}}, name: "{{station.name | safe }} - {{station.code}}"},
+					{id: {{station.id}}, name: "{{station.name | safe }} - {{station.code}}", is_automatic:  {{station.is_automatic|yesno:"true,false"}}},
 				{% endfor %}
-			],
+			]
 		},
 		watch: {
+			'requestData.summaryType' (newSummaryType, oldSummaryType){
+				this.requestData.months = []
+			},
+			'filters.is_automatic' (newValue, oldValue) {
+				this.requestData.stationId = null
+			},
+			'filters.is_season' (newValue, oldValue) {
+				this.requestData.summaryType = newValue?'Season':'Month'
+			},
 			'requestData.stationId' (newStationId, oldStationId) {
 				this.requestData.variableIds = []
 			},
 			'requestData.startYear' (newStartYear, oldStartYear) {
-				console.log(newStartYear, oldStartYear)
 				this.requestData.endYear = null
 			}
 		},	
@@ -227,13 +247,15 @@
 				return Array.from({ length: max_year - min_year + 1 }, (_, i) => max_year - i);
 			},
 			disableQuery (){
-				const { variableIds, aggregation, month, season, ...rest } = this.requestData;
+				const { variableIds, summaryType, months, season, interval, ...rest } =  this.requestData
+				if (['stationId', 'startYear', 'endYear'].some(key => rest[key] === null)) return true
 				if ((variableIds === null) || (variableIds.length === 0)) return true;
-				if ((aggregation === 'Month' && month === null)) return true;
-				if ((aggregation === 'Season' && season === null)) return true;
+				if (summaryType === 'Month' && ((months === null) || (months.length === 0) || (interval === null))) return true;
 
-				const keys = ['stationId', 'samplingOperation', 'interval', 'startYear', 'endYear'];
-				return keys.some(key => rest[key] === null);
+				return false
+			},
+			filteredStationList() {
+				return this.stationList.filter(station=>station.is_automatic===this.filters.is_automatic)
 			},
 			filteredVariableList() {
 				if (!this.requestData.stationId) return [];
@@ -252,28 +274,55 @@
 				let filteredData = []
 				if (!(this.tab===null)){
 					selectedVariableId = this.requestedData.variableIds[this.tab];
-					console.log(selectedVariableId)
 					filteredData = this.requestedData.responseData.filter(entry => entry.variable_id===selectedVariableId);
-					console.log(filteredData)
 				}
-
-				const aggregationMap = {
-					Month: this.requestedData.month,
-					Season: this.requestedData.season,
-				};
-				  
-				const aggregation = aggregationMap[this.requestedData.aggregation] || null;
 				
-				return {
-					headers: [
-						{ text: 'Station', align: 'start', value: 'station' },
-						{ text: 'Month', align: 'end', value: 'month' },
-						{ text: 'Year', align: 'end', value: 'year' },
-						{ text: `${aggregation} (days 01-10) #1`, align: 'end', value: 'agg_1' },
-						{ text: `${aggregation} (days 11-20) #2`, align: 'end', value: 'agg_2' },
-						{ text: `${aggregation} (days 21-) #3`, align: 'end', value: 'agg_3' },
-					],
-					data: filteredData
+
+				if (this.requestedData.summaryType==='Season'){
+					const baseKeys = ['station', 'variable_id', 'year']
+					const keys = filteredData.length? Object.keys(filteredData[0]).filter(item => !baseKeys.includes(item)): [];
+					
+					const baseHeaders = [
+						{ text: 'Year', align: 'end', value: 'year' }
+					];
+					
+					const calcHeaders = keys.map(item => ({
+						text: item,
+						align: 'end',
+						value: item
+					}));
+					
+					return {
+						headers: [...baseHeaders, ...calcHeaders],
+						data: filteredData
+					};
+				}
+				else if (this.requestedData.summaryType==='Month'){
+					if (this.requestedData.interval==='7 days'){
+						return {
+							headers: [
+								{ text: 'Year', align: 'end', value: 'year' },
+								{ text: 'Month', align: 'end', value: 'month' },
+								{ text: 'days 01-07', align: 'end', value: 'agg_1' },
+								{ text: 'days 08-14', align: 'end', value: 'agg_2' },
+								{ text: 'days 15-21', align: 'end', value: 'agg_3' },
+								{ text: 'days 22-', align: 'end', value: 'agg_4' },
+							],
+							data: filteredData
+						}
+					}
+					else if (this.requestedData.interval==='10 days'){
+						return {
+							headers: [
+								{ text: 'Year', align: 'end', value: 'year' },
+								{ text: 'Month', align: 'end', value: 'month' },
+								{ text: 'days 01-10', align: 'end', value: 'agg_1' },
+								{ text: 'days 11-20', align: 'end', value: 'agg_2' },
+								{ text: 'days 21-', align: 'end', value: 'agg_3' },
+							],
+							data: filteredData
+						}
+					}
 				}
 			},
 		},
@@ -282,43 +331,100 @@
 				this.requestData.variableIds = []
 			},
 			getData(){
+				this.loading_data = true
+
 				this.requestedData.stationId = this.requestData.stationId
 				this.requestedData.variableIds = this.requestData.variableIds
-				this.requestedData.month = this.requestData.month
-				this.requestedData.season = this.requestData.season
-				this.requestedData.samplingOperation = this.requestData.samplingOperation
+				this.requestedData.months = this.requestData.months
 				this.requestedData.interval = this.requestData.interval
 				this.requestedData.startYear = this.requestData.startYear
 				this.requestedData.endYear = this.requestData.endYear
-				this.requestedData.aggregation = this.requestData.aggregation
-				this.requestedData.responseData = []
-				console.log(this.requestData)
+				this.requestedData.summaryType = this.requestData.summaryType
+				this.requestedData.responseData = null
 
 				const url = `/wx/agromet/summaries/get/`
+				console.log(this.requestedData.months.join(','),)
+
 				const params = {
 					station_id: this.requestedData.stationId,
 					variable_ids: this.requestedData.variableIds.join(','),
-					month: this.requestedData.month,
-					season: this.requestedData.season,
-					sampling_operation: this.requestedData.samplingOperation,
+					months: this.requestedData.months.join(','),
 					interval: this.requestedData.interval,
 					start_year: this.requestedData.startYear,
 					end_year: this.requestedData.endYear,
-					aggregation: this.requestedData.aggregation
+					summary_type: this.requestedData.summaryType
 				};
 
-				console.log(params)
-						
         		axios.get(url, { params })
 				.then(response => {
-					console.log(response.data)
 					this.requestedData.responseData = response.data;
 				})
 				.catch(error => {
 					console.error('Error fetching data:', error);
+				})
+				.finally(() => {
+					this.loading_data = false
 				});
+
+			},
+			convertToCSV(data) {
+				const headers = data.headers.map(item => item.text).join(',') + '\n';
+
+				const indicesToRemove = [0,1] // Exclude the StationID and VariableID columns
+				const rows = data.data.map(row => 
+				  Object.values(row)
+					.filter((value, index) => !indicesToRemove.includes(index)) 
+					.map(value => `"${value}"`)
+					.join(',')
+				).join('\n');
+
+				return headers + rows;
+			},
+			downloadCSV() {
+				const csvContent = this.convertToCSV(this.dataTable);
+				const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+				const link = document.createElement('a');
+
+				const { stationId, variableIds, summaryType, startYear, endYear, interval, ...rest } = this.requestedData;
+
+				const selectedVariableId = variableIds[this.tab];
+				const station = this.stationList.find(station => station.id === stationId)
+				const variable = this.variableList.find(variable => variable.id === selectedVariableId)
+						
+				const filename = summaryType === 'Month' 
+  					? `agromet-summary-(${summaryType})-${station?.name}-${variable?.symbol}-${startYear}-${endYear}-[${interval}].csv`
+  					: `agromet-summary-(${summaryType})-${station?.name}-${variable?.symbol}-${startYear}-${endYear}.csv`;
+			
+				link.href = URL.createObjectURL(blob);
+				link.download = filename;
+				link.style.visibility = 'hidden';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
 			}
-		}		
+		},
+		mounted() {
+		}
 	})
+	
+	$(document).ready(function(){
+		function getCookie(c_name) {
+			if(document.cookie.length > 0) {
+				c_start = document.cookie.indexOf(c_name + "=");
+				if(c_start != -1) {
+					c_start = c_start + c_name.length + 1;
+					c_end = document.cookie.indexOf(";", c_start);
+					if(c_end == -1) c_end = document.cookie.length;
+					return unescape(document.cookie.substring(c_start,c_end));
+				}
+			}
+			return "";
+		}
+	
+		$(function () {
+		  axios.defaults.headers.common["X-CSRFToken"] = getCookie("csrftoken");
+		  axios.defaults.headers.common["Content-Type"] = 'application/json';
+		});
+	});
 </script>
 {% endblock %}

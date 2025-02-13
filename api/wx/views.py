@@ -6760,17 +6760,10 @@ def get_agromet_summary_data(request):
             'end_year': request.GET.get('end_year'), #
             'station_id': request.GET.get('station_id'), #
             'variable_ids': request.GET.get('variable_ids'), #
-            'month': request.GET.get('month'),
-            'season': request.GET.get('season'),
+            'summary_type': request.GET.get('summary_type'),
+            'months': request.GET.get('months'),
             'interval': request.GET.get('interval'),
-            'sampling_operation': request.GET.get('sampling_operation'),
-            'aggregation': request.GET.get('aggregation'),
         }
-
-        requestedData['start_date'] = f"{requestedData['start_year']}-01-01"
-        requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-01-01"
-        
-        print(requestedData)
     except ValueError as e:
         logger.error(repr(e))
         return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
@@ -6780,179 +6773,455 @@ def get_agromet_summary_data(request):
 
     config = settings.SURFACE_CONNECTION_STRING
 
+    station = Station.objects.get(pk=requestedData['station_id'])
 
-
-
-    if requestedData['aggregation']=='Month':
-        query = f"""
-            WITH filtered_data AS (
-                SELECT
-                    rd.station_id,
-                    rd.variable_id,
-                    rd.measured,
-                    rd.datetime,
-                    st.name AS station,
-                    so.symbol AS sampling_operation,
-                    TO_CHAR(rd.datetime, 'Month') AS month,
-                    EXTRACT(YEAR FROM rd.datetime) AS year,
-                    CASE 
-                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 1 AND 10 THEN 1
-                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 11 AND 20 THEN 2
-                        ELSE 3
-                    END as agg
-                FROM raw_data rd
-                JOIN wx_station st ON st.id = rd.station_id
-                JOIN wx_variable vr ON vr.id = rd.variable_id
-                JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id
-                WHERE rd.datetime >= '{requestedData['start_date']}'
-                    AND rd.datetime < '{requestedData['end_date']}'
-                    AND rd.station_id = {requestedData['station_id']}
-                    AND rd.variable_id IN ({requestedData['variable_ids']})
-                    AND TO_CHAR(rd.datetime, 'Mon') = '{requestedData['month']}'
-                    AND rd.measured != -99.9
-            )
-            SELECT
-                station,
-                variable_id,
-                sampling_operation,
-                month,
-                year,
-                agg,
-                ROUND(
-                    CASE sampling_operation
-                        WHEN 'INST' THEN AVG(measured::numeric)
-                        WHEN 'AVG' THEN AVG(measured::numeric)
-                        WHEN 'MIN' THEN MIN(measured::numeric)
-                        WHEN 'MAX' THEN MAX(measured::numeric)
-                        WHEN 'STDV' THEN STDDEV(measured::numeric)
-                        WHEN 'ACCUM' THEN SUM(measured::numeric)
-                        WHEN 'RMS' THEN SQRT(AVG(POW(measured::numeric, 2)))
-                        ELSE AVG(measured::numeric)
-                    END, 2
-                ) AS value
-            FROM filtered_data
-            GROUP BY station, variable_id, sampling_operation, month, year, agg
-        """
-
-        print(query)
-        
-        with psycopg2.connect(config) as conn:
-            df = pd.read_sql(query, conn)
-
-            index = ['station', 'variable_id', 'sampling_operation', 'month', 'year']
-            pivot_df = df.pivot_table(
-                index=index,
-                columns='agg',
-                values='value',
-                aggfunc='first'
-            ).reset_index().fillna('')
-            
-            pivot_df.columns = [col if col in index else 'agg_'+str(col) for col in pivot_df.columns]
-
-            data = pivot_df.to_dict(orient='records')
-        pass
-    elif requestedData['aggregation']=='Season':
-        pass
-    else:
-        query = f"""
-            WITH filtered_data AS (
-                SELECT
-                    rd.station_id,
-                    rd.variable_id,
-                    rd.measured,
-                    rd.datetime,
-                    st.name AS station,
-                    so.symbol AS sampling_operation,
-                    TO_CHAR(rd.datetime, 'Month') AS month,
-                    EXTRACT(YEAR FROM rd.datetime) AS year,
-                    CASE 
-                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 1 AND 10 THEN 1
-                        WHEN EXTRACT(DAY FROM rd.datetime) BETWEEN 11 AND 20 THEN 2
-                        ELSE 3
-                    END as agg
-                FROM raw_data rd
-                JOIN wx_station st ON st.id = rd.station_id
-                JOIN wx_variable vr ON vr.id = rd.variable_id
-                JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id
-                WHERE DATE(rd.datetime) >= '{requestedData['start_year']}-01-01'
-                    AND DATE(rd.datetime) <= '{requestedData['end_year']}-12-31'
-                    AND rd.station_id = {requestedData['station_id']}
-                    AND rd.variable_id IN ({requestedData['variable_ids']})
-                    AND EXTRACT(MONTH FROM rd.datetime) = 1
-                    AND rd.measured != -99.9
-            )
-            SELECT
-                station,
-                variable_id,
-                sampling_operation,
-                month,
-                year,
-                agg,
-                ROUND(
-                    CASE sampling_operation
-                        WHEN 'INST' THEN AVG(measured::numeric)
-                        WHEN 'AVG' THEN AVG(measured::numeric)
-                        WHEN 'MIN' THEN MIN(measured::numeric)
-                        WHEN 'MAX' THEN MAX(measured::numeric)
-                        WHEN 'STDV' THEN STDDEV(measured::numeric)
-                        WHEN 'ACCUM' THEN SUM(measured::numeric)
-                        WHEN 'RMS' THEN SQRT(AVG(POW(measured::numeric, 2)))
-                        ELSE AVG(measured::numeric)
-                    END, 2
-                ) AS value
-            FROM filtered_data
-            GROUP BY station, variable_id, sampling_operation, month, year, agg
-        """
-        print(query)
-
-        with psycopg2.connect(config) as conn:
-            df = pd.read_sql(query, conn)
-
-            index = ['station', 'variable_id', 'sampling_operation', 'month', 'year']
-            pivot_df = df.pivot_table(
-                index=index,
-                columns='agg',
-                values='value',
-                aggfunc='first'
-            ).reset_index().fillna('')
-            
-            pivot_df.columns = [col if col in index else 'agg_'+str(col) for col in pivot_df.columns]
-
-            data = pivot_df.to_dict(orient='records')
-
-
-    # logging.info(query)
+    data = []
+    pgia_code = '8858307' # Phillip Goldson Int'l Synop
     
-    #     with conn.cursor() as cursor:
-    #       logging.info(query)
-    #       cursor.execute(query)
-    #       data = cursor.fetchall()
+    timezone = pytz.timezone(settings.TIMEZONE_NAME)
 
-    # response = json.dumps(data)
+    if requestedData['summary_type']=='Season':
+        requestedData['start_date'] = f"{int(requestedData['start_year'])-1}-12-01"
+        requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-02-01"        
+
+        if((station.is_automatic) or (station.code==pgia_code)):
+            query = f"""
+               WITH agg_definitions AS (
+                    SELECT *
+                    FROM (VALUES
+                        ('JFM', ARRAY[1, 2, 3]),
+                        ('FMA', ARRAY[2, 3, 4]),
+                        ('MAM', ARRAY[3, 4, 5]),
+                        ('AMJ', ARRAY[4, 5, 6]),
+                        ('MJJ', ARRAY[5, 6, 7]),
+                        ('JJA', ARRAY[6, 7, 8]),
+                        ('JAS', ARRAY[7, 8, 9]),
+                        ('ASO', ARRAY[8, 9, 10]),
+                        ('SON', ARRAY[9, 10, 11]),
+                        ('OND', ARRAY[10, 11, 12]),
+                        ('NDJ', ARRAY[11, 12, 13]),
+                        ('DRY', ARRAY[0, 1, 2, 3, 4, 5]),
+                        ('WET', ARRAY[6, 7, 8, 9, 10, 11]),
+                        ('ANNUAL', ARRAY[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+                        ('DJFM', ARRAY[0, 1, 2, 3])
+                    ) AS t(agg, months)
+                )
+                ,filtered_data AS (
+                    SELECT
+                        hs.station_id 
+                        ,hs.variable_id 
+                        ,EXTRACT(MONTH FROM hs.datetime AT TIME ZONE '{timezone}') AS month
+                        ,EXTRACT(YEAR FROM hs.datetime AT TIME ZONE '{timezone}') AS year
+                        ,so.symbol AS sampling_operation
+                        ,CASE so.symbol
+                            WHEN 'MIN' THEN hs.min_value
+                            WHEN 'MAX' THEN hs.max_value
+                            WHEN 'ACCUM' THEN hs.sum_value
+                             ELSE hs.avg_value
+                        END AS value
+                    FROM hourly_summary hs
+                    JOIN wx_variable vr ON vr.id = hs.variable_id
+                    JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id           
+                    WHERE hs.station_id = {requestedData['station_id']}
+                    AND hs.variable_id IN ({requestedData['variable_ids']})
+                    AND hs.datetime AT TIME ZONE '{timezone}' >= '{requestedData['start_date']}' 
+                    AND datetime AT TIME ZONE '{timezone}' < '{requestedData['end_date']}'
+                ),
+                extended_data AS(
+                    SELECT
+                        station_id
+                        ,variable_id
+                        ,CASE 
+                            WHEN month=12 THEN 0
+                            WHEN month=1 THEN 13
+                        END as month    
+                        ,CASE 
+                            WHEN month=12 THEN year+1
+                            WHEN month=1 THEN year-1
+                        END as year
+                        ,sampling_operation
+                        ,value       
+                    FROM filtered_data
+                    WHERE month in (1,12)
+                    UNION ALL
+                    SELECT
+                        *
+                    FROM filtered_data
+                )
+                SELECT 
+                    st.name AS station, 
+                    ed.variable_id, 
+                    ed.year, 
+                    ad.agg
+                    ,ROUND(
+                    CASE ed.sampling_operation
+                        WHEN 'MIN' THEN MIN(value)::numeric
+                        WHEN 'MAX' THEN MAX(value)::numeric
+                        WHEN 'ACCUM' THEN SUM(value)::numeric
+                        WHEN 'STDV' THEN STDDEV(value)::numeric
+                        WHEN 'RMS' THEN SQRT(AVG(POW(value, 2)))::numeric
+                        ELSE AVG(value)::numeric
+                    END, 2
+                    ) AS value
+                FROM extended_data ed
+                JOIN wx_station st ON st.id = ed.station_id
+                CROSS JOIN  agg_definitions ad
+                WHERE ed.month = ANY(ad.months)
+                AND year BETWEEN {requestedData['start_year']} AND {requestedData['end_year']}
+                GROUP BY st.name, ed.variable_id, ed.year, ad.agg, ed.sampling_operation
+                ORDER BY year
+            """
+        else:
+            query = f"""
+               WITH agg_definitions AS (
+                    SELECT *
+                    FROM (VALUES
+                        ('JFM', ARRAY[1, 2, 3]),
+                        ('FMA', ARRAY[2, 3, 4]),
+                        ('MAM', ARRAY[3, 4, 5]),
+                        ('AMJ', ARRAY[4, 5, 6]),
+                        ('MJJ', ARRAY[5, 6, 7]),
+                        ('JJA', ARRAY[6, 7, 8]),
+                        ('JAS', ARRAY[7, 8, 9]),
+                        ('ASO', ARRAY[8, 9, 10]),
+                        ('SON', ARRAY[9, 10, 11]),
+                        ('OND', ARRAY[10, 11, 12]),
+                        ('NDJ', ARRAY[11, 12, 13]),
+                        ('DRY', ARRAY[0, 1, 2, 3, 4, 5]),
+                        ('WET', ARRAY[6, 7, 8, 9, 10, 11]),
+                        ('ANNUAL', ARRAY[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+                        ('DJFM', ARRAY[0, 1, 2, 3])
+                    ) AS t(agg, months)
+                )
+                ,filtered_data AS (
+                    SELECT
+                        ds.station_id 
+                        ,ds.variable_id 
+                        ,EXTRACT(MONTH FROM ds.day) AS month
+                        ,EXTRACT(YEAR FROM ds.day) AS year
+                        ,so.symbol AS sampling_operation
+                        ,CASE so.symbol
+                            WHEN 'MIN' THEN ds.min_value
+                            WHEN 'MAX' THEN ds.max_value
+                            WHEN 'ACCUM' THEN ds.sum_value
+                             ELSE ds.avg_value
+                        END AS value
+                    FROM daily_summary ds
+                    JOIN wx_variable vr ON vr.id = ds.variable_id
+                    JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id           
+                    WHERE ds.station_id = {requestedData['station_id']}
+                    AND ds.variable_id IN ({requestedData['variable_ids']})
+                    AND ds.day >= '{requestedData['start_date']}' 
+                    AND ds.day < '{requestedData['end_date']}'
+                ),
+                extended_data AS(
+                    SELECT
+                        station_id
+                        ,variable_id
+                        ,CASE 
+                            WHEN month=12 THEN 0
+                            WHEN month=1 THEN 13
+                        END as month    
+                        ,CASE 
+                            WHEN month=12 THEN year+1
+                            WHEN month=1 THEN year-1
+                        END as year
+                        ,sampling_operation
+                        ,value       
+                    FROM filtered_data
+                    WHERE month in (1,12)
+                    UNION ALL
+                    SELECT
+                        *
+                    FROM filtered_data
+                )
+                SELECT 
+                    st.name AS station, 
+                    ed.variable_id, 
+                    ed.year, 
+                    ad.agg
+                    ,ROUND(
+                    CASE ed.sampling_operation
+                        WHEN 'MIN' THEN MIN(value)::numeric
+                        WHEN 'MAX' THEN MAX(value)::numeric
+                        WHEN 'ACCUM' THEN SUM(value)::numeric
+                        WHEN 'STDV' THEN STDDEV(value)::numeric
+                        WHEN 'RMS' THEN SQRT(AVG(POW(value, 2)))::numeric
+                        ELSE AVG(value)::numeric
+                    END, 2
+                    ) AS value
+                FROM extended_data ed
+                JOIN wx_station st ON st.id = ed.station_id
+                CROSS JOIN  agg_definitions ad
+                WHERE ed.month = ANY(ad.months)
+                AND year BETWEEN {requestedData['start_year']} AND {requestedData['end_year']}
+                GROUP BY st.name, ed.variable_id, ed.year, ad.agg, ed.sampling_operation
+                ORDER BY year
+            """
+        
+    elif requestedData['summary_type']=='Month':
+        requestedData['start_date'] = f"{int(requestedData['start_year'])}-01-01"
+        requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-01-01"    
+
+        if requestedData['interval']=='7 days':
+            if((station.is_automatic) or (station.code==pgia_code)):
+                query = f"""
+                    WITH filtered_data AS (
+                        SELECT
+                            EXTRACT(YEAR FROM hs.datetime AT TIME ZONE '{timezone}') as year
+                            ,EXTRACT(MONTH FROM hs.datetime AT TIME ZONE '{timezone}') as month
+                            ,hs.station_id
+                            ,hs.variable_id
+                            ,st.name AS station
+                            ,so.symbol AS sampling_operation
+                            ,CASE so.symbol
+                                WHEN 'MIN' THEN hs.min_value
+                                WHEN 'MAX' THEN hs.max_value
+                                WHEN 'ACCUM' THEN hs.sum_value
+                                ELSE hs.avg_value
+                            END as value
+                            ,CASE
+                                WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{timezone}') BETWEEN 1 AND 7 THEN 'agg_1'
+                                WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{timezone}') BETWEEN 8 AND 14 THEN 'agg_2'
+                                WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{timezone}') BETWEEN 15 AND 21 THEN 'agg_3'
+                                WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{timezone}') >= 22 THEN 'agg_4'
+                            END AS agg
+                        FROM hourly_summary hs
+                        JOIN wx_station st ON st.id = hs.station_id
+                        JOIN wx_variable vr ON vr.id = hs.variable_id
+                        JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id   
+                        WHERE datetime AT TIME ZONE '{timezone}' >= '{requestedData['start_date']}'
+                          AND datetime AT TIME ZONE '{timezone}' < '{requestedData['end_date']}'
+                          AND station_id = {requestedData['station_id']}
+                          AND variable_id IN ({requestedData['variable_ids']})
+                          AND EXTRACT(MONTH FROM datetime AT TIME ZONE '{timezone}') IN ({requestedData['months']})                                             
+                    )
+                    SELECT
+                        station
+                        ,variable_id
+                        ,year
+                        ,month
+                        ,agg
+                        ,ROUND(
+                            CASE sampling_operation
+                                WHEN 'MIN' THEN MIN(value)::numeric
+                                WHEN 'MAX' THEN MAX(value)::numeric
+                                WHEN 'STDV' THEN STDDEV(value)::numeric
+                                WHEN 'ACCUM' THEN SUM(value)::numeric
+                                WHEN 'RMS' THEN SQRT(AVG(POW(value, 2)))::numeric
+                                ELSE AVG(value)::numeric
+                            END, 2
+                        ) AS value
+                    FROM filtered_data
+                    GROUP BY station, variable_id, month, year, agg, sampling_operation
+                    ORDER BY year, month
+                """
+            else:
+                query = f"""
+                    WITH filtered_data AS (
+                        SELECT
+                            EXTRACT(YEAR FROM ds.day) as year
+                            ,EXTRACT(MONTH FROM ds.day) as month
+                            ,ds.station_id
+                            ,ds.variable_id
+                            ,st.name AS station
+                            ,so.symbol AS sampling_operation
+                            ,CASE so.symbol
+                                WHEN 'MIN' THEN ds.min_value
+                                WHEN 'MAX' THEN ds.max_value
+                                WHEN 'ACCUM' THEN hs.sum_value
+                                ELSE hs.avg_value
+                            END as value
+                            ,CASE
+                                WHEN EXTRACT(DAY FROM ds.day) BETWEEN 1 AND 7 THEN 'agg_1'
+                                WHEN EXTRACT(DAY FROM ds.day) BETWEEN 8 AND 14 THEN 'agg_2'
+                                WHEN EXTRACT(DAY FROM ds.day) BETWEEN 15 AND 21 THEN 'agg_3'
+                                WHEN EXTRACT(DAY FROM ds.day) >= 22 THEN 'agg_4'
+                            END AS agg
+                        FROM daily_summary ds
+                        JOIN wx_station st ON st.id = ds.station_id
+                        JOIN wx_variable vr ON vr.id = ds.variable_id
+                        JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id   
+                        WHERE ds.day >= '{requestedData['start_date']}'
+                          AND ds.day < '{requestedData['end_date']}'
+                          AND ds.station_id = {requestedData['station_id']}
+                          AND ds.variable_id IN ({requestedData['variable_ids']})
+                          AND EXTRACT(MONTH FROM ds.day) IN ({requestedData['months']})                                             
+                    )
+                    SELECT
+                        station
+                        ,variable_id
+                        ,year
+                        ,month
+                        ,agg
+                        ,ROUND(
+                            CASE sampling_operation
+                                WHEN 'MIN' THEN MIN(value)::numeric
+                                WHEN 'MAX' THEN MAX(value)::numeric
+                                WHEN 'STDV' THEN STDDEV(value)::numeric
+                                WHEN 'ACCUM' THEN SUM(value)::numeric
+                                WHEN 'RMS' THEN SQRT(AVG(POW(value, 2)))::numeric
+                                ELSE AVG(value)::numeric
+                            END, 2
+                        ) AS value
+                    FROM filtered_data
+                    GROUP BY station, variable_id, month, year, agg, sampling_operation
+                    ORDER BY year, month
+                """
+            
+        elif requestedData['interval']=='10 days':
+            if((station.is_automatic) or (station.code==pgia_code)):
+                query = f"""
+                    WITH filtered_data AS (
+                        SELECT
+                            EXTRACT(YEAR FROM hs.datetime AT TIME ZONE '{timezone}') as year
+                            ,EXTRACT(MONTH FROM hs.datetime AT TIME ZONE '{timezone}') as month
+                            ,hs.station_id
+                            ,hs.variable_id
+                            ,st.name AS station
+                            ,so.symbol AS sampling_operation
+                            ,CASE so.symbol
+                                WHEN 'MIN' THEN hs.min_value
+                                WHEN 'MAX' THEN hs.max_value
+                                WHEN 'ACCUM' THEN hs.sum_value
+                                ELSE hs.avg_value
+                            END as value
+                            ,CASE
+                                WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{timezone}') BETWEEN 1 AND 10 THEN 'agg_1'
+                                WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{timezone}') BETWEEN 11 AND 20 THEN 'agg_2'
+                                WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{timezone}') >= 21 THEN 'agg_3'
+                            END AS agg
+                        FROM hourly_summary hs
+                        JOIN wx_station st ON st.id = hs.station_id
+                        JOIN wx_variable vr ON vr.id = hs.variable_id
+                        JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id   
+                        WHERE datetime AT TIME ZONE '{timezone}' >= '{requestedData['start_date']}'
+                          AND datetime AT TIME ZONE '{timezone}' < '{requestedData['end_date']}'
+                          AND station_id = {requestedData['station_id']}
+                          AND variable_id IN ({requestedData['variable_ids']})
+                          AND EXTRACT(MONTH FROM datetime AT TIME ZONE '{timezone}') IN ({requestedData['months']})                                             
+                    )
+                    SELECT
+                        station
+                        ,variable_id
+                        ,year
+                        ,month
+                        ,agg
+                        ,ROUND(
+                            CASE sampling_operation
+                                WHEN 'MIN' THEN MIN(value)::numeric
+                                WHEN 'MAX' THEN MAX(value)::numeric
+                                WHEN 'STDV' THEN STDDEV(value)::numeric
+                                WHEN 'ACCUM' THEN SUM(value)::numeric
+                                WHEN 'RMS' THEN SQRT(AVG(POW(value, 2)))::numeric
+                                ELSE AVG(value)::numeric
+                            END, 2
+                        ) AS value
+                    FROM filtered_data
+                    GROUP BY station, variable_id, month, year, agg, sampling_operation
+                    ORDER BY year, month
+                """
+            else:
+                query = f"""
+                    WITH filtered_data AS (
+                        SELECT
+                            EXTRACT(YEAR FROM ds.day) as year
+                            ,EXTRACT(MONTH FROM ds.day) as month
+                            ,ds.station_id
+                            ,ds.variable_id
+                            ,st.name AS station
+                            ,so.symbol AS sampling_operation
+                            ,CASE so.symbol
+                                WHEN 'MIN' THEN ds.min_value
+                                WHEN 'MAX' THEN ds.max_value
+                                WHEN 'ACCUM' THEN ds.sum_value
+                                ELSE ds.avg_value
+                            END as value
+                            ,CASE
+                                WHEN EXTRACT(DAY FROM ds.day) BETWEEN 1 AND 10 THEN 'agg_1'
+                                WHEN EXTRACT(DAY FROM ds.day) BETWEEN 11 AND 20 THEN 'agg_2'
+                                WHEN EXTRACT(DAY FROM ds.day) >= 21 THEN 'agg_3'
+                            END AS agg
+                        FROM daily_summary ds
+                        JOIN wx_station st ON st.id = ds.station_id
+                        JOIN wx_variable vr ON vr.id = ds.variable_id
+                        JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id   
+                        WHERE ds.day >= '{requestedData['start_date']}'
+                          AND ds.day < '{requestedData['end_date']}'
+                          AND ds.station_id = {requestedData['station_id']}
+                          AND ds.variable_id IN ({requestedData['variable_ids']})
+                          AND EXTRACT(MONTH FROM ds.day) IN ({requestedData['months']})                                             
+                    )
+                    SELECT
+                        station
+                        ,variable_id
+                        ,year
+                        ,month
+                        ,agg
+                        ,ROUND(
+                            CASE sampling_operation
+                                WHEN 'MIN' THEN MIN(value)::numeric
+                                WHEN 'MAX' THEN MAX(value)::numeric
+                                WHEN 'STDV' THEN STDDEV(value)::numeric
+                                WHEN 'ACCUM' THEN SUM(value)::numeric
+                                WHEN 'RMS' THEN SQRT(AVG(POW(value, 2)))::numeric
+                                ELSE AVG(value)::numeric
+                            END, 2
+                        ) AS value
+                    FROM filtered_data
+                    GROUP BY station, variable_id, month, year, agg, sampling_operation
+                    ORDER BY year, month
+                """
+
+    with psycopg2.connect(config) as conn:
+        df = pd.read_sql(query, conn)
+        # data = df.fillna('').to_dict(orient='records')
+
+    if df.empty:
+        data=[]
+    else:
+        index = [col for col in df.columns if col not in ['agg', 'value']]
+
+        pivot_df = df.pivot_table(
+            index=index,
+            columns='agg',
+            values='value',
+            aggfunc='first'
+        ).reset_index()
+
+
+        agg_cols = [col for col in pivot_df.columns if col not in index]  # Columns to aggregate
+        grouped = pivot_df.groupby(['station', 'variable_id'])
+
+        def calculate_stats(group):
+            min_values = group[agg_cols].min()
+            max_values = group[agg_cols].max()
+            avg_values = group[agg_cols].mean().round(2)
+            std_values = group[agg_cols].std().round(2)
+
+            stats_dict = {}
+            for col in agg_cols:
+                stats_dict[col] = [min_values[col], max_values[col], avg_values[col], std_values[col]]
+            stats_dict['station'] = group.name[0]
+            stats_dict['variable_id'] = group.name[1]
+            stats_dict['year'] = ['MIN', 'MAX', 'AVG', 'STD'] 
+            
+            new_rows = pd.DataFrame(stats_dict)
+            
+            return pd.concat([group, new_rows], ignore_index=True)
+
+        result_df = grouped.apply(calculate_stats).reset_index(drop=True)
+        result_df = result_df.fillna('')
+
+        if (requestedData['summary_type']=='Season'):
+            season_cols = ['JFM', 'FMA', 'MAM', 'AMJ', 'MJJ', 'JJA', 'JAS', 'ASO', 'SON', 'OND', 'NDJ', 'DRY', 'WET', 'ANNUAL', 'DJFM']
+            result_df = result_df[index+season_cols]
+
+        data = result_df.to_dict(orient='records')
+
     response = data
     return JsonResponse(response, status=status.HTTP_200_OK, safe=False)
 
-
-# def get_oldest_year():
-#     config = settings.SURFACE_CONNECTION_STRING
-#     try:
-#         with psycopg2.connect(config) as conn:
-#             with conn.cursor() as cursor:
-#                 query = """
-#                     SELECT EXTRACT(YEAR FROM datetime) AS year
-#                     FROM raw_data
-#                     ORDER BY datetime ASC
-#                     LIMIT 1
-#                 """
-#                 cursor.execute(query)
-#                 result = cursor.fetchone()  # Fetch the first row
-#                 if result:
-#                     return result[0]  # Return the oldest year as an integer
-#                 else:
-#                     return 'null'  # Return None if no data is found
-#     except Exception as e:
-#         print(f"Error fetching oldest year: {e}")
-#         return 'null'
 
 class AgroMetSummariesView(LoginRequiredMixin, TemplateView):
     template_name = "wx/agromet/agromet_summaries.html"
@@ -6981,11 +7250,10 @@ class AgroMetSummariesView(LoginRequiredMixin, TemplateView):
         station_variables = StationVariable.objects.filter(variable_id__in=self.agromet_variable_ids).values('id', 'station_id', 'variable_id')
         station_ids = station_variables.values_list('station_id', flat=True).distinct()
 
-        # context['oldest_year'] = get_oldest_year()
         context['oldest_year'] = 1900
         context['stationvariable_list'] = list(station_variables)
         context['variable_list'] = list(Variable.objects.filter(symbol__in=self.agromet_variable_symbols).values('id', 'name', 'symbol'))
-        context['station_list'] = list(Station.objects.filter(id__in=station_ids, is_active=True).values('id', 'name', 'code'))
+        context['station_list'] = list(Station.objects.filter(id__in=station_ids, is_active=True).values('id', 'name', 'code', 'is_automatic'))
 
         return self.render_to_response(context)
 
@@ -7016,10 +7284,9 @@ class AgroMetProductsView(LoginRequiredMixin, TemplateView):
         station_variables = StationVariable.objects.filter(variable_id__in=self.agromet_variable_ids).values('id', 'station_id', 'variable_id')
         station_ids = station_variables.values_list('station_id', flat=True).distinct()
 
-        # context['oldest_year'] = get_oldest_year()
         context['oldest_year'] = 1900
         context['stationvariable_list'] = list(station_variables)
         context['variable_list'] = list(Variable.objects.filter(symbol__in=self.agromet_variable_symbols).values('id', 'name', 'symbol'))
-        context['station_list'] = list(Station.objects.filter(id__in=station_ids, is_active=True).values('id', 'name', 'code'))
+        context['station_list'] = list(Station.objects.filter(id__in=station_ids, is_active=True).values('id', 'name', 'code', 'is_automatic'))
 
         return self.render_to_response(context)
