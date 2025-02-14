@@ -6780,7 +6780,8 @@ def get_agromet_summary_data(request):
     
     timezone = pytz.timezone(settings.TIMEZONE_NAME)
 
-    if requestedData['summary_type']=='Season':
+    if requestedData['summary_type']=='Seasonal':
+        # To calculate the seasonal summary, values from January of the next year and December of the previous year are required.
         requestedData['start_date'] = f"{int(requestedData['start_year'])-1}-12-01"
         requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-02-01"        
 
@@ -6817,7 +6818,7 @@ def get_agromet_summary_data(request):
                             WHEN 'MIN' THEN hs.min_value
                             WHEN 'MAX' THEN hs.max_value
                             WHEN 'ACCUM' THEN hs.sum_value
-                             ELSE hs.avg_value
+                            ELSE hs.avg_value
                         END AS value
                     FROM hourly_summary hs
                     JOIN wx_variable vr ON vr.id = hs.variable_id
@@ -6825,7 +6826,7 @@ def get_agromet_summary_data(request):
                     WHERE hs.station_id = {requestedData['station_id']}
                     AND hs.variable_id IN ({requestedData['variable_ids']})
                     AND hs.datetime AT TIME ZONE '{timezone}' >= '{requestedData['start_date']}' 
-                    AND datetime AT TIME ZONE '{timezone}' < '{requestedData['end_date']}'
+                    AND hs.datetime AT TIME ZONE '{timezone}' < '{requestedData['end_date']}'
                 ),
                 extended_data AS(
                     SELECT
@@ -6959,9 +6960,9 @@ def get_agromet_summary_data(request):
                 ORDER BY year
             """
         
-    elif requestedData['summary_type']=='Month':
+    elif requestedData['summary_type']=='Monthly':
         requestedData['start_date'] = f"{int(requestedData['start_year'])}-01-01"
-        requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-01-01"    
+        requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-01-01"
 
         if requestedData['interval']=='7 days':
             if((station.is_automatic) or (station.code==pgia_code)):
@@ -7213,7 +7214,7 @@ def get_agromet_summary_data(request):
         result_df = grouped.apply(calculate_stats).reset_index(drop=True)
         result_df = result_df.fillna('')
 
-        if (requestedData['summary_type']=='Season'):
+        if (requestedData['summary_type']=='Seasonal'):
             season_cols = ['JFM', 'FMA', 'MAM', 'AMJ', 'MJJ', 'JJA', 'JAS', 'ASO', 'SON', 'OND', 'NDJ', 'DRY', 'WET', 'ANNUAL', 'DJFM']
             result_df = result_df[index+season_cols]
 

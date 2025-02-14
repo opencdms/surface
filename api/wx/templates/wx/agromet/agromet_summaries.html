@@ -84,7 +84,7 @@
 							inset
 					  	/> 						  
 					</v-col>
-					<v-col cols="3" v-if="requestData.summaryType==='Month'">
+					<v-col cols="3" v-if="requestData.summaryType==='Monthly'">
 						<v-autocomplete
 							label="Select Months"
 							:items="months"
@@ -100,7 +100,7 @@
 							deletable-chips
 						/>
 					</v-col>					
-					<v-col cols="2" v-if="requestData.summaryType==='Month'">
+					<v-col cols="2" v-if="requestData.summaryType==='Monthly'">
 						<v-autocomplete
 							label="Select Interval"
 							:items="intervals"
@@ -172,7 +172,7 @@
 			requestData: {
 				stationId: {{station_id}},
 				variableIds: {{variable_ids | safe}},
-				summaryType: 'Season',
+				summaryType: 'Seasonal',
 				months: [],
 				interval: null,
 				startYear: null,
@@ -181,7 +181,7 @@
 			requestedData: {
 				stationId: null,
 				variableIds: [],
-				summaryType: 'Season',
+				summaryType: 'Seasonal',
 				months: [],
 				interval: null,
 				startYear: null,
@@ -194,7 +194,7 @@
 			},
 			start_year_menu: false,
 			end_year_menu: false,
-			summaryTypes: ['Month', 'Season'],
+			summaryTypes: ['Monthly', 'Seasonal'],
 			months: [
 				{id: 1, name: 'Jan'},
 				{id: 2, name: 'Feb'},
@@ -225,7 +225,7 @@
 				this.requestData.stationId = null
 			},
 			'filters.is_season' (newValue, oldValue) {
-				this.requestData.summaryType = newValue?'Season':'Month'
+				this.requestData.summaryType = newValue?'Seasonal':'Monthly'
 			},
 			'requestData.stationId' (newStationId, oldStationId) {
 				this.requestData.variableIds = []
@@ -250,7 +250,7 @@
 				const { variableIds, summaryType, months, season, interval, ...rest } =  this.requestData
 				if (['stationId', 'startYear', 'endYear'].some(key => rest[key] === null)) return true
 				if ((variableIds === null) || (variableIds.length === 0)) return true;
-				if (summaryType === 'Month' && ((months === null) || (months.length === 0) || (interval === null))) return true;
+				if (summaryType === 'Monthly' && ((months === null) || (months.length === 0) || (interval === null))) return true;
 
 				return false
 			},
@@ -278,7 +278,7 @@
 				}
 				
 
-				if (this.requestedData.summaryType==='Season'){
+				if (this.requestedData.summaryType==='Seasonal'){
 					const baseKeys = ['station', 'variable_id', 'year']
 					const keys = filteredData.length? Object.keys(filteredData[0]).filter(item => !baseKeys.includes(item)): [];
 					
@@ -297,12 +297,12 @@
 						data: filteredData
 					};
 				}
-				else if (this.requestedData.summaryType==='Month'){
+				else if (this.requestedData.summaryType==='Monthly'){
 					if (this.requestedData.interval==='7 days'){
 						return {
 							headers: [
 								{ text: 'Year', align: 'end', value: 'year' },
-								{ text: 'Month', align: 'end', value: 'month' },
+								{ text: 'Monthly', align: 'end', value: 'monthly' },
 								{ text: 'days 01-07', align: 'end', value: 'agg_1' },
 								{ text: 'days 08-14', align: 'end', value: 'agg_2' },
 								{ text: 'days 15-21', align: 'end', value: 'agg_3' },
@@ -315,7 +315,7 @@
 						return {
 							headers: [
 								{ text: 'Year', align: 'end', value: 'year' },
-								{ text: 'Month', align: 'end', value: 'month' },
+								{ text: 'Monthly', align: 'end', value: 'monthly' },
 								{ text: 'days 01-10', align: 'end', value: 'agg_1' },
 								{ text: 'days 11-20', align: 'end', value: 'agg_2' },
 								{ text: 'days 21-', align: 'end', value: 'agg_3' },
@@ -343,7 +343,6 @@
 				this.requestedData.responseData = null
 
 				const url = `/wx/agromet/summaries/get/`
-				console.log(this.requestedData.months.join(','),)
 
 				const params = {
 					station_id: this.requestedData.stationId,
@@ -391,7 +390,7 @@
 				const station = this.stationList.find(station => station.id === stationId)
 				const variable = this.variableList.find(variable => variable.id === selectedVariableId)
 						
-				const filename = summaryType === 'Month' 
+				const filename = summaryType === 'Monthly' 
   					? `agromet-summary-(${summaryType})-${station?.name}-${variable?.symbol}-${startYear}-${endYear}-[${interval}].csv`
   					: `agromet-summary-(${summaryType})-${station?.name}-${variable?.symbol}-${startYear}-${endYear}.csv`;
 			
