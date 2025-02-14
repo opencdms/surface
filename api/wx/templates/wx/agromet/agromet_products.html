@@ -6,6 +6,15 @@
 	</div>
 	<div class="srf-flex justify-content-between srf-padding" id="app">
 		<v-app>
+			<v-overlay :value="loading_data">
+				<v-card flat light style="background-color: transparent;">
+					<v-card-title class="text-center"> Loading Data... </v-card-title>
+					<v-card-actions class="text-center justify-center">
+					  <v-progress-circular indeterminate color="primary"/>
+					</v-card-actions>
+				</v-card>
+			</v-overlay>
+
 			<form enctype="multipart/form-data" method="POST" class="mb-10">
 				{% csrf_token %}
 				<v-row>
@@ -24,13 +33,31 @@
                     <v-col cols="3">
                         <v-autocomplete
 							label="Select Element"
-							:items="elements"
+							:items="Object.keys(elements)"
 							v-model="requestData.element"
 							required
 							hint="*Required"
 							persistent-hint
 						/>
                     </v-col>
+					<v-col cols="2">
+                        <v-autocomplete
+							label="Select Product"
+							:items="elements[requestData.element]"
+							v-model="requestData.product"
+							required
+							hint="*Required"
+							persistent-hint
+						/>
+					</v-col>
+					<v-col cols="2" v-if="requireNumericParam">
+						<v-text-field
+							v-model="requestData.numericParam"
+							:rules="[rules.required, rules.numeric]"
+							label="Numeric Parameter"
+						/>
+				</v-row>
+				<v-row>
 					<v-col cols="2">
 						<v-autocomplete
 							label="Select Start Year"
@@ -59,7 +86,7 @@
 							> Request Data <v-icon right>send</v-icon> </v-btn>
 					</v-col>	                    
 				</v-row>				
-			</form>
+			</form>	
 		</v-app>
 	</div>
 </div>
@@ -68,31 +95,83 @@
  
 <script>
 	Vue.use(window.vuelidate.default);
-	const { required, minLength } = window.validators;
+	const { required, numeric } = window.validators;
 
 	new Vue({
 		el: "#app",
 		vuetify: new Vuetify(),
 		delimiters: ["[[", "]]"],
 		validations: {
+			requestData: {
+                stationId: { required },
+                element: { required },
+                product: { required },
+                numericParam: { required, numeric },
+                startYear: { required },
+                endYear: { required }
+            }			
 		},
 		data: {
 			now: moment().format('YYYY-MM-DD'),
 			loading_data: false,
+			rules: {
+				required: value => (!!value && value.trim() !== '')|| 'Required.',
+				numeric: value => (!isNaN(value) ) || 'Parameter must be a Numeric.',
+			},			
 			requestData: {
 				stationId: {{station_id}},
                 element: null,
+				product: null,
+				numericParam: null,
 				startYear: null,
 				endYear: null,
 			},
 			requestedData: {
 				stationId: null,
                 element: null,
+				product: null,
+				numericParam: null,
 				startYear: null,
 				endYear: null,
 				responseData: null,
 			},
-            elements: ['Air Temperature', 'Rainfall', 'Wind', 'Sunshine/Radiation', 'Relative Humidity', 'Free Water Evaporation / Evapotranspiration', 'Soil Temperature', 'Soil Moisture'],
+			elements: {
+				'Air Temperature': [
+					'Degree days',
+					'Maximum and minimum statistics',
+					'Hours or days above or below selected temperature',
+					'Growing season statistics',
+				],
+			   'Rainfall': [
+					'Number of days with specified amount of rainfall',
+					'Drought indices ',
+					'Flood and excess rainfall',
+			   ],
+				'Wind': [
+					'Wind Rose',
+					'Maximum Wind and Average Wind speed',
+					'Diurnal variation',
+					'Hours of wind less than a selected speed',
+					'Sunshine/Radiation',
+					'Amounts of global and net radiation',
+					'Sunshine and radiation hours',
+				],
+				'Relative Humidity': [
+					'Duration of a specified threshold of humidity',
+				],
+				'Free Water Evaporation / Evapotranspiration': [
+					'Total amount',
+					'Diurnal variation of evaporation',
+					'Evapotranspiration',
+				],
+				'Soil Temperature':[
+					'Mean and standard deviation at standard depth;',
+					'Dates when threshold values of temperature (germination, vegetation) are reached.',
+					'Soil Moisture',
+					'Soil Moisture at regular depths',
+					'Leaf area index',
+				]
+			},
 			start_year_menu: false,
 			end_year_menu: false,
 			stationList: [
@@ -102,14 +181,18 @@
 			],
 		},
 		watch: {
-			'requestData.stationId' (newStationId, oldStationId) {
-				this.requestData.variableIds = []
-			},
 			'requestData.startYear' (newStartYear, oldStartYear) {
 				this.requestData.endYear = null
 			}
 		},	
 		computed: {
+			requireNumericParam (){
+				const productList = [
+					'Degree days',
+					'Hours or days above or below selected temperature',
+				]
+				return productList.includes(this.requestData.product)
+			},
 			availableStartYears () {
 				const min_year = 1900
 				const max_year = moment().year()
@@ -122,16 +205,47 @@
 				return Array.from({ length: max_year - min_year + 1 }, (_, i) => max_year - i);
 			},
 			disableQuery (){
-                return false
-			},
+				const { numericParam, ...rest } =  this.requestData
+				if (Object.keys(rest).some(key => rest[key] === null)) return true
+				if (this.requireNumericParam && numericParam === null) return true
+				return false
+			},	
 		},
-		methods: { 
-			clearSelectedVariables (){
-				this.requestData.variableIds = []
-			},
+		methods: {
             getData(){
-                console.log('GET DATA METHOD')
-            }
+				this.loading_data = true
+
+				this.requestedData.stationId = this.requestData.stationId
+				this.requestedData.startYear = this.requestData.startYear
+				this.requestedData.endYear = this.requestData.endYear
+				this.requestedData.element = this.requestData.element
+				this.requestedData.product = this.requestData.product
+				this.requestedData.numericParam = this.requestData.numericParam
+				this.requestedData.responseData = null
+
+				const url = `/wx/agromet/products/get/`
+
+				const params = {
+					station_id: this.requestedData.stationId,
+					start_year: this.requestedData.startYear,
+					end_year: this.requestedData.endYear,
+					element: this.requestedData.element,
+					product: this.requestedData.product,
+					numericParam: this.requestedData.numericParam,
+				};
+
+        		axios.get(url, { params })
+				.then(response => {
+					console.log('Return Data:', response.data)
+					this.requestedData.responseData = response.data;
+				})
+				.catch(error => {
+					console.error('Error fetching data:', error);
+				})
+				.finally(() => {
+					this.loading_data = false
+				});
+			}
 		}		
 	})
 </script>

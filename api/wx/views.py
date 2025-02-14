@@ -7258,6 +7258,34 @@ class AgroMetSummariesView(LoginRequiredMixin, TemplateView):
 
         return self.render_to_response(context)
 
+@api_view(["GET"])
+def get_agromet_products_data(request):
+    try:
+        requestedData = {
+            'start_year': request.GET.get('start_year'),
+            'end_year': request.GET.get('end_year'),
+            'station_id': request.GET.get('station_id'),
+            'element': request.GET.get('element'),
+            'product': request.GET.get('product'),
+            'numeric_param': request.GET.get('numeric_param'),
+        }
+    except ValueError as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(repr(e))
+        return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+    response = {
+        'message': 'Test message.',
+        'headers': 'Headers go here.',
+        'data': 'Data go here',
+    }
+    return JsonResponse(response, status=status.HTTP_200_OK, safe=False)    
+
+
+
 class AgroMetProductsView(LoginRequiredMixin, TemplateView):
     template_name = "wx/agromet/agromet_products.html"
     agromet_variable_symbols = [
