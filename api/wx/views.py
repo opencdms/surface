@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+import shutil
 import random
 import uuid
 import wx.export_surface_oscar as exso
@@ -20,7 +21,9 @@ from openpyxl import Workbook
 import tempfile
 import psycopg2
 import pytz
+import django.conf
 from django.contrib import messages
+from django.core.files.base import ContentFile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.cache import cache
@@ -55,8 +58,8 @@ from wx.decoders.hobo import read_file as read_file_hobo
 from wx.decoders.toa5 import read_file
 from wx.forms import StationForm
 from wx.models import AdministrativeRegion, StationFile, Decoder, QualityFlag, DataFile, DataFileStation, \
-    DataFileVariable, StationImage, WMOStationType, WMORegion, WMOProgram, StationCommunication, CombineDataFile
-from wx.models import Country, Unit, Station, Variable, DataSource, StationVariable, \
+    DataFileVariable, StationImage, WMOStationType, WMORegion, WMOProgram, StationCommunication, CombineDataFile, ManualStationDataFile
+from wx.models import Country, Unit, Station, Variable, DataSource, StationVariable, StationDataFileStatus,\
     StationProfile, Document, Watershed, Interval, CountryISOCode
 from wx.utils import get_altitude, get_watershed, get_district, get_interpolation_image, parse_float_value, \
     parse_int_value
@@ -816,6 +819,243 @@ class DataExportView(LoginRequiredMixin, TemplateView):
         context['interval_list'] = interval_list
 
         return self.render_to_response(context)
+
+# view to display manual upload page
+class ManualDataImportView(LoginRequiredMixin, TemplateView):
+    '''view for uploading daily data for manual station (file format is xlsx)'''
+
+    template_name = "wx/data/manual_data_import.html"
+
+    # reseting the directory which holds uploaded files before processing
+    UPLOAD_DIR = '/data/documents/ingest/manual/check'
+
+    def dispatch(self, request, *args, **kwargs):
+        '''Ensure the directory exists before handling a request'''
+        if os.path.exists(self.UPLOAD_DIR):  # Check if the directory exists
+            shutil.rmtree(self.UPLOAD_DIR)
+            logger.info(f"Directory '{self.UPLOAD_DIR}' deleted. (Prep work for Manual Import)")
+
+        try:
+            os.makedirs(self.UPLOAD_DIR, exist_ok=True)
+            logger.info(f"Created directory '{self.UPLOAD_DIR}'.")
+        except PermissionError as e:
+            logger.error(f"Permission denied: {e}")
+            return HttpResponse("Server error: Unable to create directory.", status=500)
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+
+        return self.render_to_response(context)
+
+
+# retrieves manual data files
+@api_view(('GET',))
+def ManualDataFiles(request):
+    files = []
+    for df in ManualStationDataFile.objects.all().order_by('-created_at').values()[:100:1]:
+
+        file_status = df['status_id']
+
+        status_dict = {
+            1:"Pending",
+            2:"Processing",
+            3:"Processed",
+            4:"Error",
+        }
+
+        def chunk_stations(stations_str):
+            stations = stations_str.split("       ")  # Split by multiple spaces
+            return [",  ".join(stations[i:i+5]) for i in range(0, len(stations), 5)]
+
+        # Example usage
+        formatted_station = chunk_stations(df['stations_list'])
+
+        f = {
+            'id': df['id'],
+            'upload_date': df['upload_date'],
+            'file_name': df['file_name'],
+            'status': status_dict[file_status],
+            'stations_list': formatted_station,
+            'observation': df['observation'],
+            'month': df['month'],
+            'override_data_on_conflict': "Yes!" if df['override_data_on_conflict'] else "No!",
+        }
+
+        files.append(f)
+
+    return Response(files, status=status.HTTP_200_OK)
+
+
+# delete manual data file
+def DeleteManualDataFile(request):
+    file_id = request.GET.get('id', None)
+
+    df = ManualStationDataFile.objects.get(pk=file_id)
+
+    df.delete()
+
+    return JsonResponse({}, status=status.HTTP_200_OK)
+
+
+# recieve files from the manual import page, run some checks and return a success response
+@csrf_exempt
+def CheckManualImportView(request):
+    # print("DATA_UPLOAD_MAX_MEMORY_SIZE:", django.conf.settings.DATA_UPLOAD_MAX_MEMORY_SIZE)
+    # print("FILE_UPLOAD_MAX_MEMORY_SIZE:", django.conf.settings.FILE_UPLOAD_MAX_MEMORY_SIZE)
+    if request.method == "POST":
+        uploaded_files = {}
+        unsupported_files = ''
+        duplicate_files = ''
+        UPLOAD_DIR = '/data/documents/ingest/manual/check'
+        allowed_file_types = {
+            ".xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }
+
+        # Process each file in the request
+        for file_name, file_obj in request.FILES.items():
+            if file_obj.content_type not in allowed_file_types.values():
+                unsupported_files = unsupported_files + file_name + ", "
+
+                continue # skip to the next execution
+
+            # check for any duplicate files and skip
+            if file_name in os.listdir(UPLOAD_DIR):
+                duplicate_files = duplicate_files + file_name + ", "
+
+                continue # skip to the next execution
+
+            file_path = os.path.join(UPLOAD_DIR, file_name)
+            
+            # Write file manually
+            with open(file_path, "wb") as destination:
+                for chunk in file_obj.chunks():  # Write file in chunks
+                    destination.write(chunk)
+
+            file_size = round(os.stat(file_path).st_size / (1024*1024), 4)
+            
+            uploaded_files[file_name] = file_size # Store file name and size (size in MB)
+
+        return JsonResponse({"uploaded_files": uploaded_files, "duplicate_files": duplicate_files, "unsupported_files": unsupported_files}, status=201)
+    
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+# remove manual data files
+@csrf_exempt
+def RemoveManualDataFile(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            file_name = data.get('file')
+            remaining_files = {}
+            UPLOAD_DIR = '/data/documents/ingest/manual/check'  #Directory path
+
+            # check if the request it to reset the entire folder
+            if file_name == 'reset':
+                if os.path.exists(UPLOAD_DIR):  # Check if the directory exists
+                    shutil.rmtree(UPLOAD_DIR) # remove the directory
+                    logger.info(f"Directory '{UPLOAD_DIR}' deleted. (Prep work for Manual Import)")
+
+                try:
+                    os.makedirs(UPLOAD_DIR, exist_ok=True)
+                    logger.info(f"Created directory '{UPLOAD_DIR}'.")
+                except PermissionError as e:
+                    logger.error(f"Permission denied: {e}")
+                    return JsonResponse({"error": "Unable to create directory."}, status=500)
+                
+                return JsonResponse({"uploaded_files": remaining_files}, status=201)
+
+            if not file_name:  # Check if file_name was provided
+                return JsonResponse({'error': 'A file name is required'}, status=400)
+
+            file_path = os.path.join(UPLOAD_DIR, file_name)
+
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    logger.info(f"File removed: {file_path}")
+
+                    # Get updated file list
+                    # remaining_files = [f for f in os.listdir(UPLOAD_DIR ) if os.path.isfile(os.path.join(UPLOAD_DIR , f))]
+                    for f in os.listdir(UPLOAD_DIR):
+                        if os.path.isfile(os.path.join(UPLOAD_DIR , f)):
+                            path = os.path.join(UPLOAD_DIR , f)
+                            file_size = round(os.stat(path).st_size / (1024), 2)
+                            remaining_files[f] = file_size # Store file name and size (size in MB)
+
+                    return JsonResponse({"uploaded_files": remaining_files}, status=201)
+
+
+                except OSError as e: # Handle potential file system errors
+                    logger.error(f"Error removing file: {e}")
+                    return JsonResponse({'error': f"Error removing {file_name}"}, status=500) # Internal Server Error
+
+            else:
+                return JsonResponse({'error': f'File "{file_name}" not found'}, status=404)  # Not Found
+
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            logger.info(f"this is the file name: {file_name}")
+            # logger.info(f"this is the file name: {file_name}")
+            return JsonResponse({'error': 'Invalid request data'}, status=400)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+# process the uploaded manual data files
+@csrf_exempt
+def UploadManualDataFile(request):
+    UPLOAD_DIR = '/data/documents/ingest/manual/check'  #Upload Directory path
+    PROCESS_DIR = '/data/documents/ingest/manual/process'  #Process Directory path 
+
+    try:
+        if request.method == "POST":
+            data = json.loads(request.body)
+            override_data = data.get('override_on_conflict')
+
+            data_file_id_list=[] # holds ManualStationDataFile id's
+
+            # create PROCESS_DIR if it does not exist
+            if os.path.exists(UPLOAD_DIR):
+                os.makedirs(PROCESS_DIR, exist_ok=True) # create the process dir if it does not exist
+
+                # loop through files in the UPLOAD DIR and create a New ManualStationDataFile object and move the file to the PROCESS DIR
+                for filename in os.listdir(UPLOAD_DIR):
+                    source_path = os.path.join(UPLOAD_DIR, filename)
+
+                    # Check if it's a file
+                    if os.path.isfile(source_path):
+                        # create ManualStationDataFile object
+                        new_data_file = ManualStationDataFile.objects.create(file_name=filename, status_id=1, override_data_on_conflict=override_data)
+
+                        destination_path = os.path.join(PROCESS_DIR, str(new_data_file.id) + '.xlsx') # create the destination path based on the file id
+
+                        new_data_file.filepath = destination_path # update the objects file path to be the destination path
+                        new_data_file.save()
+
+                        # moving (note that the file name changes)
+                        shutil.move(source_path, destination_path)
+                        logger.info(f"Moved for manual upload processing: {filename}")
+
+                        data_file_id_list.append(new_data_file.id)
+
+                # call celery task to begin file processing
+                tasks.ingest_manual_station_files.delay(data_file_id_list)
+                
+
+            else:
+                return JsonResponse({'error': 'Error occured during file upload! There are no files to upload'}, status=400)
+            
+
+            return JsonResponse({"success": "success"}, status=202)
+        else:
+            raise
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return JsonResponse({'error': 'Error occured during file upload!'}, status=400)
+
 
 
 class CountryViewSet(viewsets.ModelViewSet):

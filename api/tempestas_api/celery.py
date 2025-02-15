@@ -73,7 +73,7 @@ app.conf.beat_schedule = {
     # aws transmission to wis2box task
     'aws_transmit_wis2box': {
         'task': 'wx.tasks.aws_transmit_wis2box',
-        'schedule': 60
+        'schedule': 3600
     },    
 }
 

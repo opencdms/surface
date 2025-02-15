@@ -120,7 +120,7 @@ def find_station_by_name(station_name):
     return station
 
 @shared_task
-def read_file(filename, highfrequency_data=False, station_object=None, utc_offset=-360, override_data_on_conflict=False):
+def read_file(filename, highfrequency_data=False, station_object=None, utc_offset=settings.TIMEZONE_OFFSET, override_data_on_conflict=False):
     """Read a manual data file and return a seq of records or nil in case of error"""
 
     logger.info('processing %s' % filename)

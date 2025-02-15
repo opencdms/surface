@@ -639,12 +639,16 @@
                         <a id="synop-capture" href="{% url 'synop-capture' %}" class="collection-item left-space" onclick="mainOverlayLoader()">Synop Capture<i class="material-icons secondary-content">keyboard</i></a>
                       {% endif %}
                       
-                      {% if 'data-export' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
-                        <a id="data-export" href="{% url 'data-export' %}" class="collection-item left-space" onclick="mainOverlayLoader()">Export<i class="material-icons secondary-content">cloud_download</i></a>
-                      {% endif %}
-                      
                       {% if 'data-inventory' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
                         <a id="data-inventory" href="{% url 'data-inventory' %}" class="collection-item left-space" onclick="mainOverlayLoader()">Data Inventory<i class="material-icons secondary-content">web</i></a>
+                      {% endif %}
+
+                      {% if 'manual-data-import' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
+                        <a id="manual-data-import" href="{% url 'manual-data-import' %}" class="collection-item left-space" onclick="mainOverlayLoader()">Import<i class="material-icons-outlined secondary-content">cloud_upload</i></a>
+                      {% endif %}
+
+                      {% if 'data-export' in request.user_permissions or request.user.is_staff or request.user.is_superuser %}
+                        <a id="data-export" href="{% url 'data-export' %}" class="collection-item left-space" onclick="mainOverlayLoader()">Export<i class="material-icons secondary-content">cloud_download</i></a>
                       {% endif %}
                   </ul>
                 </div>

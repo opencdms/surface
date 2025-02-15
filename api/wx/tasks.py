@@ -48,7 +48,7 @@ from wx.models import DataFile, CombineDataFile
 from wx.models import Document
 from wx.models import NoaaDcp
 from wx.models import Station, Country, WMOReportingStatus, WMORegion, WMOStationType
-from wx.models import StationFileIngestion, StationDataFile
+from wx.models import StationFileIngestion, StationDataFile, ManualStationDataFile
 from wx.models import HourlySummaryTask, DailySummaryTask
 from wx.models import HydroMLPredictionStation, HydroMLPredictionMapping
 from wx.models import HighFrequencyData, HFSummaryTask
@@ -2139,6 +2139,110 @@ def process_station_data_files(historical_data=False, highfrequency_data=False, 
             # Update status id to 3 (Processed)
             station_data_file.status_id = 3
             station_data_file.save()
+
+
+# modify manual station data file object with the Month and Station_List
+@shared_task
+def ingest_manual_station_files(data_file_id_list):
+    """
+    Process station data files for Month and Station Names.
+    """
+
+    try:
+
+        for entry_id in data_file_id_list:
+            manual_station_data_file = ManualStationDataFile.objects.get(id=entry_id)
+
+            filepath = manual_station_data_file.filepath
+
+            logger.info(f'Processing Manual Datafile: {filepath}')
+
+            source = pandas.ExcelFile(filepath)
+
+            stations_list = '       '.join(source.sheet_names) # combining stations list into a long sting
+
+            column_names = ['day', 'PRECIP', 'TEMPMAX', 'TEMPMIN', 'TEMPAVG', 'WNDMIL', 'WINDRUN', 'SUNSHNHR', 'EVAPINI', 'EVAPRES', 'EVAPPAN', 'TEMP', 'TEMPWB', 'TSOIL1', 'TSOIL4', 'DYTHND', 'DYFOG', 'DYHAIL', 'DYGAIL', 'TOTRAD', 'RH@TMAX', 'RHMAX', 'RHMIN',]
+
+            # getting the month information from sheet 1
+            sheet_raw_data = source.parse(
+                source.sheet_names[0],
+                skipfooter=2,
+                na_filter=False,
+                names=column_names,
+                usecols='A:W'
+            )
+
+            if not sheet_raw_data.empty:
+                header = sheet_raw_data[0:1]
+                sheet_month = header['WINDRUN'][0].replace('MONTH: ', '').strip()
+
+            
+            # update the manual station data file object
+            manual_station_data_file.stations_list = stations_list
+            manual_station_data_file.month = sheet_month
+            manual_station_data_file.save()
+
+            # process manual station data files
+            process_manual_station_data_files(data_file_id_list)
+
+    except Exception as e:
+        logger.error('OS error. ' + repr(e))
+        db_logger.error('OS error. ' + repr(e))
+
+
+# process manual station data files
+def process_manual_station_data_files(data_file_id_list):
+    """
+    Process manual station data files
+
+    Parameters: 
+        data_file_id_list: list containing the id of the station data files to process
+    """
+
+    available_decoders = {
+        'BELIZE MANUAL DAILY DATA': read_file_manual_data,
+    }
+
+    # Get ManualStationDataFile to process
+    # Filter status id to process only StationDataFiles with code 1 (Not processed) or 6 (Reprocess)
+    station_data_file_list = ManualStationDataFile.objects.filter(id__in=data_file_id_list)
+
+    # Mark all files as Being processed
+    for station_data_file in station_data_file_list:
+        # Update status id to 2 (Being processed)
+        station_data_file.status_id = 2
+        station_data_file.save()
+
+        try:
+            current_decoder = available_decoders['BELIZE MANUAL DAILY DATA']
+            logger.info('Processing file "{0}" with "{1}" decoder.'.format(station_data_file.filepath, current_decoder))
+
+            current_decoder(filename=station_data_file.filepath
+                            , override_data_on_conflict=station_data_file.override_data_on_conflict)
+
+        except Exception as err:
+            # Update status id to 4 (Error)
+            station_data_file.status_id = 4
+            station_data_file.observation = (err)
+            station_data_file.save()
+
+            logger.error('Error Processing file "{0}" with "{1}" decoder. '
+                         .format(station_data_file.filepath, current_decoder) + repr(err))
+            db_logger.error('Error Processing file "{0}" with "{1}" decoder. '
+                            .format(station_data_file.filepath, current_decoder) + repr(err))
+        else:
+            # Update status id to 3 (Processed)
+            station_data_file.status_id = 3
+            station_data_file.save()
+
+        try:
+            # attempting to delete already process manual station data file regardless of status
+            os.remove(station_data_file.filepath)
+            logger.info(f'Manual station data file deleted after processing. File path: {station_data_file.filepath}')
+        except Exception as e:
+            logger.error('An error occured whill attempting to delete manual station data file.')
+            logger.error(f'Error - {repr(e)}')
+
 
 # Persist Logic Starts here
 # Get hourly data from raw data

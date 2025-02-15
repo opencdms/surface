@@ -1,0 +1,590 @@
+{% extends "base.html" %} {% block content %} {% load static %}
+
+<div class="srf-container" style="max-height: 280px">
+  <div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
+    <span class="srf-display-1 text-uppercase">Data Import</span><br /><br />
+  </div>
+
+  <div class="srf-flex justify-content-between srf-padding" id="app" v-cloak>
+    <v-app>
+        <div>
+            <form class="col l12">
+                <h6 class="">Attachments</h6>
+                <!--UPLOAD-->
+                <v-row dense justify="center" class="mb-3 mt-3 dropbox">
+                  <input type="file" multiple :name="uploadFieldName" :disabled="isSaving" 
+                  @change="handleFileChange" accept=".xlsx" class="input-file">                
+
+                  <p v-if="!isSaving" style="font-size: small;">
+                    <i class="material-icons-outlined">cloud_upload</i><br>
+                    <span style="color: rgb(64, 130, 246); font-weight: bold;">Choose file</span> or <b>drag here</b><br>
+                    Supported file type(s): <span style="color: #1D6F42;">XLSX</span><br>
+                    <span style="color: red;">Size limit: 2.00 MB per file, up to 4 file(s) with total file size not exceeding 8.00 MB</span>
+                  </p>
+
+                  <p v-if="isSaving" style="font-size: small;">
+                    Uploading <span v-text="fileCount"></span> files...
+                  </p>
+                </v-row>
+
+                <v-row dense justify="start" class="mb-3">
+                  <!-- Override Data on Conflict selector -->
+                  <v-col cols="6">
+                    <v-switch
+                        v-model="overrideData"
+                        label="Override Data on Conflict"
+                    ></v-switch>
+                  </v-col>
+                </v-row>
+
+                <v-row dense justify="start" class="mb-3">
+                  <!-- Reset Button -->
+                  <v-col class="text-center" cols="auto">
+                      <v-btn
+                        small
+                        outlined
+                        @click="reset"
+                        color="secondary"
+                        :disabled="!showBtn"
+                      >
+                        Reset
+                        <i class="material-icons right">cached</i>
+                      </v-btn>
+                  </v-col>
+
+                  <!-- Upload Button -->
+                  <v-col class="text-center" cols="auto">
+                    <v-btn
+                      small
+                      outlined
+                      color="primary"
+                      :disabled="!showBtn"
+                      @click="importManualDataFile"
+                    >
+                      Upload
+                      <i class="material-icons right">upload</i>
+                    </v-btn>
+                  </v-col>
+
+
+                  <!-- Info Button -->
+                  <!-- <v-col class="text-center" cols="auto">
+                    <v-tooltip bottom>
+                      <template v-slot:activator="{ on }">
+                        <v-icon
+                          icon v-on="on"
+                          outlined
+                          color="primary"
+                        >
+                          info
+                        </v-icon> 
+                      </template>
+                      <span>Please ensure that station names are accurate otherwise the file will not be processed properly.</span>
+                    </v-tooltip>
+                  </v-col> -->
+                </v-row>
+
+                <!-- display any errors -->
+                <v-alert v-model="request_error" dismissible type="error" class="mt-5">
+                  [[ request_error_message ]]
+                </v-alert>
+
+                <!--uploaded files-->
+                <v-row dense justify="center" class="mb-3 mt-5">
+
+                  <v-overlay :value="loading">
+                    <v-progress-circular indeterminate size="64"></v-progress-circular>
+                  </v-overlay>
+
+                  <v-col cols="12" v-for="file_obj in uploadedFiles" v-bind:key="file_obj[0]" class="file-item d-flex align-center">
+
+                    <i class="material-icons">attach_file</i>
+
+                    <span v-text="file_obj[0]" class="file-name"></span>
+
+                    <span class="file-size">([[ file_obj[1] ]] MB)</span>
+
+                    <i class="material-icons remove-btn ml-auto" @click="removeFile(file_obj[0])">close</i>
+
+                  </v-col>
+
+                </v-row>
+                
+
+            </form>
+
+            <v-divider class="pa-3"></v-divider>
+
+
+            <!-- manual station data files sections start! -->
+            
+            
+          
+            
+            <!-- output files -->
+            <v-tabs
+              v-if="documents.length > 0"
+              v-model="data_files_model"
+              centered
+              slider-color="green"
+              class="mb-9"
+            >
+              <v-tab :key="1" :href="`#tab-1`" >
+                Manual Data Files
+              </v-tab>
+
+            </v-tabs>
+
+            <v-tabs-items v-model="data_files_model">
+              <v-tab-item
+                :key="1"
+                :value="`tab-1`"
+              >
+
+                <v-row dense v-if="documents.length > 0" justify="center">
+                <!-- <v-row dense justify="center"> -->
+                  <v-overlay :value="loading">
+                    <v-progress-circular indeterminate size="64"></v-progress-circular>
+                  </v-overlay>
+                  <v-data-table
+                    ref="documents_table"
+                    :headers="documents_headers"
+                    :items="documents"
+                    :items-per-page="5"
+                    class="elevation-1"
+                    sort-by="id"
+                    sort-desc
+                    dense
+                    calculate-widths
+                    show-expand
+        
+                    :item-class="getRowClass"
+                  >
+                    <!-- handling the actions section of the table -->
+                    <template v-slot:item.action="{ item }">        
+                      <!-- show the delete option based on user privileges -->
+                      <v-tooltip bottom v-if="showDeleteAction">
+                        <template v-slot:activator="{ on }">
+                          <v-icon small @click="deleteItem(item)" v-on="on">
+                            delete
+                          </v-icon>
+                        </template>
+                        <span>Delete file</span>
+                      </v-tooltip>
+                    </template>
+
+                    <!-- Display each row dropdown -->
+                    <template v-slot:expanded-item="{ item, headers }">
+                      <td colspan="3">
+                        <!-- station(s) -->
+                        <span class="subtitle-1 font-weight-bold">Station(s):</span
+                        ><br />
+                        <!-- <span class="text-end"
+                          >&nbsp;&nbsp;&nbsp;[[ item.stations_list ]]<br
+                        /></span> -->
+                        <span class="text-end" v-for="s in item.stations_list"
+                          >&nbsp;&nbsp;&nbsp;[[ s ]]<br
+                        /></span>
+                        <!-- observations -->
+                        <span class="subtitle-1 font-weight-bold">Observations:</span><br />
+                        <span class="text-end"
+                          >&nbsp;&nbsp;&nbsp;[[ item.observation ]]<br
+                        /></span>
+                      </td>
+        
+                      <td colspan="5">
+                        <!-- Month -->
+                        <span class="subtitle-1 font-weight-bold">Month:</span><br />
+                        <span class="text-end"
+                          >&nbsp;&nbsp;&nbsp;[[ item.month ]]<br
+                        /></span>
+                        <!-- overide on conflict -->
+                        <span class="subtitle-1 font-weight-bold">On Conflict Override Data:</span
+                        ><br />
+                        <span class="text-end"
+                          >&nbsp;&nbsp;&nbsp;[[ item.override_data_on_conflict ]]<br
+                        /></span>
+                      </td>
+                    </template>
+
+                  </v-data-table>
+                </v-row>
+
+              </v-tab-item>
+            </v-tabs-items>
+                
+            
+            
+            
+            <!-- manual station data files sections end! -->
+        </div>
+    </v-app>
+  </div>
+</div>
+
+{% endblock %} {% block localjavascript %}
+
+<script>
+    const STATUS_INITIAL = 0, STATUS_SAVING = 1, STATUS_SUCCESS = 2, STATUS_FAILED = 3;
+
+    (function() {
+        new Vue({
+        el: "#app",
+        vuetify: new Vuetify(),
+        delimiters: ["[[", "]]"],
+        data: {
+          data_files_model: 'tab-1',
+          stationName: "",
+          showBtn: true, // enable reset and upload buttons
+          loading: false,
+          fileCount: 0,  // Initialize fileCount
+          multipleStations: false,
+          utcOffset: null,
+          utcOffsets: ["UTC-12", "UTC-11", "UTC-10", "UTC-9", "UTC-8", "UTC-7", "UTC-6", "UTC-5", "UTC-4", "UTC-3", "UTC-2", "UTC-1", "UTC", "UTC+1", "UTC+2", "UTC+3", "UTC+4", "UTC+5", "UTC+6", "UTC+7", "UTC+8", "UTC+9", "UTC+10", "UTC+11", "UTC+12"],
+          overrideData: false,
+          timezone: "{{ TIMEZONE_NAME|escapejs }}",
+          stations: [
+              {% for station in station_list %}
+                  {   value: {{ station.id }},
+                      text: "{{ station.name | safe }} - {{ station.code }}",
+                      name: "{{ station.name | safe }}",
+                      code: "{{ station.code }}",
+                  },
+              {% endfor %}
+          ],
+          uploadedFiles: [],
+          showDeleteAction: false,
+          currentStatus: null,
+          uploadFieldName: 'xlsx_file_upload',
+          request_error: false,
+          request_error_message: '',
+          documents: [],
+          documents_headers: [
+            { text: "Id", value: "id", align: "left"},
+            { text: "File Name", value: "file_name", align: "left"},
+            { text: "Upload Date", value: "upload_date", align: "left"},
+            { text: "Status", value: "status", align: "left"},
+            { text: 'Actions', value: 'action', align: "center", sortable: false },
+          ],
+        },
+
+        computed: {
+          isInitial() {
+            return this.currentStatus === STATUS_INITIAL;
+          },
+          isSaving() {
+            return this.currentStatus === STATUS_SAVING;
+          },
+        },
+
+        methods: {
+          importManualDataFile() {
+            this.loading = true; // set loading to true
+            this.showBtn = false; // disable the buttons
+
+            // Handle the file upload logic here
+            axios.post('upload-files/', {override_on_conflict: this.overrideData})
+            .then(response => {
+              // 
+
+              // reset the upload list
+              this.reset();
+
+              // reset loading and show btn
+              this.loading = false;
+              this.showBtn = true;
+
+              // reload the table
+              this.updateTable();
+            })
+            .catch(error => {
+              // Handle errors during the axios request
+              this.currentStatus = STATUS_INITIAL;
+
+              this.request_error = true;
+              this.request_error_message = error.response.data.error;
+
+              // reset loading and show btn
+              this.loading = false;
+              this.showBtn = true;
+
+              // reload the table
+              this.updateTable();
+            });
+
+          },
+          
+          
+          reset() {
+            // reset form to initial state
+            this.currentStatus = STATUS_INITIAL;
+            // this.uploadedFiles = [];
+            this.request_error = false;
+            this.request_error_message = '';
+
+            // reset the files list
+            this.removeFile('reset');
+          },
+          
+          
+          save(formData) {
+            // upload data to the server
+            this.currentStatus = STATUS_SAVING;
+
+            this.upload(formData);
+          },
+
+
+          filesChange(fieldName, fileList) {
+            // only allow 5 files at any given point
+            if ((fileList.length + this.uploadedFiles.length) > 4) {
+              this.request_error = true;
+              this.request_error_message = 'Maximum of 4 files allowed. Anything above the maximum ammount should be transfered in groups of 4 or via ftp!';
+
+              return;
+            }
+
+            // handle file changes
+            const formData = new FormData();
+
+            if (!fileList.length) return;
+
+            // append the files to FormData
+            Array
+              .from(Array(fileList.length).keys())
+              .map(x => {
+                formData.append(fileList[x].name, fileList[x]);
+              });
+
+            // save it
+            this.save(formData);
+          },
+          
+          
+          handleFileChange(event) {
+            const files = event.target.files;
+            this.fileCount = files.length;
+            this.filesChange(event.target.name, files);
+          },
+
+
+          upload(formData) {
+            // reseting the error box
+            this.request_error = false;
+
+            this.showBtn = false; // disable btns when uploading
+
+            axios.post('check/', formData)
+            .then(response => {
+              // checks for duplicates
+              if (response.data.duplicate_files) {
+                this.request_error = true;
+                this.request_error_message = 'Duplicates are not allowed! These files do not meet that requirement: ' + response.data.duplicate_files;
+              }
+
+              // checks for unsupported file types
+              if (response.data.unsupported_files) {
+                this.request_error = true;
+                this.request_error_message = 'Only .xlsx (Excel Workbook) files are supported! These files are not supported: ' + response.data.unsupported_files;
+              }
+
+              // Convert the response object into an array
+              // this.uploadedFiles = Object.keys(response.data.uploaded_files);
+              for (obj of Object.entries(response.data.uploaded_files)) {
+                this.uploadedFiles.push(obj);
+              }
+
+              this.currentStatus = STATUS_INITIAL;
+
+              this.showBtn = true; // re-enable btns
+            })
+            .catch(error => {
+              // Handle errors during the axios request
+              this.currentStatus = STATUS_INITIAL;
+
+              if (error.response.status === 413) {
+                this.request_error = true;
+                this.request_error_message = 'File is too large! Please upload a file 2.00MB or below.';
+              } else {
+                this.request_error = true;
+                this.request_error_message = error.response.data.error;
+              }
+
+              this.showBtn = true; // re-enable btns
+
+            });
+          },
+
+
+          removeFile(file_name) {
+            // set loading and show btn
+            this.loading = true;
+            this.showBtn = false;
+
+            axios.post('remove-file/', {file: file_name})
+            .then(response => {
+              // reset upload files
+              this.uploadedFiles = [];
+              // get the response
+              for (obj of Object.entries(response.data.uploaded_files)) {
+                this.uploadedFiles.push(obj);
+              }
+
+              this.currentStatus = STATUS_INITIAL;
+
+              // reset loading and show btn
+              this.loading = false;
+              this.showBtn = true;
+            })
+            .catch(error => {
+              // Handle errors during the axios request
+              this.currentStatus = STATUS_INITIAL;
+
+              this.request_error = true;
+              this.request_error_message = error.response.data.error;
+
+              // reset loading and show btn
+              this.loading = false;
+              this.showBtn = true;
+            });
+
+          },
+
+
+          // Helper function to parse the date string
+          parseDate(dateString) {
+            const isoString = dateString.replace(" ", "T"); // Convert "YYYY-MM-DD HH:mm:ss" to "YYYY-MM-DDTHH:mm:ss"
+            return new Date(isoString);
+          },
+
+         
+          // Check if the item's upload_date is within 10 seconds of the current time
+          getRowClass(item) {
+            const currentTime = new Date().getTime();
+            const itemTime = this.parseDate(item.upload_date).getTime();
+            const timeDiff = Math.abs(currentTime - itemTime);
+      
+            return timeDiff <= 10000 ? "recently-added-file" : ""; // 10000 ms = 10 seconds
+          },
+
+
+          handleServerDatetime(datetime){
+            return datetime ? moment.utc(datetime).tz(this.timezone).format('YYYY-MM-DD HH:mm:ss'): null;
+          },
+
+
+          deleteItem(item) {
+            this.loading = true;
+            axios.get('delete/?id='+item.id).then(data => {
+              this.updateTable();
+              this.loading = false;
+            });
+          },
+
+
+          updateTable() {
+            axios.get('data-files/').then(res => {
+                res.data.forEach(record => {
+                  record.upload_date =  this.handleServerDatetime(record.upload_date);
+                });
+                this.documents = res.data
+              });
+          },
+
+        },
+
+        mounted() {
+          const userPermissions = {{USER_PERMISSIONS|safe}};
+
+          const dataInventoryPermissions = userPermissions['data-export'];
+          if(dataInventoryPermissions && dataInventoryPermissions.includes("delete"))
+            this.showDeleteAction = true;
+
+          this.reset(); // reset the upload list
+          
+          this.updateTable() // reload the table
+
+          setInterval(this.updateTable, 10000);
+        },
+
+        });
+    })();
+</script>
+
+<!-- SASS styling -->
+<style>
+  .dropbox {
+    outline: 2px dashed grey; /* the dash box */
+    outline: ;
+    border-radius: 20px;
+    outline-offset: -7px;
+    background: rgba(200, 225, 294, 0.169);
+    color: dimgray;
+    padding: 10px 10px;
+    min-height: 200px; /* minimum height */
+    position: relative;
+    cursor: pointer;
+  }
+  
+  .input-file {
+    opacity: 0; /* invisible but it's there! */
+    width: 100%;
+    height: 200px;
+    position: absolute;
+    cursor: pointer;
+  }
+  
+  .dropbox:hover {
+    background: rgba(200, 225, 294, 0.469); /* when mouse over to the drop zone, change color */
+  }
+  
+  .dropbox p {
+    font-size: 1.2em;
+    text-align: center;
+    padding: 50px 0;
+  }
+
+  /* .file-list {
+    border-radius: 8px;
+    padding: 10px;
+    background: #f8f9fa;
+  } */
+
+  .file-item {
+    padding: 8px;
+    height: 50px;
+    border: 1px solid #ddd;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  .file-icon {
+    margin-right: 8px;
+    color: #007bff;
+  }
+
+  .file-name {
+    color: #007bff;
+    text-decoration: none;
+  }
+
+  .file-size {
+    font-size: 0.9em;
+    color: #666;
+    margin-left: 8px;
+  }
+
+  .remove-btn {
+    cursor: pointer;
+    color: #d9534f;
+    border-radius: 50%;
+    padding: 4px;
+  }
+
+  .remove-btn:hover {
+    background-color: #d9544f7b;
+  }
+</style>
+
+{% endblock %}
