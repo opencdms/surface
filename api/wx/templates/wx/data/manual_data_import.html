@@ -336,7 +336,7 @@
 
 
           filesChange(fieldName, fileList) {
-            // only allow 5 files at any given point
+            // only allow 4 files at any given point
             if ((fileList.length + this.uploadedFiles.length) > 4) {
               this.request_error = true;
               this.request_error_message = 'Maximum of 4 files allowed. Anything above the maximum ammount should be transfered in groups of 4 or via ftp!';
@@ -362,9 +362,11 @@
           
           
           handleFileChange(event) {
+            const input = event.target;
             const files = event.target.files;
             this.fileCount = files.length;
             this.filesChange(event.target.name, files);
+            input.value = "";
           },
 
 
