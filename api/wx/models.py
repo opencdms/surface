@@ -1160,6 +1160,20 @@ class StationDataFile(BaseModel):
 
     def __str__(self):
         return f'{self.filepath}'
+    
+
+class ManualStationDataFile(BaseModel):
+    file_name = models.CharField(max_length=1024, null=False, blank=False)
+    status = models.ForeignKey(StationDataFileStatus, on_delete=models.DO_NOTHING)
+    filepath = models.CharField(max_length=1024)
+    upload_date = models.DateTimeField(auto_now_add=True)
+    stations_list = models.TextField(null=True, blank=True)
+    month = models.CharField(max_length=128, default="Not Found")
+    observation = models.TextField(null=True, blank=True)
+    override_data_on_conflict = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'{self.filepath}'
 
 
 class HourlySummaryTask(BaseModel):
