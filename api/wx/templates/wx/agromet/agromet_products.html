@@ -2,7 +2,7 @@
 
 <div class="srf-container">
 	<div class="srf-flex flex-row align-items-center justify-content-between srf-padding">
-		<span class="srf-display-1 text-uppercase">Agromet Summaries</span><br /><br />
+		<span class="srf-display-1 text-uppercase">Agromet Products</span><br /><br />
 	</div>
 	<div class="srf-flex justify-content-between srf-padding" id="app">
 		<v-app>
@@ -18,10 +18,17 @@
 			<form enctype="multipart/form-data" method="POST" class="mb-10">
 				{% csrf_token %}
 				<v-row>
+					<v-col cols="2" class="d-flex justify-center">
+						<v-switch 
+							v-model="filters.is_automatic"
+							:label='filters.is_automatic?"Automatic Stations":"Manual Stations"'
+							inset
+						/>
+					</v-col>				
 					<v-col cols="3">
 						<v-autocomplete
 							label="Select Station"
-							:items="stationList"
+							:items="filteredStationList"
 							item-value="id"
 							item-text="name"
 							v-model="requestData.stationId"
@@ -87,6 +94,28 @@
 					</v-col>	                    
 				</v-row>				
 			</form>	
+
+			<div>				
+				<template>
+					<v-card v-if="requestedData.responseData && !loading_data">
+						<v-card-title class="text-center"> [[ requestedData.product ]] </v-card-title>
+						<v-card-text>
+							<template>
+								<v-data-table
+									:headers="dataTable.headers"
+									:items="dataTable.data"
+								></v-data-table>
+							</template>
+						</v-card-text>
+						<v-card-actions>
+							<v-btn @click="downloadCSV">
+								Download CSV 
+								<v-icon right>download</v-icon>
+							</v-btn>
+						</v-card-actions
+					</v-card>					
+				</template>	
+			</div>			
 		</v-app>
 	</div>
 </div>
@@ -135,6 +164,9 @@
 				endYear: null,
 				responseData: null,
 			},
+			filters: {
+				is_automatic: true
+			},			
 			elements: {
 				'Air Temperature': [
 					'Degree days',
@@ -176,7 +208,7 @@
 			end_year_menu: false,
 			stationList: [
 				{% for station in station_list %}
-					{id: {{station.id}}, name: "{{station.name | safe }} - {{station.code}}"},
+					{id: {{station.id}}, name: "{{station.name | safe }} - {{station.code}}", is_automatic:  {{station.is_automatic|yesno:"true,false"}}},
 				{% endfor %}
 			],
 		},
@@ -186,6 +218,9 @@
 			}
 		},	
 		computed: {
+			filteredStationList() {
+				return this.stationList.filter(station=>station.is_automatic===this.filters.is_automatic)
+			},			
 			requireNumericParam (){
 				const productList = [
 					'Degree days',
@@ -209,7 +244,37 @@
 				if (Object.keys(rest).some(key => rest[key] === null)) return true
 				if (this.requireNumericParam && numericParam === null) return true
 				return false
-			},	
+			},
+			dataTable () {
+				let selectedVariableId = null
+				let filteredData = []
+				let data = this.requestedData.responseData
+
+				const { element, product, ...rest } = this.requestedData
+
+				if (element==='Air Temperature'){
+					if (product==='Degree days'){
+						return {
+							headers: [
+								{ text: 'Year', align: 'end', value: 'year' },
+								{ text: 'Heating Degree Days', align: 'end', value: 'hdd' },
+								{ text: 'Cooling Degree Days', align: 'end', value: 'cdd' }
+							],
+							data: data
+						};
+					}
+					else if (product==='Hours or days above or below selected temperature'){
+						return {
+							headers: [
+								{ text: 'Year', align: 'end', value: 'year' },
+								{ text: 'Days Below Value', align: 'end', value: 'below' },
+								{ text: 'Days Above Value', align: 'end', value: 'above' }
+							],
+							data: data
+						}
+					}
+				}
+			}			
 		},
 		methods: {
             getData(){
@@ -231,7 +296,7 @@
 					end_year: this.requestedData.endYear,
 					element: this.requestedData.element,
 					product: this.requestedData.product,
-					numericParam: this.requestedData.numericParam,
+					numeric_param: this.requestedData.numericParam,
 				};
 
         		axios.get(url, { params })
@@ -245,7 +310,43 @@
 				.finally(() => {
 					this.loading_data = false
 				});
-			}
+			},
+			convertToCSV(data) {
+				const headers = data.headers.map(item => item.text).join(',') + '\n';
+
+				const indicesToRemove = [] // Exclude columns
+				const rows = data.data.map(row => 
+				  Object.values(row)
+					.filter((value, index) => !indicesToRemove.includes(index)) 
+					.map(value => `"${value}"`)
+					.join(',')
+				).join('\n');
+
+				return headers + rows;
+			},
+			downloadCSV() {
+				const csvContent = this.convertToCSV(this.dataTable);
+				const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+				const link = document.createElement('a');
+
+				// const { stationId, variableIds, summaryType, startYear, endYear, interval, ...rest } = this.requestedData;
+
+				//  const selectedVariableId = variableIds[this.tab];
+				//  const station = this.stationList.find(station => station.id === stationId)
+				//  const variable = this.variableList.find(variable => variable.id === selectedVariableId)
+						
+				//  const filename = summaryType === 'Monthly' 
+  				// 	? `agromet-summary-(${summaryType})-${station?.name}-${variable?.symbol}-${startYear}-${endYear}-[${interval}].csv`
+  				// 	: `agromet-summary-(${summaryType})-${station?.name}-${variable?.symbol}-${startYear}-${endYear}.csv`;
+			
+				let filename = 'agromet-product'
+				link.href = URL.createObjectURL(blob);
+				link.download = filename;
+				link.style.visibility = 'hidden';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+			}			
 		}		
 	})
 </script>

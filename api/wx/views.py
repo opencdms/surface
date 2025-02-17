@@ -7276,12 +7276,92 @@ def get_agromet_products_data(request):
         logger.error(repr(e))
         return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    agromet_variable_symbols = [
+        'AIRTEMP', # Air Temp
+        'PRECIP', # Rainfall
+        # Soil Moisture
+        'TSOIL1', # Soil Temp 1feet
+        'TSOIL4', # Soil Temp 4feet
+        'RH', # Relative HUumidity
+        'WNDSPD', # Wind Speed
+        'WNDDIR', # Wind Direction
+        'EVAPPAN', # Evaportaion
+        # Evapotranspiration
+        'SOLARRAD', # Solar Radiation
+    ]  
+    
+    config = settings.SURFACE_CONNECTION_STRING
 
-    response = {
+    station = Station.objects.get(pk=requestedData['station_id'])
+
+    pgia_code = '8858307' # Phillip Goldson Int'l Synop    
+
+    data_source = 'hourly_summary' if (station.is_automatic or station.code==pgia_code) else 'daily_summary'
+
+    requestedData['start_date'] = f"{int(requestedData['start_year'])}-01-01"
+    requestedData['end_date'] = f"{int(requestedData['end_year'])+1}-01-01"
+    
+
+    data = {
         'message': 'Test message.',
         'headers': 'Headers go here.',
         'data': 'Data go here',
     }
+
+    if requestedData['element']=='Air Temperature':
+        if requestedData['product']=='Degree days':
+            query = f"""
+                WITH filtered_data AS(
+                    SELECT 
+                        (ds.min_value+ds.max_value)/2-{requestedData['numeric_param']} AS value
+                        ,EXTRACT(YEAR FROM ds.day) AS year
+                    FROM daily_summary ds
+                    JOIN wx_variable vr ON vr.id=ds.variable_id
+                    WHERE ds.day >= '{requestedData['start_date']}'
+                        AND ds.day < '{requestedData['end_date']}'
+                        AND ds.station_id = {requestedData['station_id']}
+                        AND vr.symbol = 'TEMP'
+                )
+                SELECT
+                    year
+                    ,COUNT(CASE WHEN value < 0 THEN 1 END) AS hdd
+                    ,COUNT(CASE WHEN value > 0 THEN 1 END) AS cdd
+                FROM filtered_data
+                GROUP BY year
+            """
+
+            with psycopg2.connect(config) as conn:
+                df = pd.read_sql(query, conn)                    
+                data = df.fillna('').to_dict(orient='records')
+
+        elif requestedData['product']=='Hours or days above or below selected temperature':
+                query = f"""
+                    WITH filtered_data AS(
+                        SELECT 
+                            ds.avg_value AS value
+                            ,EXTRACT(YEAR FROM ds.day) AS year
+                        FROM daily_summary ds
+                        JOIN wx_variable vr ON vr.id=ds.variable_id
+                        WHERE ds.day >= '{requestedData['start_date']}'
+                          AND ds.day < '{requestedData['end_date']}'
+                          AND ds.station_id = {requestedData['station_id']}
+                          AND vr.symbol = 'TEMP'
+                    )
+                    SELECT
+                        year
+                        ,COUNT(CASE WHEN value < {requestedData['numeric_param']} THEN 1 END) AS below
+                        ,COUNT(CASE WHEN value > {requestedData['numeric_param']} THEN 1 END) AS above
+                    FROM filtered_data
+                    GROUP BY year
+                """
+
+                with psycopg2.connect(config) as conn:
+                    df = pd.read_sql(query, conn)                    
+                    data = df.fillna('').to_dict(orient='records')            
+        
+
+
+    response = data
     return JsonResponse(response, status=status.HTTP_200_OK, safe=False)    
 
 
@@ -7303,6 +7383,7 @@ class AgroMetProductsView(LoginRequiredMixin, TemplateView):
     ]  
 
     agromet_variable_ids = Variable.objects.filter(symbol__in=agromet_variable_symbols).values_list('id', flat=True)
+
               
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
