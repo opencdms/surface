@@ -24,8 +24,8 @@ RUN chmod +x load_initial_data.sh
 
 USER surface
 
-RUN pip install -U pip setuptools wheel
-RUN pip install numpy==1.21.2
+RUN pip install -U "pip<24.1" setuptools wheel
+RUN pip install numpy==1.21.2 --force-reinstall
 
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt --no-warn-script-location
