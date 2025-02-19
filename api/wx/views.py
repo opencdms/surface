@@ -6995,7 +6995,9 @@ class AgroMetSummariesView(LoginRequiredMixin, TemplateView):
 class AgroMetProductsView(LoginRequiredMixin, TemplateView):
     template_name = "wx/agromet/agromet_products.html"
     agromet_variable_symbols = [
-        'AIRTEMP', # Air Temp
+        'TEMP', # Air Temp
+        'TEMPMIN', # Air Temp Min
+        'TEMPMAX', # Air Temp Max
         'PRECIP', # Rainfall
         # Soil Moisture
         'TSOIL1', # Soil Temp 1feet
