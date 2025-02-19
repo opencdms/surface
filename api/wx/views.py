@@ -7227,7 +7227,9 @@ def get_agromet_summary_data(request):
 class AgroMetSummariesView(LoginRequiredMixin, TemplateView):
     template_name = "wx/agromet/agromet_summaries.html"
     agromet_variable_symbols = [
-        'AIRTEMP', # Air Temp
+        'TEMP', # Air Temp
+        'TEMPMIN', # Air Temp Min
+        'TEMPMAX', # Air Temp Max
         'PRECIP', # Rainfall
         # Soil Moisture
         'TSOIL1', # Soil Temp 1feet
@@ -7314,6 +7316,7 @@ def get_agromet_products_data(request):
                 WITH filtered_data AS(
                     SELECT 
                         (ds.min_value+ds.max_value)/2-{requestedData['numeric_param']} AS value
+                        ,(ds.min_value+ds.max_value)/2-{requestedData['numeric_param']} AS value
                         ,EXTRACT(YEAR FROM ds.day) AS year
                     FROM daily_summary ds
                     JOIN wx_variable vr ON vr.id=ds.variable_id
