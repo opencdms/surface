@@ -12,11 +12,6 @@ WITH filtered_data AS (
             WHEN 'ACCUM' THEN hs.sum_value
             ELSE hs.avg_value
         END as value
-        ,CASE
-            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{{timezone}}') BETWEEN 1 AND 10 THEN 'agg_1'
-            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{{timezone}}') BETWEEN 11 AND 20 THEN 'agg_2'
-            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{{timezone}}') >= 21 THEN 'agg_3'
-        END AS agg
     FROM hourly_summary hs
     JOIN wx_station st ON st.id = hs.station_id
     JOIN wx_variable vr ON vr.id = hs.variable_id
@@ -25,14 +20,13 @@ WITH filtered_data AS (
         AND datetime AT TIME ZONE '{{timezone}}' < '{{end_date}}'
         AND station_id = {{station_id}}
         AND variable_id IN ({{variable_ids}})
-        AND EXTRACT(MONTH FROM datetime AT TIME ZONE '{{timezone}}') IN ({{months}})                                             
+        AND EXTRACT(MONTH FROM datetime AT TIME ZONE '{{timezone}}') IN ({{months}})
 )
 SELECT
     station
     ,variable_id
     ,year
     ,month
-    ,agg
     ,ROUND(
         CASE sampling_operation
             WHEN 'MIN' THEN MIN(value)::numeric
@@ -44,5 +38,5 @@ SELECT
         END, 2
     ) AS value
 FROM filtered_data
-GROUP BY station, variable_id, month, year, agg, sampling_operation
+GROUP BY station, variable_id, month, year, sampling_operation
 ORDER BY year, month

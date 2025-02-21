@@ -1,7 +1,7 @@
 WITH filtered_data AS (
     SELECT
-        EXTRACT(YEAR FROM hs.datetime AT TIME ZONE 'America/Belize') as year
-        ,EXTRACT(MONTH FROM hs.datetime AT TIME ZONE 'America/Belize') as month
+        EXTRACT(YEAR FROM hs.datetime AT TIME ZONE '{{timezone}}') as year
+        ,EXTRACT(MONTH FROM hs.datetime AT TIME ZONE '{{timezone}}') as month
         ,hs.station_id
         ,hs.variable_id
         ,st.name AS station
@@ -13,20 +13,20 @@ WITH filtered_data AS (
             ELSE hs.avg_value
         END as value
         ,CASE
-            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE 'America/Belize') BETWEEN 1 AND 7 THEN 'agg_1'
-            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE 'America/Belize') BETWEEN 8 AND 14 THEN 'agg_2'
-            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE 'America/Belize') BETWEEN 15 AND 21 THEN 'agg_3'
-            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE 'America/Belize') >= 22 THEN 'agg_4'
+            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{{timezone}}') BETWEEN 1 AND 7 THEN 'agg_1'
+            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{{timezone}}') BETWEEN 8 AND 14 THEN 'agg_2'
+            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{{timezone}}') BETWEEN 15 AND 21 THEN 'agg_3'
+            WHEN EXTRACT(DAY FROM datetime AT TIME ZONE '{{timezone}}') >= 22 THEN 'agg_4'
         END AS agg
     FROM hourly_summary hs
     JOIN wx_station st ON st.id = hs.station_id
     JOIN wx_variable vr ON vr.id = hs.variable_id
     JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id   
-    WHERE datetime AT TIME ZONE 'America/Belize' >= '2024-01-01'
-        AND datetime AT TIME ZONE 'America/Belize' < '2025-01-01'
-        AND station_id = 4
-        AND variable_id IN (0,10,30)
-        AND EXTRACT(MONTH FROM datetime AT TIME ZONE 'America/Belize') IN (1,2)                                             
+    WHERE datetime AT TIME ZONE '{{timezone}}' >= '{{start_date}}'
+        AND datetime AT TIME ZONE '{{timezone}}' < '{{end_date}}'
+        AND station_id = {{station_id}}
+        AND variable_id IN ({{variable_ids}})
+        AND EXTRACT(MONTH FROM datetime AT TIME ZONE '{{timezone}}') IN ({{months}})                                             
 )
 SELECT
     station

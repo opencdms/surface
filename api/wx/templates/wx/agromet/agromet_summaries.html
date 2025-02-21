@@ -209,7 +209,7 @@
 				{id: 11, name: 'Nov'},
 				{id: 12, name: 'Dec'},
 			],
-			intervals: ['7 days', '10 days'],
+			intervals: ['7 days', '10 days', '1 month'],
 			variableList: {{ variable_list | safe }},
 			stationList: [
 				{% for station in station_list %}
@@ -302,7 +302,7 @@
 						return {
 							headers: [
 								{ text: 'Year', align: 'end', value: 'year' },
-								{ text: 'Monthly', align: 'end', value: 'monthly' },
+								{ text: 'Month', align: 'end', value: 'month' },
 								{ text: 'days 01-07', align: 'end', value: 'agg_1' },
 								{ text: 'days 08-14', align: 'end', value: 'agg_2' },
 								{ text: 'days 15-21', align: 'end', value: 'agg_3' },
@@ -315,7 +315,7 @@
 						return {
 							headers: [
 								{ text: 'Year', align: 'end', value: 'year' },
-								{ text: 'Monthly', align: 'end', value: 'monthly' },
+								{ text: 'Month', align: 'end', value: 'month' },
 								{ text: 'days 01-10', align: 'end', value: 'agg_1' },
 								{ text: 'days 11-20', align: 'end', value: 'agg_2' },
 								{ text: 'days 21-', align: 'end', value: 'agg_3' },
@@ -323,6 +323,16 @@
 							data: filteredData
 						}
 					}
+					else if (this.requestedData.interval==='1 month'){
+						return {
+							headers: [
+								{ text: 'Year', align: 'end', value: 'year' },
+								{ text: 'Month', align: 'end', value: 'month' },
+								{ text: 'Value', align: 'end', value: 'value' },
+							],
+							data: filteredData
+						}
+					}					
 				}
 			},
 		},

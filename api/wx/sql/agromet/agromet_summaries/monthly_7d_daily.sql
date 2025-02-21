@@ -9,8 +9,8 @@ WITH filtered_data AS (
         ,CASE so.symbol
             WHEN 'MIN' THEN ds.min_value
             WHEN 'MAX' THEN ds.max_value
-            WHEN 'ACCUM' THEN ds.sum_value
-            ELSE ds.avg_value
+            WHEN 'ACCUM' THEN hs.sum_value
+            ELSE hs.avg_value
         END as value
         ,CASE
             WHEN EXTRACT(DAY FROM ds.day) BETWEEN 1 AND 7 THEN 'agg_1'
@@ -22,11 +22,11 @@ WITH filtered_data AS (
     JOIN wx_station st ON st.id = ds.station_id
     JOIN wx_variable vr ON vr.id = ds.variable_id
     JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id   
-    WHERE ds.day >= '2024-01-01'
-        AND ds.day < '2025-01-01'
-        AND ds.station_id = 4
-        AND ds.variable_id IN (0,10,30)
-        AND EXTRACT(MONTH FROM ds.day) IN (1,2)                                             
+    WHERE ds.day >= '{{start_date}}'
+        AND ds.day < '{{end_date}}'
+        AND ds.station_id = {{station_id}}
+        AND ds.variable_id IN ({{variable_ids}})
+        AND EXTRACT(MONTH FROM ds.day) IN ({{months}})
 )
 SELECT
     station

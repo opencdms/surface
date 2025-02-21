@@ -12,11 +12,6 @@ WITH filtered_data AS (
             WHEN 'ACCUM' THEN ds.sum_value
             ELSE ds.avg_value
         END as value
-        ,CASE
-            WHEN EXTRACT(DAY FROM ds.day) BETWEEN 1 AND 10 THEN 'agg_1'
-            WHEN EXTRACT(DAY FROM ds.day) BETWEEN 11 AND 20 THEN 'agg_2'
-            WHEN EXTRACT(DAY FROM ds.day) >= 21 THEN 'agg_3'
-        END AS agg
     FROM daily_summary ds
     JOIN wx_station st ON st.id = ds.station_id
     JOIN wx_variable vr ON vr.id = ds.variable_id
@@ -32,7 +27,6 @@ SELECT
     ,variable_id
     ,year
     ,month
-    ,agg
     ,ROUND(
         CASE sampling_operation
             WHEN 'MIN' THEN MIN(value)::numeric
@@ -44,5 +38,5 @@ SELECT
         END, 2
     ) AS value
 FROM filtered_data
-GROUP BY station, variable_id, month, year, agg, sampling_operation
+GROUP BY station, variable_id, month, year, sampling_operation
 ORDER BY year, month

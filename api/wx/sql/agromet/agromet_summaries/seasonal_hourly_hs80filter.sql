@@ -20,25 +20,25 @@ WITH agg_definitions AS (
 )
 ,filtered_data AS (
     SELECT
-        ds.station_id 
-        ,ds.variable_id 
-        ,ds.day
-        ,EXTRACT(MONTH FROM ds.day) AS month
-        ,EXTRACT(YEAR FROM ds.day) AS year
+        hs.station_id 
+        ,hs.variable_id
+        ,DATE(hs.datetime) AS day
+        ,EXTRACT(MONTH FROM hs.datetime AT TIME ZONE '{{timezone}}') AS month
+        ,EXTRACT(YEAR FROM hs.datetime AT TIME ZONE '{{timezone}}') AS year
         ,so.symbol AS sampling_operation
         ,CASE so.symbol
-            WHEN 'MIN' THEN ds.min_value
-            WHEN 'MAX' THEN ds.max_value
-            WHEN 'ACCUM' THEN ds.sum_value
-                ELSE ds.avg_value
+            WHEN 'MIN' THEN hs.min_value
+            WHEN 'MAX' THEN hs.max_value
+            WHEN 'ACCUM' THEN hs.sum_value
+            ELSE hs.avg_value
         END AS value
-    FROM daily_summary ds
-    JOIN wx_variable vr ON vr.id = ds.variable_id
+    FROM hourly_summary hs
+    JOIN wx_variable vr ON vr.id = hs.variable_id
     JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id           
-    WHERE ds.station_id = {{station_id}}
-      AND ds.variable_id IN ({{variable_ids}})
-      AND ds.day >= '{{start_date}}' 
-      AND ds.day < '{{end_date}}'
+    WHERE hs.station_id = {{station_id}}
+      AND hs.variable_id IN ({{variable_ids}})
+      AND hs.datetime AT TIME ZONE '{{timezone}}' >= '{{ start_date }}' 
+      AND hs.datetime AT TIME ZONE '{{timezone}}' < '{{ end_date }}'
 ),
 extended_data AS(
     SELECT
@@ -62,13 +62,31 @@ extended_data AS(
         *
     FROM filtered_data
 )
-,agg_data AS (
+,hourly_entries AS (
+    SELECT
+        ed.day
+        ,ed.station_id
+        ,ed.variable_id
+        ,COUNT(*) as num_hs_records
+    FROM extended_data ed
+    GROUP BY day, station_id, variable_id
+)
+,validated_hourly_data AS (
     SELECT
         ed.*
-        ,ad.agg
     FROM extended_data ed
     CROSS JOIN agg_definitions ad
-    WHERE ed.month = ANY(ad.months)
+    JOIN hourly_entries he
+      ON (he.station_id=ed.station_id AND he.variable_id=ed.variable_id AND he.day=ed.day)
+    WHERE he.num_hs_records >= 20
+)
+,agg_data AS (
+    SELECT
+        vhd.*
+        ,ad.agg
+    FROM validated_hourly_data vhd
+    CROSS JOIN agg_definitions ad
+    WHERE vhd.month = ANY(ad.months)
       AND year BETWEEN {{start_year}} AND {{end_year}} 
 )
 ,lagged_data AS (

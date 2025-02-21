@@ -21,7 +21,8 @@ WITH agg_definitions AS (
 ,filtered_data AS (
     SELECT
         hs.station_id 
-        ,hs.variable_id 
+        ,hs.variable_id
+        ,DATE(hs.datetime) AS day
         ,EXTRACT(MONTH FROM hs.datetime AT TIME ZONE '{{timezone}}') AS month
         ,EXTRACT(YEAR FROM hs.datetime AT TIME ZONE '{{timezone}}') AS year
         ,so.symbol AS sampling_operation
@@ -35,14 +36,15 @@ WITH agg_definitions AS (
     JOIN wx_variable vr ON vr.id = hs.variable_id
     JOIN wx_samplingoperation so ON so.id = vr.sampling_operation_id           
     WHERE hs.station_id = {{station_id}}
-    AND hs.variable_id IN ({{variable_ids}})
-    AND hs.datetime AT TIME ZONE '{{timezone}}' >= '{{ start_date }}' 
-    AND hs.datetime AT TIME ZONE '{{timezone}}' < '{{ end_date }}'
+      AND hs.variable_id IN ({{variable_ids}})
+      AND hs.datetime AT TIME ZONE '{{timezone}}' >= '{{ start_date }}' 
+      AND hs.datetime AT TIME ZONE '{{timezone}}' < '{{ end_date }}'
 ),
 extended_data AS(
     SELECT
         station_id
         ,variable_id
+        ,day
         ,CASE 
             WHEN month=12 THEN 0
             WHEN month=1 THEN 13
@@ -60,25 +62,54 @@ extended_data AS(
         *
     FROM filtered_data
 )
-SELECT 
-    st.name AS station, 
-    ed.variable_id, 
-    ed.year, 
-    ad.agg
-    ,ROUND(
-    CASE ed.sampling_operation
-        WHEN 'MIN' THEN MIN(value)::numeric
-        WHEN 'MAX' THEN MAX(value)::numeric
-        WHEN 'ACCUM' THEN SUM(value)::numeric
-        WHEN 'STDV' THEN STDDEV(value)::numeric
-        WHEN 'RMS' THEN SQRT(AVG(POW(value, 2)))::numeric
-        ELSE AVG(value)::numeric
-    END, 2
-    ) AS value
-FROM extended_data ed
-JOIN wx_station st ON st.id = ed.station_id
-CROSS JOIN  agg_definitions ad
-WHERE ed.month = ANY(ad.months)
-AND year BETWEEN {{start_year}} AND {{end_year}}
-GROUP BY st.name, ed.variable_id, ed.year, ad.agg, ed.sampling_operation
-ORDER BY year        
+,agg_data AS (
+    SELECT
+        ed.*
+        ,ad.agg
+    FROM extended_data ed
+    CROSS JOIN agg_definitions ad
+    WHERE ed.month = ANY(ad.months)
+      AND year BETWEEN {{start_year}} AND {{end_year}} 
+)
+,lagged_data AS (
+    SELECT
+        *
+        ,DATE_PART('day', day::timestamp - LAG(day::timestamp) 
+            OVER (PARTITION BY station_id, variable_id, year, agg ORDER BY day)) AS day_diff
+    FROM (
+        SELECT DISTINCT day, station_id, variable_id, year, agg
+        FROM agg_data
+    ) AS distinct_entries
+)
+,validated_data AS (
+    SELECT
+        st.name AS station
+        ,ad.variable_id
+        ,ad.year
+        ,ad.agg
+        ,MAX(ld.day_diff) AS max_day_diff
+        ,ROUND(
+            CASE ad.sampling_operation
+                WHEN 'MIN' THEN MIN(value)::numeric
+                WHEN 'MAX' THEN MAX(value)::numeric
+                WHEN 'ACCUM' THEN SUM(value)::numeric
+                WHEN 'STDV' THEN STDDEV(value)::numeric
+                WHEN 'RMS' THEN SQRT(AVG(POW(value, 2)))::numeric
+                ELSE AVG(value)::numeric
+            END,2
+        ) AS value
+    FROM agg_data ad
+    JOIN wx_station st ON st.id = ad.station_id
+    LEFT JOIN lagged_data ld 
+      ON (ld.station_id=ad.station_id AND ld.variable_id=ad.variable_id AND ld.day=ad.day AND ld.agg=ad.agg)
+    GROUP BY st.name, ad.variable_id, ad.year, ad.agg, ad.sampling_operation 
+)
+SELECT
+    station
+    ,variable_id
+    ,year
+    ,agg
+    ,value
+FROM validated_data
+WHERE max_day_diff < 6
+ORDER BY year;
